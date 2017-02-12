@@ -1,0 +1,18 @@
+redis:
+  protocol: tcp
+  address: localhost:6379
+  expire: 3600
+splash:
+  base-url: "http://localhost:8050/"
+  ping-url: "_ping" #this endpoint is used for checking if splash service is alive 
+  render-html: "render.html"
+  render-json: "render.json"
+  username: "user"
+  userpass: "userpass"
+  timeout: 10
+  resource-timeout: 20
+  wait: 0,5 #wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
+parser:
+  htmlClientTimeout: 15
+  CSV:
+    comma: ","
