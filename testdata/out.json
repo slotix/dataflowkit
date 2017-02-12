@@ -1,0 +1,184 @@
+{
+  "collections": [
+    {
+      "count": 18,
+      "items": [
+        {
+          "Percents": "96 %",
+          "Recenzie": {
+            "href": "/televizory/samsung-ue40j5100/recenzie",
+            "text": "25 recenzií"
+          },
+          "Title": {
+            "href": "/televizory/samsung-ue40j5100",
+            "text": "SAMSUNG UE40J5100"
+          }
+        },
+        {
+          "Percents": "96 %",
+          "Recenzie": {
+            "href": "/televizory/lg-42lf652v/recenzie",
+            "text": "22 recenzií"
+          },
+          "Title": {
+            "href": "/televizory/lg-42lf652v",
+            "text": "LG 42LF652V"
+          }
+        },
+        {
+          "Percents": "99 %",
+          "Recenzie": {
+            "href": "/televizory/samsung-ue32j5100/recenzie",
+            "text": "21 recenzií"
+          },
+          "Title": {
+            "href": "/televizory/samsung-ue32j5100",
+            "text": "SAMSUNG UE32J5100"
+          }
+        },
+        {
+          "Percents": "100 %",
+          "Recenzie": {
+            "href": "/televizory/lg-43lh560v/recenzie",
+            "text": "3 recenzie"
+          },
+          "Title": {
+            "href": "/televizory/lg-43lh560v",
+            "text": "LG 43LH560V"
+          }
+        },
+        {
+          "Percents": "90 %",
+          "Recenzie": {
+            "href": "/televizory/samsung-ue40j6272/recenzie",
+            "text": "2 recenzie"
+          },
+          "Title": {
+            "href": "/televizory/samsung-ue40j6272",
+            "text": "SAMSUNG UE40J6272"
+          }
+        },
+        {
+          "Title": {
+            "href": "/televizory/panasonic-tx-48cx400e",
+            "text": "PANASONIC TX-48CX400E"
+          }
+        },
+        {
+          "Title": {
+            "href": "/televizory/lg-oled55b6j",
+            "text": "LG OLED55B6J"
+          }
+        },
+        {
+          "Percents": "96 %",
+          "Recenzie": {
+            "href": "/televizory/lg-43lf510v/recenzie",
+            "text": "5 recenzií"
+          },
+          "Title": {
+            "href": "/televizory/lg-43lf510v",
+            "text": "LG 43LF510V"
+          }
+        },
+        {
+          "Percents": "80 %",
+          "Recenzie": {
+            "href": "/televizory/philips-40pfh5500/recenzie",
+            "text": "1 recenzia"
+          },
+          "Title": {
+            "href": "/televizory/philips-40pfh5500",
+            "text": "PHILIPS 40PFH5500"
+          }
+        },
+        {
+          "Percents": "100 %",
+          "Recenzie": {
+            "href": "/televizory/lg-32lf510b/recenzie",
+            "text": "3 recenzie"
+          },
+          "Title": {
+            "href": "/televizory/lg-32lf510b",
+            "text": "LG 32LF510B"
+          }
+        },
+        {
+          "Title": {
+            "href": "/televizory/samsung-ue55ks9002",
+            "text": "SAMSUNG UE55KS9002"
+          }
+        },
+        {
+          "Percents": "100 %",
+          "Recenzie": {
+            "href": "/televizory/samsung-ue32j5572/recenzie",
+            "text": "4 recenzie"
+          },
+          "Title": {
+            "href": "/televizory/samsung-ue32j5572",
+            "text": "SAMSUNG UE32J5572"
+          }
+        },
+        {
+          "Percents": "100 %",
+          "Recenzie": {
+            "href": "/televizory/samsung-ue32eh4003/recenzie",
+            "text": "5 recenzií"
+          },
+          "Title": {
+            "href": "/televizory/samsung-ue32eh4003",
+            "text": "SAMSUNG UE32EH4003"
+          }
+        },
+        {
+          "Percents": "90 %",
+          "Recenzie": {
+            "href": "/televizory/panasonic-tx-40c320e/recenzie",
+            "text": "2 recenzie"
+          },
+          "Title": {
+            "href": "/televizory/panasonic-tx-40c320e",
+            "text": "PANASONIC TX-40C320E"
+          }
+        },
+        {
+          "Percents": "96 %",
+          "Recenzie": {
+            "href": "/televizory/samsung-ue48j6272/recenzie",
+            "text": "6 recenzií"
+          },
+          "Title": {
+            "href": "/televizory/samsung-ue48j6272",
+            "text": "SAMSUNG UE48J6272"
+          }
+        },
+        {
+          "Title": {
+            "href": "/televizory/philips-40pfh4100",
+            "text": "PHILIPS 40PFH4100"
+          }
+        },
+        {
+          "Title": {
+            "href": "/televizory/lg-55uf6857",
+            "text": "LG 55UF6857"
+          }
+        },
+        {
+          "Percents": "93 %",
+          "Recenzie": {
+            "href": "/televizory/philips-32pfh5300/recenzie",
+            "text": "3 recenzie"
+          },
+          "Title": {
+            "href": "/televizory/philips-32pfh5300",
+            "text": "PHILIPS 32PFH5300"
+          }
+        }
+      ],
+      "name": "collection1",
+      "url": "http://www.najnakup.sk/televizory"
+    }
+  ]
+}

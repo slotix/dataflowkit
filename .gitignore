@@ -6,6 +6,16 @@
 # Folders
 _obj
 _test
+trash
+tools
+aquarium
+competitors
+config
+.vscode/*
+.idea/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
 
 # Architecture specific extensions/prefixes
 *.[568vq]
@@ -22,3 +32,9 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+# external packages folder
+vendor/
+
+dfk-parser
+config/dfk-server.service

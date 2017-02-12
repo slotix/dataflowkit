@@ -1,8 +1,12 @@
 package parser
 
 import (
+	"fmt"
 	"log"
+	"os"
 	"testing"
+
+	"github.com/spf13/viper"
 )
 
 //TODO
@@ -31,9 +35,15 @@ import (
 //http://www.bestbuy.com
 //http://www.homedepot.com
 
-
-
 func prepareData() Out {
+	viper.SetConfigName("../.dfk-parser") // name of config file (without extension)
+	viper.AddConfigPath(".")           // look for config in the working directory
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+		// Handle errors reading the config file
+	}
+
 	payloads := make(map[string][]byte)
 	payloads["najnakup_heureka"] = []byte(`
 	   { "format":"json",
@@ -242,18 +252,15 @@ func prepareData() Out {
 				{"field_name":"Image","css_selector":".img"}]}]}
 `)
 
-
-
-
-//Failed
-payloads["yahooPolitics"] = []byte(`
+	//Failed
+	payloads["yahooPolitics"] = []byte(`
 				{"format":"json","collections":[{"name":"Yahoo politics","url":"https://www.yahoo.com/news/politics/","fields":[			
 				{"field_name":"Title","css_selector":""},
 				{"field_name":"Text","css_selector":""},
 				{"field_name":"Image","css_selector":""}]}]}
 `)
-//Failed
-payloads["buysellcyprus"] = []byte(`
+	//Failed
+	payloads["buysellcyprus"] = []byte(`
 				{"format":"json","collections":[{"name":"buysellcyprus","url":"http://www.buysellcyprus.com/nqcontent.cfm?a_name=v4_map_search","fields":[			
 				{"field_name":"Title","css_selector":".hometitle b"},
 				{"field_name":"Price","css_selector":".red b"},
@@ -262,8 +269,8 @@ payloads["buysellcyprus"] = []byte(`
 				{"field_name":"sqm","css_selector":".homedetailsInside b+ b"}]}]}
 `)
 
-//
-payloads["wiki"] = []byte(`
+	//
+	payloads["wiki"] = []byte(`
 				{"format":"json","collections":[{"name":"Wiki","url":"https://www.wikipedia.org","fields":[			
 				{"field_name":"Title","css_selector":".link-box strong"},
 				{"field_name":"Text","css_selector":".link-box small"}

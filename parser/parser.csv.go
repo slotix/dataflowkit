@@ -3,6 +3,8 @@ package parser
 import (
 	"bytes"
 	"encoding/csv"
+
+	"github.com/spf13/viper"
 )
 
 //MarshalCSV Marshales harvested data as CSV tables
@@ -22,9 +24,9 @@ func (out Out) MarshalCSV() ([]byte, error) {
 func (o outItem) marshalCSVItem() CSVTable {
 	var b bytes.Buffer
 	writer := csv.NewWriter(&b)
-	//str := viper.GetString("parser.CSV.comma")
-	//r := rune(str[0])
-	//writer.Comma = r
+	str := viper.GetString("parser.CSV.comma")
+	r := rune(str[0])
+	writer.Comma = r
 
 	buf := o.generateTable()
 

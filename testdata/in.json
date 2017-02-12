@@ -1,0 +1,13 @@
+{
+	"collections": [
+		{
+			"name": "collection1",
+			"url": "http://www.najnakup.sk/televizory",
+			"fields": {
+				"Title": ".item-title a",
+				"Percents": ".product-view",
+				"Recenzie": ".item-review .ntip"
+			}
+		}
+	]
+}
