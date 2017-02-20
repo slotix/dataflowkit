@@ -1,15 +1,17 @@
 package server
 
 //TODO https://github.com/happierall/l - ? logger
+//	"github.com/julienschmidt/httprouter"
+
 import (
-	"net/http"
 	"os"
+	"net/http"
+	"fmt"
 
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/net/context"
-	"fmt"
 )
 
 func Init(port int) {
@@ -101,7 +103,8 @@ func Init(port int) {
 	//router := mux.NewRouter().StrictSlash(true)
 	//router.HandleFunc("/", heartbeat)
 	//logger.Log(http.ListenAndServe(":8080", router))
-
+//	router := httprouter.New()
+//	router.GET("/", indexHandler)
 	http.Handle("/gethtml", getHTMLHandler)
 	http.Handle("/marshaldata", marshalDataHandler)
 	http.Handle("/chkservices", checkServicesHandler)
