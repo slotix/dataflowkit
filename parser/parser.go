@@ -12,6 +12,7 @@ import (
 )
 
 var errNoSelectors = errors.New("No selectors found")
+var errEmptyURL = errors.New("URL is empty")
 
 //Parse parses payload json structure and generate Out to be serializes as JSON, XML, CSV, Excel
 func (p *Payloads) Parse() (Out, error) {
@@ -47,12 +48,12 @@ func (o *outItem) genAttrFieldName(fieldName string, sel *goquery.Selection) {
 	}
 }
 
-type Item struct {
+type item struct {
 	value map[string]interface{}
 }
 
 //fillOutItem fills OutItem item values according to attributes
-func (item *Item) fillOutItem(fieldName string, s *goquery.Selection) {
+func (i *item) fillOutItem(fieldName string, s *goquery.Selection) {
 
 	if len(s.Nodes) > 0 && s.Nodes[0].Type == html.ElementNode {
 		//fmt.Println("fillOut", s.Nodes[0].Data)
@@ -66,7 +67,7 @@ func (item *Item) fillOutItem(fieldName string, s *goquery.Selection) {
 				if title, exists := s.Attr("title"); exists {
 					m["title"] = strings.TrimSpace(title)
 				}
-				item.value[fieldName] = m
+				i.value[fieldName] = m
 			}
 			//	} else if src, exists := s.Attr("src"); exists {
 		} else if nodeType == "img" {
@@ -79,30 +80,30 @@ func (item *Item) fillOutItem(fieldName string, s *goquery.Selection) {
 				}
 				//	m["width"] = strings.TrimSpace(s.AttrOr("width", ""))
 				//	m["height"] = strings.TrimSpace(s.AttrOr("height", ""))
-				item.value[fieldName] = m
+				i.value[fieldName] = m
 			}
 		} else {
-			item.value[fieldName] = strings.TrimSpace(s.Text())
+			i.value[fieldName] = strings.TrimSpace(s.Text())
 		}
 	}
 }
 
 //fillOutItem fills OutItem item values according to attributes
-func (item *Item) fillOutItemBackup(fieldName string, s *goquery.Selection) {
+func (i *item) fillOutItemBackup(fieldName string, s *goquery.Selection) {
 
 	if href, exists := s.Attr("href"); exists {
 		m := make(map[string]interface{})
 		m["href"] = href
 		m["text"] = strings.TrimSpace(s.Text())
-		item.value[fieldName] = m
+		i.value[fieldName] = m
 
 	} else if src, exists := s.Attr("src"); exists {
 		m := make(map[string]interface{})
 		m["src"] = src
 		m["alt"] = strings.TrimSpace(s.AttrOr("alt", ""))
-		item.value[fieldName] = m
+		i.value[fieldName] = m
 	} else {
-		item.value[fieldName] = strings.TrimSpace(s.Text())
+		i.value[fieldName] = strings.TrimSpace(s.Text())
 		//item[fieldName] = strings.TrimSpace(s.Text())
 	}
 
@@ -131,6 +132,9 @@ func (p *payload) parseItem(h []byte) (outItem outItem, err error) {
 	//var pr = fmt.Println
 	outItem.Name = p.Name
 	outItem.URL = p.URL
+	if p.URL == "" {
+		return outItem, errEmptyURL
+	}
 	if len(p.Fields) == 0 {
 		return outItem, errNoSelectors
 	}
@@ -188,16 +192,16 @@ func (p *payload) parseItem(h []byte) (outItem outItem, err error) {
 
 	inters.Each(func(i int, s *goquery.Selection) {
 		//pr(i, attrOrDataValue(s))
-		item := Item{value: make(map[string]interface{})}
+		itm := item{value: make(map[string]interface{})}
 		for _, field := range p.Fields {
 			filtered := s.Find(field.CSSSelector)
 			//pr(field.FieldName)
 			if filtered.Length() >= 1 {
-				item.fillOutItem(field.FieldName, filtered)
+				itm.fillOutItem(field.FieldName, filtered)
 			}
 		}
-		if len(item.value) > 0 {
-			outItem.Items = append(outItem.Items, item.value)
+		if len(itm.value) > 0 {
+			outItem.Items = append(outItem.Items, itm.value)
 
 		}
 	})
