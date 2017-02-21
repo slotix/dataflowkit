@@ -7,7 +7,7 @@ COPY ./ /go/src/github.com/slotix/dfk-parser
 WORKDIR /go/src/github.com/slotix/dfk-parser
 
 RUN go get ./
-RUN go build
+RUN go build -ldflags "-X main.buildTime=`date -u '+%Y-%m-%d_%I:%M:%S%p'` -X main.githash=`git rev-parse HEAD`"
 
 CMD if [ ${APP_ENV} = production ]; \
 	then \
