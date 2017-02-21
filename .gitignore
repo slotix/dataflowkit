@@ -11,6 +11,7 @@ tools
 aquarium
 competitors
 config
+1stuff
 .vscode/*
 .idea/*
 !.vscode/settings.json
