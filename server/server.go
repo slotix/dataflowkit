@@ -17,7 +17,7 @@ import (
 
 
 
-func Init(port int) {
+func Init(port int, proxy string) {
 	//config
 	/*
 		viper.SetConfigName("config")
@@ -78,7 +78,7 @@ func Init(port int) {
 
 	var svc ParseService
 	svc = parseService{}
-	//	svc = proxyingMiddleware(*proxy, ctx, logger)(svc)
+	svc = proxyingMiddleware(ctx, proxy, logger)(svc)
 	svc = loggingMiddleware(logger)(svc)
 	//svc = instrumentingMiddleware(requestCount, requestLatency, countResult)(svc)
 

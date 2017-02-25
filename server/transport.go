@@ -8,15 +8,16 @@ import (
 
 	"fmt"
 
-	"github.com/go-kit/kit/endpoint"
 	"context"
+
+	"github.com/go-kit/kit/endpoint"
 )
 
 func makeGetHTMLEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(getHTMLRequest)
 		v, err := svc.GetHTML(req.URL)
-		//fmt.Println("from makeGetHTMLEndpoint",request)
+		fmt.Println("from makeGetHTMLEndpoint",request)
 		//v, err := svc.GetHTML(request.(string))
 
 		if err != nil {
@@ -28,7 +29,6 @@ func makeGetHTMLEndpoint(svc ParseService) endpoint.Endpoint {
 		return v, nil
 	}
 }
-
 
 func makeMarshalDataEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
@@ -44,7 +44,7 @@ func makeMarshalDataEndpoint(svc ParseService) endpoint.Endpoint {
 }
 
 func makeCheckServicesEndpoint(svc ParseService) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {		
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		status := svc.CheckServices()
 		return status, nil
 	}
@@ -65,6 +65,7 @@ func decodeGetHTMLRequest(_ context.Context, r *http.Request) (interface{}, erro
 
 func decodeMarshalDataRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	request, err := ioutil.ReadAll(r.Body)
+	//fmt.Println("from decodeMarshalDataRequest",string(request))
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -132,14 +133,24 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	//return err
 }
 
+/*
 func encodeRequest(_ context.Context, r *http.Request, request interface{}) error {
-	fmt.Println("from encodeRequest", r)
-
+	//fmt.Println("from encodeRequest", string(request.([]uint8)))
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return err
 	}
 	r.Body = ioutil.NopCloser(&buf)
+	fmt.Println("from encodeRequest", r)
+
+	return nil
+}
+*/
+
+func encodeRequest(_ context.Context, r *http.Request, request interface{}) error {
+	var buf *bytes.Buffer
+	buf = bytes.NewBuffer(request.([]byte))
+	r.Body = ioutil.NopCloser(buf)
 	return nil
 }
 
@@ -151,20 +162,7 @@ type getHTMLRequest struct {
 	URL string `json:"url"`
 }
 
-type getHTMLResponse struct {
-	V   string `json:"v,omitempty"`
-	Err string `json:"err,omitempty"` // errors don't define JSON marshaling
-}
 
-type marshalDataRequest struct {
-	Format  string `json:"format"`
-	Payload string `json:"collections"`
-}
-
-type marshalDataResponse struct {
-	V   string `json:"v,omitempty"`
-	Err string `json:"err,omitempty"` // errors don't define JSON marshaling
-}
 
 type checkServicesResponse struct {
 	Status map[string]string `json:"status,omitempty"`
