@@ -1,8 +1,8 @@
 package parser
 
 type meta struct {
-	Name string `json:"name" xml:"name"`
-	URL  string `json:"url" xml:"url"`
+	Name   string `json:"name" xml:"name"`
+	URL    string `json:"url" xml:"url"`
 }
 
 type field struct {
@@ -29,14 +29,14 @@ type outItem struct {
 	meta
 	Items     []interface{} `json:"items"`
 	Fields    []string      `json:"-"`
-	Count     int         `json:"count"`
+	Count     int           `json:"count"`
 	CreatedAt int64         `json:"time"`
 }
 
 //Out structure stores output data
 //easyjson:json
 type Out struct {
-//	Format string `json:"format"`
+	//	Format string `json:"format"`
 	Element []outItem `json:"collections"`
 }
 

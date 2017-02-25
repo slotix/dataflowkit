@@ -2,12 +2,16 @@ package parser
 
 import (
 	"bytes"
+	"crypto/md5"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/garyburd/redigo/redis"
+	"github.com/spf13/viper"
 	"golang.org/x/net/html"
 )
 
@@ -19,6 +23,10 @@ func (p *Payloads) Parse() (Out, error) {
 	//parse input and fill Payload structure
 	out := Out{}
 
+	format := p.Format
+	if format == "" {
+		format = "json"
+	}
 	for _, collection := range p.Collections {
 		content, err := GetHTML(collection.URL)
 		if err != nil {
@@ -32,99 +40,6 @@ func (p *Payloads) Parse() (Out, error) {
 		out.Element = append(out.Element, outItem)
 	}
 	return out, nil
-}
-
-
-//genAttrFieldName generates field name according to attributes
-func (o *outItem) genAttrFieldName(fieldName string, sel *goquery.Selection) {
-	if _, exists := sel.Attr("href"); exists {
-		o.Fields = append(o.Fields, fmt.Sprintf("%s_text",
-			fieldName), fmt.Sprintf("%s_href", fieldName))
-	} else if _, exists := sel.Attr("src"); exists {
-		o.Fields = append(o.Fields, fmt.Sprintf("%s_src",
-			fieldName), fmt.Sprintf("%s_alt", fieldName))
-	} else {
-		o.Fields = append(o.Fields, fieldName)
-	}
-}
-
-type item struct {
-	value map[string]interface{}
-}
-
-//fillOutItem fills OutItem item values according to attributes
-func (i *item) fillOutItem(fieldName string, s *goquery.Selection) {
-
-	if len(s.Nodes) > 0 && s.Nodes[0].Type == html.ElementNode {
-		//fmt.Println("fillOut", s.Nodes[0].Data)
-		nodeType := s.Nodes[0].Data
-		//if href, exists := s.Attr("href"); exists {
-		if nodeType == "a" {
-			m := make(map[string]interface{})
-			if href, exists := s.Attr("href"); exists {
-				m["href"] = href
-				m["text"] = strings.TrimSpace(s.Text())
-				if title, exists := s.Attr("title"); exists {
-					m["title"] = strings.TrimSpace(title)
-				}
-				i.value[fieldName] = m
-			}
-			//	} else if src, exists := s.Attr("src"); exists {
-		} else if nodeType == "img" {
-
-			m := make(map[string]interface{})
-			if src, exists := s.Attr("src"); exists {
-				m["src"] = src
-				if alt, exists := s.Attr("alt"); exists {
-					m["alt"] = strings.TrimSpace(alt)
-				}
-				//	m["width"] = strings.TrimSpace(s.AttrOr("width", ""))
-				//	m["height"] = strings.TrimSpace(s.AttrOr("height", ""))
-				i.value[fieldName] = m
-			}
-		} else {
-			i.value[fieldName] = strings.TrimSpace(s.Text())
-		}
-	}
-}
-
-//fillOutItem fills OutItem item values according to attributes
-func (i *item) fillOutItemBackup(fieldName string, s *goquery.Selection) {
-
-	if href, exists := s.Attr("href"); exists {
-		m := make(map[string]interface{})
-		m["href"] = href
-		m["text"] = strings.TrimSpace(s.Text())
-		i.value[fieldName] = m
-
-	} else if src, exists := s.Attr("src"); exists {
-		m := make(map[string]interface{})
-		m["src"] = src
-		m["alt"] = strings.TrimSpace(s.AttrOr("alt", ""))
-		i.value[fieldName] = m
-	} else {
-		i.value[fieldName] = strings.TrimSpace(s.Text())
-		//item[fieldName] = strings.TrimSpace(s.Text())
-	}
-
-}
-
-func attrOrDataValue(s *goquery.Selection) (value string) {
-	attr, exists := s.Attr("class")
-	if exists {
-		//return fmt.Sprintf("%s%s", ".", attr)
-		return fmt.Sprintf(".%s", strings.Replace(strings.TrimSpace(attr), " ", ".", -1))
-	}
-	attr, exists = s.Attr("id")
-	if exists {
-		return fmt.Sprintf("#%s", attr)
-	}
-
-	return s.Nodes[0].Data
-}
-
-func dataValue(s *goquery.Selection) (value string) {
-	return s.Nodes[0].Data
 }
 
 //trying to determine common parent
@@ -252,6 +167,160 @@ func (o outItem) generateTable() (buf [][]string) {
 	return
 }
 
+//MarshalData parses payload raw JSON data and generates output
+//Here is an example of payload structure:
+/*	
+{"format":"json",
+	"collections": [
+            {
+            "name": "collection1",
+            "url": "http://example1.com",
+            "fields": [
+                {
+                    "field_name": "link",
+                    "css_selector": ".link a"
+                },
+                {
+                    "field_name": "Text",
+                    "css_selector": ".text"
+                },
+				{
+					"field_name": "Image",
+					"css_selector": ".foto img"
+				}
+            ]
+        }
+    ]
+}
+*/
+func MarshalData(payload []byte) ([]byte, error) {
+	rc := redisConn{
+		protocol: viper.GetString("redis.protocol"),
+		addr:     viper.GetString("redis.address")}
+	var err error
+	rc.conn, err = redis.Dial(rc.protocol, rc.addr)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %s", ErrRedisDown, err.Error())
+	}
+	defer rc.conn.Close()
+
+	var p Payloads
+	err = p.UnmarshalJSON(payload)
+	if err != nil {
+		return nil, err
+	}
+	if p.Format == "" {
+		p.Format = "json"
+	}
+	payloadMD5 := generateMD5(payload)
+	outRediskey := fmt.Sprintf("%s-%s", p.Format, payloadMD5)
+	outRedis, err := redis.Bytes(rc.conn.Do("GET", outRediskey))
+	if err == nil {
+		return outRedis, nil
+	}
+
+	//if there is no cached value in Redis
+	out, err := p.Parse()
+	if err != nil {
+		return nil, err
+	}
+	var b []byte
+	switch p.Format {
+	case "xml":
+		b, err = out.MarshalXML()
+	case "csv":
+		b, err = out.MarshalCSV()
+	default:
+		b, err = out.MarshalJSON()
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	reply, err := rc.conn.Do("SET", outRediskey, b)
+	if err != nil {
+		return nil, err
+	}
+	if reply.(string) == "OK" {
+
+		//set 1 hour before html content key expiration
+		rc.conn.Do("EXPIRE", outRediskey, viper.GetInt("redis.expire"))
+	}
+	return b, nil
+
+}
+
+//genAttrFieldName generates field name according to attributes
+func (o *outItem) genAttrFieldName(fieldName string, sel *goquery.Selection) {
+	if _, exists := sel.Attr("href"); exists {
+		o.Fields = append(o.Fields, fmt.Sprintf("%s_text",
+			fieldName), fmt.Sprintf("%s_href", fieldName))
+	} else if _, exists := sel.Attr("src"); exists {
+		o.Fields = append(o.Fields, fmt.Sprintf("%s_src",
+			fieldName), fmt.Sprintf("%s_alt", fieldName))
+	} else {
+		o.Fields = append(o.Fields, fieldName)
+	}
+}
+
+type item struct {
+	value map[string]interface{}
+}
+
+//fillOutItem fills OutItem item values according to attributes
+func (i *item) fillOutItem(fieldName string, s *goquery.Selection) {
+
+	if len(s.Nodes) > 0 && s.Nodes[0].Type == html.ElementNode {
+		//fmt.Println("fillOut", s.Nodes[0].Data)
+		nodeType := s.Nodes[0].Data
+		//if href, exists := s.Attr("href"); exists {
+		if nodeType == "a" {
+			m := make(map[string]interface{})
+			if href, exists := s.Attr("href"); exists {
+				m["href"] = href
+				m["text"] = strings.TrimSpace(s.Text())
+				if title, exists := s.Attr("title"); exists {
+					m["title"] = strings.TrimSpace(title)
+				}
+				i.value[fieldName] = m
+			}
+			//	} else if src, exists := s.Attr("src"); exists {
+		} else if nodeType == "img" {
+
+			m := make(map[string]interface{})
+			if src, exists := s.Attr("src"); exists {
+				m["src"] = src
+				if alt, exists := s.Attr("alt"); exists {
+					m["alt"] = strings.TrimSpace(alt)
+				}
+				//	m["width"] = strings.TrimSpace(s.AttrOr("width", ""))
+				//	m["height"] = strings.TrimSpace(s.AttrOr("height", ""))
+				i.value[fieldName] = m
+			}
+		} else {
+			i.value[fieldName] = strings.TrimSpace(s.Text())
+		}
+	}
+}
+
+func attrOrDataValue(s *goquery.Selection) (value string) {
+	attr, exists := s.Attr("class")
+	if exists {
+		//return fmt.Sprintf("%s%s", ".", attr)
+		return fmt.Sprintf(".%s", strings.Replace(strings.TrimSpace(attr), " ", ".", -1))
+	}
+	attr, exists = s.Attr("id")
+	if exists {
+		return fmt.Sprintf("#%s", attr)
+	}
+
+	return s.Nodes[0].Data
+}
+
+func dataValue(s *goquery.Selection) (value string) {
+	return s.Nodes[0].Data
+}
+
 //stringInSlice check if specified string in the slice of strings
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
@@ -282,4 +351,12 @@ func addStringSliceToSlice(in []string, out []string) {
 			out = append(out, s)
 		}
 	}
+}
+
+//func generateMD5(s string) string {
+func generateMD5(b []byte) []byte {
+	h := md5.New()
+	r := bytes.NewReader(b)
+	io.Copy(h, r)
+	return h.Sum(nil)
 }

@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	"github.com/go-kit/kit/endpoint"
-	"golang.org/x/net/context"
+	"context"
 )
 
 func makeGetHTMLEndpoint(svc ParseService) endpoint.Endpoint {

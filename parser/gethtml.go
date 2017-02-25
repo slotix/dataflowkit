@@ -68,8 +68,8 @@ func (r redisConn) getHTML(url string) ([]byte, error) {
 	return nil, err
 }
 
-//SetHTML pushes html buffer to Redis
-func (r redisConn) setHTML(url string, buf []byte) error {
+//saveHTML pushes html buffer to Redis
+func (r redisConn) saveHTML(url string, buf []byte) error {
 	reply, err := r.conn.Do("SET", url, buf)
 	if err != nil {
 		return err
@@ -133,7 +133,7 @@ func GetHTML(url string) ([]byte, error) {
 	content, err = s.getHTML(url)
 	if err == nil {
 		//push html content to redis
-		err1 := rc.setHTML(url, content)
+		err1 := rc.saveHTML(url, content)
 		if err1 != nil {
 			fmt.Printf("%s: %s", ErrRedisSave, err1.Error())
 		}

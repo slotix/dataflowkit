@@ -12,25 +12,9 @@ import (
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
+	"context"
 )
 
-// We need an object that implements the http.Handler interface.
-// Therefore we need a type for which we implement the ServeHTTP method.
-// We just use a map here, in which we map host names (with port) to http.Handlers
-type HostSwitch map[string]http.Handler
-
-// Implement the ServerHTTP method on our new type
-func (hs HostSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-    // Check if a http.Handler is registered for the given host.
-    // If yes, use it to handle the request.
-    if handler := hs[r.Host]; handler != nil {
-        handler.ServeHTTP(w, r)
-    } else {
-        // Handle host names for wich no handler is registered
-        http.Error(w, "Forbidden", 403) // Or Redirect?
-    }
-}
 
 
 func Init(port int) {
@@ -141,9 +125,6 @@ func Init(port int) {
 //	router.Handler("GET", "/", http.FileServer(http.Dir("web")))
 //	router.ServeFiles("/*filepath", http.Dir("web"))
 
-	
-	// Make a new HostSwitch and insert the router (our http handler)
-    // for example.com and port 12345
   
 	//	http.Handle("/gethtml", getHTMLHandler)
 	//	http.Handle("/marshaldata", marshalDataHandler)
@@ -155,13 +136,5 @@ func Init(port int) {
 	logger.Log("msg", "HTTP", "addr", port)
 	//logger.Log("err", http.ListenAndServe(fmt.Sprintf(":%d", port), router))
 	//logger.Log("err", http.ListenAndServe(fmt.Sprintf(":%d", port), router2))
-	// print env
-	env := os.Getenv("APP_ENV")
-	if env == "production" {
-		fmt.Println("Running api server in production mode")
-	} else {
-		fmt.Println("Running api server in dev mode")
-	}
-
 	logger.Log("err", http.ListenAndServe(fmt.Sprintf(":%d", port), router))
 }

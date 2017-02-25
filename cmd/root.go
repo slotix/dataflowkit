@@ -44,6 +44,7 @@ var RootCmd = &cobra.Command{
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Checking services ... ")
+		
 		status := server.CheckServices()
 		allAlive := true
 		for k, v := range status {
@@ -52,6 +53,7 @@ var RootCmd = &cobra.Command{
 				allAlive = false
 			}
 		}
+		
 		if allAlive {
 			fmt.Printf("Starting Server ... %d\n", serverPort)
 			server.Init(serverPort)
