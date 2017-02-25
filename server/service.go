@@ -1,19 +1,9 @@
 package server
 
 import (
-	"bytes"
-	"crypto/md5"
-	"fmt"
-	"io"
-
 	"github.com/go-kit/kit/log"
 	"github.com/slotix/dfk-parser/parser"
-	"github.com/spf13/viper"
-
-	"github.com/garyburd/redigo/redis"
 )
-
-//	"github.com/slotix/dfk-parser/parser"
 
 var logger log.Logger
 
@@ -21,7 +11,7 @@ var logger log.Logger
 type ParseService interface {
 	GetHTML(string) (string, error)
 	MarshalData(payload []byte) (string, error)
-	CheckServices()(status map[string]string)
+	CheckServices() (status map[string]string)
 	//	Save(payload []byte) (string, error)
 }
 
@@ -36,67 +26,19 @@ func (parseService) GetHTML(url string) (string, error) {
 }
 
 func (parseService) MarshalData(payload []byte) (string, error) {
-	redisConn, err := redis.Dial(viper.GetString("redis.protocol"),
-		viper.GetString("redis.address"))
-
-	var p parser.Payloads
-	err = p.UnmarshalJSON(payload)
+	res, err := parser.MarshalData(payload)
 	if err != nil {
 		return "", err
 	}
-	if p.Format == "" {
-		p.Format = "json"
-	}
-
-	payloadMD5 := generateMD5(payload)
-
-	outRediskey := fmt.Sprintf("%s-%s", p.Format, payloadMD5)
-	outRedis, err := redis.Bytes(redisConn.Do("GET", outRediskey))
-	if err == nil {
-		return string(outRedis), nil
-	}
-
-	//if there is no cached value in Redis
-	out, err := p.Parse()
-	if err != nil {
-		return "", err
-	}
-	var b []byte
-	switch p.Format {
-	case "xml":
-		b, err = out.MarshalXML()
-	case "csv":
-		b, err = out.MarshalCSV()
-	default:
-		b, err = out.MarshalJSON()
-	}
-	if err != nil {
-		return "", err
-	}
-
-	redisConn.Do("SET", outRediskey, b)
-	//set 1 hour before html content key expiration
-	redisConn.Do("EXPIRE", outRediskey, viper.GetInt("redis.expire"))
-
-	return string(b), nil
-
+	return string(res), nil
 }
 
 func (parseService) CheckServices() (status map[string]string) {
-	return CheckServices()//, allAlive
+	return CheckServices() //, allAlive
 }
-
 
 // ServiceMiddleware is a chainable behavior modifier for ParseService.
 type ServiceMiddleware func(ParseService) ParseService
-
-//func generateMD5(s string) string {
-func generateMD5(b []byte) []byte {
-	h := md5.New()
-	r := bytes.NewReader(b)
-	io.Copy(h, r)
-	return h.Sum(nil)
-}
 
 /*
 //MarshalData marshales data from Redis
