@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/go-kit/kit/log"
 	"github.com/slotix/dfk-parser/parser"
+	"fmt"
 )
 
 var logger log.Logger
@@ -28,6 +29,7 @@ func (parseService) GetHTML(url string) (string, error) {
 func (parseService) MarshalData(payload []byte) (string, error) {
 	res, err := parser.MarshalData(payload)
 	if err != nil {
+		fmt.Println("ERRRRRRR",err)
 		return "", err
 	}
 	return string(res), nil

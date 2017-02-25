@@ -34,6 +34,7 @@ var (
 	VERSION    string // VERSION is set during build
 	cfgFile    string
 	serverPort int
+	proxy      string
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -44,7 +45,7 @@ var RootCmd = &cobra.Command{
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Checking services ... ")
-		
+
 		status := server.CheckServices()
 		allAlive := true
 		for k, v := range status {
@@ -53,10 +54,10 @@ var RootCmd = &cobra.Command{
 				allAlive = false
 			}
 		}
-		
+
 		if allAlive {
 			fmt.Printf("Starting Server ... %d\n", serverPort)
-			server.Init(serverPort)
+			server.Init(serverPort, proxy)
 		}
 	},
 }
@@ -65,7 +66,7 @@ var RootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute(version string) {
 	VERSION = version
-	
+
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -79,6 +80,7 @@ func init() {
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
 	RootCmd.Flags().IntVarP(&serverPort, "port", "p", 8080, "Specify port for DFK Server")
+	RootCmd.Flags().StringVar(&proxy, "proxy", "", "Optional comma-separated list of URLs to proxy MarshalData requests")
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is the working directory)")
 }
 
