@@ -31,18 +31,42 @@ import (
 )
 
 var (
-	VERSION    string // VERSION is set during build
-	cfgFile    string
-	serverPort int
-	proxy      string
+	VERSION string // VERSION is set during build
+	cfgFile string
+	addr  string
+	proxy   string
 )
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "dfk-parser",
 	Short: "DataFlow Kit html parser",
-	Long: `DataFlow Kit html parser serves for scraping data from websites according to chosen css selectors. ...
-`,
+	Long: `DataFlow Kit html parser serves for scraping data from websites according to chosen css selectors.
+	Here is an example of payload structure:
+	
+	{"format":"json",
+		"collections": [
+				{
+				"name": "collection1",
+				"url": "http://example1.com",
+				"fields": [
+					{
+						"field_name": "link",
+						"css_selector": ".link a"
+					},
+					{
+						"field_name": "Text",
+						"css_selector": ".text"
+					},
+					{
+						"field_name": "Image",
+						"css_selector": ".foto img"
+					}
+				]
+			}
+		]
+	}
+	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Checking services ... ")
 
@@ -56,8 +80,8 @@ var RootCmd = &cobra.Command{
 		}
 
 		if allAlive {
-			fmt.Printf("Starting Server ... %d\n", serverPort)
-			server.Init(serverPort, proxy)
+			fmt.Printf("Starting Server ... %s\n", addr)
+			server.Init(addr, proxy)
 		}
 	},
 }
@@ -79,8 +103,8 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
-	RootCmd.Flags().IntVarP(&serverPort, "port", "p", 8080, "Specify port for DFK Server")
-	RootCmd.Flags().StringVar(&proxy, "proxy", "", "Optional comma-separated list of URLs to proxy MarshalData requests")
+	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":8000", "HTTP listen address")
+	RootCmd.Flags().StringVarP(&proxy, "proxy","p", "", "Optional comma-separated list of URLs to proxy MarshalData requests")
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is the working directory)")
 }
 

@@ -71,16 +71,16 @@ type proxymw struct {
 	parse endpoint.Endpoint // ...except Uppercase, which gets served by this endpoint
 }
 
-func (mw proxymw) GetHTML(url string) (string, error) {
+func (mw proxymw) GetHTML(url string) ([]byte, error) {
 	return mw.next.GetHTML(url)
 }
 
-func (mw proxymw) MarshalData(payload []byte) (string, error) {
+func (mw proxymw) MarshalData(payload []byte) ([]byte, error) {
 	response, err := mw.parse(mw.ctx, payload)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return response.(string), nil
+	return response.([]byte), nil
 }
 
 func makeMarshalDataProxy(ctx context.Context, instance string) endpoint.Endpoint {
