@@ -17,20 +17,8 @@ import (
 
 
 
-func Init(port int, proxy string) {
-	//config
-	/*
-		viper.SetConfigName("config")
-		viper.AddConfigPath(".././config")
-		viper.AddConfigPath("config")
-		viper.AddConfigPath("$GOPATH/src/dataflowkit/config")
-		viper.AddConfigPath("$GOPATH/bin/server")
-
-		err := viper.ReadInConfig() // Find and read the config file
-		if err != nil {             // Handle errors reading the config file
-			panic(fmt.Errorf("fatal error config file: %s", err))
-		}
-	*/
+func Init(addr string, proxy string) {
+	
 	/*
 		var (
 			httpAddr     = flag.String("http.addr", ":8000", "Address for HTTP (JSON) server")
@@ -38,18 +26,10 @@ func Init(port int, proxy string) {
 			retryMax     = flag.Int("retry.max", 3, "per-request retries to different instances")
 			retryTimeout = flag.Duration("retry.timeout", 500*time.Millisecond, "per-request timeout, including retries")
 		)*/
-	var (
-	//	listen = flag.String("listen", viper.GetString("server.port"), "HTTP listen address")
-	//listen = flag.String("listen", , "HTTP listen address")
-
-	//	proxy  = flag.String("proxy", "", "Optional comma-separated list of URLs to proxy parsing requests")
-	)
-	//flag.Parse()
-
+	
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
-	//logger = log.NewContext(logger).With("listen", *listen).With("caller", log.DefaultCaller)
-	logger = log.NewContext(logger).With("listen", port).With("caller", log.DefaultCaller)
+	logger = log.NewContext(logger).With("listen", addr).With("caller", log.DefaultCaller)
 
 	ctx := context.Background()
 
@@ -100,14 +80,11 @@ func Init(port int, proxy string) {
 		ctx,
 		makeCheckServicesEndpoint(svc),
 		decodeCheckServicesRequest,
-		encodeResponse,
+		encodeCheckServicesResponse,
 	)
 
-	//router := mux.NewRouter().StrictSlash(true)
-	//router.HandleFunc("/", heartbeat)
-	//logger.Log(http.ListenAndServe(":8080", router))
+	
 	router := httprouter.New()
-	//router.Handle("GET","/", http.FileServer(http.Dir("./")))
 	router.Handler("POST", "/app/gethtml", getHTMLHandler)
 	router.Handler("POST", "/app/marshaldata", marshalDataHandler)
 	router.Handler("POST", "/app/chkservices", checkServicesHandler)
@@ -122,19 +99,7 @@ func Init(port int, proxy string) {
 
 	router.Handler("GET", "/metrics", stdprometheus.Handler())
 	
-//	router.Handler("GET", "/", http.FileServer(http.Dir("web")))
-//	router.ServeFiles("/*filepath", http.Dir("web"))
 
-  
-	//	http.Handle("/gethtml", getHTMLHandler)
-	//	http.Handle("/marshaldata", marshalDataHandler)
-	//	http.Handle("/chkservices", checkServicesHandler)
-	//	http.Handle("/", http.FileServer(http.Dir("./")))
-	//	http.Handle("/metrics", stdprometheus.Handler())
-	//logger.Log("msg", "HTTP", "addr", *listen)
-	//logger.Log("err", http.ListenAndServe(*listen, nil))
-	logger.Log("msg", "HTTP", "addr", port)
-	//logger.Log("err", http.ListenAndServe(fmt.Sprintf(":%d", port), router))
-	//logger.Log("err", http.ListenAndServe(fmt.Sprintf(":%d", port), router2))
-	logger.Log("err", http.ListenAndServe(fmt.Sprintf(":%d", port), router))
+	logger.Log("msg", "HTTP", "addr", addr)
+	logger.Log("err", http.ListenAndServe(addr, router))
 }
