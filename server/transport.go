@@ -21,7 +21,8 @@ func makeGetHTMLEndpoint(svc ParseService) endpoint.Endpoint {
 
 		if err != nil {
 			//	return getHTMLResponse{v, err.Error()}, nil
-			return errResponse{err.Error()}, nil
+//			return errResponse{err.Error()}, nil
+			return nil, err
 
 		}
 		//return getHTMLResponse{v, ""}, nil
@@ -34,7 +35,8 @@ func makeMarshalDataEndpoint(svc ParseService) endpoint.Endpoint {
 		//	fmt.Println("from makeMarshalDataEndpoint",string(request.([]byte)))
 		v, err := svc.MarshalData(request.([]byte))
 		if err != nil {
-			return errResponse{err.Error()}, nil
+			//return errResponse{err.Error()}, nil
+			return nil, err
 		}
 		return v, nil
 	}
@@ -129,9 +131,9 @@ func encodeRequest(_ context.Context, r *http.Request, request interface{}) erro
 	return nil
 }
 
-type errResponse struct {
-	Err string `json:"err,omitempty"`
-}
+//type errResponse struct {
+//	Err string `json:"err,omitempty"`
+//}
 
 type getHTMLRequest struct {
 	URL string `json:"url"`

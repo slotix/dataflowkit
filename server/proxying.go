@@ -30,7 +30,7 @@ func proxyingMiddleware(ctx context.Context, instances string, logger log.Logger
 	var (
 		qps         = 100                    // beyond which we will return an error
 		maxAttempts = 3                      // per request, before giving up
-		maxTime     = 2500 * time.Millisecond // wallclock time, before giving up
+		maxTime     = 5000 * time.Millisecond // wallclock time, before giving up
 	)
 
 	// Otherwise, construct an endpoint for each instance in the list, and add
@@ -94,7 +94,7 @@ func makeMarshalDataProxy(ctx context.Context, instance string) endpoint.Endpoin
 	if u.Path == "" {
 		u.Path = "/app/marshaldata"
 	}
-    fmt.Println("u", u)
+    
     
 	return httptransport.NewClient(
 		"POST",
