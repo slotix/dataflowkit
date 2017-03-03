@@ -1,0 +1,122 @@
+.ng-busy {z-index: 1002;
+}
+.ng-busy,
+.ng-busy > *,
+.ng-busy > dynamiccomponent > * {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+}
+.ng-busy-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1001;
+  background: #fff;
+  opacity: .7;
+}
+.ng-busy-default-wrapper {
+  text-align: center;
+}
+.ng-busy-default-sign {
+  position: relative;
+  display: inline-block;
+  z-index: 1003;
+  padding: 12px 14px;
+  border: 1px solid #d8d8d8;
+  border-top: 0;
+  border-radius: 4px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  background: #f8f8f8;
+  color: #333;
+}
+.ng-busy-default-text {
+  display: inline-block;
+  margin-left: 6px;
+  max-width: 400px;
+  font-size: 14px;
+  text-align: left;
+}
+.ng-busy-default-spinner {
+  position: relative;
+  display: inline-block;
+  width: 25px;
+  height: 25px;
+  vertical-align: middle;
+}
+.ng-busy-default-spinner div {
+  position: absolute;
+  left: 44.5%;
+  top: 37%;
+  width: 10%;
+  height: 26%;
+  background: #666;
+  border-radius: 50px;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  animation: busy-spinner-anim 1s linear infinite;
+}
+.ng-busy-default-spinner .bar1 {
+  transform: rotate(0deg) translate(0, -142%);
+  animation-delay: -1s;
+}
+.ng-busy-default-spinner .bar2 {
+  transform: rotate(30deg) translate(0, -142%);
+  animation-delay: -0.91666667s;
+}
+.ng-busy-default-spinner .bar3 {
+  transform: rotate(60deg) translate(0, -142%);
+  animation-delay: -0.83333333s;
+}
+.ng-busy-default-spinner .bar4 {
+  transform: rotate(90deg) translate(0, -142%);
+  animation-delay: -0.75s;
+}
+.ng-busy-default-spinner .bar5 {
+  transform: rotate(120deg) translate(0, -142%);
+  animation-delay: -0.66666667s;
+}
+.ng-busy-default-spinner .bar6 {
+  transform: rotate(150deg) translate(0, -142%);
+  animation-delay: -0.58333333s;
+}
+.ng-busy-default-spinner .bar7 {
+  transform: rotate(180deg) translate(0, -142%);
+  animation-delay: -0.5s;
+}
+.ng-busy-default-spinner .bar8 {
+  transform: rotate(210deg) translate(0, -142%);
+  animation-delay: -0.41666667s;
+}
+.ng-busy-default-spinner .bar9 {
+  transform: rotate(240deg) translate(0, -142%);
+  animation-delay: -0.33333333s;
+}
+.ng-busy-default-spinner .bar10 {
+  transform: rotate(270deg) translate(0, -142%);
+  animation-delay: -0.25s;
+}
+.ng-busy-default-spinner .bar11 {
+  transform: rotate(300deg) translate(0, -142%);
+  animation-delay: -0.16666667s;
+}
+.ng-busy-default-spinner .bar12 {
+  transform: rotate(330deg) translate(0, -142%);
+  animation-delay: -0.08333333s;
+}
+@keyframes busy-spinner-anim {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.25;
+  }
+}
+
+/*# sourceMappingURL=vendor.css.map*/
