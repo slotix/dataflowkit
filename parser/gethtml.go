@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	"time"
 
@@ -81,9 +82,10 @@ func (r redisConn) saveHTML(url string, buf []byte) error {
 	return nil
 }
 
-func (s splashConn) getHTML(url string) ([]byte, error) {
+func (s splashConn) getHTML(addr string) ([]byte, error) {
 	client := &http.Client{}
-	splashURL := fmt.Sprintf("%s%s?url=%s&timeout=%d&resource_timeout=%d&wait=%d", viper.GetString("splash.base-url"), viper.GetString("splash.render-html"), url, s.timeout, s.resourceTimeout, s.wait)
+	splashURL := fmt.Sprintf("%s%s?&url=%s&timeout=%d&resource_timeout=%d&wait=%d", viper.GetString("splash.base-url"), viper.GetString("splash.render-html"), url.QueryEscape(addr), s.timeout, s.resourceTimeout, s.wait)
+	fmt.Println(splashURL)
 	req, err := http.NewRequest("GET", splashURL, nil)
 	req.SetBasicAuth(s.userName, s.userPass)
 	resp, err := client.Do(req)
@@ -133,10 +135,10 @@ func GetHTML(url string) ([]byte, error) {
 	content, err = s.getHTML(url)
 	if err == nil {
 		//push html content to redis
-		err1 := rc.saveHTML(url, content)
-		if err1 != nil {
-			fmt.Printf("%s: %s", ErrRedisSave, err1.Error())
-		}
+		//	err1 := rc.saveHTML(url, content)
+		//	if err1 != nil {
+		//		fmt.Printf("%s: %s", ErrRedisSave, err1.Error())
+		//	}
 		return content, nil
 	}
 	return nil, err
