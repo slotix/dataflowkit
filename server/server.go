@@ -30,7 +30,7 @@ func Init(addr string, proxy string) {
 	logger = log.NewLogfmtLogger(os.Stderr)
 	logger = log.NewContext(logger).With("listen", addr).With("caller", log.DefaultCaller)
 
-	ctx := context.Background()
+	//ctx := context.Background()
 
 	fieldKeys := []string{"method", "error"}
 
@@ -55,26 +55,23 @@ func Init(addr string, proxy string) {
 
 	var svc ParseService
 	svc = parseService{}
-	svc = proxyingMiddleware(ctx, proxy, logger)(svc)
+	svc = proxyingMiddleware(context.Background(), proxy, logger)(svc)
 	svc = loggingMiddleware(logger)(svc)
 	svc = instrumentingMiddleware(requestCount, requestLatency, countResult)(svc)
 
 	getHTMLHandler := httptransport.NewServer(
-		ctx,
 		makeGetHTMLEndpoint(svc),
 		decodeGetHTMLRequest,
 		encodeResponse,
 	)
 
 	marshalDataHandler := httptransport.NewServer(
-		ctx,
 		makeMarshalDataEndpoint(svc),
 		decodeMarshalDataRequest,
 		encodeResponse,
 	)
 
 	checkServicesHandler := httptransport.NewServer(
-		ctx,
 		makeCheckServicesEndpoint(svc),
 		decodeCheckServicesRequest,
 		encodeCheckServicesResponse,
@@ -87,7 +84,7 @@ func Init(addr string, proxy string) {
 	//router.Handler("GET", "/", http.FileServer(http.Dir("web/")))
 	//router.ServeFiles("/static/*filepath", http.Dir("web/static"))
 	router.ServeFiles("/static/*filepath", http.Dir("web/static"))
-	
+
 	//router.HandlerFunc("GET", "/test1", func(w http.ResponseWriter, r *http.Request) {
 	//	fmt.Fprintln(w, "___TEST___")
 	//})

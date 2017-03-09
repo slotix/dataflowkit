@@ -50,6 +50,8 @@ type redisConn struct {
 }
 
 type splashConn struct {
+	baseURL         string
+	renderHTML      string
 	timeout         int
 	resourceTimeout int
 	wait            int
@@ -63,6 +65,7 @@ type directConn struct {
 func (r redisConn) getHTML(url string) ([]byte, error) {
 	//Get a key
 	content, err := redis.Bytes(r.conn.Do("GET", url))
+	logger.Println(url, err)
 	if err == nil {
 		return content, nil
 	}
@@ -75,6 +78,7 @@ func (r redisConn) saveHTML(url string, buf []byte) error {
 	if err != nil {
 		return err
 	}
+		//fmt.Printf("savehtml...%s. %v\n", url, reply)
 	if reply.(string) == "OK" {
 		//set 1 hour 3600 before html content key expiration
 		r.conn.Do("EXPIRE", url, viper.GetInt("redis.expire"))
@@ -84,8 +88,7 @@ func (r redisConn) saveHTML(url string, buf []byte) error {
 
 func (s splashConn) getHTML(addr string) ([]byte, error) {
 	client := &http.Client{}
-	splashURL := fmt.Sprintf("%s%s?&url=%s&timeout=%d&resource_timeout=%d&wait=%d", viper.GetString("splash.base-url"), viper.GetString("splash.render-html"), url.QueryEscape(addr), s.timeout, s.resourceTimeout, s.wait)
-	fmt.Println(splashURL)
+	splashURL := fmt.Sprintf("%s%s?&url=%s&timeout=%d&resource_timeout=%d&wait=%d", s.baseURL, s.renderHTML, url.QueryEscape(addr), s.timeout, s.resourceTimeout, s.wait)
 	req, err := http.NewRequest("GET", splashURL, nil)
 	req.SetBasicAuth(s.userName, s.userPass)
 	resp, err := client.Do(req)
@@ -111,9 +114,13 @@ func GetHTML(url string) ([]byte, error) {
 	if url == "" {
 		return nil, errURLEmpty
 	}
+	//rc := redisConn{
+	//	protocol: viper.GetString("redis.protocol"),
+	//	addr:     viper.GetString("redis.address")}
 	rc := redisConn{
-		protocol: viper.GetString("redis.protocol"),
-		addr:     viper.GetString("redis.address")}
+		protocol: "tcp",
+		addr:     "localhost:6379"}
+
 	var err error
 	rc.conn, err = redis.Dial(rc.protocol, rc.addr)
 	if err != nil {
@@ -126,19 +133,30 @@ func GetHTML(url string) ([]byte, error) {
 		return content, nil
 	}
 	//if there is nothing in Redis get content from Splash server - javascript rendering service
+	/*
+		s := splashConn{
+			timeout:         viper.GetInt("splash.timeout"),
+			resourceTimeout: viper.GetInt("splash.resource-timeout"),
+			wait:            viper.GetInt("splash.wait"), //wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
+			userName:        viper.GetString("splash.username"),
+			userPass:        viper.GetString("splash.userpass")}
+	*/
 	s := splashConn{
-		timeout:         viper.GetInt("splash.timeout"),
-		resourceTimeout: viper.GetInt("splash.resource-timeout"),
-		wait:            viper.GetInt("splash.wait"), //wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
-		userName:        viper.GetString("splash.username"),
-		userPass:        viper.GetString("splash.userpass")}
+		baseURL:         "http://localhost:8050/",
+		renderHTML:      "render.html",
+		timeout:         20,
+		resourceTimeout: 30,
+		wait:            1, //wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
+		userName:        "user",
+		userPass:        "userpass"}
 	content, err = s.getHTML(url)
 	if err == nil {
 		//push html content to redis
-		//	err1 := rc.saveHTML(url, content)
-		//	if err1 != nil {
-		//		fmt.Printf("%s: %s", ErrRedisSave, err1.Error())
-		//	}
+		
+		err1 := rc.saveHTML(url, content)
+		if err1 != nil {
+			fmt.Printf("%s: %s", ErrRedisSave, err1.Error())
+		}
 		return content, nil
 	}
 	return nil, err
