@@ -39,5 +39,6 @@ _testmain.go
 vendor/
 
 dfk-parser
+dfk-parser_linux
 config/dfk-server.service
 deploy.sh
