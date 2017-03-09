@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -15,6 +17,12 @@ import (
 	"golang.org/x/net/html"
 )
 
+var logger *log.Logger
+
+func init() {
+	logger = log.New(os.Stdout, "parser: ", log.Lshortfile)
+}
+
 var errNoSelectors = errors.New("No selectors found")
 var errEmptyURL = errors.New("URL is empty")
 
@@ -22,11 +30,6 @@ var errEmptyURL = errors.New("URL is empty")
 func (p *Payloads) Parse() (Out, error) {
 	//parse input and fill Payload structure
 	out := Out{}
-
-	format := p.Format
-	if format == "" {
-		format = "json"
-	}
 	for _, collection := range p.Collections {
 		content, err := GetHTML(collection.URL)
 		if err != nil {
@@ -169,7 +172,7 @@ func (o outItem) generateTable() (buf [][]string) {
 
 //MarshalData parses payload raw JSON data and generates output
 //Here is an example of payload structure:
-/*	
+/*
 {"format":"json",
 	"collections": [
             {
@@ -225,6 +228,7 @@ func MarshalData(payload []byte) ([]byte, error) {
 		return nil, err
 	}
 	var b []byte
+	//logger.Println("FORMAT", p.Format)
 	switch p.Format {
 	case "xml":
 		b, err = out.MarshalXML()
@@ -242,12 +246,10 @@ func MarshalData(payload []byte) ([]byte, error) {
 		return nil, err
 	}
 	if reply.(string) == "OK" {
-
 		//set 1 hour before html content key expiration
 		rc.conn.Do("EXPIRE", outRediskey, viper.GetInt("redis.expire"))
 	}
 	return b, nil
-
 }
 
 //genAttrFieldName generates field name according to attributes

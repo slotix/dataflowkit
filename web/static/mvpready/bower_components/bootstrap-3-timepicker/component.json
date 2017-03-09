@@ -1,0 +1,36 @@
+{
+  "name": "bootstrap-3-timepicker",
+  "version": "0.2.5",
+  "description": "A timepicker component for Bootstrap 3",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jdewit/bootstrap-timepicker"
+  },
+  "main": [
+    "js/bootstrap-timepicker.min.js",
+    "css/bootstrap-timepicker.min.css"
+  ],
+  "dependencies": {
+    "bootstrap": ">=3.0",
+    "jquery": ">=1.8.3",
+    "autotype": "https://raw.github.com/mmonteleone/jquery.autotype/master/jquery.autotype.js"
+  },
+  "homepage": "https://github.com/rendom/bootstrap-3-timepicker",
+  "authors": [
+    "Rendom <a@vvt.nu>"
+  ],
+  "keywords": [
+    "timepicker",
+    "bootstrap",
+    "timepick"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "spec/js/libs/",
+    "test",
+    "tests"
+  ]
+}

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html lang="en" class="no-js">
+<!--<![endif]-->
+
+<head>
+    <title>How to use Dataflow kit</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Google Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400italic,600,600italic,800,800italic">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald:400,300,700">
+
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="static/mvpready/bower_components/fontawesome/css/font-awesome.min.css">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="static/mvpready/bower_components/bootstrap/dist/css/bootstrap.min.css">
+
+
+
+    <!-- App CSS -->
+    <link rel="stylesheet" href="static/mvpready/css/mvpready-admin.css">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="favicon.ico">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+  <script src="//oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+  <script src="//oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+  <![endif]-->
+    <style>
+        .counter {
+            margin-left: 0;
+            padding-right: 0;
+            list-style-type: none;
+            font-size: 18px;
+        }
+
+        .counter li {
+            counter-increment: step-counter;
+            margin-bottom: 10px;
+        }
+
+        .counter li::before {
+            content: counter(step-counter);
+            display: inline-block;
+            position: relative;
+            width: 24px;
+            height: 24px;
+            margin-right: 8px;
+            color: grey;
+            text-align: center;
+            font-size: inherit;
+            font-size: 15px;
+            font-weight: 800;
+            line-height: 22px;
+            border: 1px solid #ccc;
+            border-radius: 100px;
+        }
+
+        .tab {
+            background-color: #d74b4b;
+            color: white;
+            padding: 5px 12px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            font-family: 'Open Sans', 'Trebuchet MS', arial, sans-serif;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content">
+
+        <div class="container">
+            <div class="portlet portlet-boxed">
+                <div class="portlet-body">
+                    <br class="xs-40">
+                    <div class="blank-slate-icon">
+                        <i class="fa fa-info text-primary"></i>
+                    </div>
+                    <h3 class="blank-slate-title" style="text-align: center">How to use Dataflow kit</h3>
+
+                    <ol class="counter">
+                        <li> Enter web site address on the top to load a webpage you want to extract data from. Follow
+                            the next steps to extract data with Dataflow Kit. </li>
+                        <li>Start selecting elements on the loaded page in <span class="tab">Web</span> tab by clicking <i class="fa fa-plus-circle text-secondary"></i>                            button on the left side.
+                            <p style="margin-left: 33px;">'Selection mode' will be turned on and the
+                                <i class="fa fa-plus-circle text-secondary"></i> icon will be exchanged with <i class="fa fa-check-circle text-secondary"></i></p>
+                        </li>
+                        <li>Click on the first element on the page to be matched by selector. It will be highlighted in
+                            <span style="border-bottom:5px solid #22FF07;">Green</span>.
+                            <p style="margin-left: 33px;">A special rule (CSS Selector) for extracting the data will be generated. <br/>Dataflow Kit will
+                                suggest similar elements that you may also want to select and mark them in
+                                <span style="border-bottom:5px solid #FFFF44;">Yellow</span>.</p>
+                        </li>
+                        <li> Click on a highlighted element removes it from selection and turns an element's colour to
+                            <span style="border-bottom:5px solid #FB0007;">Red</span>.
+                        </li>
+                        <li>Otherwise, you can click on unhighlighted element to add it to the current selection.
+                            <p style="margin-left: 33px; margin-top: 10px; margin-bottom: 20px;">Iterative process of selection and rejection (steps 4 and 5) helps to specify more precisely
+                                the rules for data scraping.<br/> Holding 'shift' key while moving the mouse over selections
+                                will let you select elements inside them.
+                            </p>
+                        </li>
+                        <li>Press <i class="fa fa-check-circle text-secondary"></i> button to finish selection process. Specified
+                            Selectors will be added to your Collection. 
+                             <p style="margin-left: 33px; margin-top: 10px; margin-bottom: 20px;">
+                            <span class="badge badge-secondary">18</span>
+                            The number in a circle near selector is the count
+                            of elements selected.</p></li>
+                        <li>Once you have selected all the data you want for your first selector, you can repeat steps from 2
+                            to 6 to add more ones to the Collection.
+                        </li>
+                        <li>Click <span class="tab">Data</span> tab after selection of all necessary elements on the page.
+                        <p style="margin-left: 33px; margin-top: 10px; margin-bottom: 20px;">Now you can review extracted data and save it to either one of the following formats: CSV, JSON, Microsoft Excel or XML.</p></li>
+                    </ol>
+
+                    <br class="xs-40">
+                </div>
+                <!-- /.portlet-body -->
+            </div>
+            <!-- /.portlet portlet-boxed -->
+
+        </div>
+        <!-- /.container -->
+    </div>
+</body>
+
+</html>

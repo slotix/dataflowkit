@@ -1,6 +1,10 @@
 package server
 
 import (
+	"time"
+
+	"fmt"
+
 	"github.com/go-kit/kit/log"
 	"github.com/slotix/dfk-parser/parser"
 )
@@ -18,6 +22,9 @@ type ParseService interface {
 type parseService struct{}
 
 func (parseService) GetHTML(url string) ([]byte, error) {
+	defer func(begin time.Time) {
+		fmt.Println("took", time.Since(begin))
+	}(time.Now())
 	content, err := parser.GetHTML(url)
 	if err != nil {
 		return nil, err

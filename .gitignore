@@ -12,6 +12,7 @@ aquarium
 competitors
 config
 1stuff
+
 .vscode/*
 .idea/*
 !.vscode/settings.json
@@ -39,3 +40,4 @@ vendor/
 
 dfk-parser
 config/dfk-server.service
+deploy.sh

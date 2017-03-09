@@ -1,0 +1,14 @@
+{
+  "name": "downcount",
+  "homepage": "https://github.com/sonnyt/downCount",
+  "version": "1.0.0",
+  "_release": "1.0.0",
+  "_resolution": {
+    "type": "version",
+    "tag": "1.0.0",
+    "commit": "6425edc08d263d379fa90d03d1004003e809e0af"
+  },
+  "_source": "https://github.com/sonnyt/downCount.git",
+  "_target": "~1.0.0",
+  "_originalSource": "downcount"
+}

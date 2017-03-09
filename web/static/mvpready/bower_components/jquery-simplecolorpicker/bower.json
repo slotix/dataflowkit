@@ -1,0 +1,11 @@
+{
+    "name": "jquery-simplecolorpicker",
+    "version": "0.3.0",
+    "dependencies": {
+        "jquery": ">=1.10"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/tkrotoff/jquery-simplecolorpicker.git"
+    }
+}

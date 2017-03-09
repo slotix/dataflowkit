@@ -1,0 +1,13 @@
+{
+  "name": "datatables-helper",
+  "homepage": "https://github.com/rodh/datatables-helper",
+  "_release": "79442a8fe2",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "79442a8fe23ea32bcc66e7d316c3ad4895a4a4c6"
+  },
+  "_source": "git://github.com/rodh/datatables-helper.git",
+  "_target": "*",
+  "_originalSource": "rodh/datatables-helper"
+}
