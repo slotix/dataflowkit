@@ -14,9 +14,9 @@ import (
 //import "github.com/clbanning/mxj"
 
 //MarshalXML Marshales harvested data as XML
-func (out *Out) MarshalXML() ([]byte, error) {
+func (cols *Collections) MarshalXML() ([]byte, error) {
 	mxj.XMLEscapeChars(true)
-	m, err := mxj.NewMapStruct(out)
+	m, err := mxj.NewMapStruct(cols)
 	if err != nil {
 		return nil, err
 	}
@@ -28,14 +28,14 @@ func (out *Out) MarshalXML() ([]byte, error) {
 	return b, nil
 }
 
-func (out *Out) saveXML(fName string) error {
+func (cols *Collections) saveXML(fName string) error {
 	f, err := os.Create(fName)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	b, err := out.MarshalXML()
+	b, err := cols.MarshalXML()
 	if err != nil {
 		return err
 	}

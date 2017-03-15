@@ -5,14 +5,14 @@ import (
 	"os"
 )
 
-func (out *Out) saveJSON(fName string) error {
+func (cols *Collections) saveJSON(fName string) error {
 	f, err := os.Create(fName)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	b, err := out.MarshalJSON()
+	b, err := cols.MarshalJSON()
 	if err != nil {
 		return err
 	}
