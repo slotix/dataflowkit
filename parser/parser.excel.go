@@ -12,16 +12,16 @@ import (
 var file *xlsx.File
 
 //SaveExcel stores harvested data to Excel file
-func (out Out) SaveExcel(fName string) ([]byte, error) {
+func (cols Collections) SaveExcel(fName string) ([]byte, error) {
 	var sheet *xlsx.Sheet
 	var err error
 	file = xlsx.NewFile()
-	for _, o := range out.Element {
-		sheet, err = file.AddSheet(o.meta.Name)
+	for _, c := range cols.Element {
+		sheet, err = file.AddSheet(c.meta.Name)
 		if err != nil {
 			fmt.Printf(err.Error())
 		}
-		o.marshalExcelSheet(sheet)
+		c.marshalExcelSheet(sheet)
 	}
 	err = file.Save(fName)
 	if err != nil {
@@ -30,8 +30,8 @@ func (out Out) SaveExcel(fName string) ([]byte, error) {
 	return nil, nil
 }
 
-func (o outItem) marshalExcelSheet(sheet *xlsx.Sheet) {
-	buf := o.generateTable()
+func (c collection) marshalExcelSheet(sheet *xlsx.Sheet) {
+	buf := c.generateTable()
 	var row *xlsx.Row
 	for _, item := range buf {
 		row = sheet.AddRow()

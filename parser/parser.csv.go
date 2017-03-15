@@ -8,10 +8,10 @@ import (
 )
 
 //MarshalCSV Marshales harvested data as CSV tables
-func (out Out) MarshalCSV() ([]byte, error) {
+func (cols Collections) MarshalCSV() ([]byte, error) {
 
 	tables := CSVTableCollection{}
-	for _, o := range out.Element {
+	for _, o := range cols.Element {
 		tables.Tables = append(tables.Tables, o.marshalCSVItem())
 	}
 	buf, err := tables.MarshalJSON()
@@ -21,19 +21,19 @@ func (out Out) MarshalCSV() ([]byte, error) {
 	return buf, nil
 }
 
-func (o outItem) marshalCSVItem() CSVTable {
+func (c collection) marshalCSVItem() CSVTable {
 	var b bytes.Buffer
 	writer := csv.NewWriter(&b)
 	str := viper.GetString("parser.CSV.comma")
 	r := rune(str[0])
 	writer.Comma = r
 
-	buf := o.generateTable()
+	buf := c.generateTable()
 
 	writer.WriteAll(buf)
 	writer.Flush()
 	var table CSVTable
-	table.URL = o.URL
+	table.URL = c.URL
 	table.Content = string(b.Bytes())
 	return table
 }

@@ -30,7 +30,7 @@ func proxyingMiddleware(ctx context.Context, instances string, logger log.Logger
 	var (
 		qps         = 100                    // beyond which we will return an error
 		maxAttempts = 3                      // per request, before giving up
-		maxTime     = 5000 * time.Millisecond // wallclock time, before giving up
+		maxTime     = 20000 * time.Millisecond // wallclock time, before giving up
 	)
 
 	// Otherwise, construct an endpoint for each instance in the list, and add

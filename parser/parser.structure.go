@@ -1,8 +1,8 @@
 package parser
 
 type meta struct {
-	Name   string `json:"name" xml:"name"`
-	URL    string `json:"url" xml:"url"`
+	Name string `json:"name" xml:"name"`
+	URL  string `json:"url" xml:"url"`
 }
 
 type field struct {
@@ -14,18 +14,19 @@ type field struct {
 
 type payload struct {
 	meta
+	
 	Fields []field `json:"fields"`
 }
 
-//Payloads structure stores input data
+//Parser structure stores input format and collections CSS Selectors
 //easyjson:json
-type Payloads struct {
-	Format      string    `json:"format"`
+type Parser struct {
+	Format string  `json:"format"`
 	Collections []payload `json:"collections"`
 }
 
 //easyjson:json
-type outItem struct {
+type collection struct {
 	meta
 	Items     []interface{} `json:"items"`
 	Fields    []string      `json:"-"`
@@ -33,11 +34,11 @@ type outItem struct {
 	CreatedAt int64         `json:"time"`
 }
 
-//Out structure stores output data
+//Collections structure stores output data
 //easyjson:json
-type Out struct {
+type Collections struct {
 	//	Format string `json:"format"`
-	Element []outItem `json:"collections"`
+	Element []collection `json:"collections"`
 }
 
 //CSVTable structure stores output data

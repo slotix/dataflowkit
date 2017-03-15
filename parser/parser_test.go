@@ -35,9 +35,9 @@ import (
 //http://www.bestbuy.com
 //http://www.homedepot.com
 
-func prepareData() Out {
+func prepareData() Collections {
 	viper.SetConfigName("../.dfk-parser") // name of config file (without extension)
-	viper.AddConfigPath(".")           // look for config in the working directory
+	viper.AddConfigPath(".")              // look for config in the working directory
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -281,7 +281,7 @@ func prepareData() Out {
 
 	 */
 
-	var p Payloads
+	var p Parser
 	err := p.UnmarshalJSON(payloads["heureka"])
 	if err != nil {
 
@@ -294,7 +294,7 @@ func prepareData() Out {
 	return out
 }
 
-func (out *Out) marshalXML() {
+func (out *Collections) marshalXML() {
 	buf, err := out.MarshalXML()
 	if err != nil {
 		log.Println(err)
@@ -312,7 +312,7 @@ func (out *Out) marshalCSV() {
 }
 */
 
-func (out *Out) marshalJSON() {
+func (out *Collections) marshalJSON() {
 	buf, err := out.MarshalJSON()
 	if err != nil {
 		log.Println(err)

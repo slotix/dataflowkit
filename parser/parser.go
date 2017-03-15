@@ -2,18 +2,14 @@ package parser
 
 import (
 	"bytes"
-	"crypto/md5"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/garyburd/redigo/redis"
-	"github.com/spf13/viper"
 	"golang.org/x/net/html"
 )
 
@@ -26,10 +22,23 @@ func init() {
 var errNoSelectors = errors.New("No selectors found")
 var errEmptyURL = errors.New("URL is empty")
 
+//NewParser initializes new Parser struct
+func NewParser(payload []byte) (Parser, error) {
+	var p Parser
+	err := p.UnmarshalJSON(payload)
+	if err != nil {
+		return p, err
+	}
+	if p.Format == "" {
+		p.Format = "json"
+	}
+	return p, nil
+}
+
 //Parse parses payload json structure and generate Out to be serializes as JSON, XML, CSV, Excel
-func (p *Payloads) Parse() (Out, error) {
+func (p *Parser) Parse() (Collections, error) {
 	//parse input and fill Payload structure
-	out := Out{}
+	out := Collections{}
 	for _, collection := range p.Collections {
 		content, err := GetHTML(collection.URL)
 		if err != nil {
@@ -45,25 +54,37 @@ func (p *Payloads) Parse() (Out, error) {
 	return out, nil
 }
 
-//trying to determine common parent
-func (p *payload) parseItem(h []byte) (outItem outItem, err error) {
-	//var pr = fmt.Println
-	outItem.Name = p.Name
-	outItem.URL = p.URL
+//NewCollection initializes new collection
+func newCollection(p *payload) (collection, error) {
+	c := collection{
+		meta: meta{
+			Name: p.Name,
+			URL:  p.URL,
+		},
+	}
 	if p.URL == "" {
-		return outItem, errEmptyURL
+		return c, errEmptyURL
 	}
 	if len(p.Fields) == 0 {
-		return outItem, errNoSelectors
+		return c, errNoSelectors
+	}
+	return c, nil
+}
+
+//trying to determine common parent
+func (p *payload) parseItem(h []byte) (col collection, err error) {
+	col, err = newCollection(p)
+	if err != nil {
+		return col, err
 	}
 	node, err := html.Parse(bytes.NewReader(h))
 
 	if err != nil {
-		return outItem, err
+		return col, err
 	}
 	doc := goquery.NewDocumentFromNode(node)
 	if err != nil {
-		return outItem, err
+		return col, err
 	}
 
 	//Find closest intersection of all parents for payload fields
@@ -78,10 +99,10 @@ func (p *payload) parseItem(h []byte) (outItem outItem, err error) {
 		}
 		//pr(intersection.Length())
 		sel := doc.Find(f.CSSSelector)
-		outItem.genAttrFieldName(f.FieldName, sel)
+		col.genAttrFieldName(f.FieldName, sel)
 	}
 	if intersection.Length() == 0 {
-		return outItem, errNoSelectors
+		return col, errNoSelectors
 	}
 	//pr(intersection.Length())
 	//Adding Intersection parent to the path for more precise.
@@ -100,47 +121,47 @@ func (p *payload) parseItem(h []byte) (outItem outItem, err error) {
 	items := doc.Find(intersectionWithParent)
 
 	//	pr("items", items.Length())
-	var inters *goquery.Selection
+	var inter1 *goquery.Selection
 	if items.Length() == 1 {
-		inters = items.Children()
+		inter1 = items.Children()
 	}
 	if items.Length() > 1 {
-		inters = items
+		inter1 = items
 	}
 
-	inters.Each(func(i int, s *goquery.Selection) {
+	inter1.Each(func(i int, s *goquery.Selection) {
 		//pr(i, attrOrDataValue(s))
 		itm := item{value: make(map[string]interface{})}
 		for _, field := range p.Fields {
 			filtered := s.Find(field.CSSSelector)
 			//pr(field.FieldName)
 			if filtered.Length() >= 1 {
-				itm.fillOutItem(field.FieldName, filtered)
+				itm.fillCollection(field.FieldName, filtered)
 			}
 		}
 		if len(itm.value) > 0 {
-			outItem.Items = append(outItem.Items, itm.value)
+			col.Items = append(col.Items, itm.value)
 
 		}
 	})
-	outItem.Count = len(outItem.Items)
-	outItem.CreatedAt = time.Now().UnixNano()
-	return outItem, nil
+	col.Count = len(col.Items)
+	col.CreatedAt = time.Now().UnixNano()
+	return col, nil
 }
 
 //generateTable create table used by MarshalExcelSheet and MarshalCSVItem
-func (o outItem) generateTable() (buf [][]string) {
+func (c collection) generateTable() (buf [][]string) {
 	header := true
 	if header {
-		buf = append(buf, o.Fields)
+		buf = append(buf, c.Fields)
 	}
-	fmt.Println(o.Fields)
+	fmt.Println(c.Fields)
 
-	fCount := len(o.Fields)
-	for _, item := range o.Items { //rows
+	fCount := len(c.Fields)
+	for _, item := range c.Items { //rows
 		row := make([]string, fCount, fCount)
 		var keys []string
-		for i, f := range o.Fields { //field names set
+		for i, f := range c.Fields { //field names set
 			for k, v := range item.(map[string]interface{}) { //fields in row
 				switch v := v.(type) {
 				case map[string]interface{}:
@@ -160,7 +181,7 @@ func (o outItem) generateTable() (buf [][]string) {
 			}
 		}
 
-		for i, f := range o.Fields {
+		for i, f := range c.Fields {
 			if !stringInSlice(f, keys) {
 				row[i] = ""
 			}
@@ -197,33 +218,24 @@ func (o outItem) generateTable() (buf [][]string) {
 }
 */
 func MarshalData(payload []byte) ([]byte, error) {
-	rc := redisConn{
-		protocol: viper.GetString("redis.protocol"),
-		addr:     viper.GetString("redis.address")}
-	var err error
-	rc.conn, err = redis.Dial(rc.protocol, rc.addr)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %s", ErrRedisDown, err.Error())
-	}
-	defer rc.conn.Close()
 
-	var p Payloads
-	err = p.UnmarshalJSON(payload)
+	redisURL := "localhost:6379"
+	redisPassword := ""
+	redis := NewRedisConn(redisURL, redisPassword, "", 0)
+	p, err := NewParser(payload)
 	if err != nil {
 		return nil, err
 	}
-	if p.Format == "" {
-		p.Format = "json"
-	}
-	payloadMD5 := generateMD5(payload)
-	outRediskey := fmt.Sprintf("%s-%s", p.Format, payloadMD5)
-	outRedis, err := redis.Bytes(rc.conn.Do("GET", outRediskey))
-	if err == nil {
-		return outRedis, nil
-	}
 
+	payloadMD5 := generateMD5(payload)
+	colRediskey := fmt.Sprintf("%s-%s", p.Format, payloadMD5)
+
+	colRedisValue, err := redis.GetValue(colRediskey)
+	if err == nil {
+		return colRedisValue, nil
+	}
 	//if there is no cached value in Redis
-	out, err := p.Parse()
+	cols, err := p.Parse()
 	if err != nil {
 		return nil, err
 	}
@@ -231,29 +243,25 @@ func MarshalData(payload []byte) ([]byte, error) {
 	//logger.Println("FORMAT", p.Format)
 	switch p.Format {
 	case "xml":
-		b, err = out.MarshalXML()
+		b, err = cols.MarshalXML()
 	case "csv":
-		b, err = out.MarshalCSV()
+		b, err = cols.MarshalCSV()
 	default:
-		b, err = out.MarshalJSON()
+		b, err = cols.MarshalJSON()
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	reply, err := rc.conn.Do("SET", outRediskey, b)
+	err = redis.SetValue(colRediskey, b)
 	if err != nil {
-		return nil, err
-	}
-	if reply.(string) == "OK" {
-		//set 1 hour before html content key expiration
-		rc.conn.Do("EXPIRE", outRediskey, viper.GetInt("redis.expire"))
+		logger.Println(err)
 	}
 	return b, nil
 }
 
 //genAttrFieldName generates field name according to attributes
-func (o *outItem) genAttrFieldName(fieldName string, sel *goquery.Selection) {
+func (o *collection) genAttrFieldName(fieldName string, sel *goquery.Selection) {
 	if _, exists := sel.Attr("href"); exists {
 		o.Fields = append(o.Fields, fmt.Sprintf("%s_text",
 			fieldName), fmt.Sprintf("%s_href", fieldName))
@@ -269,8 +277,8 @@ type item struct {
 	value map[string]interface{}
 }
 
-//fillOutItem fills OutItem item values according to attributes
-func (i *item) fillOutItem(fieldName string, s *goquery.Selection) {
+//fillCollection fills Collection item values according to attributes
+func (i *item) fillCollection(fieldName string, s *goquery.Selection) {
 
 	if len(s.Nodes) > 0 && s.Nodes[0].Type == html.ElementNode {
 		//fmt.Println("fillOut", s.Nodes[0].Data)
@@ -321,44 +329,4 @@ func attrOrDataValue(s *goquery.Selection) (value string) {
 
 func dataValue(s *goquery.Selection) (value string) {
 	return s.Nodes[0].Data
-}
-
-//stringInSlice check if specified string in the slice of strings
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
-// InsertStringToSlice inserts the value into the slice at the specified index,
-// which must be in range.
-// The slice must have room for the new element.
-func InsertStringToSlice(slice []string, index int, value string) []string {
-	// Grow the slice by one element.
-	slice = slice[0 : len(slice)+1]
-	// Use copy to move the upper part of the slice out of the way and open a hole.
-	copy(slice[index+1:], slice[index:])
-	// Store the new value.
-	slice[index] = value
-	// Return the result.
-	return slice
-}
-
-func addStringSliceToSlice(in []string, out []string) {
-	for _, s := range in {
-		if !stringInSlice(s, out) {
-			out = append(out, s)
-		}
-	}
-}
-
-//func generateMD5(s string) string {
-func generateMD5(b []byte) []byte {
-	h := md5.New()
-	r := bytes.NewReader(b)
-	io.Copy(h, r)
-	return h.Sum(nil)
 }
