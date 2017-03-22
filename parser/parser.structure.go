@@ -6,23 +6,25 @@ type meta struct {
 }
 
 type field struct {
-	FieldName   string `json:"field_name"`
+	Name   string `json:"name"`
 	CSSSelector string `json:"css_selector"`
+	//Regex       string `json:"regex"`
+	//FieldType   string `json:"type"`
 }
 
 //easyjson:json
 
 type payload struct {
 	meta
-	
 	Fields []field `json:"fields"`
 }
 
 //Parser structure stores input format and collections CSS Selectors
 //easyjson:json
 type Parser struct {
-	Format string  `json:"format"`
-	Collections []payload `json:"collections"`
+	Format   string    `json:"format"`
+	Payloads []payload `json:"collections"`
+	PayloadMD5 []byte `json:"payloadMD5"`
 }
 
 //easyjson:json

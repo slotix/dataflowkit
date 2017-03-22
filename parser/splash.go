@@ -32,7 +32,7 @@ func NewSplashConn(host, renderHTMLURL, user, password string, timeout, resource
 	}
 }
 
-func (s *SplashConn) getHTML(addr string) ([]byte, error) {
+func (s *SplashConn) Download(addr string) ([]byte, error) {
 	client := &http.Client{}
 	splashURL := fmt.Sprintf("%s%s?&url=%s&timeout=%d&resource_timeout=%d&wait=%d", s.host, s.renderHTMLURL, url.QueryEscape(addr), s.timeout, s.resourceTimeout, s.wait)
 	req, err := http.NewRequest("GET", splashURL, nil)

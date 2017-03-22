@@ -32,6 +32,7 @@ func NewParser(payload []byte) (Parser, error) {
 	if p.Format == "" {
 		p.Format = "json"
 	}
+	p.PayloadMD5 = generateMD5(payload)
 	return p, nil
 }
 
@@ -39,8 +40,8 @@ func NewParser(payload []byte) (Parser, error) {
 func (p *Parser) Parse() (Collections, error) {
 	//parse input and fill Payload structure
 	out := Collections{}
-	for _, collection := range p.Collections {
-		content, err := GetHTML(collection.URL)
+	for _, collection := range p.Payloads {
+		content, err := Download(collection.URL)
 		if err != nil {
 			return out, err
 		}
@@ -99,7 +100,7 @@ func (p *payload) parseItem(h []byte) (col collection, err error) {
 		}
 		//pr(intersection.Length())
 		sel := doc.Find(f.CSSSelector)
-		col.genAttrFieldName(f.FieldName, sel)
+		col.genAttrFieldName(f.Name, sel)
 	}
 	if intersection.Length() == 0 {
 		return col, errNoSelectors
@@ -136,7 +137,7 @@ func (p *payload) parseItem(h []byte) (col collection, err error) {
 			filtered := s.Find(field.CSSSelector)
 			//pr(field.FieldName)
 			if filtered.Length() >= 1 {
-				itm.fillCollection(field.FieldName, filtered)
+				itm.fillCollection(field.Name, filtered)
 			}
 		}
 		if len(itm.value) > 0 {
@@ -217,30 +218,13 @@ func (c collection) generateTable() (buf [][]string) {
     ]
 }
 */
-func MarshalData(payload []byte) ([]byte, error) {
-
-	redisURL := "localhost:6379"
-	redisPassword := ""
-	redis := NewRedisConn(redisURL, redisPassword, "", 0)
-	p, err := NewParser(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	payloadMD5 := generateMD5(payload)
-	colRediskey := fmt.Sprintf("%s-%s", p.Format, payloadMD5)
-
-	colRedisValue, err := redis.GetValue(colRediskey)
-	if err == nil {
-		return colRedisValue, nil
-	}
-	//if there is no cached value in Redis
+//func MarshalData(payload []byte) ([]byte, error) {
+func (p *Parser) MarshalData() ([]byte, error) {
 	cols, err := p.Parse()
 	if err != nil {
 		return nil, err
 	}
 	var b []byte
-	//logger.Println("FORMAT", p.Format)
 	switch p.Format {
 	case "xml":
 		b, err = cols.MarshalXML()
@@ -253,10 +237,6 @@ func MarshalData(payload []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	err = redis.SetValue(colRediskey, b)
-	if err != nil {
-		logger.Println(err)
-	}
 	return b, nil
 }
 

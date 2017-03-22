@@ -24,24 +24,24 @@ type instrmw struct {
 	ParseService
 }
 
-func (mw instrmw) MarshalData(payload []byte) (output []byte, err error) {
+func (mw instrmw) ParseData(payload []byte) (output []byte, err error) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "marshaldata", "error", fmt.Sprint(err != nil)}
 		mw.requestCount.With(lvs...).Add(1)
 		mw.requestLatency.With(lvs...).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	output, err = mw.ParseService.MarshalData(payload)
+	output, err = mw.ParseService.ParseData(payload)
 	return
 }
 
-func (mw instrmw) GetHTML(url string) (output []byte, err error) {
+func (mw instrmw) Download(url string) (output []byte, err error) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "gethtml", "error", fmt.Sprint(err != nil)}
 		mw.requestCount.With(lvs...).Add(1)
 		mw.requestLatency.With(lvs...).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	output, err = mw.ParseService.GetHTML(url)
+	output, err = mw.ParseService.Download(url)
 	return
 }

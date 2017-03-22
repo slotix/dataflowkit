@@ -1,4 +1,4 @@
-package parser
+package cache
 
 import (
 	"time"
@@ -116,8 +116,21 @@ func (b *RedisConn) GetValue(key string) ([]byte, error) {
 	return nil, err
 }
 
+//GetIntValue gets value from Redis
+func (b *RedisConn) GetIntValue(key string) (int64, error) {
+	//Get a key
+	conn := b.open()
+	defer conn.Close()
+	int, err := redis.Int64(conn.Do("GET", key))
+	//	logger.Println(key, err)
+	if err == nil {
+		return int, nil
+	}
+	return 0, err
+}
+
 //SetValue pushes value to Redis
-func (b *RedisConn) SetValue(key string, value []byte) error {
+func (b *RedisConn) SetValue(key string, value interface{}) error {
 	conn := b.open()
 	defer conn.Close()
 	reply, err := conn.Do("SET", key, value)
@@ -134,3 +147,4 @@ func (b *RedisConn) SetValue(key string, value []byte) error {
 	}
 	return nil
 }
+

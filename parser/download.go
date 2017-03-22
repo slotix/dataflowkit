@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"net/http"
-
 	"time"
 
 	"golang.org/x/net/html/charset"
@@ -14,28 +12,17 @@ import (
 
 // ErrURLEmpty is returned when an input string is empty.
 var errURLEmpty = errors.New("Empty string. URL")
-var errRedisSet = errors.New("Redis. Set Value failed")
 
 type directConn struct {
 }
 
-
-//GetHTML gets content from url.
-//It checks if there is local copy of content in Redis cache
+//Download gets content from url.
 //If no data is pulled through Splash server https://github.com/scrapinghub/splash/ .
-//Then it pushes content to Redis to make it available localy for 3600 seconds by default
-func GetHTML(url string) ([]byte, error) {
+func Download(url string) ([]byte, error) {
 	if url == "" {
 		return nil, errURLEmpty
 	}
-
-	redisURL := "localhost:6379"
-	redisPassword := ""
-	redis := NewRedisConn(redisURL, redisPassword, "", 0)
-	content, err := redis.GetValue(url)
-	if err == nil {
-		return content, nil
-	}
+	
 	s := NewSplashConn(
 		"http://localhost:8050/",
 		"render.html",
@@ -46,20 +33,15 @@ func GetHTML(url string) ([]byte, error) {
 		1, //wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
 	)
 
-	content, err = s.getHTML(url)
+	content, err := s.Download(url)
 	if err == nil {
-
-		err1 := redis.SetValue(url, content)
-		if err1 != nil {
-			fmt.Printf("%s: %s", errRedisSet, err1.Error())
-		}
 		return content, nil
 	}
 	return nil, err
 }
 
-//getHTML gets content directly. Obsolete...
-func (d directConn) getHTML(url string) ([]byte, error) {
+//Download gets content directly. Obsolete...
+func (d directConn) Download(url string) ([]byte, error) {
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // disable verify
 	}

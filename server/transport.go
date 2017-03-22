@@ -16,12 +16,12 @@ import (
 func makeGetHTMLEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(getHTMLRequest)
-		v, err := svc.GetHTML(req.URL)
+		v, err := svc.Download(req.URL)
 		//v, err := svc.GetHTML(request.(string))
 
 		if err != nil {
 			//	return getHTMLResponse{v, err.Error()}, nil
-//			return errResponse{err.Error()}, nil
+			//			return errResponse{err.Error()}, nil
 			return nil, err
 
 		}
@@ -33,7 +33,7 @@ func makeGetHTMLEndpoint(svc ParseService) endpoint.Endpoint {
 func makeMarshalDataEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		//	fmt.Println("from makeMarshalDataEndpoint",string(request.([]byte)))
-		v, err := svc.MarshalData(request.([]byte))
+		v, err := svc.ParseData(request.([]byte))
 		if err != nil {
 			//return errResponse{err.Error()}, nil
 			return nil, err
@@ -118,11 +118,9 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	return nil
 }
 
-
 func encodeCheckServicesResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	return json.NewEncoder(w).Encode(response)
 }
-
 
 func encodeRequest(_ context.Context, r *http.Request, request interface{}) error {
 	var buf *bytes.Buffer
@@ -138,8 +136,6 @@ func encodeRequest(_ context.Context, r *http.Request, request interface{}) erro
 type getHTMLRequest struct {
 	URL string `json:"url"`
 }
-
-
 
 type checkServicesResponse struct {
 	Status map[string]string `json:"status,omitempty"`

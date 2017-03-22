@@ -403,21 +403,28 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser4(in *jlexer.Lexer, out 
 		case "collections":
 			if in.IsNull() {
 				in.Skip()
-				out.Collections = nil
+				out.Payloads = nil
 			} else {
 				in.Delim('[')
 				if !in.IsDelim(']') {
-					out.Collections = make([]payload, 0, 1)
+					out.Payloads = make([]payload, 0, 1)
 				} else {
-					out.Collections = []payload{}
+					out.Payloads = []payload{}
 				}
 				for !in.IsDelim(']') {
 					var v10 payload
 					easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser5(in, &v10)
-					out.Collections = append(out.Collections, v10)
+					out.Payloads = append(out.Payloads, v10)
 					in.WantComma()
 				}
 				in.Delim(']')
+			}
+		case "payloadMD5":
+			if in.IsNull() {
+				in.Skip()
+				out.PayloadMD5 = nil
+			} else {
+				out.PayloadMD5 = in.Bytes()
 			}
 		default:
 			in.SkipRecursive()
@@ -441,18 +448,24 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser4(out *jwriter.Writer, i
 	}
 	first = false
 	out.RawString("\"collections\":")
-	if in.Collections == nil {
+	if in.Payloads == nil {
 		out.RawString("null")
 	} else {
 		out.RawByte('[')
-		for v11, v12 := range in.Collections {
-			if v11 > 0 {
+		for v12, v13 := range in.Payloads {
+			if v12 > 0 {
 				out.RawByte(',')
 			}
-			easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser5(out, v12)
+			easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser5(out, v13)
 		}
 		out.RawByte(']')
 	}
+	if !first {
+		out.RawByte(',')
+	}
+	first = false
+	out.RawString("\"payloadMD5\":")
+	out.Base64Bytes(in.PayloadMD5)
 	out.RawByte('}')
 }
 
@@ -506,9 +519,9 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser5(in *jlexer.Lexer, out 
 					out.Fields = []field{}
 				}
 				for !in.IsDelim(']') {
-					var v13 field
-					easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser6(in, &v13)
-					out.Fields = append(out.Fields, v13)
+					var v16 field
+					easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser6(in, &v16)
+					out.Fields = append(out.Fields, v16)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -537,11 +550,11 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser5(out *jwriter.Writer, i
 		out.RawString("null")
 	} else {
 		out.RawByte('[')
-		for v14, v15 := range in.Fields {
-			if v14 > 0 {
+		for v17, v18 := range in.Fields {
+			if v17 > 0 {
 				out.RawByte(',')
 			}
-			easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser6(out, v15)
+			easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser6(out, v18)
 		}
 		out.RawByte(']')
 	}
@@ -574,8 +587,8 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser6(in *jlexer.Lexer, out 
 			continue
 		}
 		switch key {
-		case "field_name":
-			out.FieldName = string(in.String())
+		case "name":
+			out.Name = string(in.String())
 		case "css_selector":
 			out.CSSSelector = string(in.String())
 		default:
@@ -593,8 +606,8 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser6(out *jwriter.Writer, i
 		out.RawByte(',')
 	}
 	first = false
-	out.RawString("\"field_name\":")
-	out.String(string(in.FieldName))
+	out.RawString("\"name\":")
+	out.String(string(in.Name))
 	if !first {
 		out.RawByte(',')
 	}
