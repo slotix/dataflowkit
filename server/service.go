@@ -1,10 +1,6 @@
 package server
 
 import (
-	"time"
-
-	"fmt"
-
 	"github.com/go-kit/kit/log"
 	"github.com/slotix/dfk-parser/parser"
 )
@@ -13,27 +9,31 @@ var logger log.Logger
 
 // ParseService provides operations on strings.
 type ParseService interface {
-	GetHTML(string) ([]byte, error)
-	MarshalData(payload []byte) ([]byte, error)
+	Download(string) ([]byte, error)
+	ParseData(payload []byte) ([]byte, error)
 	CheckServices() (status map[string]string)
 	//	Save(payload []byte) (string, error)
 }
 
 type parseService struct{}
 
-func (parseService) GetHTML(url string) ([]byte, error) {
-	defer func(begin time.Time) {
-		fmt.Println("took", time.Since(begin))
-	}(time.Now())
-	content, err := parser.GetHTML(url)
+func (parseService) Download(url string) ([]byte, error) {
+	//defer func(begin time.Time) {
+	//	fmt.Println("took", time.Since(begin))
+	//}(time.Now())
+	content, err := parser.Download(url)
 	if err != nil {
 		return nil, err
 	}
 	return content, nil
 }
 
-func (parseService) MarshalData(payload []byte) ([]byte, error) {
-	res, err := parser.MarshalData(payload)
+func (parseService) ParseData(payload []byte) ([]byte, error) {
+	p, err := parser.NewParser(payload)
+	if err != nil {
+		return nil, err
+	}
+	res, err := p.MarshalData()
 	if err != nil {
 		return nil, err
 	}

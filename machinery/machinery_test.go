@@ -39,12 +39,12 @@ import (
 
 // Define flagss
 var (
-//	configPath    = flag.String("c", "config.yml", "Path to a configuration file")
-//	broker        = flag.String("b", "redis://127.0.0.1:6379", "Broker URL")
-//	resultBackend = flag.String("r", "redis://127.0.0.1:6379", "Result backend")
+	//	configPath    = flag.String("c", "config.yml", "Path to a configuration file")
+	//	broker        = flag.String("b", "redis://127.0.0.1:6379", "Broker URL")
+	//	resultBackend = flag.String("r", "redis://127.0.0.1:6379", "Result backend")
 
-//	cnf                                             config.Config
-//	server                                          *machinery.Server
+	//	cnf                                             config.Config
+	//	server                                          *machinery.Server
 	task0, task1, task2, task3, task4, task5, task6 signatures.TaskSignature
 
 	urlsFile = "forum_list.csv"
@@ -154,7 +154,7 @@ func generateGetHTMLTask(url string) *signatures.TaskSignature {
 
 //SendItemsToQuery sends urls to fetchbot query to be parsed
 func SendTasksToRedis(urls []string, from, to int) {
-	workerStep := 50
+	workerStep := 5
 	var succeeded, failed int
 	start := time.Now()
 	i := from
@@ -163,9 +163,10 @@ func SendTasksToRedis(urls []string, from, to int) {
 			workerStep = dif
 		}
 		var tasks []*signatures.TaskSignature
-		for i, url := range urls[i : i+workerStep] {
+		fmt.Println("i=", i)
+		for j, url := range urls[i : i+workerStep] {
 			tasks = append(tasks, generateGetHTMLTask(url))
-			fmt.Printf("%d - %s \n", from+i, url)
+			fmt.Printf("%d - %s \n", i+j, url)
 		}
 		group := machinery.NewGroup(tasks...)
 		asyncResults, err := server.SendGroup(group)
@@ -195,7 +196,7 @@ func TestOut(t *testing.T) {
 	fmt.Println("Send tasks:")
 	urls := LoadURLsFromCSV("forum_list.csv")
 	//SendTasksToRedis(urls, from, to)
-	SendTasksToRedis(urls, 1000, 1200)
+	SendTasksToRedis(urls, 150, 175)
 }
 
 //LoadURLsFromCSV loads list of URLs from CSV

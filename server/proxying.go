@@ -28,8 +28,8 @@ func proxyingMiddleware(ctx context.Context, instances string, logger log.Logger
 
 	// Set some parameters for our client.
 	var (
-		qps         = 100                    // beyond which we will return an error
-		maxAttempts = 3                      // per request, before giving up
+		qps         = 100                      // beyond which we will return an error
+		maxAttempts = 3                        // per request, before giving up
 		maxTime     = 20000 * time.Millisecond // wallclock time, before giving up
 	)
 
@@ -71,11 +71,11 @@ type proxymw struct {
 	parse endpoint.Endpoint // ...except Uppercase, which gets served by this endpoint
 }
 
-func (mw proxymw) GetHTML(url string) ([]byte, error) {
-	return mw.next.GetHTML(url)
+func (mw proxymw) Download(url string) ([]byte, error) {
+	return mw.next.Download(url)
 }
 
-func (mw proxymw) MarshalData(payload []byte) ([]byte, error) {
+func (mw proxymw) ParseData(payload []byte) ([]byte, error) {
 	response, err := mw.parse(mw.ctx, payload)
 	if err != nil {
 		return nil, err
@@ -94,8 +94,7 @@ func makeMarshalDataProxy(ctx context.Context, instance string) endpoint.Endpoin
 	if u.Path == "" {
 		u.Path = "/app/marshaldata"
 	}
-    
-    
+
 	return httptransport.NewClient(
 		"POST",
 		u,
@@ -107,7 +106,6 @@ func makeMarshalDataProxy(ctx context.Context, instance string) endpoint.Endpoin
 func (mw proxymw) CheckServices() map[string]string {
 	return mw.next.CheckServices()
 }
-
 
 func split(s string) []string {
 	a := strings.Split(s, ",")

@@ -17,7 +17,7 @@ type logmw struct {
 	ParseService
 }
 
-func (mw logmw) MarshalData(payload []byte) (output []byte, err error) {
+func (mw logmw) ParseData(payload []byte) (output []byte, err error) {
 	defer func(begin time.Time) {
 		_ = mw.logger.Log(
 			"method", "marshaldata",
@@ -27,23 +27,23 @@ func (mw logmw) MarshalData(payload []byte) (output []byte, err error) {
 			"took", time.Since(begin),
 		)
 	}(time.Now())
-	
-	output, err = mw.ParseService.MarshalData(payload)
+
+	output, err = mw.ParseService.ParseData(payload)
 	return
 }
 
-func (mw logmw) GetHTML(url string) (output []byte, err error) {
+func (mw logmw) Download(url string) (output []byte, err error) {
 	defer func(begin time.Time) {
 		_ = mw.logger.Log(
 			"method", "gethtml",
 			"input", url,
-		//	"output", output,
+			//	"output", output,
 			"err", err,
 			"took", time.Since(begin),
 		)
 	}(time.Now())
 
-	output, err = mw.ParseService.GetHTML(url)
+	output, err = mw.ParseService.Download(url)
 	return
 }
 

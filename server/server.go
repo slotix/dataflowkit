@@ -1,7 +1,5 @@
 package server
 
-//TODO https://github.com/happierall/l - ? logger
-//
 import (
 	"net/http"
 	"os"
@@ -56,8 +54,12 @@ func Init(addr string, proxy string) {
 	var svc ParseService
 	svc = parseService{}
 	svc = proxyingMiddleware(context.Background(), proxy, logger)(svc)
+	svc = httpCachingMiddleware()(svc)
+	svc = resultCachingMiddleware()(svc)
 	svc = loggingMiddleware(logger)(svc)
 	svc = instrumentingMiddleware(requestCount, requestLatency, countResult)(svc)
+	
+	svc = statsMiddleware("18")(svc)
 
 	getHTMLHandler := httptransport.NewServer(
 		makeGetHTMLEndpoint(svc),
