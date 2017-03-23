@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/go-kit/kit/log"
+	"github.com/slotix/dfk-parser/downloader"
 	"github.com/slotix/dfk-parser/parser"
 )
 
@@ -21,7 +22,7 @@ func (parseService) Download(url string) ([]byte, error) {
 	//defer func(begin time.Time) {
 	//	fmt.Println("took", time.Since(begin))
 	//}(time.Now())
-	content, err := parser.Download(url)
+	content, err := downloader.Download(url)
 	if err != nil {
 		return nil, err
 	}
