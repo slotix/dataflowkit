@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/slotix/dfk-parser/downloader"
 	"golang.org/x/net/html"
 )
 
@@ -41,7 +42,7 @@ func (p *Parser) Parse() (Collections, error) {
 	//parse input and fill Payload structure
 	out := Collections{}
 	for _, collection := range p.Payloads {
-		content, err := Download(collection.URL)
+		content, err := downloader.Download(collection.URL)
 		if err != nil {
 			return out, err
 		}
