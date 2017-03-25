@@ -74,7 +74,6 @@ type pingSplashServerResponse struct {
 //http://localhost:8050/_ping  endpoint
 func (p *pingSplashServerResponse) pingSplashServer(url string, userName, userPass string) error {
 	client := &http.Client{}
-	fmt.Println(url)
 	req, err := http.NewRequest("GET", url, nil)
 	req.SetBasicAuth(userName, userPass)
 	resp, err := client.Do(req)

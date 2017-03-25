@@ -3,7 +3,6 @@ package parser
 import (
 	"bytes"
 	"crypto/md5"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"regexp"
@@ -54,7 +53,7 @@ func generateMD5(b []byte) []byte {
 func ReadLinesOfFile(filename string) []string {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Println(err.Error())
 	}
 	lines := strings.Split(string(content), "\n")
 	return lines

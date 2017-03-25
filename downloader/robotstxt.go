@@ -3,45 +3,37 @@ package downloader
 import (
 	"fmt"
 	"log"
-	"net/http"
+
+	neturl "net/url"
 
 	"github.com/temoto/robotstxt"
-	neturl "net/url"
-	"time"
 )
 
-type Robots struct{
-	Robotstxt *robotstxt.RobotsData
-	Path string
-}
-
-func NewRobotsTxt(url string) Robots{
+func NewRobotsTxt(url string) string {
 	var robotsURL string
 	parsedURL, err := neturl.Parse(url)
 	if err != nil {
-		fmt.Println("err")
+		log.Println(err)
 	}
 	robotsURL = fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
-	response, err := http.Get(robotsURL)
+	return robotsURL
+}
+
+func GetRobotsData(content []byte) *robotstxt.RobotsData {
+	r, err := robotstxt.FromBytes(content)
 	if err != nil {
-		log.Fatalln("HTTP error:", err)
+		logger.Println("Robots.txt error:", err)
 	}
+	return r
+	//return Robots{r, parsedURL.Path}
+}
 
-	r, err := robotstxt.FromResponse(response)
-	if err != nil {
-		log.Fatalln("Robots.txt error:", err)
+/*
+func CrawlDelay() time.Duration {
+	if r.Robotstxt != nil {
+		group := r.Robotstxt.FindGroup("DataflowKitBot")
+		return group.CrawlDelay
 	}
-	
-	return Robots{r, parsedURL.Path}
+	return 0
 }
-
-func (r Robots) IsAllowed() bool{
-	group := r.Robotstxt.FindGroup("DataflowKitBot")
-	allowed := group.Test(r.Path)
-	return allowed	
-}
-
-func (r Robots) CrawlDelay() time.Duration{
-	group := r.Robotstxt.FindGroup("DataflowKitBot")
-	return group.CrawlDelay	
-}
+*/

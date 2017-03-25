@@ -4,11 +4,19 @@ import (
 	"bytes"
 	"crypto/tls"
 	"errors"
+	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"golang.org/x/net/html/charset"
 )
+
+var logger *log.Logger
+
+func init() {
+	logger = log.New(os.Stdout, "downloader: ", log.Lshortfile)
+}
 
 // ErrURLEmpty is returned when an input string is empty.
 var errURLEmpty = errors.New("Empty string. URL")
@@ -22,15 +30,23 @@ func Download(url string) ([]byte, error) {
 	if url == "" {
 		return nil, errURLEmpty
 	}
-	
+
 	s := NewSplashConn(
 		"http://localhost:8050/",
-		"render.html",
 		"user",
 		"userpass",
 		20,
 		30,
 		1, //wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
+		` function main(splash)
+			local url = splash.args.url
+			local reply = splash:http_get(url).info
+			assert(splash:wait(1))
+			return {
+				reply
+			}
+			end
+		`,
 	)
 
 	content, err := s.Download(url)
@@ -43,7 +59,7 @@ func Download(url string) ([]byte, error) {
 //Download gets content directly. Obsolete...
 func (d directConn) Download(url string) ([]byte, error) {
 	transCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // disable verify
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: false}, // disable verify
 	}
 
 	timeout := time.Duration(15) * time.Second

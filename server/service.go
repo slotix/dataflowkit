@@ -1,12 +1,11 @@
 package server
 
 import (
-	"github.com/go-kit/kit/log"
 	"github.com/slotix/dfk-parser/downloader"
 	"github.com/slotix/dfk-parser/parser"
 )
 
-var logger log.Logger
+
 
 // ParseService provides operations on strings.
 type ParseService interface {
