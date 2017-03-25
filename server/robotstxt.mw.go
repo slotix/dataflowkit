@@ -5,7 +5,7 @@ import (
 
 	neturl "net/url"
 
-	"github.com/slotix/dfk-parser/downloader"
+	"github.com/slotix/dataflowkit/downloader"
 )
 
 func robotsTxtMiddleware() ServiceMiddleware {

@@ -3,8 +3,8 @@ package server
 import (
 	"fmt"
 
-	"github.com/slotix/dfk-parser/cache"
-	"github.com/slotix/dfk-parser/parser"
+	"github.com/slotix/dataflowkit/cache"
+	"github.com/slotix/dataflowkit/parser"
 )
 
 func resultCachingMiddleware() ServiceMiddleware {

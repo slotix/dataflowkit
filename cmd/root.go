@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/slotix/dfk-parser/server"
+	"github.com/slotix/dataflowkit/server"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -39,7 +39,7 @@ var (
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "dfk-parser",
+	Use:   "dataflowkit",
 	Short: "DataFlow Kit html parser",
 	Long: `DataFlow Kit html parser serves for scraping data from websites according to chosen css selectors.
 	Here is an example of payload structure:
@@ -114,10 +114,10 @@ func initConfig() {
 		viper.SetConfigFile(cfgFile)
 	}
 
-	viper.SetConfigName(".dfk-parser") // name of config file (without extension)
+	viper.SetConfigName(".dataflowkit") // name of config file (without extension)
 	viper.AddConfigPath(".")           // look for config in the working directory
 	viper.AddConfigPath("$HOME")       // adding home directory to search path
-	//viper.AddConfigPath("/etc/dfk-parser/")   // path to look for the config file in
+	//viper.AddConfigPath("/etc/dataflowkit/")   // path to look for the config file in
 	viper.AutomaticEnv() // read in environment variables that match
 
 	if err := viper.ReadInConfig(); err != nil {

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/slotix/dfk-parser/downloader"
+	"github.com/slotix/dataflowkit/downloader"
 	"golang.org/x/net/html"
 )
 

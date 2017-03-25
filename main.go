@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/slotix/dfk-parser/cmd"
+	"github.com/slotix/dataflowkit/cmd"
 
 
 )
