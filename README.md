@@ -1,4 +1,4 @@
-# Data flow kit
+# Dataflow kit
 
 ![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/dfk-logo/logo-mini.png)
 

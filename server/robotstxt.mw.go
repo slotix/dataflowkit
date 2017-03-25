@@ -30,6 +30,7 @@ func (mw robotstxtmw) Download(url string) (output []byte, err error) {
 	if robotsData != nil {
 		allow = robotsData.TestAgent(parsedURL.Path, "DataflowKitBot")
 	}
+	//allowed?
 	if allow {
 		output, err = mw.ParseService.Download(url)
 		if err != nil {
@@ -38,5 +39,6 @@ func (mw robotstxtmw) Download(url string) (output []byte, err error) {
 	} else {
 		err = errors.New("Disallowed by robots.txt")
 	}
+	
 	return
 }
