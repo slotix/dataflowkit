@@ -38,7 +38,7 @@ _testmain.go
 # external packages folder
 vendor/
 
-dfk-parser
-dfk-parser_linux
+dataflowkit
+dataflowkit_linux
 config/dfk-server.service
 deploy.sh

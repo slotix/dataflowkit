@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/slotix/dfk-parser/cache"
+	"github.com/slotix/dataflowkit/cache"
 )
 
 func statsMiddleware(userID string) ServiceMiddleware {

@@ -1,6 +1,6 @@
 package main
 
-import "github.com/slotix/dfk-parser/parser"
+import "github.com/slotix/dataflowkit/parser"
 //import "time"
 
 func GetHTML(url string) (string, error) {

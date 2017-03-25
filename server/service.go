@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/slotix/dfk-parser/downloader"
-	"github.com/slotix/dfk-parser/parser"
+	"github.com/slotix/dataflowkit/downloader"
+	"github.com/slotix/dataflowkit/parser"
 )
 
 

@@ -36,7 +36,7 @@ import (
 //http://www.homedepot.com
 
 func prepareData() Collections {
-	viper.SetConfigName("../.dfk-parser") // name of config file (without extension)
+	viper.SetConfigName("../.dataflowkit") // name of config file (without extension)
 	viper.AddConfigPath(".")              // look for config in the working directory
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println(err)
