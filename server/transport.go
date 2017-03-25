@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"fmt"
-
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
@@ -66,7 +64,7 @@ func decodeMarshalDataRequest(_ context.Context, r *http.Request) (interface{}, 
 	request, err := ioutil.ReadAll(r.Body)
 	//fmt.Println("from decodeMarshalDataRequest",string(request))
 	if err != nil {
-		fmt.Println(err)
+		//fmt.Println(err)
 		return nil, err
 	}
 
@@ -76,7 +74,7 @@ func decodeMarshalDataRequest(_ context.Context, r *http.Request) (interface{}, 
 func decodeCheckServicesRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	request, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println(err)
+		//	fmt.Println(err)
 		return nil, err
 	}
 	return request, nil
@@ -85,7 +83,7 @@ func decodeCheckServicesRequest(_ context.Context, r *http.Request) (interface{}
 func decodeGetHTMLResponse(_ context.Context, r *http.Response) (interface{}, error) {
 	response, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println(err)
+		//	fmt.Println(err)
 		return nil, err
 	}
 	return string(response), nil
@@ -94,7 +92,7 @@ func decodeGetHTMLResponse(_ context.Context, r *http.Response) (interface{}, er
 func decodeMarshalDataResponse(_ context.Context, r *http.Response) (interface{}, error) {
 	response, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println(err)
+		//		fmt.Println(err)
 		return nil, err
 	}
 	//fmt.Println(string(response))
@@ -104,13 +102,16 @@ func decodeMarshalDataResponse(_ context.Context, r *http.Response) (interface{}
 func decodeCheckServicesResponse(_ context.Context, r *http.Response) (interface{}, error) {
 	response, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println(err)
+		//	fmt.Println(err)
 		return nil, err
 	}
 	return string(response), nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	//	w.Header().Set("Content-Type", "text/plain")
+
+	//	fmt.Println("CONTENT", http.DetectContentType(response.([]byte)))
 	_, err := w.Write(response.([]byte))
 	if err != nil {
 		return err

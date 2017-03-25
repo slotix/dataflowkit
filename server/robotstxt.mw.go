@@ -1,7 +1,9 @@
 package server
 
 import (
-	"fmt"
+	"errors"
+
+	neturl "net/url"
 
 	"github.com/slotix/dfk-parser/downloader"
 )
@@ -17,12 +19,24 @@ type robotstxtmw struct {
 }
 
 func (mw robotstxtmw) Download(url string) (output []byte, err error) {
-	robots := downloader.NewRobotsTxt(url)
-	fmt.Println(robots.IsAllowed())
-	fmt.Println(robots.CrawlDelay())
-	output, err = mw.ParseService.Download(url)
+	robotsURL := downloader.NewRobotsTxt(url)
+	robots, err := mw.ParseService.Download(robotsURL)
+	robotsData := downloader.GetRobotsData(robots)
+	parsedURL, err := neturl.Parse(url)
 	if err != nil {
-		fmt.Println(err)
+		logger.Println("err")
+	}
+	allow := true
+	if robotsData != nil {
+		allow = robotsData.TestAgent(parsedURL.Path, "DataflowKitBot")
+	}
+	if allow {
+		output, err = mw.ParseService.Download(url)
+		if err != nil {
+			logger.Println(err)
+		}
+	} else {
+		err = errors.New("Disallowed by robots.txt")
 	}
 	return
 }

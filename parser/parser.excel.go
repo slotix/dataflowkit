@@ -1,10 +1,6 @@
 package parser
 
 import (
-	"fmt"
-
-	"log"
-
 	"github.com/spf13/viper"
 	"github.com/tealeg/xlsx"
 )
@@ -19,13 +15,13 @@ func (cols Collections) SaveExcel(fName string) ([]byte, error) {
 	for _, c := range cols.Element {
 		sheet, err = file.AddSheet(c.meta.Name)
 		if err != nil {
-			fmt.Printf(err.Error())
+			logger.Printf(err.Error())
 		}
 		c.marshalExcelSheet(sheet)
 	}
 	err = file.Save(fName)
 	if err != nil {
-		fmt.Printf(err.Error())
+		logger.Printf(err.Error())
 	}
 	return nil, nil
 }
@@ -37,7 +33,7 @@ func (c collection) marshalExcelSheet(sheet *xlsx.Sheet) {
 		row = sheet.AddRow()
 		count := row.WriteSlice(&item, -1)
 		if count == -1 {
-			log.Println(viper.GetString("errors.errWriteRow"))
+			logger.Println(viper.GetString("errors.errWriteRow"))
 		}
 	}
 }

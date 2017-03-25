@@ -49,7 +49,7 @@ func (p *Parser) Parse() (Collections, error) {
 		outItem, err := collection.parseItem(content)
 		if err != nil {
 			//return out, err
-			fmt.Printf("\"%s:\" %s\n", outItem.Name, err)
+			logger.Printf("\"%s:\" %s\n", outItem.Name, err)
 		}
 		out.Element = append(out.Element, outItem)
 	}
@@ -157,7 +157,7 @@ func (c collection) generateTable() (buf [][]string) {
 	if header {
 		buf = append(buf, c.Fields)
 	}
-	fmt.Println(c.Fields)
+	logger.Println(c.Fields)
 
 	fCount := len(c.Fields)
 	for _, item := range c.Items { //rows

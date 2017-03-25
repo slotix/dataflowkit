@@ -35,7 +35,7 @@ func (mw resultcachemw) ParseData(payload []byte) (output []byte, err error) {
 
 	err = redis.SetValue(rediskey, output)
 	if err != nil {
-		fmt.Printf("%s: %s", errRedisSet, err.Error())
+		logger.Printf("%s: %s", errRedisSet, err.Error())
 	}
 	return
 }

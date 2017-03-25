@@ -2,7 +2,6 @@ package server
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/slotix/dfk-parser/cache"
 )
@@ -31,9 +30,9 @@ func (mw httpcachemw) Download(url string) (output []byte, err error) {
 	if err == nil {
 		err1 := redis.SetValue(url, output)
 		if err1 != nil {
-			fmt.Printf("%s: %s", errRedisSet, err1.Error())
+			logger.Printf("%s: %s", errRedisSet, err1.Error())
 		}
-	//	return content, nil
+		//	return content, nil
 	}
 	return
 }

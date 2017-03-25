@@ -1,7 +1,8 @@
 package server
 
-import "github.com/slotix/dfk-parser/cache"
-import "fmt"
+import (
+	"github.com/slotix/dfk-parser/cache"
+)
 
 func statsMiddleware(userID string) ServiceMiddleware {
 	return func(next ParseService) ParseService {
@@ -35,13 +36,13 @@ func (mw statsmw) incrementCount() {
 	if count == 0 {
 		err = redis.SetValue(mw.userID, 1)
 		if err != nil {
-			fmt.Println(err)
+			logger.Println(err)
 		}
 		return
 	}
 	count++
 	err = redis.SetValue(mw.userID, count)
 	if err != nil {
-		fmt.Println(err)
+		logger.Println(err)
 	}
 }

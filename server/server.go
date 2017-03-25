@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"net/http"
 	"os"
 
@@ -8,11 +9,17 @@ import (
 
 	"context"
 
-	"github.com/go-kit/kit/log"
+	kitlog "github.com/go-kit/kit/log"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	httptransport "github.com/go-kit/kit/transport/http"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
+
+var logger *log.Logger
+
+func init() {
+	logger = log.New(os.Stdout, "server: ", log.Lshortfile)
+}
 
 func Init(addr string, proxy string) {
 
@@ -24,9 +31,9 @@ func Init(addr string, proxy string) {
 			retryTimeout = flag.Duration("retry.timeout", 500*time.Millisecond, "per-request timeout, including retries")
 		)*/
 
-	var logger log.Logger
-	logger = log.NewLogfmtLogger(os.Stderr)
-	logger = log.NewContext(logger).With("listen", addr).With("caller", log.DefaultCaller)
+	var serverLogger kitlog.Logger
+	serverLogger = kitlog.NewLogfmtLogger(os.Stderr)
+	serverLogger = kitlog.NewContext(serverLogger).With("listen", addr).With("caller", kitlog.DefaultCaller)
 
 	//ctx := context.Background()
 
@@ -53,13 +60,12 @@ func Init(addr string, proxy string) {
 
 	var svc ParseService
 	svc = parseService{}
-	svc = proxyingMiddleware(context.Background(), proxy, logger)(svc)
+	svc = proxyingMiddleware(context.Background(), proxy, serverLogger)(svc)
 	svc = httpCachingMiddleware()(svc)
 	svc = resultCachingMiddleware()(svc)
+	svc = loggingMiddleware(serverLogger)(svc)
 	svc = robotsTxtMiddleware()(svc)
-	svc = loggingMiddleware(logger)(svc)
 	svc = instrumentingMiddleware(requestCount, requestLatency, countResult)(svc)
-	
 
 	svc = statsMiddleware("18")(svc)
 
@@ -98,6 +104,6 @@ func Init(addr string, proxy string) {
 
 	router.Handler("GET", "/metrics", stdprometheus.Handler())
 
-	logger.Log("msg", "HTTP", "addr", addr)
-	logger.Log("err", http.ListenAndServe(addr, router))
+	serverLogger.Log("msg", "HTTP", "addr", addr)
+	serverLogger.Log("err", http.ListenAndServe(addr, router))
 }
