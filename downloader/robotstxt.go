@@ -3,6 +3,7 @@ package downloader
 import (
 	"fmt"
 	"log"
+	"time"
 
 	neturl "net/url"
 
@@ -28,12 +29,10 @@ func GetRobotsData(content []byte) *robotstxt.RobotsData {
 	//return Robots{r, parsedURL.Path}
 }
 
-/*
-func CrawlDelay() time.Duration {
-	if r.Robotstxt != nil {
-		group := r.Robotstxt.FindGroup("DataflowKitBot")
+func CrawlDelay(r *robotstxt.RobotsData) time.Duration {
+	if r != nil {
+		group := r.FindGroup("DataflowKitBot")
 		return group.CrawlDelay
 	}
 	return 0
 }
-*/

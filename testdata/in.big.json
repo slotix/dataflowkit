@@ -1,0 +1,40 @@
+{
+    "collections": [
+        {
+            "name": "collection1",
+            "url": "http://www.najnakup.sk/televizory",
+            "fields": [
+                {
+                    "field_name": "Title",
+                    "css_selector": ".item-title a"
+                },
+                {
+                    "field_name": "Percents",
+                    "css_selector": ".product-view"
+                },
+                {
+                    "field_name": "Recenzie",
+                    "css_selector": ".item-review .ntip"
+                }
+            ]
+        },
+        {
+            "name": "collection2",
+            "url": "http://drony.heureka.sk",
+            "fields": [
+                {
+                    "field_name": "Title",
+                    "css_selector": ".product-container a"
+                },
+                {
+                    "field_name": "Price",
+                    "css_selector": ".pricen"
+                },
+                {
+                    "field_name": "Description",
+                    "css_selector": ".desc .desc"
+                }
+            ]
+        }
+    ]
+}
