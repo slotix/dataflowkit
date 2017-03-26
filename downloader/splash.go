@@ -3,10 +3,11 @@ package downloader
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
+	neturl "net/url"
 	"time"
 )
 
@@ -21,7 +22,7 @@ type SplashConn struct {
 }
 
 type SplashResponse struct {
-	Num1 struct {
+	Obj struct {
 		HeadersSize int    `json:"headersSize"`
 		URL         string `json:"url"`
 		Ok          bool   `json:"ok"`
@@ -66,17 +67,17 @@ func NewSplashConn(host, user, password string, timeout, resourceTimeout, wait i
 	}
 }
 
-func (s *SplashConn) Download(addr string) ([]byte, error) {
+func (s *SplashConn) GetResponse(url string) (*SplashResponse, error) {
 	client := &http.Client{}
 	//splashURL := fmt.Sprintf("%s%s?&url=%s&timeout=%d&resource_timeout=%d&wait=%d", s.host, s.renderHTMLURL, url.QueryEscape(addr), s.timeout, s.resourceTimeout, s.wait)
 
 	splashURL := fmt.Sprintf(
 		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&wait=%d&lua_source=%s", s.host,
-		url.QueryEscape(addr),
+		neturl.QueryEscape(url),
 		s.timeout,
 		s.resourceTimeout,
 		s.wait,
-		url.QueryEscape(s.lua))
+		neturl.QueryEscape(s.lua))
 
 	req, err := http.NewRequest("GET", splashURL, nil)
 	req.SetBasicAuth(s.user, s.password)
@@ -97,19 +98,38 @@ func (s *SplashConn) Download(addr string) ([]byte, error) {
 			logger.Println("Json Unmarshall error", err)
 		}
 		//if response returned by Splash is bad
-		if !sResponse.Num1.Ok {
+		/*
+		if !sResponse.Obj.Ok {
 			return nil, fmt.Errorf("Error: %d. %s",
-				sResponse.Num1.Status,
-				sResponse.Num1.StatusText)
+				sResponse.Obj.Status,
+				sResponse.Obj.StatusText)
+		}*/
+		//return &sResponse, nil
+		if !sResponse.Obj.Ok {
+			err = fmt.Errorf("Error: %d. %s",
+				sResponse.Obj.Status,
+				sResponse.Obj.StatusText)
+		} else {
+			err = nil
 		}
-		decoded, err := base64.StdEncoding.DecodeString(sResponse.Num1.Content.Text)
-		if err != nil {
-			logger.Println("decode error:", err)
-			return nil, fmt.Errorf(string(res))
-		}
-		return decoded, nil
+		return &sResponse, err
 	}
 	return nil, fmt.Errorf(string(res))
+
+}
+
+func (r *SplashResponse) GetHTML() ([]byte, error) {
+	if r == nil {
+		logger.Println("empty response ")
+		return nil, errors.New("empty response")
+	}
+	decoded, err := base64.StdEncoding.DecodeString(r.Obj.Content.Text)
+	if err != nil {
+		logger.Println("decode error:", err)
+		//return nil, fmt.Errorf(string(res))
+		return nil, err
+	}
+	return decoded, nil
 }
 
 /*

@@ -1,9 +1,9 @@
 package server
 
 import (
-	"errors"
-
 	neturl "net/url"
+
+	"fmt"
 
 	"github.com/slotix/dataflowkit/downloader"
 )
@@ -37,8 +37,9 @@ func (mw robotstxtmw) Download(url string) (output []byte, err error) {
 			logger.Println(err)
 		}
 	} else {
-		err = errors.New("Disallowed by robots.txt")
+		err = fmt.Errorf("%s: disallowed by robots.txt", url)
+		logger.Println(err)
 	}
-	
+
 	return
 }

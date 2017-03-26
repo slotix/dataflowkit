@@ -8,6 +8,7 @@ import (
 	"time"
 
 	jujuratelimit "github.com/juju/ratelimit"
+	"github.com/slotix/dataflowkit/downloader"
 	"github.com/sony/gobreaker"
 
 	"github.com/go-kit/kit/circuitbreaker"
@@ -73,6 +74,10 @@ type proxymw struct {
 
 func (mw proxymw) Download(url string) ([]byte, error) {
 	return mw.next.Download(url)
+}
+
+func (mw proxymw) GetResponse(url string) (*downloader.SplashResponse, error) {
+	return mw.next.GetResponse(url)
 }
 
 func (mw proxymw) ParseData(payload []byte) ([]byte, error) {

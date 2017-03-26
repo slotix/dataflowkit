@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/slotix/dataflowkit/cache"
+	"github.com/slotix/dataflowkit/downloader"
 )
 
 func statsMiddleware(userID string) ServiceMiddleware {
@@ -24,6 +25,12 @@ func (mw statsmw) ParseData(payload []byte) (output []byte, err error) {
 func (mw statsmw) Download(url string) (output []byte, err error) {
 	mw.incrementCount()
 	output, err = mw.ParseService.Download(url)
+	return
+}
+
+func (mw statsmw) GetResponse(url string) (output *downloader.SplashResponse, err error) {
+	mw.incrementCount()
+	output, err = mw.ParseService.GetResponse(url)
 	return
 }
 

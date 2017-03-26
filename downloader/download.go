@@ -24,9 +24,9 @@ var errURLEmpty = errors.New("Empty string. URL")
 type directConn struct {
 }
 
-//Download gets content from url.
-//If no data is pulled through Splash server https://github.com/scrapinghub/splash/ .
-func Download(url string) ([]byte, error) {
+//GetResponse is needed to be passed to  httpcaching middleware
+//to provide a RFC7234 compliant HTTP cache
+func GetResponse(url string) (*SplashResponse, error) {
 	if url == "" {
 		return nil, errURLEmpty
 	}
@@ -48,8 +48,18 @@ func Download(url string) ([]byte, error) {
 			end
 		`,
 	)
+	response, err := s.GetResponse(url)
+	return response, err
+}
 
-	content, err := s.Download(url)
+//Download gets content from url.
+//If no data is pulled through Splash server https://github.com/scrapinghub/splash/ .
+func Download(url string) ([]byte, error) {
+	response, err := GetResponse(url)
+	if err != nil {
+		return nil, err
+	}
+	content, err := response.GetHTML()
 	if err == nil {
 		return content, nil
 	}
