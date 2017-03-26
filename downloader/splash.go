@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type SplashConn struct {
@@ -25,20 +26,28 @@ type SplashResponse struct {
 		URL         string `json:"url"`
 		Ok          bool   `json:"ok"`
 		Content     struct {
-			Encoding string `json:"encoding"`
 			Text     string `json:"text"`
-			MimeType string `json:"mimeType"`
+			Encoding string `json:"encoding"`
 			Size     int    `json:"size"`
+			MimeType string `json:"mimeType"`
 		} `json:"content"`
-		Headers []struct {
+		Cookies []struct {
+			Expires  time.Time `json:"expires"`
+			Name     string    `json:"name"`
+			HTTPOnly bool      `json:"httpOnly"`
+			Path     string    `json:"path"`
+			Value    string    `json:"value"`
+			Domain   string    `json:"domain"`
+			Secure   bool      `json:"secure"`
+		} `json:"cookies"`
+		StatusText  string `json:"statusText"`
+		HTTPVersion string `json:"httpVersion"`
+		RedirectURL string `json:"redirectURL"`
+		Headers     []struct {
 			Value string `json:"value"`
 			Name  string `json:"name"`
 		} `json:"headers"`
-		Cookies     []interface{} `json:"cookies"`
-		HTTPVersion string        `json:"httpVersion"`
-		Status      int           `json:"status"`
-		StatusText  string        `json:"statusText"`
-		RedirectURL string        `json:"redirectURL"`
+		Status int `json:"status"`
 	} `json:"1"`
 }
 
@@ -87,11 +96,10 @@ func (s *SplashConn) Download(addr string) ([]byte, error) {
 		if err := json.Unmarshal(res, &sResponse); err != nil {
 			logger.Println("Json Unmarshall error", err)
 		}
-		//status code returned by Splash
-		statusCode := sResponse.Num1.Status
-		if statusCode != 200 {
+		//if response returned by Splash is bad
+		if !sResponse.Num1.Ok {
 			return nil, fmt.Errorf("Error: %d. %s",
-				statusCode,
+				sResponse.Num1.Status,
 				sResponse.Num1.StatusText)
 		}
 		decoded, err := base64.StdEncoding.DecodeString(sResponse.Num1.Content.Text)
