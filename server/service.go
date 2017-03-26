@@ -9,6 +9,7 @@ import (
 
 // ParseService provides operations on strings.
 type ParseService interface {
+	GetResponse(string) (*downloader.SplashResponse, error)
 	Download(string) ([]byte, error)
 	ParseData(payload []byte) ([]byte, error)
 	CheckServices() (status map[string]string)
@@ -16,6 +17,11 @@ type ParseService interface {
 }
 
 type parseService struct{}
+
+func (parseService) GetResponse(url string) (*downloader.SplashResponse, error) {
+	response, err := downloader.GetResponse(url)
+	return response, err
+}
 
 func (parseService) Download(url string) ([]byte, error) {
 	//defer func(begin time.Time) {

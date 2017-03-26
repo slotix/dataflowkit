@@ -29,7 +29,7 @@ func GetRobotsData(content []byte) *robotstxt.RobotsData {
 	//return Robots{r, parsedURL.Path}
 }
 
-func CrawlDelay(r *robotstxt.RobotsData) time.Duration {
+func GetCrawlDelay(r *robotstxt.RobotsData) time.Duration {
 	if r != nil {
 		group := r.FindGroup("DataflowKitBot")
 		return group.CrawlDelay
