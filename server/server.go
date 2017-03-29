@@ -63,12 +63,10 @@ func Init(addr string, proxy string) {
 	svc = proxyingMiddleware(context.Background(), proxy, serverLogger)(svc)
 	svc = statsMiddleware("18")(svc)
 	svc = cachingMiddleware()(svc)
-//	svc = resultCachingMiddleware()(svc)
+	//	svc = resultCachingMiddleware()(svc)
 	svc = loggingMiddleware(serverLogger)(svc)
 	svc = robotsTxtMiddleware()(svc)
 	svc = instrumentingMiddleware(requestCount, requestLatency, countResult)(svc)
-
-	
 
 	getHTMLHandler := httptransport.NewServer(
 		makeGetHTMLEndpoint(svc),

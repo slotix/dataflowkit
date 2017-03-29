@@ -5,8 +5,6 @@ import (
 	"github.com/slotix/dataflowkit/parser"
 )
 
-
-
 // ParseService provides operations on strings.
 type ParseService interface {
 	GetResponse(string) (*downloader.SplashResponse, error)

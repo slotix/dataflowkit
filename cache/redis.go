@@ -82,16 +82,15 @@ func (b *RedisConn) newPool() *redis.Pool {
 	}
 }
 
-// Sets expiration timestamp on a stored state
-func (b *RedisConn) setExpirationTime(key string) error {
-	//expiresIn := b.config.ResultsExpireIn
-	expiresIn := 0
-	if expiresIn == 0 {
-		// // expire results after 1 hour by default
-		expiresIn = 3600
+func (b *RedisConn) SetExpireAt(key string, expiresAt int64) error {
+	var expirationTimestamp int32
+	if expiresAt < 0 {
+		// expire results after 1 hour by default
+		expiresAt = 3600
+		expirationTimestamp = int32(time.Now().UTC().Unix()+ expiresAt)
+	} else {
+		expirationTimestamp = int32(expiresAt)
 	}
-	expirationTimestamp := int32(time.Now().Unix() + int64(expiresIn))
-
 	conn := b.open()
 	defer conn.Close()
 
@@ -99,8 +98,25 @@ func (b *RedisConn) setExpirationTime(key string) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
+}
+
+func (b *RedisConn) SetExpireIn(key string, expiresIn int64) error {
+	if expiresIn == 0 {
+		expiresIn = 3600
+	}
+
+	conn := b.open()
+	defer conn.Close()
+
+	reply, err := conn.Do("EXPIRE", key, expiresIn)
+	if err != nil {
+		return err
+	}
+	if reply.(string) == "OK" {
+		return nil
+	}
+	return err
 }
 
 //GetValue gets value from Redis
@@ -109,7 +125,6 @@ func (b *RedisConn) GetValue(key string) ([]byte, error) {
 	conn := b.open()
 	defer conn.Close()
 	content, err := redis.Bytes(conn.Do("GET", key))
-	//	logger.Println(key, err)
 	if err == nil {
 		return content, nil
 	}
@@ -122,7 +137,6 @@ func (b *RedisConn) GetIntValue(key string) (int64, error) {
 	conn := b.open()
 	defer conn.Close()
 	int, err := redis.Int64(conn.Do("GET", key))
-	//	logger.Println(key, err)
 	if err == nil {
 		return int, nil
 	}
@@ -138,13 +152,8 @@ func (b *RedisConn) SetValue(key string, value interface{}) error {
 		return err
 	}
 	if reply.(string) == "OK" {
-		//set 1 hour 3600 before html content key expiration
-		//r.conn.Do("EXPIRE", url, viper.GetInt("redis.expire"))
-		err = b.setExpirationTime(key)
-		if err != nil {
-			return err
-		}
+		return nil
 	}
-	return nil
-}
+	return err
 
+}

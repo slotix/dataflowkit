@@ -1,9 +1,8 @@
 package server
 
 import (
-	neturl "net/url"
-
 	"fmt"
+	neturl "net/url"
 
 	"github.com/slotix/dataflowkit/downloader"
 )
@@ -33,9 +32,9 @@ func (mw robotstxtmw) Download(url string) (output []byte, err error) {
 	//allowed?
 	if allow {
 		output, err = mw.ParseService.Download(url)
-		if err != nil {
-			logger.Println(err)
-		}
+			if err != nil {
+				logger.Println(err)
+			}
 	} else {
 		err = fmt.Errorf("%s: disallowed by robots.txt", url)
 		logger.Println(err)
