@@ -40,14 +40,16 @@ func GetResponse(url string) (*SplashResponse, error) {
 		1, //wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
 		` function main(splash)
 			local url = splash.args.url
-			local reply = splash:http_get(url).info
+			local reply = splash:http_get(url)
 			assert(splash:wait(1))
 			return {
-				reply
+				reply.request.info,	
+				reply.info
 			}
 			end
 		`,
 	)
+
 	response, err := s.GetResponse(url)
 	return response, err
 }

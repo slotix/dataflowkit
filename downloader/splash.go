@@ -21,35 +21,50 @@ type SplashConn struct {
 	lua             string
 }
 
+type Headers []struct {
+	Value string `json:"value"`
+	Name  string `json:"name"`
+}
+
 type SplashResponse struct {
-	Obj struct {
-		HeadersSize int    `json:"headersSize"`
-		URL         string `json:"url"`
-		Ok          bool   `json:"ok"`
-		Content     struct {
-			Text     string `json:"text"`
-			Encoding string `json:"encoding"`
-			Size     int    `json:"size"`
-			MimeType string `json:"mimeType"`
-		} `json:"content"`
-		Cookies []struct {
-			Expires  time.Time `json:"expires"`
-			Name     string    `json:"name"`
-			HTTPOnly bool      `json:"httpOnly"`
-			Path     string    `json:"path"`
-			Value    string    `json:"value"`
-			Domain   string    `json:"domain"`
-			Secure   bool      `json:"secure"`
-		} `json:"cookies"`
-		StatusText  string `json:"statusText"`
-		HTTPVersion string `json:"httpVersion"`
-		RedirectURL string `json:"redirectURL"`
-		Headers     []struct {
+	Request struct {
+		Cookies     []interface{} `json:"cookies"`
+		Method      string        `json:"method"`
+		HeadersSize int           `json:"headersSize"`
+		URL         string        `json:"url"`
+		HTTPVersion string        `json:"httpVersion"`
+		QueryString []struct {
 			Value string `json:"value"`
 			Name  string `json:"name"`
-		} `json:"headers"`
-		Status int `json:"status"`
+		} `json:"queryString"`
+		Headers  Headers `json:"headers"`
+		BodySize int     `json:"bodySize"`
 	} `json:"1"`
+	Response struct {
+		Headers Headers `json:"headers"`
+		Cookies []struct {
+			Name     string    `json:"name"`
+			Value    string    `json:"value"`
+			Expires  time.Time `json:"expires"`
+			Domain   string    `json:"domain"`
+			Secure   bool      `json:"secure"`
+			Path     string    `json:"path"`
+			HTTPOnly bool      `json:"httpOnly"`
+		} `json:"cookies"`
+		HeadersSize int  `json:"headersSize"`
+		Ok          bool `json:"ok"`
+		Content     struct {
+			Text     string `json:"text"`
+			MimeType string `json:"mimeType"`
+			Size     int    `json:"size"`
+			Encoding string `json:"encoding"`
+		} `json:"content"`
+		Status      int    `json:"status"`
+		URL         string `json:"url"`
+		HTTPVersion string `json:"httpVersion"`
+		StatusText  string `json:"statusText"`
+		RedirectURL string `json:"redirectURL"`
+	} `json:"2"`
 }
 
 //NewSplashConn opens new connection to Splash Server
@@ -99,16 +114,16 @@ func (s *SplashConn) GetResponse(url string) (*SplashResponse, error) {
 		}
 		//if response returned by Splash is bad
 		/*
-		if !sResponse.Obj.Ok {
-			return nil, fmt.Errorf("Error: %d. %s",
-				sResponse.Obj.Status,
-				sResponse.Obj.StatusText)
-		}*/
+			if !sResponse.Obj.Ok {
+				return nil, fmt.Errorf("Error: %d. %s",
+					sResponse.Obj.Status,
+					sResponse.Obj.StatusText)
+			}*/
 		//return &sResponse, nil
-		if !sResponse.Obj.Ok {
+		if !sResponse.Response.Ok {
 			err = fmt.Errorf("Error: %d. %s",
-				sResponse.Obj.Status,
-				sResponse.Obj.StatusText)
+				sResponse.Response.Status,
+				sResponse.Response.StatusText)
 		} else {
 			err = nil
 		}
@@ -123,7 +138,7 @@ func (r *SplashResponse) GetHTML() ([]byte, error) {
 		logger.Println("empty response ")
 		return nil, errors.New("empty response")
 	}
-	decoded, err := base64.StdEncoding.DecodeString(r.Obj.Content.Text)
+	decoded, err := base64.StdEncoding.DecodeString(r.Response.Content.Text)
 	if err != nil {
 		logger.Println("decode error:", err)
 		//return nil, fmt.Errorf(string(res))
@@ -131,30 +146,3 @@ func (r *SplashResponse) GetHTML() ([]byte, error) {
 	}
 	return decoded, nil
 }
-
-/*
-func (s *SplashConn) Download1(addr string) ([]byte, error) {
-	client := &http.Client{}
-	splashURL := fmt.Sprintf("%s%s?&url=%s&timeout=%d&resource_timeout=%d&wait=%d", s.host, s.renderHTMLURL, url.QueryEscape(addr), s.timeout, s.resourceTimeout, s.wait)
-	req, err := http.NewRequest("GET", splashURL, nil)
-	req.SetBasicAuth(s.user, s.password)
-	req.Header.Set("Content-Type", "text/plain")
-	//fmt.Println(req.Header.Get("Content-Type"))
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	//resp.Header.Set("Content-Type", "text/plain")
-	defer resp.Body.Close()
-	res, err := ioutil.ReadAll(resp.Body)
-
-	//fmt.Println("CONTENT", http.DetectContentType(res))
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode == 200 {
-		return res, nil
-	}
-	return nil, fmt.Errorf(string(res))
-}
-*/
