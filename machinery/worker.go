@@ -1,19 +1,22 @@
 package main
 
-import "github.com/slotix/dataflowkit/parser"
+import (
+	"github.com/slotix/dataflowkit/downloader"
+	"github.com/slotix/dataflowkit/parser"
+)
 //import "time"
 
 func GetHTML(url string) (string, error) {
-	_, err := parser.GetHTML(url)
+	_, err := downloader.Download(url)
 	if err != nil {
 		return "", err
 	}
-//	time.Sleep(10 * time.Second)
+	//	time.Sleep(10 * time.Second)
 	return "200", nil
 }
 
 func GetHTML1(url string) (string, error) {
-	content, err := parser.GetHTML(url)
+	content, err := downloader.Download(url)
 	if err != nil {
 		return "", err
 	}
@@ -21,7 +24,11 @@ func GetHTML1(url string) (string, error) {
 }
 
 func MarshalData(payload []byte) ([]byte, error) {
-	res, err := parser.MarshalData(payload)
+	parser, err := parser.NewParser(payload)
+	if err != nil {
+		return nil, err
+	}
+	res, err := parser.MarshalData()
 	if err != nil {
 		return nil, err
 	}

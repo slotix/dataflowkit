@@ -1,4 +1,4 @@
-package main
+package main // import "github.com/slotix/dataflowkit"
 
 import (
 	"fmt"
