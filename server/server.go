@@ -33,9 +33,8 @@ func Init(addr string, proxy string) {
 
 	var serverLogger kitlog.Logger
 	serverLogger = kitlog.NewLogfmtLogger(os.Stderr)
-	serverLogger = kitlog.NewContext(serverLogger).With("listen", addr).With("caller", kitlog.DefaultCaller)
-
-	//ctx := context.Background()
+	serverLogger = kitlog.With(serverLogger, "listen", addr, "caller", kitlog.DefaultCaller)
+	
 
 	fieldKeys := []string{"method", "error"}
 
