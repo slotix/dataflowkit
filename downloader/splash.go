@@ -68,13 +68,11 @@ type SplashResponse struct {
 }
 
 //NewSplashConn opens new connection to Splash Server
-func NewSplashConn(host, user, password string, timeout, resourceTimeout, wait int, lua string) SplashConn {
+func NewSplashConn(host string, timeout, resourceTimeout, wait int, lua string) SplashConn {
 
 	return SplashConn{
 		//	config:     cnf,
 		host:            host,
-		user:            user,
-		password:        password,
 		timeout:         timeout,
 		resourceTimeout: resourceTimeout,
 		wait:            wait,

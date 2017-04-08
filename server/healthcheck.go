@@ -55,7 +55,7 @@ func (r redisConn) isAlive() error {
 func (s splashConn) isAlive() error {
 
 	var p pingSplashServerResponse
-	err := p.pingSplashServer(s.url, s.userName, s.userPass)
+	err := p.pingSplashServer(s.url)
 	if err != nil {
 		return err
 	}
@@ -72,10 +72,10 @@ type pingSplashServerResponse struct {
 
 //pingSplashServer returns status and maxrss from Splash server
 //http://localhost:8050/_ping  endpoint
-func (p *pingSplashServerResponse) pingSplashServer(url string, userName, userPass string) error {
+func (p *pingSplashServerResponse) pingSplashServer(url string) error {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
-	req.SetBasicAuth(userName, userPass)
+	//req.SetBasicAuth(userName, userPass)
 	resp, err := client.Do(req)
 	// Check Error
 	if err != nil {

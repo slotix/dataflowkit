@@ -33,8 +33,6 @@ func GetResponse(url string) (*SplashResponse, error) {
 
 	s := NewSplashConn(
 		"http://localhost:8050/",
-		"user",
-		"userpass",
 		20,
 		30,
 		1, //wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
