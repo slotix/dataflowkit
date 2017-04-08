@@ -11,8 +11,8 @@ import (
 // Define flags
 var (
 	configPath    = flag.String("c", "config.yml", "Path to a configuration file")
-	broker        = flag.String("b", "redis://localhost:6379", "Broker URL")
-	resultBackend = flag.String("r", "redis://localhost:6379", "Result backend")
+	broker        = flag.String("b", "redis://127.0.0.1:6379", "Broker URL")
+	resultBackend = flag.String("r", "redis://127.0.0.1:6379", "Result backend")
 
 	cnf    config.Config
 	server *machinery.Server

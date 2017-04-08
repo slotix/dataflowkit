@@ -1,9 +1,9 @@
 redis:
   protocol: tcp
-  address: localhost:6379
+  address: 127.0.0.1:6379
   expire: 3600
 splash:
-  base-url: "http://localhost:8050/"
+  base-url: "http://127.0.0.1:8050/"
   ping-url: "_ping" #this endpoint is used for checking if splash service is alive 
   render-html: "render.html"
   render-json: "render.json"
