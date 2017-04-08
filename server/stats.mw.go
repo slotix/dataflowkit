@@ -36,7 +36,7 @@ func (mw statsmw) GetResponse(url string) (output *downloader.SplashResponse, er
 
 //temporarily writing to redis
 func (mw statsmw) incrementCount() {
-	redisURL := "localhost:6379"
+	redisURL := "127.0.0.1:6379"
 	redisPassword := ""
 	redis := cache.NewRedisConn(redisURL, redisPassword, "", 0)
 	count, err := redis.GetIntValue(mw.userID)
