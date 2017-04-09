@@ -3,16 +3,14 @@ package parser
 import (
 	"bytes"
 	"encoding/csv"
-
-	"github.com/spf13/viper"
 )
 
 //MarshalCSV Marshales harvested data as CSV tables
-func (cols Collections) MarshalCSV() ([]byte, error) {
+func (cols Collections) MarshalCSV(comma string) ([]byte, error) {
 
 	tables := CSVTableCollection{}
 	for _, o := range cols.Element {
-		tables.Tables = append(tables.Tables, o.marshalCSVItem())
+		tables.Tables = append(tables.Tables, o.marshalCSVItem(comma))
 	}
 	buf, err := tables.MarshalJSON()
 	if err != nil {
@@ -21,11 +19,13 @@ func (cols Collections) MarshalCSV() ([]byte, error) {
 	return buf, nil
 }
 
-func (c collection) marshalCSVItem() CSVTable {
+func (c collection) marshalCSVItem(comma string) CSVTable {
+	if comma == "" {
+		comma = ","
+	}
 	var b bytes.Buffer
 	writer := csv.NewWriter(&b)
-	str := viper.GetString("parser.CSV.comma")
-	r := rune(str[0])
+	r := rune(comma[0])
 	writer.Comma = r
 
 	buf := c.generateTable()

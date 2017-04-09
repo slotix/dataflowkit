@@ -26,6 +26,7 @@ func generateHTTPHeaders(dHeaders downloader.Headers) (header http.Header) {
 	return header
 }
 
+//Cacheable check if resource is cacheable
 func Cacheable(resp *downloader.SplashResponse) (rv cacheobject.ObjectResults) {
 	respHeader := generateHTTPHeaders(resp.Response.Headers)
 	reqHeader := generateHTTPHeaders(resp.Request.Headers)

@@ -7,8 +7,6 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"context"
-
 	kitlog "github.com/go-kit/kit/log"
 	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -21,20 +19,11 @@ func init() {
 	logger = log.New(os.Stdout, "server: ", log.Lshortfile)
 }
 
-func Init(addr string, proxy string) {
-
-	/*
-		var (
-			httpAddr     = flag.String("http.addr", ":8000", "Address for HTTP (JSON) server")
-			consulAddr   = flag.String("consul.addr", "", "Consul agent address")
-			retryMax     = flag.Int("retry.max", 3, "per-request retries to different instances")
-			retryTimeout = flag.Duration("retry.timeout", 500*time.Millisecond, "per-request timeout, including retries")
-		)*/
+func Init(port string) {
 
 	var serverLogger kitlog.Logger
 	serverLogger = kitlog.NewLogfmtLogger(os.Stderr)
-	serverLogger = kitlog.With(serverLogger, "listen", addr, "caller", kitlog.DefaultCaller)
-	
+	serverLogger = kitlog.With(serverLogger, "listen", port, "caller", kitlog.DefaultCaller)
 
 	fieldKeys := []string{"method", "error"}
 
@@ -59,7 +48,7 @@ func Init(addr string, proxy string) {
 
 	var svc ParseService
 	svc = parseService{}
-	svc = proxyingMiddleware(context.Background(), proxy, serverLogger)(svc)
+	//	svc = proxyingMiddleware(context.Background(), proxy, serverLogger)(svc)
 	svc = statsMiddleware("18")(svc)
 	svc = cachingMiddleware()(svc)
 	//	svc = resultCachingMiddleware()(svc)
@@ -79,16 +68,18 @@ func Init(addr string, proxy string) {
 		encodeResponse,
 	)
 
+	/*
 	checkServicesHandler := httptransport.NewServer(
 		makeCheckServicesEndpoint(svc),
 		decodeCheckServicesRequest,
 		encodeCheckServicesResponse,
 	)
+	*/
 
 	router := httprouter.New()
 	router.Handler("POST", "/app/gethtml", getHTMLHandler)
 	router.Handler("POST", "/app/marshaldata", marshalDataHandler)
-	router.Handler("POST", "/app/chkservices", checkServicesHandler)
+	//router.Handler("POST", "/app/chkservices", checkServicesHandler)
 	//router.Handler("GET", "/", http.FileServer(http.Dir("web/")))
 	//router.ServeFiles("/static/*filepath", http.Dir("web/static"))
 	router.ServeFiles("/static/*filepath", http.Dir("web/static"))
@@ -102,6 +93,6 @@ func Init(addr string, proxy string) {
 
 	router.Handler("GET", "/metrics", stdprometheus.Handler())
 
-	serverLogger.Log("msg", "HTTP", "addr", addr)
-	serverLogger.Log("err", http.ListenAndServe(addr, router))
+	serverLogger.Log("msg", "HTTP", "addr", port)
+	serverLogger.Log("err", http.ListenAndServe(port, router))
 }

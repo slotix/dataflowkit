@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/slotix/dataflowkit/cache"
 	"github.com/slotix/dataflowkit/downloader"
+	"github.com/spf13/viper"
 )
 
 func statsMiddleware(userID string) ServiceMiddleware {
@@ -36,7 +37,7 @@ func (mw statsmw) GetResponse(url string) (output *downloader.SplashResponse, er
 
 //temporarily writing to redis
 func (mw statsmw) incrementCount() {
-	redisURL := "127.0.0.1:6379"
+	redisURL := viper.GetString("redis")
 	redisPassword := ""
 	redis := cache.NewRedisConn(redisURL, redisPassword, "", 0)
 	count, err := redis.GetIntValue(mw.userID)

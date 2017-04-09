@@ -10,7 +10,7 @@ type ParseService interface {
 	GetResponse(string) (*downloader.SplashResponse, error)
 	Download(string) ([]byte, error)
 	ParseData(payload []byte) ([]byte, error)
-	CheckServices() (status map[string]string)
+//	CheckServices() (status map[string]string)
 	//	Save(payload []byte) (string, error)
 }
 
@@ -44,9 +44,9 @@ func (parseService) ParseData(payload []byte) ([]byte, error) {
 	return res, nil
 }
 
-func (parseService) CheckServices() (status map[string]string) {
-	return CheckServices() //, allAlive
-}
+//func (parseService) CheckServices() (status map[string]string) {
+//	return CheckServices() //, allAlive
+//}
 
 // ServiceMiddleware is a chainable behavior modifier for ParseService.
 type ServiceMiddleware func(ParseService) ParseService

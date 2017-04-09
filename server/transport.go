@@ -40,12 +40,14 @@ func makeMarshalDataEndpoint(svc ParseService) endpoint.Endpoint {
 	}
 }
 
+/*
 func makeCheckServicesEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		status := svc.CheckServices()
 		return status, nil
 	}
 }
+*/
 
 func decodeGetHTMLRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var request getHTMLRequest

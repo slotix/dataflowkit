@@ -1,4 +1,4 @@
-package server
+package healthcheck
 
 import (
 	"bytes"
@@ -16,9 +16,9 @@ type healthChecker interface {
 }
 
 type redisConn struct {
-	conn     redis.Conn
-	protocol string
-	addr     string
+	conn    redis.Conn
+	network string
+	host    string
 }
 
 type splashConn struct {
@@ -37,7 +37,7 @@ func (s splashConn) serviceName() string {
 
 func (r redisConn) isAlive() error {
 	var err error
-	r.conn, err = redis.Dial(r.protocol, r.addr)
+	r.conn, err = redis.Dial(r.network, r.host)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ type pingSplashServerResponse struct {
 }
 
 //pingSplashServer returns status and maxrss from Splash server
-//http://localhost:8050/_ping  endpoint
+//_ping  endpoint
 func (p *pingSplashServerResponse) pingSplashServer(url string) error {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
@@ -95,13 +95,11 @@ func CheckServices() (status map[string]string) {
 	status = make(map[string]string)
 	services := []healthChecker{
 		redisConn{
-			protocol: viper.GetString("redis.protocol"),
-			addr:     viper.GetString("redis.address")},
+			network: viper.GetString("redis-network"),
+			host:    viper.GetString("redis")},
 		splashConn{
-			url:      fmt.Sprintf("%s%s", viper.GetString("splash.base-url"), viper.GetString("splash.ping-url")),
-			userName: viper.GetString("splash.username"),
-			userPass: viper.GetString("splash.userpass")}}
-
+			//url: fmt.Sprintf("http://%s/_ping", viper.GetString("splash.host"))}}
+			url: fmt.Sprintf("http://%s/_ping", viper.GetString("splash"))}}
 	for _, srv := range services {
 		err := srv.isAlive()
 		if err != nil {
