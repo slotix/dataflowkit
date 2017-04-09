@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/slotix/dataflowkit/healthcheck"
 	"github.com/slotix/dataflowkit/server"
 
 	"github.com/spf13/cobra"
@@ -31,10 +32,16 @@ import (
 )
 
 var (
-	VERSION string // VERSION is set during build
-	cfgFile string
-	addr  string
-	proxy   string
+	VERSION               string // VERSION is set during build
+	cfgFile               string
+	port                  string
+	redisHost             string
+	redisExpire           int
+	redisNetwork          string
+	splashHost            string
+	splashTimeout         int
+	splashResourceTimeout int
+	splashWait            int
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -70,7 +77,7 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Checking services ... ")
 
-		status := server.CheckServices()
+		status := healthcheck.CheckServices()
 		allAlive := true
 		for k, v := range status {
 			fmt.Printf("%s: %s\n", k, v)
@@ -80,8 +87,8 @@ var RootCmd = &cobra.Command{
 		}
 
 		if allAlive {
-			fmt.Printf("Starting Server ... %s\n", addr)
-			server.Init(addr, proxy)
+			fmt.Printf("Starting Server ... %s\n", port)
+			server.Init(port)
 		}
 	},
 }
@@ -98,26 +105,44 @@ func Execute(version string) {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	//cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
-	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":8000", "HTTP listen address")
-	RootCmd.Flags().StringVarP(&proxy, "proxy","p", "", "Optional comma-separated list of URLs to proxy MarshalData requests")
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is the working directory)")
+
+	RootCmd.Flags().StringVarP(&port, "port", "p", ":8000", "HTTP listen address")
+	RootCmd.Flags().StringVarP(&redisHost, "redis", "r", "127.0.0.1:6379", "Redis host address")
+	RootCmd.Flags().IntVarP(&redisExpire, "redis-expire", "", 3600, "Default Redis expire value")
+	RootCmd.Flags().StringVarP(&redisNetwork, "redis-network", "", "tcp", "Redis Network")
+	RootCmd.Flags().StringVarP(&splashHost, "splash", "s", "127.0.0.1:8050", "Splash host address")
+	RootCmd.Flags().IntVarP(&splashTimeout, "splash-timeout", "", 20, "Default Timeout for Splash")
+	RootCmd.Flags().IntVarP(&splashResourceTimeout, "splash-resource-timeout", "", 30, "Default Timeout for Splash")
+	RootCmd.Flags().IntVarP(&splashWait, "splash-wait", "", 1, "Time in seconds to wait until js scripts loaded.")
+	viper.AutomaticEnv() // read in environment variables that match
+	viper.BindPFlag("port", RootCmd.Flags().Lookup("port"))
+	viper.BindPFlag("redis", RootCmd.Flags().Lookup("redis"))
+	viper.BindPFlag("redis-expire", RootCmd.Flags().Lookup("redis-expire"))
+	viper.BindPFlag("redis-network", RootCmd.Flags().Lookup("redis-network"))
+	viper.BindPFlag("splash", RootCmd.Flags().Lookup("splash"))
+	viper.BindPFlag("splash-timeout", RootCmd.Flags().Lookup("splash-timeout"))
+	viper.BindPFlag("splash-resource-timeout", RootCmd.Flags().Lookup("splash-resource-timeout"))
+	viper.BindPFlag("splash-wait", RootCmd.Flags().Lookup("splash-wait"))
+
+	//RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is the working directory)")
 }
 
 // initConfig reads in config file and ENV variables if set.
+/*
 func initConfig() {
 	if cfgFile != "" { // enable ability to specify config file via flag
 		viper.SetConfigFile(cfgFile)
 	}
 
 	viper.SetConfigName(".dataflowkit") // name of config file (without extension)
-	viper.AddConfigPath(".")           // look for config in the working directory
-	viper.AddConfigPath("$HOME")       // adding home directory to search path
-	//viper.AddConfigPath("/etc/dataflowkit/")   // path to look for the config file in
+	viper.AddConfigPath(".")            // look for config in the working directory
+	viper.AddConfigPath("$HOME")        // adding home directory to search path
+	viper.AddConfigPath("/etc/dataflowkit/")   // path to look for the config file in
 	viper.AutomaticEnv() // read in environment variables that match
 
 	if err := viper.ReadInConfig(); err != nil {
@@ -126,3 +151,4 @@ func initConfig() {
 		// Handle errors reading the config file
 	}
 }
+*/

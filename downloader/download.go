@@ -9,7 +9,10 @@ import (
 	"os"
 	"time"
 
+	"fmt"
+
 	"golang.org/x/net/html/charset"
+	"github.com/spf13/viper"
 )
 
 var logger *log.Logger
@@ -30,22 +33,22 @@ func GetResponse(url string) (*SplashResponse, error) {
 	if url == "" {
 		return nil, errURLEmpty
 	}
-
 	s := NewSplashConn(
-		"http://localhost:8050/",
-		20,
-		30,
-		1, //wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
+		fmt.Sprintf("http://%s/", viper.GetString("splash")),
+		viper.GetInt("splash-timeout"),
+		viper.GetInt("splash-resource-timeout"),
+		viper.GetInt("splash-wait"), //wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
+		fmt.Sprintf(
 		` function main(splash)
 			local url = splash.args.url
 			local reply = splash:http_get(url)
-			assert(splash:wait(1))
+			assert(splash:wait(%d))
 			return {
 				reply.request.info,	
 				reply.info
 			}
 			end
-		`,
+		`, viper.GetInt("splash-wait")),
 	)
 
 	response, err := s.GetResponse(url)

@@ -8,6 +8,7 @@ import (
 	"github.com/slotix/dataflowkit/cache"
 	"github.com/slotix/dataflowkit/downloader"
 	"github.com/slotix/dataflowkit/parser"
+	"github.com/spf13/viper"
 )
 
 func cachingMiddleware() ServiceMiddleware {
@@ -23,7 +24,7 @@ type cachemw struct {
 var redisCon cache.RedisConn
 
 func init() {
-	redisURL := "localhost:6379"
+	redisURL := viper.GetString("redis")
 	redisPassword := ""
 	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)
 }

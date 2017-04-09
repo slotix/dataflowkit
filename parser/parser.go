@@ -230,7 +230,7 @@ func (p *Parser) MarshalData() ([]byte, error) {
 	case "xml":
 		b, err = cols.MarshalXML()
 	case "csv":
-		b, err = cols.MarshalCSV()
+		b, err = cols.MarshalCSV("")
 	default:
 		b, err = cols.MarshalJSON()
 	}

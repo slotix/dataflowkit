@@ -46,7 +46,7 @@ func (mw logmw) Download(url string) (output []byte, err error) {
 	output, err = mw.ParseService.Download(url)
 	return
 }
-
+/*
 func (mw logmw) CheckServices() (output map[string]string) {
 	defer func(begin time.Time) {
 		_ = mw.logger.Log(
@@ -58,3 +58,4 @@ func (mw logmw) CheckServices() (output map[string]string) {
 	output = mw.ParseService.CheckServices()
 	return
 }
+*/
