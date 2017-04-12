@@ -589,7 +589,7 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser6(in *jlexer.Lexer, ou
 		switch key {
 		case "name":
 			out.Name = string(in.String())
-		case "css_selector":
+		case "css":
 			out.CSSSelector = string(in.String())
 		case "type":
 			out.Type = int(in.Int())
@@ -616,7 +616,7 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser6(out *jwriter.Writer,
 		out.RawByte(',')
 	}
 	first = false
-	out.RawString("\"css_selector\":")
+	out.RawString("\"css\":")
 	out.String(string(in.CSSSelector))
 	if !first {
 		out.RawByte(',')

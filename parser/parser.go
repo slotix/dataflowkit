@@ -12,12 +12,17 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/slotix/dataflowkit/downloader"
 	"golang.org/x/net/html"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 var logger *log.Logger
 
+// use a single instance of Validate, it caches struct info
+var validate *validator.Validate
+
 func init() {
 	logger = log.New(os.Stdout, "parser: ", log.Lshortfile)
+	validate = validator.New()
 }
 
 var errNoSelectors = errors.New("No selectors found")
@@ -92,8 +97,13 @@ func (p *payload) parseItem(h []byte) (col collection, err error) {
 	parents := make(map[string]*goquery.Selection)
 	var intersection *goquery.Selection
 	for i, f := range p.Fields {
+		err := validate.Struct(f)
+		if err != nil {
+			//logger.Println(err)
+			return col, err
+		}
 		sel := doc.Find(f.CSSSelector)
-		logger.Println(f.CSSSelector, sel.Length())
+		//logger.Println(f.CSSSelector, sel.Length())
 		col.genAttrFieldName(f.Name, sel)
 		parents[f.CSSSelector] = doc.Find(f.CSSSelector).Parents()
 		if sel.Length() > 0 { //don't add selectors to intersection if lenght is 0. Otherwise the whole intersection returns No selectors error
