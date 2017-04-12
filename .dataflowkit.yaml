@@ -1,9 +1,0 @@
-redis:
-  network: tcp
-  host: 127.0.0.1:6379
-  expire: 3600
-splash:
-  host: "127.0.0.1:8050"
-  timeout: 20
-  resource-timeout: 30
-  wait: 1 #wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
