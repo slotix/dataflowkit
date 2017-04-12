@@ -23,14 +23,16 @@ type cachemw struct {
 
 var redisCon cache.RedisConn
 
-func init() {
-	redisURL := viper.GetString("redis")
-	redisPassword := ""
-	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)
-}
+//func init() {
+	
+//}
 
 func (mw cachemw) Download(url string) (output []byte, err error) {
 	debug := true
+	redisURL := viper.GetString("redis")
+	redisPassword := ""
+	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)
+	
 	redisValue, err := redisCon.GetValue(url)
 	if err == nil {
 		var sResponse downloader.SplashResponse
@@ -49,7 +51,7 @@ func (mw cachemw) Download(url string) (output []byte, err error) {
 	}
 
 	resp, respErr := mw.ParseService.GetResponse(url)
-	//Check if it is cacheable 
+	//Check if it is cacheable
 	rv := cache.Cacheable(resp)
 	expTime := rv.OutExpirationTime.Unix()
 	if debug {
@@ -91,23 +93,26 @@ func (mw cachemw) Download(url string) (output []byte, err error) {
 }
 
 func (mw cachemw) ParseData(payload []byte) (output []byte, err error) {
+	redisURL := viper.GetString("redis")
+	redisPassword := ""
+	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)
 	p, err := parser.NewParser(payload)
 	if err != nil {
 		return nil, err
 	}
-	rediskey := fmt.Sprintf("%s-%s", p.Format, p.PayloadMD5)
-	redisValue, err := redisCon.GetValue(rediskey)
+	redisKey := fmt.Sprintf("%s-%s", p.Format, p.PayloadMD5)
+	redisValue, err := redisCon.GetValue(redisKey)
 	if err == nil {
 		return redisValue, nil
 	}
 
 	output, err = mw.ParseService.ParseData(payload)
 
-	err = redisCon.SetValue(rediskey, output)
+	err = redisCon.SetValue(redisKey, output)
 	if err != nil {
 		logger.Println(err.Error())
 	}
-	err = redisCon.SetExpireIn(rediskey, 3600)
+	err = redisCon.SetExpireIn(redisKey, 3600)
 	if err != nil {
 		logger.Println(err.Error())
 	}

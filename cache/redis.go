@@ -105,18 +105,15 @@ func (b *RedisConn) SetExpireIn(key string, expiresIn int64) error {
 	if expiresIn == 0 {
 		expiresIn = 3600
 	}
-
+	logger.Println(key)
 	conn := b.open()
 	defer conn.Close()
 
-	reply, err := conn.Do("EXPIRE", key, expiresIn)
+	_, err := conn.Do("EXPIRE", key, expiresIn)
 	if err != nil {
 		return err
 	}
-	if reply.(string) == "OK" {
-		return nil
-	}
-	return err
+	return nil
 }
 
 //GetValue gets value from Redis

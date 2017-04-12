@@ -224,12 +224,61 @@ func prepareData() Collections {
 		   	   `)
 
 	payloads["diesel"] = []byte(`
-				{"format":"json","collections":[{"name":"diesel","url":"http://diesel.elcat.kg","fields":[
-				
-				{"field_name":"General","css_selector":"#fo_133 b a"},
-				{"field_name":"Themes","css_selector":"#fo_133 .row1:nth-child(3)"},
-				{"field_name":"Replies","css_selector":"#fo_133 .row2:nth-child(4)"},
-				{"field_name":"Subforums","css_selector":"#fo_133 .forumdesc a"}]}]}
+{
+   "format":"xml",
+   "collections":[
+      {
+         "name":"Collection1",
+         "url":"http://diesel.elcat.kg",
+         "fields":[
+            {
+               "name":"link1",
+               "css":"h4 a",
+               "type":2,
+               "details":{
+                  "name":"link1details",
+                  "url":"http://diesel.elcat.kg/index.php?s=d274ba35aefc0c250968f376227468ba&showforum=29",
+                  "fields":[
+                     {
+                        "name":"link1",
+                        "css":"h4 a",
+                        "type":2,
+                        "details":null,
+                        "count":24
+                     }
+                  ]
+               },
+               "count":144
+            }
+         ]
+      },
+      {
+         "name":"Collection2",
+         "url":"http://diesel.elcat.kg/index.php?s=d274ba35aefc0c250968f376227468ba&showforum=376",
+         "fields":[
+            {
+               "name":"link1",
+               "css":".col_c_forum a",
+               "type":2,
+               "details":{
+                  "name":"link1details",
+                  "url":"http://diesel.elcat.kg/index.php?s=d274ba35aefc0c250968f376227468ba&showforum=28",
+                  "fields":[
+                     {
+                        "name":"text1",
+                        "css":".topic_title span",
+                        "type":1,
+                        "details":null,
+                        "count":40
+                     }
+                  ]
+               },
+               "count":4
+            }
+         ]
+      }
+   ]
+}
 `)
 
 	payloads["amazon"] = []byte(`
@@ -297,7 +346,7 @@ func prepareData() Collections {
 	 */
 
 	var p Parser
-	err := p.UnmarshalJSON(payloads["heureka"])
+	err := p.UnmarshalJSON(payloads["diesel"])
 	if err != nil {
 
 		log.Fatal(err)
