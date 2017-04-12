@@ -7,7 +7,7 @@ type meta struct {
 
 type field struct {
 	Name        string `json:"name"`
-	CSSSelector string `json:"css_selector"`
+	CSSSelector string `json:"css"`
 	Type        int    `json:"type"`
 	Count       int    `json:"count"`
 	Details     payload `json:"-"`
