@@ -15,7 +15,7 @@ var (
 	_ = jwriter.Writer{}
 )
 
-func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser(in *jlexer.Lexer, out *CSVTableCollection) {
+func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser(in *jlexer.Lexer, out *CSVTableCollection) {
 	if in.IsNull() {
 		in.Skip()
 		return
@@ -56,7 +56,7 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser(in *jlexer.Lexer, out *
 	}
 	in.Delim('}')
 }
-func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser(out *jwriter.Writer, in CSVTableCollection) {
+func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser(out *jwriter.Writer, in CSVTableCollection) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -83,27 +83,27 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser(out *jwriter.Writer, in
 // MarshalJSON supports json.Marshaler interface
 func (v CSVTableCollection) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser(&w, v)
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v CSVTableCollection) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser(w, v)
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CSVTableCollection) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser(&r, v)
+	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CSVTableCollection) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser(l, v)
+	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser(l, v)
 }
-func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser1(in *jlexer.Lexer, out *CSVTable) {
+func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser1(in *jlexer.Lexer, out *CSVTable) {
 	if in.IsNull() {
 		in.Skip()
 		return
@@ -129,7 +129,7 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser1(in *jlexer.Lexer, out 
 	}
 	in.Delim('}')
 }
-func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser1(out *jwriter.Writer, in CSVTable) {
+func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser1(out *jwriter.Writer, in CSVTable) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -151,27 +151,27 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser1(out *jwriter.Writer, i
 // MarshalJSON supports json.Marshaler interface
 func (v CSVTable) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser1(&w, v)
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser1(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v CSVTable) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser1(w, v)
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser1(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *CSVTable) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser1(&r, v)
+	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser1(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *CSVTable) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser1(l, v)
+	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser1(l, v)
 }
-func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser2(in *jlexer.Lexer, out *Collections) {
+func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser2(in *jlexer.Lexer, out *Collections) {
 	if in.IsNull() {
 		in.Skip()
 		return
@@ -212,7 +212,7 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser2(in *jlexer.Lexer, out 
 	}
 	in.Delim('}')
 }
-func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser2(out *jwriter.Writer, in Collections) {
+func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser2(out *jwriter.Writer, in Collections) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -239,27 +239,27 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser2(out *jwriter.Writer, i
 // MarshalJSON supports json.Marshaler interface
 func (v Collections) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser2(&w, v)
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser2(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Collections) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser2(w, v)
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser2(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Collections) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser2(&r, v)
+	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser2(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Collections) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser2(l, v)
+	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser2(l, v)
 }
-func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser3(in *jlexer.Lexer, out *collection) {
+func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser3(in *jlexer.Lexer, out *collection) {
 	if in.IsNull() {
 		in.Skip()
 		return
@@ -308,7 +308,7 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser3(in *jlexer.Lexer, out 
 	}
 	in.Delim('}')
 }
-func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser3(out *jwriter.Writer, in collection) {
+func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser3(out *jwriter.Writer, in collection) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -363,27 +363,27 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser3(out *jwriter.Writer, i
 // MarshalJSON supports json.Marshaler interface
 func (v collection) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser3(&w, v)
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser3(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v collection) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser3(w, v)
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser3(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *collection) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser3(&r, v)
+	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser3(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *collection) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser3(l, v)
+	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser3(l, v)
 }
-func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser4(in *jlexer.Lexer, out *Parser) {
+func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser4(in *jlexer.Lexer, out *Parser) {
 	if in.IsNull() {
 		in.Skip()
 		return
@@ -413,7 +413,7 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser4(in *jlexer.Lexer, out 
 				}
 				for !in.IsDelim(']') {
 					var v10 payload
-					easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser5(in, &v10)
+					easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser5(in, &v10)
 					out.Payloads = append(out.Payloads, v10)
 					in.WantComma()
 				}
@@ -433,7 +433,7 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser4(in *jlexer.Lexer, out 
 	}
 	in.Delim('}')
 }
-func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser4(out *jwriter.Writer, in Parser) {
+func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser4(out *jwriter.Writer, in Parser) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -456,7 +456,7 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser4(out *jwriter.Writer, i
 			if v12 > 0 {
 				out.RawByte(',')
 			}
-			easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser5(out, v13)
+			easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser5(out, v13)
 		}
 		out.RawByte(']')
 	}
@@ -472,27 +472,27 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser4(out *jwriter.Writer, i
 // MarshalJSON supports json.Marshaler interface
 func (v Parser) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser4(&w, v)
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser4(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Parser) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser4(w, v)
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser4(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Parser) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser4(&r, v)
+	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser4(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Parser) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser4(l, v)
+	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser4(l, v)
 }
-func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser5(in *jlexer.Lexer, out *payload) {
+func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser5(in *jlexer.Lexer, out *payload) {
 	if in.IsNull() {
 		in.Skip()
 		return
@@ -514,13 +514,13 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser5(in *jlexer.Lexer, out 
 			} else {
 				in.Delim('[')
 				if !in.IsDelim(']') {
-					out.Fields = make([]field, 0, 2)
+					out.Fields = make([]field, 0, 1)
 				} else {
 					out.Fields = []field{}
 				}
 				for !in.IsDelim(']') {
 					var v16 field
-					easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser6(in, &v16)
+					easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser6(in, &v16)
 					out.Fields = append(out.Fields, v16)
 					in.WantComma()
 				}
@@ -537,7 +537,7 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser5(in *jlexer.Lexer, out 
 	}
 	in.Delim('}')
 }
-func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser5(out *jwriter.Writer, in payload) {
+func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser5(out *jwriter.Writer, in payload) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -554,7 +554,7 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser5(out *jwriter.Writer, i
 			if v17 > 0 {
 				out.RawByte(',')
 			}
-			easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser6(out, v18)
+			easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser6(out, v18)
 		}
 		out.RawByte(']')
 	}
@@ -572,7 +572,7 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser5(out *jwriter.Writer, i
 	out.String(string(in.URL))
 	out.RawByte('}')
 }
-func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser6(in *jlexer.Lexer, out *field) {
+func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser6(in *jlexer.Lexer, out *field) {
 	if in.IsNull() {
 		in.Skip()
 		return
@@ -591,6 +591,10 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser6(in *jlexer.Lexer, out 
 			out.Name = string(in.String())
 		case "css_selector":
 			out.CSSSelector = string(in.String())
+		case "type":
+			out.Type = int(in.Int())
+		case "count":
+			out.Count = int(in.Int())
 		default:
 			in.SkipRecursive()
 		}
@@ -598,7 +602,7 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDfkParserParser6(in *jlexer.Lexer, out 
 	}
 	in.Delim('}')
 }
-func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser6(out *jwriter.Writer, in field) {
+func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser6(out *jwriter.Writer, in field) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -614,5 +618,17 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDfkParserParser6(out *jwriter.Writer, i
 	first = false
 	out.RawString("\"css_selector\":")
 	out.String(string(in.CSSSelector))
+	if !first {
+		out.RawByte(',')
+	}
+	first = false
+	out.RawString("\"type\":")
+	out.Int(int(in.Type))
+	if !first {
+		out.RawByte(',')
+	}
+	first = false
+	out.RawString("\"count\":")
+	out.Int(int(in.Count))
 	out.RawByte('}')
 }

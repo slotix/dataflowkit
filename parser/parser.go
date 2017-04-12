@@ -88,20 +88,21 @@ func (p *payload) parseItem(h []byte) (col collection, err error) {
 	if err != nil {
 		return col, err
 	}
-
 	//Find closest intersection of all parents for payload fields
 	parents := make(map[string]*goquery.Selection)
 	var intersection *goquery.Selection
 	for i, f := range p.Fields {
-		parents[f.CSSSelector] = doc.Find(f.CSSSelector).Parents()
-		if i == 0 {
-			intersection = parents[f.CSSSelector]
-		} else {
-			intersection = intersection.Intersection(parents[f.CSSSelector])
-		}
-		//pr(intersection.Length())
 		sel := doc.Find(f.CSSSelector)
+		logger.Println(f.CSSSelector, sel.Length())
 		col.genAttrFieldName(f.Name, sel)
+		parents[f.CSSSelector] = doc.Find(f.CSSSelector).Parents()
+		if sel.Length() > 0 { //don't add selectors to intersection if lenght is 0. Otherwise the whole intersection returns No selectors error
+			if i == 0 {
+				intersection = parents[f.CSSSelector]
+			} else {
+				intersection = intersection.Intersection(parents[f.CSSSelector])
+			}
+		}
 	}
 	if intersection.Length() == 0 {
 		return col, errNoSelectors

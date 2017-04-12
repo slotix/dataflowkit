@@ -1,9 +1,7 @@
 package parser
 
 import (
-	"fmt"
 	"log"
-	"os"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -36,14 +34,21 @@ import (
 //http://www.homedepot.com
 
 func prepareData() Collections {
-	viper.SetConfigName("../.dataflowkit") // name of config file (without extension)
-	viper.AddConfigPath(".")              // look for config in the working directory
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Println(err)
-		os.Exit(-1)
-		// Handle errors reading the config file
-	}
-
+	/*
+		viper.SetConfigName("../.dataflowkit") // name of config file (without extension)
+		viper.AddConfigPath(".")              // look for config in the working directory
+		if err := viper.ReadInConfig(); err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+			// Handle errors reading the config file
+		}
+	*/
+	viper.Set("splash","127.0.0.1:8050")
+	viper.Set("splash-timeout","20")
+	viper.Set("splash-resource-timeout","30")
+	viper.Set("splash-wait","5")
+	
+	
 	payloads := make(map[string][]byte)
 	payloads["najnakup_heureka"] = []byte(`
 	   { "format":"json",
@@ -53,16 +58,19 @@ func prepareData() Collections {
 	            "url":"http://www.najnakup.sk/televizory",
 	            "fields":[
 	               {
-	                  "field_name":"Recenzie",
-	                  "css_selector":".item-review .ntip"
+	                  "name":"Recenzie",
+	                  "css_selector":".item-review .ntip",
+					  "type":1
 	               },
 	   			{
-	                  "field_name":"Title",
-	                  "css_selector":".item-title a"
+	                  "name":"Title",
+	                  "css_selector":".item-title a",
+					  "type":1
 	               },
 	   			{
-	                  "field_name":"Percents",
-	                  "css_selector":".product-view"
+	                  "name":"Percents",
+	                  "css_selector":".product-view",
+					  "type":1
 	               }
 
 	            ]
@@ -140,34 +148,41 @@ func prepareData() Collections {
 	            "url":"http://drony.heureka.sk",
 	            "fields":[
 					 {
-	                  "field_name":"Reviews",
-	                  "css_selector":".review-count a"
+	                  "name":"Reviews",
+	                  "css_selector":".review-count a",
+					  "type":1
 	               },
 				   {
-	                  "field_name":"Promo",
-	                  "css_selector":".promo-top-ico__badge span"
+	                  "name":"Promo",
+	                  "css_selector":".promo-top-ico__badge span",
+					  "type":1
 	               },
 				   
 				  {
-	                  "field_name":"Title",
-	                  "css_selector":".product-container a"
+	                  "name":"Title",
+	                  "css_selector":".product-container a",
+					  "type":1
 	               },
 					{
-	                  "field_name":"TopIcon",
-	                  "css_selector":".top-ico"
+	                  "name":"TopIcon",
+	                  "css_selector":".top-ico",
+					  "type":1
 	               },
 
 					{
-	                  "field_name":"BuyInfo",
-	                  "css_selector":".buy-info"
+	                  "name":"BuyInfo",
+	                  "css_selector":".buy-info",
+					  "type":1
 	               },
 					{
-	                  "field_name":"Price",
-	                  "css_selector":".pricen"
+	                  "name":"Price",
+	                  "css_selector":".pricen",
+					  "type":1
 	               },
 					{
-	                  "field_name":"Photo",
-	                  "css_selector":".foto img"
+	                  "name":"Photo",
+	                  "css_selector":".foto img",
+					  "type":1
 	               }
 				  
 	            ]
