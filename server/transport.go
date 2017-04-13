@@ -16,12 +16,10 @@ func makeGetHTMLEndpoint(svc ParseService) endpoint.Endpoint {
 		req := request.(getHTMLRequest)
 		v, err := svc.Download(req.URL)
 		//v, err := svc.GetHTML(request.(string))
-
 		if err != nil {
 			//	return getHTMLResponse{v, err.Error()}, nil
 			//			return errResponse{err.Error()}, nil
 			return nil, err
-
 		}
 		//return getHTMLResponse{v, ""}, nil
 		return v, nil
@@ -32,6 +30,7 @@ func makeMarshalDataEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		//	fmt.Println("from makeMarshalDataEndpoint",string(request.([]byte)))
 		v, err := svc.ParseData(request.([]byte))
+		logger.Println(v, err)
 		if err != nil {
 			//return errResponse{err.Error()}, nil
 			return nil, err
@@ -94,10 +93,8 @@ func decodeGetHTMLResponse(_ context.Context, r *http.Response) (interface{}, er
 func decodeMarshalDataResponse(_ context.Context, r *http.Response) (interface{}, error) {
 	response, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		//		fmt.Println(err)
 		return nil, err
 	}
-	//fmt.Println(string(response))
 	return response, nil
 }
 

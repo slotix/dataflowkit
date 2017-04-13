@@ -189,18 +189,26 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser2(in *jlexer.Lexer, ou
 		case "collections":
 			if in.IsNull() {
 				in.Skip()
-				out.Element = nil
+				out.Collections = nil
 			} else {
 				in.Delim('[')
 				if !in.IsDelim(']') {
-					out.Element = make([]collection, 0, 1)
+					out.Collections = make([]*collection, 0, 8)
 				} else {
-					out.Element = []collection{}
+					out.Collections = []*collection{}
 				}
 				for !in.IsDelim(']') {
-					var v4 collection
-					(v4).UnmarshalEasyJSON(in)
-					out.Element = append(out.Element, v4)
+					var v4 *collection
+					if in.IsNull() {
+						in.Skip()
+						v4 = nil
+					} else {
+						if v4 == nil {
+							v4 = new(collection)
+						}
+						(*v4).UnmarshalEasyJSON(in)
+					}
+					out.Collections = append(out.Collections, v4)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -221,15 +229,19 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser2(out *jwriter.Writer,
 	}
 	first = false
 	out.RawString("\"collections\":")
-	if in.Element == nil {
+	if in.Collections == nil {
 		out.RawString("null")
 	} else {
 		out.RawByte('[')
-		for v5, v6 := range in.Element {
+		for v5, v6 := range in.Collections {
 			if v5 > 0 {
 				out.RawByte(',')
 			}
-			(v6).MarshalEasyJSON(out)
+			if v6 == nil {
+				out.RawString("null")
+			} else {
+				(*v6).MarshalEasyJSON(out)
+			}
 		}
 		out.RawByte(']')
 	}

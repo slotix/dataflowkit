@@ -105,7 +105,6 @@ func (b *RedisConn) SetExpireIn(key string, expiresIn int64) error {
 	if expiresIn == 0 {
 		expiresIn = 3600
 	}
-	logger.Println(key)
 	conn := b.open()
 	defer conn.Close()
 

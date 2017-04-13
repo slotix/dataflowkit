@@ -29,6 +29,7 @@ func (mw logmw) ParseData(payload []byte) (output []byte, err error) {
 	}(time.Now())
 
 	output, err = mw.ParseService.ParseData(payload)
+	logger.Println(output, err)
 	return
 }
 

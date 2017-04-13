@@ -12,7 +12,7 @@ func (cols Collections) SaveExcel(fName string) ([]byte, error) {
 	var sheet *xlsx.Sheet
 	var err error
 	file = xlsx.NewFile()
-	for _, c := range cols.Element {
+	for _, c := range cols.Collections {
 		sheet, err = file.AddSheet(c.meta.Name)
 		if err != nil {
 			logger.Printf(err.Error())

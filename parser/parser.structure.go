@@ -1,8 +1,8 @@
 package parser
 
 type meta struct {
-	Name string `json:"name" xml:"name"`
-	URL  string `json:"url" xml:"url"`
+	Name string `json:"name" xml:"name" validate:"required"`
+	URL  string `json:"url" xml:"url" validate:"required"`
 }
 
 type field struct {
@@ -10,7 +10,7 @@ type field struct {
 	CSSSelector string `json:"css" validate:"required"`
 	Type        int    `json:"type"`
 	Count       int    `json:"count"`
-	Details     payload `json:"-"`
+	Details     payload `json:"-" validate:"-"`
 	//Regex       string `json:"regex"`
 	//FieldType   string `json:"type"`
 }
@@ -19,7 +19,7 @@ type field struct {
 
 type payload struct {
 	meta
-	Fields []field `json:"fields"`
+	Fields []field `json:"fields" validate:"gt=0"` //number of fields >0 
 }
 
 //Parser structure stores input format and collections CSS Selectors
@@ -43,7 +43,7 @@ type collection struct {
 //easyjson:json
 type Collections struct {
 	//	Format string `json:"format"`
-	Element []collection `json:"collections"`
+	Collections []*collection `json:"collections"`
 }
 
 //CSVTable structure stores output data

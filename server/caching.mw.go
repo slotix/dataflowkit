@@ -107,7 +107,9 @@ func (mw cachemw) ParseData(payload []byte) (output []byte, err error) {
 	}
 
 	output, err = mw.ParseService.ParseData(payload)
-
+	if err != nil {
+		return nil, err
+	}
 	err = redisCon.SetValue(redisKey, output)
 	if err != nil {
 		logger.Println(err.Error())
