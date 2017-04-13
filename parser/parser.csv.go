@@ -9,7 +9,7 @@ import (
 func (cols Collections) MarshalCSV(comma string) ([]byte, error) {
 
 	tables := CSVTableCollection{}
-	for _, o := range cols.Element {
+	for _, o := range cols.Collections {
 		tables.Tables = append(tables.Tables, o.marshalCSVItem(comma))
 	}
 	buf, err := tables.MarshalJSON()

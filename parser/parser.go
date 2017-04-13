@@ -43,55 +43,68 @@ func NewParser(payload []byte) (Parser, error) {
 }
 
 //Parse parses payload json structure and generate Out to be serializes as JSON, XML, CSV, Excel
-func (p *Parser) Parse() (Collections, error) {
+func (p *Parser) Parse() (*Collections, error) {
 	//parse input and fill Payload structure
 	out := Collections{}
 	for _, collection := range p.Payloads {
 		content, err := downloader.Download(collection.URL)
 		if err != nil {
-			return out, err
+			logger.Println(err)
+			//return nil, err
 		}
 		outItem, err := collection.parseItem(content)
 		if err != nil {
+			logger.Println(err)
 			//return out, err
-			logger.Printf("\"%s:\" %s\n", outItem.Name, err)
+			//logger.Printf("\"%s:\" %s\n", outItem.Name, err)
+		} else {
+			out.Collections = append(out.Collections, outItem)
 		}
-		out.Element = append(out.Element, outItem)
 	}
-	return out, nil
+	
+	if len(out.Collections) == 0 {
+		return nil, errNoSelectors	
+	}
+	return &out, nil
 }
 
 //NewCollection initializes new collection
-func newCollection(p *payload) (collection, error) {
+func newCollection(p *payload) (*collection, error) {
+	meta := meta{
+		Name: p.Name,
+		URL:  p.URL,
+	}
+	//logger.Println(meta)
+	err := validate.Struct(meta)
+	if err != nil {
+		return nil, err
+	}
 	c := collection{
-		meta: meta{
-			Name: p.Name,
-			URL:  p.URL,
-		},
+		meta: meta,
 	}
-	if p.URL == "" {
-		return c, errEmptyURL
-	}
+	//if p.URL == "" {
+	//	return &c, errEmptyURL
+	//}
 	if len(p.Fields) == 0 {
-		return c, errNoSelectors
+		return nil, errNoSelectors
 	}
-	return c, nil
+	return &c, nil
 }
 
 //trying to determine common parent
-func (p *payload) parseItem(h []byte) (col collection, err error) {
+func (p *payload) parseItem(h []byte) (col *collection, err error) {
 	col, err = newCollection(p)
 	if err != nil {
-		return col, err
+		return nil, err
 	}
 	node, err := html.Parse(bytes.NewReader(h))
 
 	if err != nil {
-		return col, err
+		return nil, err
 	}
 	doc := goquery.NewDocumentFromNode(node)
 	if err != nil {
-		return col, err
+		return nil, err
 	}
 	//Find closest intersection of all parents for payload fields
 	parents := make(map[string]*goquery.Selection)
@@ -99,11 +112,10 @@ func (p *payload) parseItem(h []byte) (col collection, err error) {
 	for i, f := range p.Fields {
 		err := validate.Struct(f)
 		if err != nil {
-			//logger.Println(err)
-			return col, err
+			return nil, err
 		}
 		sel := doc.Find(f.CSSSelector)
-		//logger.Println(f.CSSSelector, sel.Length())
+	//	logger.Println(f.CSSSelector, sel.Length())
 		col.genAttrFieldName(f.Name, sel)
 		parents[f.CSSSelector] = doc.Find(f.CSSSelector).Parents()
 		if sel.Length() > 0 { //don't add selectors to intersection if lenght is 0. Otherwise the whole intersection returns No selectors error
@@ -112,10 +124,11 @@ func (p *payload) parseItem(h []byte) (col collection, err error) {
 			} else {
 				intersection = intersection.Intersection(parents[f.CSSSelector])
 			}
+
 		}
 	}
-	if intersection.Length() == 0 {
-		return col, errNoSelectors
+	if intersection == nil || intersection.Length() == 0 {
+		return nil, errNoSelectors
 	}
 	//pr(intersection.Length())
 	//Adding Intersection parent to the path for more precise.
@@ -123,16 +136,17 @@ func (p *payload) parseItem(h []byte) (col collection, err error) {
 	//	if strings.Contains(intAttr,"#"){
 	//		intAttr = dataValue(intersection)
 	//	}
-
+	//logger.Println(attrOrDataValue(intersection.Parent()))
 	intersectionWithParent := fmt.Sprintf("%s>%s",
 		attrOrDataValue(intersection.Parent()),
 		attrOrDataValue(intersection))
+	//logger.Println(intersectionWithParent)
 	//dataValue(intersection))
 	//intersectionWithParent = attrOrDataValue(intersection)
 
 	//pr("intParent", intersectionWithParent)
 	items := doc.Find(intersectionWithParent)
-
+	logger.Println(items.Length())
 	//	pr("items", items.Length())
 	var inter1 *goquery.Selection
 	if items.Length() == 1 {
@@ -307,15 +321,14 @@ func (i *item) fillCollection(fieldName string, s *goquery.Selection) {
 
 func attrOrDataValue(s *goquery.Selection) (value string) {
 	attr, exists := s.Attr("class")
-	if exists {
-		//return fmt.Sprintf("%s%s", ".", attr)
+	if exists && attr != "" { //in some cases tag is invalid f.e. <tr class>
 		return fmt.Sprintf(".%s", strings.Replace(strings.TrimSpace(attr), " ", ".", -1))
 	}
 	attr, exists = s.Attr("id")
-	if exists {
+
+	if exists && attr != "" {
 		return fmt.Sprintf("#%s", attr)
 	}
-
 	return s.Nodes[0].Data
 }
 

@@ -36,9 +36,10 @@ func (parseService) ParseData(payload []byte) ([]byte, error) {
 	p, err := parser.NewParser(payload)
 	if err != nil {
 		return nil, err
-	}
+	}	
 	res, err := p.MarshalData()
 	if err != nil {
+		logger.Println(res, err)
 		return nil, err
 	}
 	return res, nil
