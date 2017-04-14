@@ -26,7 +26,7 @@ func init() {
 }
 
 var errNoSelectors = errors.New("No selectors found")
-var errEmptyURL = errors.New("URL is empty")
+var errEmptyURL = errors.New("no URL provided")
 
 //NewParser initializes new Parser struct
 func NewParser(payload []byte) (Parser, error) {
@@ -61,9 +61,9 @@ func (p *Parser) Parse() (*Collections, error) {
 			out.Collections = append(out.Collections, outItem)
 		}
 	}
-	
+
 	if len(out.Collections) == 0 {
-		return nil, errNoSelectors	
+		return nil, errNoSelectors
 	}
 	return &out, nil
 }
@@ -92,6 +92,90 @@ func newCollection(p *payload) (*collection, error) {
 }
 
 //trying to determine common parent
+func (p *payload) parseItem1(h []byte) (col *collection, err error) {
+	col, err = newCollection(p)
+	if err != nil {
+		return nil, err
+	}
+	node, err := html.Parse(bytes.NewReader(h))
+
+	if err != nil {
+		return nil, err
+	}
+	doc := goquery.NewDocumentFromNode(node)
+	if err != nil {
+		return nil, err
+	}
+
+	//findSelectors(doc, "a")
+
+	//Find closest intersection of all parents for payload fields
+	parents := make(map[string]*goquery.Selection)
+	var intersection *goquery.Selection
+	for i, f := range p.Fields {
+		err := validate.Struct(f)
+		if err != nil {
+			return nil, err
+		}
+		sel := doc.Find(f.CSSSelector)
+		logger.Println(f.CSSSelector, sel.Length())
+		col.genAttrFieldName(f.Name, sel)
+		parents[f.CSSSelector] = doc.Find(f.CSSSelector).Parents()
+		if sel.Length() > 0 { //don't add selectors to intersection if lenght is 0. Otherwise the whole intersection returns No selectors error
+			if i == 0 {
+				intersection = parents[f.CSSSelector]
+			} else {
+				intersection = intersection.Intersection(parents[f.CSSSelector])
+			}
+
+		}
+	}
+	logger.Println(attrOrDataValue(intersection))
+	if intersection == nil || intersection.Length() == 0 {
+		return nil, errNoSelectors
+	}
+
+	intersectionWithParent := fmt.Sprintf("%s>%s",
+		attrOrDataValue(intersection.Parent()),
+		attrOrDataValue(intersection))
+	logger.Println(intersectionWithParent)
+
+	items := doc.Find(intersectionWithParent)
+	logger.Println(items.Length())
+	var inter1 *goquery.Selection
+	if items.Length() == 1 {
+		inter1 = items.Children()
+	}
+	if items.Length() > 1 {
+		inter1 = items
+	}
+
+	inter1.Each(func(i int, s *goquery.Selection) {
+		logger.Println(i, attrOrDataValue(s))
+		itm := item{value: make(map[string]interface{})}
+		for _, field := range p.Fields {
+			filtered := s.Find(field.CSSSelector)
+			//pr(field.FieldName)
+			if filtered.Length() >= 1 {
+				itm.fillCollection(field.Name, filtered)
+			}
+		}
+		if len(itm.value) > 0 {
+			col.Items = append(col.Items, itm.value)
+
+		}
+	})
+	col.Count = len(col.Items)
+	col.CreatedAt = time.Now().UnixNano()
+	return col, nil
+}
+func intersectionFL(sel *goquery.Selection) *goquery.Selection {
+	first := sel.First()
+	last := sel.Last()
+	intersection := first.Parents().Intersection(last.Parents())
+	return intersection
+}
+
 func (p *payload) parseItem(h []byte) (col *collection, err error) {
 	col, err = newCollection(p)
 	if err != nil {
@@ -106,8 +190,6 @@ func (p *payload) parseItem(h []byte) (col *collection, err error) {
 	if err != nil {
 		return nil, err
 	}
-	//Find closest intersection of all parents for payload fields
-	parents := make(map[string]*goquery.Selection)
 	var intersection *goquery.Selection
 	for i, f := range p.Fields {
 		err := validate.Struct(f)
@@ -115,39 +197,25 @@ func (p *payload) parseItem(h []byte) (col *collection, err error) {
 			return nil, err
 		}
 		sel := doc.Find(f.CSSSelector)
-	//	logger.Println(f.CSSSelector, sel.Length())
+		logger.Println(f.CSSSelector, sel.Length())
 		col.genAttrFieldName(f.Name, sel)
-		parents[f.CSSSelector] = doc.Find(f.CSSSelector).Parents()
 		if sel.Length() > 0 { //don't add selectors to intersection if lenght is 0. Otherwise the whole intersection returns No selectors error
 			if i == 0 {
-				intersection = parents[f.CSSSelector]
+				intersection = intersectionFL(sel)
 			} else {
-				intersection = intersection.Intersection(parents[f.CSSSelector])
+				intersection = intersection.Intersection(intersectionFL(sel))
 			}
-
 		}
 	}
 	if intersection == nil || intersection.Length() == 0 {
 		return nil, errNoSelectors
 	}
-	//pr(intersection.Length())
-	//Adding Intersection parent to the path for more precise.
-	//	intAttr := attrOrDataValue(intersection)
-	//	if strings.Contains(intAttr,"#"){
-	//		intAttr = dataValue(intersection)
-	//	}
-	//logger.Println(attrOrDataValue(intersection.Parent()))
 	intersectionWithParent := fmt.Sprintf("%s>%s",
 		attrOrDataValue(intersection.Parent()),
 		attrOrDataValue(intersection))
-	//logger.Println(intersectionWithParent)
-	//dataValue(intersection))
-	//intersectionWithParent = attrOrDataValue(intersection)
-
-	//pr("intParent", intersectionWithParent)
+	logger.Println(intersectionWithParent)
 	items := doc.Find(intersectionWithParent)
-	logger.Println(items.Length())
-	//	pr("items", items.Length())
+	//logger.Println(items.Length())
 	var inter1 *goquery.Selection
 	if items.Length() == 1 {
 		inter1 = items.Children()
@@ -157,18 +225,25 @@ func (p *payload) parseItem(h []byte) (col *collection, err error) {
 	}
 
 	inter1.Each(func(i int, s *goquery.Selection) {
-		//pr(i, attrOrDataValue(s))
+		logger.Println(i, attrOrDataValue(s))
 		itm := item{value: make(map[string]interface{})}
 		for _, field := range p.Fields {
 			filtered := s.Find(field.CSSSelector)
-			//pr(field.FieldName)
-			if filtered.Length() >= 1 {
+			logger.Println(filtered.Length())
+			switch {
+			case filtered.Length() == 1:
 				itm.fillCollection(field.Name, filtered)
+				if len(itm.value) > 0 {
+					col.Items = append(col.Items, itm.value)
+				}
+			case filtered.Length() > 1:
+				filtered.Each(func(i int, s *goquery.Selection) {
+					itm.fillCollection(field.Name, s)
+					if len(itm.value) > 0 {
+						col.Items = append(col.Items, itm.value)
+					}
+				})
 			}
-		}
-		if len(itm.value) > 0 {
-			col.Items = append(col.Items, itm.value)
-
 		}
 	})
 	col.Count = len(col.Items)
@@ -216,6 +291,14 @@ func (c collection) generateTable() (buf [][]string) {
 		buf = append(buf, row)
 	}
 	return
+}
+
+func findSelectors(doc *goquery.Document, what string) {
+	sel := doc.Find(what)
+	sel.Each(func(i int, s *goquery.Selection) {
+		attr, _ := s.Attr("href")
+		logger.Println(i, attr)
+	})
 }
 
 //MarshalData parses payload raw JSON data and generates output
