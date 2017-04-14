@@ -20,7 +20,6 @@ type statsmw struct {
 func (mw statsmw) ParseData(payload []byte) (output []byte, err error) {
 	mw.incrementCount()
 	output, err = mw.ParseService.ParseData(payload)
-	logger.Println(output, err)
 	return
 }
 

@@ -30,7 +30,6 @@ func makeMarshalDataEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		//	fmt.Println("from makeMarshalDataEndpoint",string(request.([]byte)))
 		v, err := svc.ParseData(request.([]byte))
-		logger.Println(v, err)
 		if err != nil {
 			//return errResponse{err.Error()}, nil
 			return nil, err
