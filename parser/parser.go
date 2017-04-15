@@ -223,23 +223,25 @@ func (p *payload) parseItem(h []byte) (col *collection, err error) {
 	if items.Length() > 1 {
 		inter1 = items
 	}
+	var itms []item
 	inter1.Each(func(i int, s *goquery.Selection) {
 		//logger.Println(i, attrOrDataValue(s))
-		itm := item{value: make(map[string]interface{})}
-		var itms []item
+		itm := item{value: make(map[string]interface{})}		
 		for _, field := range p.Fields {
 			filtered := s.Find(field.CSSSelector)
 			if filtered.Length() > 1 {
 				filtered.Each(func(i int, s *goquery.Selection) {
-					itm.fillCollection(field.Name, s)
-					itms = append(itms, itm)
-				})				
+					itm1 := item{value: make(map[string]interface{})}
+					itm1.fillCollection(field.Name, s)
+					itms = append(itms, itm1)
+				})	
+						
 			} else if filtered.Length() == 1{
 				itm.fillCollection(field.Name, filtered)
 			}
 		}
 		
-		//logger.Println(itms)
+	//	logger.Println(itms)
 		if len(itms) > 0 {
 			for _, i := range itms {
 				col.Items = append(col.Items, i.value)
