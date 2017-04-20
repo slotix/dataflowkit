@@ -13,6 +13,7 @@ import (
 	"github.com/slotix/dataflowkit/downloader"
 	"golang.org/x/net/html"
 	"gopkg.in/go-playground/validator.v9"
+	"github.com/slotix/dataflowkit/helpers"
 )
 
 var logger *log.Logger
@@ -38,7 +39,7 @@ func NewParser(payload []byte) (Parser, error) {
 	if p.Format == "" {
 		p.Format = "json"
 	}
-	p.PayloadMD5 = generateMD5(payload)
+	p.PayloadMD5 = helpers.GenerateMD5(payload)
 	return p, nil
 }
 
@@ -226,7 +227,7 @@ func (p *payload) parseItem(h []byte) (col *collection, err error) {
 	var itms []item
 	inter1.Each(func(i int, s *goquery.Selection) {
 		//logger.Println(i, attrOrDataValue(s))
-		itm := item{value: make(map[string]interface{})}		
+		itm := item{value: make(map[string]interface{})}
 		for _, field := range p.Fields {
 			filtered := s.Find(field.CSSSelector)
 			if filtered.Length() > 1 {
@@ -234,14 +235,14 @@ func (p *payload) parseItem(h []byte) (col *collection, err error) {
 					itm1 := item{value: make(map[string]interface{})}
 					itm1.fillCollection(field.Name, s)
 					itms = append(itms, itm1)
-				})	
-						
-			} else if filtered.Length() == 1{
+				})
+
+			} else if filtered.Length() == 1 {
 				itm.fillCollection(field.Name, filtered)
 			}
 		}
-		
-	//	logger.Println(itms)
+
+		//	logger.Println(itms)
 		if len(itms) > 0 {
 			for _, i := range itms {
 				col.Items = append(col.Items, i.value)
@@ -317,7 +318,7 @@ func (c collection) generateTable() (buf [][]string) {
 		}
 
 		for i, f := range c.Fields {
-			if !stringInSlice(f, keys) {
+			if !helpers.StringInSlice(f, keys) {
 				row[i] = ""
 			}
 		}

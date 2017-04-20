@@ -1,16 +1,24 @@
-package parser
+package helpers
 
 import (
 	"bytes"
 	"crypto/md5"
 	"io"
 	"io/ioutil"
+	"log"
+	"os"
 	"regexp"
 	"strings"
 )
 
+var logger *log.Logger
+
+func init() {
+	logger = log.New(os.Stdout, "helpers: ", log.Lshortfile)
+}
+
 //stringInSlice check if specified string in the slice of strings
-func stringInSlice(a string, list []string) bool {
+func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
 			return true
@@ -33,16 +41,16 @@ func InsertStringToSlice(slice []string, index int, value string) []string {
 	return slice
 }
 
-func addStringSliceToSlice(in []string, out []string) {
+func AddStringSliceToSlice(in []string, out []string) {
 	for _, s := range in {
-		if !stringInSlice(s, out) {
+		if !StringInSlice(s, out) {
 			out = append(out, s)
 		}
 	}
 }
 
 //func generateMD5(s string) string {
-func generateMD5(b []byte) []byte {
+func GenerateMD5(b []byte) []byte {
 	h := md5.New()
 	r := bytes.NewReader(b)
 	io.Copy(h, r)
