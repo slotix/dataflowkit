@@ -22,7 +22,7 @@ func generateHTTPHeaders(dHeaders downloader.Headers) (header http.Header) {
 		var str []string
 		str = append(str, h.Value)
 		header[h.Name] = str
-	}
+	}	
 	return header
 }
 

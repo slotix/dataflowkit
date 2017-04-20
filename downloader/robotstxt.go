@@ -9,6 +9,7 @@ import (
 
 	"github.com/temoto/robotstxt"
 )
+//skipURLs := []string {"", ""}
 
 func NewRobotsTxt(url string) string {
 	var robotsURL string
@@ -16,6 +17,7 @@ func NewRobotsTxt(url string) string {
 	if err != nil {
 		log.Println(err)
 	}
+	//skipLocalhost
 	robotsURL = fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
 	return robotsURL
 }

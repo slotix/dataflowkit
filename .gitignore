@@ -6,12 +6,7 @@
 # Folders
 _obj
 _test
-trash
-tools
-aquarium
-competitors
-config
-1stuff
+webold
 
 .vscode/*
 .idea/*
