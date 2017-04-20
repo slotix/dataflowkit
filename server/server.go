@@ -80,10 +80,10 @@ func Init(port string) {
 	router.Handler("POST", "/app/gethtml", getHTMLHandler)
 	router.Handler("POST", "/app/marshaldata", marshalDataHandler)
 	//router.Handler("POST", "/app/chkservices", checkServicesHandler)
-	//router.ServeFiles("/static/*filepath", http.Dir("web/static"))
-	//router.HandlerFunc("GET", "/", func(w http.ResponseWriter, r *http.Request) {
-	//	http.ServeFile(w, r, "web/index.html")
-	//})
+	router.ServeFiles("/static/*filepath", http.Dir("web/static"))
+	router.HandlerFunc("GET", "/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/index.html")
+	})
 
 	router.Handler("GET", "/metrics", stdprometheus.Handler())
 
