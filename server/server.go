@@ -82,6 +82,9 @@ func Init(port string) {
 	router.HandlerFunc("GET", "/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "web/index.html")
 	})
+	router.HandlerFunc("GET", "/get_started", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/get_started.html")
+	})
 
 	router.Handler("GET", "/metrics", stdprometheus.Handler())
 

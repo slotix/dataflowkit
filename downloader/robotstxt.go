@@ -2,24 +2,32 @@ package downloader
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	neturl "net/url"
 
+	"github.com/slotix/dataflowkit/helpers"
 	"github.com/temoto/robotstxt"
 )
-//skipURLs := []string {"", ""}
 
-func NewRobotsTxt(url string) string {
+var ignoredURLs = []string{
+	"127.0.0.1",
+	"0.0.0.0",
+	"dataflowkit.org",
+}
+
+func NewRobotsTxt(url string) (*string, error) {
 	var robotsURL string
 	parsedURL, err := neturl.Parse(url)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
-	//skipLocalhost
 	robotsURL = fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
-	return robotsURL
+	if !helpers.StringInSlice(url, ignoredURLs) {
+		return nil, fmt.Errorf("%s: Skipping... ", robotsURL)
+	}
+
+	return &robotsURL, nil
 }
 
 func GetRobotsData(content []byte) *robotstxt.RobotsData {

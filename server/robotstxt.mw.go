@@ -18,23 +18,29 @@ type robotstxtmw struct {
 }
 
 func (mw robotstxtmw) Download(url string) (output []byte, err error) {
-	robotsURL := downloader.NewRobotsTxt(url)
-	robots, err := mw.ParseService.Download(robotsURL)
-	robotsData := downloader.GetRobotsData(robots)
-	parsedURL, err := neturl.Parse(url)
-	if err != nil {
-		logger.Println("err")
-	}
 	allow := true
-	if robotsData != nil {
-		allow = robotsData.TestAgent(parsedURL.Path, "DataflowKitBot")
+	robotsURL, err := downloader.NewRobotsTxt(url)
+	if err != nil {
+		//return nil, err
+		logger.Println(err)
+	} else {
+		robots, err := mw.ParseService.Download(*robotsURL)
+		robotsData := downloader.GetRobotsData(robots)
+		parsedURL, err := neturl.Parse(url)
+		if err != nil {
+			logger.Println("err")
+		}
+		if robotsData != nil {
+			allow = robotsData.TestAgent(parsedURL.Path, "DataflowKitBot")
+		}
 	}
+
 	//allowed?
 	if allow {
 		output, err = mw.ParseService.Download(url)
-			if err != nil {
-				logger.Println(err)
-			}
+		if err != nil {
+			logger.Println(err)
+		}
 	} else {
 		err = fmt.Errorf("%s: disallowed by robots.txt", url)
 		logger.Println(err)
