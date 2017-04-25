@@ -4,10 +4,11 @@ import (
 	"github.com/slotix/dataflowkit/downloader"
 	"github.com/slotix/dataflowkit/parser"
 )
+
 //import "time"
 
 func GetHTML(url string) (string, error) {
-	_, err := downloader.Download(url)
+	_, err := downloader.Fetch(url)
 	if err != nil {
 		return "", err
 	}
@@ -16,7 +17,7 @@ func GetHTML(url string) (string, error) {
 }
 
 func GetHTML1(url string) (string, error) {
-	content, err := downloader.Download(url)
+	content, err := downloader.Fetch(url)
 	if err != nil {
 		return "", err
 	}

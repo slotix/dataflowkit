@@ -7,12 +7,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"fmt"
 
-	"golang.org/x/net/html/charset"
 	"github.com/spf13/viper"
+	"golang.org/x/net/html/charset"
 )
 
 var logger *log.Logger
@@ -27,50 +28,56 @@ var errURLEmpty = errors.New("Empty string. URL")
 type directConn struct {
 }
 
+func isRobotsTxt(url string) bool {
+	if strings.Contains(url, "robots.txt") {
+		return true
+	}
+	return false
+}
+
+func getLUA(url string) string {
+	if isRobotsTxt(url) {
+		return robotsLUA
+	}
+	return generalLUA
+}
+
 //GetResponse is needed to be passed to  httpcaching middleware
 //to provide a RFC7234 compliant HTTP cache
 func GetResponse(url string) (*SplashResponse, error) {
 	if url == "" {
 		return nil, errURLEmpty
 	}
+	wait := viper.GetInt("splash-wait")
 	s := NewSplashConn(
 		fmt.Sprintf("http://%s/", viper.GetString("splash")),
 		viper.GetInt("splash-timeout"),
 		viper.GetInt("splash-resource-timeout"),
-		viper.GetInt("splash-wait"), //wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
-		fmt.Sprintf(
-		` function main(splash)
-			local url = splash.args.url
-			local reply = splash:http_get(url)
-			assert(splash:wait(%d))
-			return {
-				reply.request.info,	
-				reply.info
-			}
-			end
-		`, viper.GetInt("splash-wait")),
+		wait, //wait parameter should be something more than default 0,5 value as it is not enough to load js scripts
+		fmt.Sprintf(getLUA(url), wait),
 	)
 
 	response, err := s.GetResponse(url)
+	//logger.Println(response)
 	return response, err
 }
 
-//Download gets content from url.
+//Fetch gets content from url.
 //If no data is pulled through Splash server https://github.com/scrapinghub/splash/ .
-func Download(url string) ([]byte, error) {
+func Fetch(url string) ([]byte, error) {
 	response, err := GetResponse(url)
 	if err != nil {
 		return nil, err
 	}
-	content, err := response.GetHTML()
+	content, err := response.GetContent()
 	if err == nil {
 		return content, nil
 	}
 	return nil, err
 }
 
-//Download gets content directly. Obsolete...
-func (d directConn) Download(url string) ([]byte, error) {
+//Fetch gets content directly. Obsolete...
+func (d directConn) Fetch(url string) ([]byte, error) {
 	transCfg := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: false}, // disable verify
 	}

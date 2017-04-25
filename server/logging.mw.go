@@ -42,7 +42,6 @@ func (mw logmw) Download(url string) (output []byte, err error) {
 			"took", time.Since(begin),
 		)
 	}(time.Now())
-
 	output, err = mw.ParseService.Download(url)
 	return
 }

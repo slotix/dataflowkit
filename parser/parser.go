@@ -11,9 +11,9 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/slotix/dataflowkit/downloader"
+	"github.com/slotix/dataflowkit/helpers"
 	"golang.org/x/net/html"
 	"gopkg.in/go-playground/validator.v9"
-	"github.com/slotix/dataflowkit/helpers"
 )
 
 var logger *log.Logger
@@ -48,7 +48,7 @@ func (p *Parser) Parse() (*Collections, error) {
 	//parse input and fill Payload structure
 	out := Collections{}
 	for _, collection := range p.Payloads {
-		content, err := downloader.Download(collection.URL)
+		content, err := downloader.Fetch(collection.URL)
 		if err != nil {
 			logger.Println(err)
 			//return nil, err

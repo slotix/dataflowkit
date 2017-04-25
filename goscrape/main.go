@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
 
 	"github.com/andrew-d/goscrape"
 	"github.com/andrew-d/goscrape/extract"
@@ -13,17 +12,16 @@ import (
 
 func main() {
 	config := &scrape.ScrapeConfig{
-		DividePage: scrape.DividePageBySelector("tr:nth-child(3) tr:nth-child(3n-2):not([style='height:10px'])"),
+		DividePage: scrape.DividePageBySelector(".p"),
 
 		Pieces: []scrape.Piece{
-			{Name: "title", Selector: "td.title > a", Extractor: extract.Text{}},
-			{Name: "link", Selector: "td.title > a", Extractor: extract.Attr{Attr: "href"}},
-			{Name: "rank", Selector: "td.title[align='right']",
-				Extractor: extract.Regex{Regex: regexp.MustCompile(`(\d+)`)}},
+			{Name: "Price", Selector: ".pricen", Extractor: extract.Text{}},
+			{Name: "Title", Selector: ".product-container a", Extractor: extract.Attr{Attr: "href"}},
+			{Name: "Reviews", Selector: ".review-count a", Extractor: extract.Text{}},
 		},
-
-		Paginator: paginate.BySelector("a[rel='nofollow']:last-child", "href"),
-	}
+		Paginator: paginate.BySelector(".listing a", "href"),
+	//	Paginator: paginate.ByQueryParam("f"),
+    }
 
 	scraper, err := scrape.New(config)
 	if err != nil {
@@ -32,7 +30,7 @@ func main() {
 	}
 
 	results, err := scraper.ScrapeWithOpts(
-		"https://news.ycombinator.com",
+		"https://drony.heureka.sk",
 		scrape.ScrapeOptions{MaxPages: 3},
 	)
 	if err != nil {
