@@ -35,16 +35,16 @@ func (mw robotstxtmw) Download(url string) (output []byte, err error) {
 		}
 	}
 
-	//allowed?
+	//allowed ?
 	if allow {
 		output, err = mw.ParseService.Download(url)
 		if err != nil {
 			logger.Println(err)
 		}
 	} else {
-		err = fmt.Errorf("%s: disallowed by robots.txt", url)
+		output = nil	
+		err = fmt.Errorf("%s: forbidden by robots.txt", url)
 		logger.Println(err)
 	}
-
 	return
 }

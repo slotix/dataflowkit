@@ -26,6 +26,7 @@ func (mw statsmw) ParseData(payload []byte) (output []byte, err error) {
 func (mw statsmw) Download(url string) (output []byte, err error) {
 	mw.incrementCount()
 	output, err = mw.ParseService.Download(url)
+	logger.Println("stop")
 	return
 }
 

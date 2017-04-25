@@ -6,15 +6,8 @@ import (
 
 	neturl "net/url"
 
-	"github.com/slotix/dataflowkit/helpers"
 	"github.com/temoto/robotstxt"
 )
-
-var ignoredURLs = []string{
-	"127.0.0.1",
-	"0.0.0.0",
-	"dataflowkit.org",
-}
 
 func NewRobotsTxt(url string) (*string, error) {
 	var robotsURL string
@@ -23,9 +16,6 @@ func NewRobotsTxt(url string) (*string, error) {
 		return nil, err
 	}
 	robotsURL = fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
-	if !helpers.StringInSlice(url, ignoredURLs) {
-		return nil, fmt.Errorf("%s: Skipping... ", robotsURL)
-	}
 
 	return &robotsURL, nil
 }

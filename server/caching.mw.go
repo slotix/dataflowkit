@@ -23,9 +23,6 @@ type cachemw struct {
 
 var redisCon cache.RedisConn
 
-//func init() {
-	
-//}
 
 func (mw cachemw) Download(url string) (output []byte, err error) {
 	debug := true
@@ -43,7 +40,7 @@ func (mw cachemw) Download(url string) (output []byte, err error) {
 		if sResponse.Response.Status == 404 {
 			return nil, fmt.Errorf("Error: 404. NOT FOUND")
 		}
-		output, err = sResponse.GetHTML()
+		output, err = sResponse.GetContent()
 		if err != nil {
 			logger.Printf(err.Error())
 		}
@@ -51,6 +48,9 @@ func (mw cachemw) Download(url string) (output []byte, err error) {
 	}
 
 	resp, respErr := mw.ParseService.GetResponse(url)
+	if respErr != nil {
+		return nil, respErr
+	}
 	//Check if it is cacheable
 	rv := cache.Cacheable(resp)
 	expTime := rv.OutExpirationTime.Unix()
@@ -85,7 +85,7 @@ func (mw cachemw) Download(url string) (output []byte, err error) {
 		return nil, respErr
 	}
 
-	output, err = resp.GetHTML()
+	output, err = resp.GetContent()
 	if err != nil {
 		return nil, err
 	}

@@ -56,7 +56,7 @@ func decodeGetHTMLRequest(_ context.Context, r *http.Request) (interface{}, erro
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return nil, err
 	}
-	//fmt.Println(string(request))
+	logger.Println(request)
 	return request, nil
 }
 
@@ -131,9 +131,15 @@ func encodeRequest(_ context.Context, r *http.Request, request interface{}) erro
 //type errResponse struct {
 //	Err string `json:"err,omitempty"`
 //}
+type Params []struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
 
 type getHTMLRequest struct {
 	URL string `json:"url"`
+//	Params Params `json:"params,omitempty"`
+//	Func string `json:"func,omitempty"`
 }
 
 type checkServicesResponse struct {

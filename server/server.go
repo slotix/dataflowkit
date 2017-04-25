@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 
@@ -23,7 +24,8 @@ func Init(port string) {
 
 	var serverLogger kitlog.Logger
 	serverLogger = kitlog.NewLogfmtLogger(os.Stderr)
-	serverLogger = kitlog.With(serverLogger, "listen", port, "caller", kitlog.DefaultCaller)
+	//serverLogger = kitlog.With(serverLogger, "listen", port, "caller", kitlog.DefaultCaller)
+	serverLogger = kitlog.With(serverLogger, "caller", kitlog.DefaultCaller, "Time", time.Now().Format("Jan _2 15:04:05"))
 
 	fieldKeys := []string{"method", "error"}
 
@@ -67,25 +69,26 @@ func Init(port string) {
 	)
 
 	/*
-	checkServicesHandler := httptransport.NewServer(
-		makeCheckServicesEndpoint(svc),
-		decodeCheckServicesRequest,
-		encodeCheckServicesResponse,
-	)
+		checkServicesHandler := httptransport.NewServer(
+			makeCheckServicesEndpoint(svc),
+			decodeCheckServicesRequest,
+			encodeCheckServicesResponse,
+		)
 	*/
 
 	router := httprouter.New()
 	router.Handler("POST", "/app/gethtml", getHTMLHandler)
 	router.Handler("POST", "/app/marshaldata", marshalDataHandler)
 	//router.Handler("POST", "/app/chkservices", checkServicesHandler)
-	router.ServeFiles("/static/*filepath", http.Dir("web/static"))
-	router.HandlerFunc("GET", "/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "web/index.html")
-	})
-	router.HandlerFunc("GET", "/get_started", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "web/get_started.html")
-	})
-
+	/*
+		router.ServeFiles("/static/*filepath", http.Dir("web/static"))
+		router.HandlerFunc("GET", "/", func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, "web/index.html")
+		})
+		router.HandlerFunc("GET", "/get_started", func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, "web/get_started.html")
+		})
+	*/
 	router.Handler("GET", "/metrics", stdprometheus.Handler())
 
 	serverLogger.Log("msg", "HTTP", "addr", port)

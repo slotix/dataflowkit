@@ -355,7 +355,7 @@ func prepareData() Collections {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return out
+	return *out
 }
 
 func (out *Collections) marshalXML() {

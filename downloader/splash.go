@@ -22,11 +22,13 @@ type SplashConn struct {
 }
 
 type Headers []struct {
-	Value string `json:"value"`
 	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 type SplashResponse struct {
+	HTML    string `json:"html"`
+	Reason  string `json:"reason"`
 	Request struct {
 		Cookies     []interface{} `json:"cookies"`
 		Method      string        `json:"method"`
@@ -39,7 +41,7 @@ type SplashResponse struct {
 		} `json:"queryString"`
 		Headers  Headers `json:"headers"`
 		BodySize int     `json:"bodySize"`
-	} `json:"1"`
+	} `json:"request"`
 	Response struct {
 		Headers Headers `json:"headers"`
 		Cookies []struct {
@@ -64,15 +66,15 @@ type SplashResponse struct {
 		HTTPVersion string `json:"httpVersion"`
 		StatusText  string `json:"statusText"`
 		RedirectURL string `json:"redirectURL"`
-	} `json:"2"`
+	} `json:"response"`
 }
+
 
 //NewSplashConn opens new connection to Splash Server
 func NewSplashConn(host string, timeout, resourceTimeout, wait int, lua string) SplashConn {
-
 	return SplashConn{
 		//	config:     cnf,
-		host:            host,
+		host:            host, 
 		timeout:         timeout,
 		resourceTimeout: resourceTimeout,
 		wait:            wait,
@@ -93,7 +95,7 @@ func (s *SplashConn) GetResponse(url string) (*SplashResponse, error) {
 		neturl.QueryEscape(s.lua))
 
 	req, err := http.NewRequest("GET", splashURL, nil)
-	req.SetBasicAuth(s.user, s.password)
+	//req.SetBasicAuth(s.user, s.password)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -110,18 +112,15 @@ func (s *SplashConn) GetResponse(url string) (*SplashResponse, error) {
 		if err := json.Unmarshal(res, &sResponse); err != nil {
 			logger.Println("Json Unmarshall error", err)
 		}
-		//if response returned by Splash is bad
-		/*
-			if !sResponse.Obj.Ok {
-				return nil, fmt.Errorf("Error: %d. %s",
-					sResponse.Obj.Status,
-					sResponse.Obj.StatusText)
-			}*/
-		//return &sResponse, nil
 		if !sResponse.Response.Ok {
-			err = fmt.Errorf("Error: %d. %s",
-				sResponse.Response.Status,
-				sResponse.Response.StatusText)
+			if sResponse.Response.Status != 0 {
+				err = fmt.Errorf("Error: %d. %s",
+					sResponse.Response.Status,
+					sResponse.Response.StatusText)
+			} else {
+				err = fmt.Errorf("Error: %s",
+					sResponse.Reason)
+			}
 		} else {
 			err = nil
 		}
@@ -131,16 +130,20 @@ func (s *SplashConn) GetResponse(url string) (*SplashResponse, error) {
 
 }
 
-func (r *SplashResponse) GetHTML() ([]byte, error) {
+func (r *SplashResponse) GetContent() ([]byte, error) {
 	if r == nil {
 		logger.Println("empty response ")
 		return nil, errors.New("empty response")
 	}
-	decoded, err := base64.StdEncoding.DecodeString(r.Response.Content.Text)
-	if err != nil {
-		logger.Println("decode error:", err)
-		//return nil, fmt.Errorf(string(res))
-		return nil, err
+	if isRobotsTxt(r.Request.URL) {
+		decoded, err := base64.StdEncoding.DecodeString(r.Response.Content.Text)
+		if err != nil {
+			logger.Println("decode error:", err)
+			//return nil, fmt.Errorf(string(res))
+			return nil, err
+		}
+		return decoded, nil
 	}
-	return decoded, nil
+
+	return []byte(r.HTML), nil
 }
