@@ -36,5 +36,9 @@ vendor/
 
 dataflowkit
 dataflowkit_linux
+webserver/webserver
 config/dfk-server.service
+machinery/machinery
+goscrape/goscrape
+
 deploy.sh
