@@ -17,16 +17,18 @@ type robotstxtmw struct {
 	ParseService
 }
 
-func (mw robotstxtmw) Download(url string) (output []byte, err error) {
+func (mw robotstxtmw) Fetch(req downloader.FetchRequest) (output []byte, err error) {
 	allow := true
-	robotsURL, err := downloader.NewRobotsTxt(url)
+	robotsURL, err := downloader.NewRobotsTxt(req.URL)
 	if err != nil {
 		//return nil, err
 		logger.Println(err)
 	} else {
-		robots, err := mw.ParseService.Download(*robotsURL)
+		r := downloader.FetchRequest{URL: *robotsURL}
+		//robots, err := mw.ParseService.Download(*robotsURL)
+		robots, err := mw.ParseService.Fetch(r)
 		robotsData := downloader.GetRobotsData(robots)
-		parsedURL, err := neturl.Parse(url)
+		parsedURL, err := neturl.Parse(req.URL)
 		if err != nil {
 			logger.Println("err")
 		}
@@ -37,13 +39,13 @@ func (mw robotstxtmw) Download(url string) (output []byte, err error) {
 
 	//allowed ?
 	if allow {
-		output, err = mw.ParseService.Download(url)
+		output, err = mw.ParseService.Fetch(req)
 		if err != nil {
 			logger.Println(err)
 		}
 	} else {
-		output = nil	
-		err = fmt.Errorf("%s: forbidden by robots.txt", url)
+		output = nil
+		err = fmt.Errorf("%s: forbidden by robots.txt", req.URL)
 		logger.Println(err)
 	}
 	return

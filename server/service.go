@@ -7,43 +7,26 @@ import (
 
 // ParseService provides operations on strings.
 type ParseService interface {
-	GetResponse(string) (*downloader.SplashResponse, error)
-	Download(url string) ([]byte, error)
+	GetResponse(req downloader.FetchRequest) (*downloader.SplashResponse, error)
+	Fetch(req downloader.FetchRequest) ([]byte, error)
 	ParseData(payload []byte) ([]byte, error)
 	//	CheckServices() (status map[string]string)
-	//	Save(payload []byte) (string, error)
-
-}
-/*
-type Params []struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
 }
 
-type fetchRequest struct {
-	URL string `json:"url"`
-	Params Params `json:"params,omitempty"`
-	Func string `json:"func,omitempty"`
-}
-*/
 
 type parseService struct{}
 
-func (parseService) GetResponse(url string) (*downloader.SplashResponse, error) {
-	response, err := downloader.GetResponse(url)
+func (parseService) GetResponse(req downloader.FetchRequest) (*downloader.SplashResponse, error) {
+	response, err := downloader.GetResponse(req)
 	return response, err
 }
 
-func (parseService) Download(url string ) ([]byte, error) {
-//func (parseService) Download(request []byte) ([]byte, error) {
-	
-	content, err := downloader.Fetch(url)
+func (parseService) Fetch(req downloader.FetchRequest) ([]byte, error) {
+	content, err := downloader.Fetch(req)
 	if err != nil {
 		return nil, err
 	}
 	return content, nil
-
-	//	return nil, fmt.Errorf("%s: forbidden by robots.txt", url)
 }
 
 func (parseService) ParseData(payload []byte) ([]byte, error) {

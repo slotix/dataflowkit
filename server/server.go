@@ -24,7 +24,6 @@ func Init(port string) {
 
 	var serverLogger kitlog.Logger
 	serverLogger = kitlog.NewLogfmtLogger(os.Stderr)
-	//serverLogger = kitlog.With(serverLogger, "listen", port, "caller", kitlog.DefaultCaller)
 	serverLogger = kitlog.With(serverLogger, "caller", kitlog.DefaultCaller, "Time", time.Now().Format("Jan _2 15:04:05"))
 
 	fieldKeys := []string{"method", "error"}
@@ -56,9 +55,9 @@ func Init(port string) {
 	svc = robotsTxtMiddleware()(svc)
 	svc = instrumentingMiddleware(requestCount, requestLatency, countResult)(svc)
 
-	getHTMLHandler := httptransport.NewServer(
-		makeGetHTMLEndpoint(svc),
-		decodeGetHTMLRequest,
+	fetchHandler := httptransport.NewServer(
+		makeFetchEndpoint(svc),
+		decodeFetchRequest,
 		encodeResponse,
 	)
 
@@ -77,7 +76,7 @@ func Init(port string) {
 	*/
 
 	router := httprouter.New()
-	router.Handler("POST", "/app/gethtml", getHTMLHandler)
+	router.Handler("POST", "/app/gethtml", fetchHandler)
 	router.Handler("POST", "/app/marshaldata", marshalDataHandler)
 	//router.Handler("POST", "/app/chkservices", checkServicesHandler)
 	/*
