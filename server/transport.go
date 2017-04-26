@@ -9,12 +9,13 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
+	"github.com/slotix/dataflowkit/downloader"
 )
 
-func makeGetHTMLEndpoint(svc ParseService) endpoint.Endpoint {
+func makeFetchEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(getHTMLRequest)
-		v, err := svc.Download(req.URL)
+		req := request.(downloader.FetchRequest)
+		v, err := svc.Fetch(req)
 		//v, err := svc.GetHTML(request.(string))
 		if err != nil {
 			//	return getHTMLResponse{v, err.Error()}, nil
@@ -47,8 +48,8 @@ func makeCheckServicesEndpoint(svc ParseService) endpoint.Endpoint {
 }
 */
 
-func decodeGetHTMLRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	var request getHTMLRequest
+func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	var request downloader.FetchRequest
 	//request, err := ioutil.ReadAll(r.Body)
 	//if err != nil {
 	//	fmt.Println(err)
@@ -56,7 +57,6 @@ func decodeGetHTMLRequest(_ context.Context, r *http.Request) (interface{}, erro
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return nil, err
 	}
-	logger.Println(request)
 	return request, nil
 }
 
@@ -80,7 +80,7 @@ func decodeCheckServicesRequest(_ context.Context, r *http.Request) (interface{}
 	return request, nil
 }
 
-func decodeGetHTMLResponse(_ context.Context, r *http.Response) (interface{}, error) {
+func decodeFetchResponse(_ context.Context, r *http.Response) (interface{}, error) {
 	response, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		//	fmt.Println(err)
@@ -126,20 +126,6 @@ func encodeRequest(_ context.Context, r *http.Request, request interface{}) erro
 	buf = bytes.NewBuffer(request.([]byte))
 	r.Body = ioutil.NopCloser(buf)
 	return nil
-}
-
-//type errResponse struct {
-//	Err string `json:"err,omitempty"`
-//}
-type Params []struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-type getHTMLRequest struct {
-	URL string `json:"url"`
-//	Params Params `json:"params,omitempty"`
-//	Func string `json:"func,omitempty"`
 }
 
 type checkServicesResponse struct {

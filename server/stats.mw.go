@@ -23,16 +23,16 @@ func (mw statsmw) ParseData(payload []byte) (output []byte, err error) {
 	return
 }
 
-func (mw statsmw) Download(url string) (output []byte, err error) {
+func (mw statsmw) Fetch(req downloader.FetchRequest) (output []byte, err error) {
 	mw.incrementCount()
-	output, err = mw.ParseService.Download(url)
+	output, err = mw.ParseService.Fetch(req)
 	logger.Println("stop")
 	return
 }
 
-func (mw statsmw) GetResponse(url string) (output *downloader.SplashResponse, err error) {
+func (mw statsmw) GetResponse(req downloader.FetchRequest) (output *downloader.SplashResponse, err error) {
 	mw.incrementCount()
-	output, err = mw.ParseService.GetResponse(url)
+	output, err = mw.ParseService.GetResponse(req)
 	return
 }
 

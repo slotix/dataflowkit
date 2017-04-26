@@ -2,12 +2,20 @@ package downloader
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	neturl "net/url"
 
 	"github.com/temoto/robotstxt"
 )
+
+func isRobotsTxt(url string) bool {
+	if strings.Contains(url, "robots.txt") {
+		return true
+	}
+	return false
+}
 
 func NewRobotsTxt(url string) (*string, error) {
 	var robotsURL string

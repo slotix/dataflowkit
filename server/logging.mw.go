@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
+	"github.com/slotix/dataflowkit/downloader"
 )
 
 func loggingMiddleware(logger log.Logger) ServiceMiddleware {
@@ -32,19 +33,20 @@ func (mw logmw) ParseData(payload []byte) (output []byte, err error) {
 	return
 }
 
-func (mw logmw) Download(url string) (output []byte, err error) {
+func (mw logmw) Fetch(req downloader.FetchRequest) (output []byte, err error) {
 	defer func(begin time.Time) {
 		_ = mw.logger.Log(
 			"method", "gethtml",
-			"input", url,
+			"input", req.URL,
 			//	"output", output,
 			"err", err,
 			"took", time.Since(begin),
 		)
 	}(time.Now())
-	output, err = mw.ParseService.Download(url)
+	output, err = mw.ParseService.Fetch(req)
 	return
 }
+
 /*
 func (mw logmw) CheckServices() (output map[string]string) {
 	defer func(begin time.Time) {

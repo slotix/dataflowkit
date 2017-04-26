@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/metrics"
+	"github.com/slotix/dataflowkit/downloader"
 )
 
 func instrumentingMiddleware(
@@ -35,13 +36,13 @@ func (mw instrmw) ParseData(payload []byte) (output []byte, err error) {
 	return
 }
 
-func (mw instrmw) Download(url string) (output []byte, err error) {
+func (mw instrmw) Fetch(req downloader.FetchRequest) (output []byte, err error) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "gethtml", "error", fmt.Sprint(err != nil)}
 		mw.requestCount.With(lvs...).Add(1)
 		mw.requestLatency.With(lvs...).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
-	output, err = mw.ParseService.Download(url)
+	output, err = mw.ParseService.Fetch(req)
 	return
 }

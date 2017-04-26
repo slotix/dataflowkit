@@ -48,7 +48,8 @@ func (p *Parser) Parse() (*Collections, error) {
 	//parse input and fill Payload structure
 	out := Collections{}
 	for _, collection := range p.Payloads {
-		content, err := downloader.Fetch(collection.URL)
+		req := downloader.FetchRequest{URL: collection.URL}
+		content, err := downloader.Fetch(req)
 		if err != nil {
 			logger.Println(err)
 			//return nil, err

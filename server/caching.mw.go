@@ -23,14 +23,13 @@ type cachemw struct {
 
 var redisCon cache.RedisConn
 
-
-func (mw cachemw) Download(url string) (output []byte, err error) {
+func (mw cachemw) Fetch(req downloader.FetchRequest) (output []byte, err error) {
 	debug := true
 	redisURL := viper.GetString("redis")
 	redisPassword := ""
 	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)
-	
-	redisValue, err := redisCon.GetValue(url)
+
+	redisValue, err := redisCon.GetValue(req.URL)
 	if err == nil {
 		var sResponse downloader.SplashResponse
 		if err := json.Unmarshal(redisValue, &sResponse); err != nil {
@@ -47,7 +46,7 @@ func (mw cachemw) Download(url string) (output []byte, err error) {
 		return output, err
 	}
 
-	resp, respErr := mw.ParseService.GetResponse(url)
+	resp, respErr := mw.ParseService.GetResponse(req)
 	if respErr != nil {
 		return nil, respErr
 	}
@@ -72,11 +71,11 @@ func (mw cachemw) Download(url string) (output []byte, err error) {
 		if err != nil {
 			logger.Printf(err.Error())
 		}
-		err = redisCon.SetValue(url, response)
+		err = redisCon.SetValue(req.URL, response)
 		if err != nil {
 			logger.Println(err.Error())
 		}
-		err = redisCon.SetExpireAt(url, expTime)
+		err = redisCon.SetExpireAt(req.URL, expTime)
 		if err != nil {
 			logger.Println(err.Error())
 		}

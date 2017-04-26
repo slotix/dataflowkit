@@ -18,7 +18,7 @@ type SplashConn struct {
 	timeout         int
 	resourceTimeout int
 	wait            int
-	lua             string
+	luaScript       string
 }
 
 type Headers []struct {
@@ -69,35 +69,32 @@ type SplashResponse struct {
 	} `json:"response"`
 }
 
-
 //NewSplashConn opens new connection to Splash Server
-func NewSplashConn(host string, timeout, resourceTimeout, wait int, lua string) SplashConn {
+func NewSplashConn(host string, timeout, resourceTimeout, wait int, luaScript string) SplashConn {
 	return SplashConn{
 		//	config:     cnf,
-		host:            host, 
+		host:            host,
 		timeout:         timeout,
 		resourceTimeout: resourceTimeout,
 		wait:            wait,
-		lua:             lua,
+		luaScript:       luaScript,
 	}
 }
 
-func (s *SplashConn) GetResponse(url string) (*SplashResponse, error) {
+func (s *SplashConn) GetResponse(req FetchRequest) (*SplashResponse, error) {
 	client := &http.Client{}
-	//splashURL := fmt.Sprintf("%s%s?&url=%s&timeout=%d&resource_timeout=%d&wait=%d", s.host, s.renderHTMLURL, url.QueryEscape(addr), s.timeout, s.resourceTimeout, s.wait)
-
 	splashURL := fmt.Sprintf(
 		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&wait=%d&lua_source=%s", s.host,
-		neturl.QueryEscape(url),
+		neturl.QueryEscape(req.URL),
 		s.timeout,
 		s.resourceTimeout,
 		s.wait,
-		neturl.QueryEscape(s.lua))
+		neturl.QueryEscape(s.luaScript))
 
-	req, err := http.NewRequest("GET", splashURL, nil)
+	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(request)
 	if err != nil {
 		return nil, err
 	}
