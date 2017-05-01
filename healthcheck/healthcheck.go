@@ -1,12 +1,10 @@
 package healthcheck
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/slotix/dataflowkit/downloader"
 	"github.com/spf13/viper"
 )
 
@@ -22,9 +20,7 @@ type redisConn struct {
 }
 
 type splashConn struct {
-	url      string
-	userName string
-	userPass string
+	conn downloader.SplashConn
 }
 
 func (r redisConn) serviceName() string {
@@ -53,42 +49,14 @@ func (r redisConn) isAlive() error {
 }
 
 func (s splashConn) isAlive() error {
-
-	var p pingSplashServerResponse
-	err := p.pingSplashServer(s.url)
+	resp, err := downloader.Ping(s.conn.Host)
 	if err != nil {
 		return err
 	}
-	if p.Status == "ok" {
+	if resp.Status == "ok" {
 		return nil
 	}
 	return err
-}
-
-type pingSplashServerResponse struct {
-	Maxrss int    `json:"maxrss"`
-	Status string `json:"status"`
-}
-
-//pingSplashServer returns status and maxrss from Splash server
-//_ping  endpoint
-func (p *pingSplashServerResponse) pingSplashServer(url string) error {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
-	//req.SetBasicAuth(userName, userPass)
-	resp, err := client.Do(req)
-	// Check Error
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(resp.Body)
-	err = json.Unmarshal(buf.Bytes(), &p)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func CheckServices() (status map[string]string) {
@@ -98,8 +66,11 @@ func CheckServices() (status map[string]string) {
 			network: viper.GetString("redis-network"),
 			host:    viper.GetString("redis")},
 		splashConn{
-			//url: fmt.Sprintf("http://%s/_ping", viper.GetString("splash.host"))}}
-			url: fmt.Sprintf("http://%s/_ping", viper.GetString("splash"))}}
+			conn: downloader.SplashConn{
+				Host: viper.GetString("splash"),
+			},
+		},
+		}
 	for _, srv := range services {
 		err := srv.isAlive()
 		if err != nil {

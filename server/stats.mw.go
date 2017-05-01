@@ -1,6 +1,8 @@
 package server
 
 import (
+	"io"
+
 	"github.com/slotix/dataflowkit/cache"
 	"github.com/slotix/dataflowkit/downloader"
 	"github.com/spf13/viper"
@@ -23,7 +25,7 @@ func (mw statsmw) ParseData(payload []byte) (output []byte, err error) {
 	return
 }
 
-func (mw statsmw) Fetch(req downloader.FetchRequest) (output []byte, err error) {
+func (mw statsmw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, err error) {
 	mw.incrementCount()
 	output, err = mw.ParseService.Fetch(req)
 	logger.Println("stop")

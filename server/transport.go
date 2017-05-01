@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -107,10 +108,13 @@ func decodeCheckServicesResponse(_ context.Context, r *http.Response) (interface
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	//	w.Header().Set("Content-Type", "text/plain")
+	//_, err := w.Write(response.([]byte))
+	data, err := ioutil.ReadAll(response.(io.Reader))
+	if err != nil {
+		return  err
+	}
+	_, err = w.Write(data)
 
-	//	fmt.Println("CONTENT", http.DetectContentType(response.([]byte)))
-	_, err := w.Write(response.([]byte))
 	if err != nil {
 		return err
 	}

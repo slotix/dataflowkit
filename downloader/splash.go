@@ -1,24 +1,27 @@
 package downloader
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	neturl "net/url"
+	"strings"
 	"time"
 )
 
 type SplashConn struct {
-	host            string
-	user            string
-	password        string
-	timeout         int
-	resourceTimeout int
-	wait            int
-	luaScript       string
+	Host            string
+	User            string
+	Password        string
+	Timeout         int
+	ResourceTimeout int
+	Wait            int
+	LUAScript       string
 }
 
 type Headers []struct {
@@ -69,36 +72,62 @@ type SplashResponse struct {
 	} `json:"response"`
 }
 
-//NewSplashConn opens new connection to Splash Server
-func NewSplashConn(host string, timeout, resourceTimeout, wait int, luaScript string) SplashConn {
-	return SplashConn{
-		//	config:     cnf,
-		host:            host,
-		timeout:         timeout,
-		resourceTimeout: resourceTimeout,
-		wait:            wait,
-		luaScript:       luaScript,
+type SplashPingResponse struct {
+	Maxrss int    `json:"maxrss"`
+	Status string `json:"status"`
+}
+
+//Ping returns status and maxrss from _ping  endpoint
+func Ping(host string) (*SplashPingResponse, error) {
+	client := &http.Client{}
+	pingURL := fmt.Sprintf("http://%s/_ping", host)
+	req, err := http.NewRequest("GET", pingURL, nil)
+	//req.SetBasicAuth(userName, userPass)
+	resp, err := client.Do(req)
+	// Check Error
+	if err != nil {
+		return nil, err
 	}
+	defer resp.Body.Close()
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	var p SplashPingResponse
+	err = json.Unmarshal(buf.Bytes(), &p)
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+//NewSplashConn creates new connection to Splash Server
+func NewSplashConn(c SplashConn) (*SplashConn, error) {
+	//resp, err := c.ping()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//fmt.Println(resp)
+	return &c, nil
 }
 
 func (s *SplashConn) GetResponse(req FetchRequest) (*SplashResponse, error) {
 	client := &http.Client{}
 	splashURL := fmt.Sprintf(
-		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&wait=%d&lua_source=%s", s.host,
+		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&wait=%d&lua_source=%s", s.Host,
 		neturl.QueryEscape(req.URL),
-		s.timeout,
-		s.resourceTimeout,
-		s.wait,
-		neturl.QueryEscape(s.luaScript))
+		s.Timeout,
+		s.ResourceTimeout,
+		s.Wait,
+		neturl.QueryEscape(s.LUAScript))
 
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
-
 	resp, err := client.Do(request)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	//var res []byte
+	//_, err = resp.Body.Read(res)
 	res, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -127,7 +156,7 @@ func (s *SplashConn) GetResponse(req FetchRequest) (*SplashResponse, error) {
 
 }
 
-func (r *SplashResponse) GetContent() ([]byte, error) {
+func (r *SplashResponse) GetContent() (io.ReadCloser, error) {
 	if r == nil {
 		logger.Println("empty response ")
 		return nil, errors.New("empty response")
@@ -139,8 +168,11 @@ func (r *SplashResponse) GetContent() ([]byte, error) {
 			//return nil, fmt.Errorf(string(res))
 			return nil, err
 		}
-		return decoded, nil
+		readCloser := ioutil.NopCloser(bytes.NewReader(decoded))
+		//r := bytes.NewReader(decoded)
+		return readCloser, nil
 	}
-
-	return []byte(r.HTML), nil
+	readCloser := ioutil.NopCloser(strings.NewReader(r.HTML))
+	return readCloser, nil
+	//return []byte(r.HTML), nil
 }

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"io"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -33,7 +34,7 @@ func (mw logmw) ParseData(payload []byte) (output []byte, err error) {
 	return
 }
 
-func (mw logmw) Fetch(req downloader.FetchRequest) (output []byte, err error) {
+func (mw logmw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		_ = mw.logger.Log(
 			"method", "gethtml",

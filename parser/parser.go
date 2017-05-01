@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -16,10 +17,10 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
-var logger *log.Logger
-
 // use a single instance of Validate, it caches struct info
 var validate *validator.Validate
+
+var logger *log.Logger
 
 func init() {
 	logger = log.New(os.Stdout, "parser: ", log.Lshortfile)
@@ -178,17 +179,18 @@ func intersectionFL(sel *goquery.Selection) *goquery.Selection {
 	return intersection
 }
 
-func (p *payload) parseItem(h []byte) (col *collection, err error) {
+func (p *payload) parseItem(r io.Reader) (col *collection, err error) {
 	col, err = newCollection(p)
 	if err != nil {
 		return nil, err
 	}
-	node, err := html.Parse(bytes.NewReader(h))
+	//node, err := html.Parse(bytes.NewReader(h))
 
-	if err != nil {
-		return nil, err
-	}
-	doc := goquery.NewDocumentFromNode(node)
+	//if err != nil {
+	//	return nil, err
+	//}
+//	doc := goquery.NewDocumentFromNode(node)
+	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {
 		return nil, err
 	}

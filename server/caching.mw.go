@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"io"
 
 	"fmt"
 
@@ -23,7 +24,7 @@ type cachemw struct {
 
 var redisCon cache.RedisConn
 
-func (mw cachemw) Fetch(req downloader.FetchRequest) (output []byte, err error) {
+func (mw cachemw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, err error) {
 	debug := true
 	redisURL := viper.GetString("redis")
 	redisPassword := ""

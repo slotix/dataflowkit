@@ -2,6 +2,8 @@ package server
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	neturl "net/url"
 
 	"github.com/slotix/dataflowkit/downloader"
@@ -17,7 +19,7 @@ type robotstxtmw struct {
 	ParseService
 }
 
-func (mw robotstxtmw) Fetch(req downloader.FetchRequest) (output []byte, err error) {
+func (mw robotstxtmw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, err error) {
 	allow := true
 	robotsURL, err := downloader.NewRobotsTxt(req.URL)
 	if err != nil {
@@ -27,7 +29,14 @@ func (mw robotstxtmw) Fetch(req downloader.FetchRequest) (output []byte, err err
 		r := downloader.FetchRequest{URL: *robotsURL}
 		//robots, err := mw.ParseService.Download(*robotsURL)
 		robots, err := mw.ParseService.Fetch(r)
-		robotsData := downloader.GetRobotsData(robots)
+		if err != nil {
+			return nil, err
+		}
+		data, err := ioutil.ReadAll(robots)
+		if err != nil {
+			return nil, err
+		}
+		robotsData := downloader.GetRobotsData(data)
 		parsedURL, err := neturl.Parse(req.URL)
 		if err != nil {
 			logger.Println("err")
