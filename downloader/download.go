@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -17,7 +18,7 @@ import (
 
 type FetchRequest struct {
 	URL    string `json:"url"`
-	Params string `json:"params,omitempty"`//params used for passing formdata to LUA script 
+	Params string `json:"params,omitempty"` //params used for passing formdata to LUA script
 	Func   string `json:"func,omitempty"`
 }
 
@@ -28,16 +29,16 @@ func init() {
 }
 
 // ErrURLEmpty is returned when an input string is empty.
-var errURLEmpty = errors.New("Empty string. URL")
+var errURLEmpty = errors.New("URL is empty")
 
 type directConn struct {
 }
 
-func getLUA(req FetchRequest, wait int) string {
+func GetLUA(req FetchRequest, wait int) string {
 	if isRobotsTxt(req.URL) {
 		return robotsLUA
 	}
-	if req.Params == ""{
+	if req.Params == "" {
 		return fmt.Sprintf(generalLUA, wait)
 	}
 	return fmt.Sprintf(generalLUAWithAuth, paramsToLuaTable(req.Params), wait)
@@ -50,22 +51,24 @@ func GetResponse(req FetchRequest) (*SplashResponse, error) {
 		return nil, errURLEmpty
 	}
 	wait := viper.GetInt("splash-wait")
-	s := NewSplashConn(
-		fmt.Sprintf("http://%s/", viper.GetString("splash")),
-		viper.GetInt("splash-timeout"),
-		viper.GetInt("splash-resource-timeout"),
-		wait, //Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
-		getLUA(req, wait),
-	)
-
+	conn := SplashConn{
+		Host:            fmt.Sprintf("http://%s/", viper.GetString("splash")),
+		Timeout:         viper.GetInt("splash-timeout"),
+		ResourceTimeout: viper.GetInt("splash-resource-timeout"),
+		Wait:            wait, //Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
+		LUAScript:       GetLUA(req, wait),
+	}
+	s, err := NewSplashConn(conn)
+	if err != nil {
+		return nil, err
+	}
 	response, err := s.GetResponse(req)
-	//logger.Println(response)
 	return response, err
 }
 
 //Fetch content from url.
 //If no data is pulled through Splash server https://github.com/scrapinghub/splash/ .
-func Fetch(req FetchRequest) ([]byte, error) {
+func Fetch(req FetchRequest) (io.ReadCloser, error) {
 	response, err := GetResponse(req)
 	if err != nil {
 		return nil, err

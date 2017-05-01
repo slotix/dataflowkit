@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/go-kit/kit/metrics"
@@ -36,7 +37,7 @@ func (mw instrmw) ParseData(payload []byte) (output []byte, err error) {
 	return
 }
 
-func (mw instrmw) Fetch(req downloader.FetchRequest) (output []byte, err error) {
+func (mw instrmw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "gethtml", "error", fmt.Sprint(err != nil)}
 		mw.requestCount.With(lvs...).Add(1)

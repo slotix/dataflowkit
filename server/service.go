@@ -1,6 +1,8 @@
 package server
 
 import (
+	"io"
+
 	"github.com/slotix/dataflowkit/downloader"
 	"github.com/slotix/dataflowkit/parser"
 )
@@ -8,11 +10,10 @@ import (
 // ParseService provides operations on strings.
 type ParseService interface {
 	GetResponse(req downloader.FetchRequest) (*downloader.SplashResponse, error)
-	Fetch(req downloader.FetchRequest) ([]byte, error)
+	Fetch(req downloader.FetchRequest) (io.ReadCloser, error)
 	ParseData(payload []byte) ([]byte, error)
 	//	CheckServices() (status map[string]string)
 }
-
 
 type parseService struct{}
 
@@ -21,7 +22,7 @@ func (parseService) GetResponse(req downloader.FetchRequest) (*downloader.Splash
 	return response, err
 }
 
-func (parseService) Fetch(req downloader.FetchRequest) ([]byte, error) {
+func (parseService) Fetch(req downloader.FetchRequest) (io.ReadCloser, error) {
 	content, err := downloader.Fetch(req)
 	if err != nil {
 		return nil, err
