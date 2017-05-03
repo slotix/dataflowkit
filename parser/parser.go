@@ -50,7 +50,8 @@ func (p *Parser) Parse() (*Collections, error) {
 	out := Collections{}
 	for _, collection := range p.Payloads {
 		req := downloader.FetchRequest{URL: collection.URL}
-		content, err := downloader.Fetch(req)
+		splashURL, err := downloader.NewSplashConn(req)
+		content, err := downloader.Fetch(splashURL)
 		if err != nil {
 			logger.Println(err)
 			//return nil, err

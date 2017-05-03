@@ -41,7 +41,7 @@ var (
 	splashHost            string
 	splashTimeout         int
 	splashResourceTimeout int
-	splashWait            int
+	splashWait            float64
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -118,7 +118,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&splashHost, "splash", "s", "127.0.0.1:8050", "Splash host address")
 	RootCmd.Flags().IntVarP(&splashTimeout, "splash-timeout", "", 20, "Default Timeout for Splash")
 	RootCmd.Flags().IntVarP(&splashResourceTimeout, "splash-resource-timeout", "", 30, "Default Timeout for Splash")
-	RootCmd.Flags().IntVarP(&splashWait, "splash-wait", "", 1, "Time in seconds to wait until js scripts loaded.")
+	RootCmd.Flags().Float64VarP(&splashWait, "splash-wait", "", 0.5, "Time in seconds to wait until js scripts loaded.")
 	viper.AutomaticEnv() // read in environment variables that match
 	viper.BindPFlag("port", RootCmd.Flags().Lookup("port"))
 	viper.BindPFlag("redis", RootCmd.Flags().Lookup("redis"))

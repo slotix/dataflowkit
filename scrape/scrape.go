@@ -3,17 +3,17 @@ package scrape
 import (
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"os"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/slotix/dataflowkit/downloader"
 )
 
 var logger *log.Logger
 
 func init() {
-	logger = log.New(os.Stdout, "parser: ", log.Lshortfile)
+	logger = log.New(os.Stdout, "scrape: ", log.Lshortfile)
 }
 
 var (
@@ -187,18 +187,9 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 	}
 
 	if config.Fetcher == nil {
-		config.Fetcher, err = NewHttpClientFetcher()
-		//-----
-		/*
-			wait := viper.GetInt("splash-wait")
-			conn := downloader.SplashConn{
-				Host:            fmt.Sprintf("http://%s/", viper.GetString("splash")),
-				Timeout:         viper.GetInt("splash-timeout"),
-				ResourceTimeout: viper.GetInt("splash-resource-timeout"),
-				Wait:            wait, //Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
-			}
-			config.Fetcher, err = NewSplashFetcher(conn)
-		*/
+		//config.Fetcher, err = NewHttpClientFetcher()
+		config.Fetcher, err = NewSplashFetcher()
+
 		//-------
 		if err != nil {
 			return nil, err
@@ -225,7 +216,14 @@ func (s *Scraper) Scrape(url string) (*ScrapeResults, error) {
 // strange behaviour - e.g. overwriting cookies in the underlying http.Client.
 // Please be careful when running multiple scrapes at a time, unless you know
 // that it's safe.
-func (s *Scraper) ScrapeWithOpts(url string, opts ScrapeOptions) (*ScrapeResults, error) {
+func (s *Scraper) ScrapeWithOpts(in interface{}, opts ScrapeOptions) (*ScrapeResults, error) {
+	var url string
+	switch v := in.(type) {
+	case string:
+		url = in.(string)
+	case downloader.FetchRequest:
+		url = v.URL
+	}
 	if len(url) == 0 {
 		return nil, errors.New("no URL provided")
 	}
@@ -248,14 +246,16 @@ func (s *Scraper) ScrapeWithOpts(url string, opts ScrapeOptions) (*ScrapeResults
 			break
 		}
 
-		resp, err := s.config.Fetcher.Fetch("GET", url)
+		//resp, err := s.config.Fetcher.Fetch("GET", url)
+		resp, err := s.config.Fetcher.Fetch("GET", in.(downloader.FetchRequest))
+		
 		if err != nil {
 			return nil, err
 		}
 
 		// Create a goquery document.
-		doc, err := goquery.NewDocumentFromReader(resp.(io.ReadCloser))
-		resp.(io.ReadCloser).Close()
+		doc, err := goquery.NewDocumentFromReader(resp)
+		resp.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -272,6 +272,7 @@ func (s *Scraper) ScrapeWithOpts(url string, opts ScrapeOptions) (*ScrapeResults
 			doc := goquery.NewDocumentFromNode(node)
 		*/
 		//-----
+		//res.URLs = append(res.URLs, url)
 		res.URLs = append(res.URLs, url)
 		results := []map[string]interface{}{}
 
@@ -312,7 +313,8 @@ func (s *Scraper) ScrapeWithOpts(url string, opts ScrapeOptions) (*ScrapeResults
 		url, err = s.config.Paginator.NextPage(url, doc.Selection)
 		if err != nil {
 			return nil, err
-		}
+		} 
+		in = downloader.FetchRequest{URL: url}
 	}
 
 	// All good!

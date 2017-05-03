@@ -21,7 +21,7 @@ type Fetcher interface {
 
 	// Fetch is called to retrieve each document from the remote server.
 	//Fetch(method, url string) (io.ReadCloser, error)
-	Fetch(method, url interface{}) (io.ReadCloser, error)
+	Fetch(method string, in interface{}) (io.ReadCloser, error)
 
 	// Close is called when the scrape is finished, and can be used to clean up
 	// allocated resources or perform other cleanup actions.
@@ -56,21 +56,36 @@ type HttpClientFetcher struct {
 // SplashClientFetcher is a Fetcher that uses Scrapinghub splash
 // to fetch URLs.
 type SplashFetcher struct {
-	conn *downloader.SplashConn
-	req *downloader.FetchRequest
+	//req downloader.FetchRequest
+	//conn *downloader.SplashConn
+	splashURL string
 }
 
-func NewSplashFetcher(conn downloader.SplashConn) (*SplashFetcher, error) {
-	ret := &SplashFetcher{conn: &conn}
-	return ret, nil
+//func NewSplashFetcher(req downloader.FetchRequest) (*SplashFetcher, error) {
+func NewSplashFetcher() (*SplashFetcher, error) {
+	//splashURL, err := downloader.NewSplashConn(req)
+	//if err != nil {
+	//	return nil, err
+	//}
+	sf := &SplashFetcher{
+	//	splashURL: splashURL,
+	}
+	return sf, nil
 }
 
-func (sf *SplashFetcher) Fetch(dummyMethod, req interface{}) (interface{}, error) {
-	return nil, nil
-}
-
-func (sf *SplashFetcher) Prepare() error{
+func (sf *SplashFetcher) Prepare() error {
 	return nil
+}
+
+//method is not used here
+func (sf *SplashFetcher) Fetch(_dummyMethod string, req interface{}) (io.ReadCloser, error){	
+	splashURL, err := downloader.NewSplashConn(req.(downloader.FetchRequest))
+	sf.splashURL = splashURL
+	res, err := downloader.Fetch(sf.splashURL)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (sf *SplashFetcher) Close() {
@@ -99,8 +114,8 @@ func (hf *HttpClientFetcher) Prepare() error {
 	return nil
 }
 
-func (hf *HttpClientFetcher) Fetch(method, url interface{}) (interface{}, error) {
-	req, err := http.NewRequest(method.(string), url.(string), nil)
+func (hf *HttpClientFetcher) Fetch(method string, in interface{}) (io.ReadCloser, error) {
+	req, err := http.NewRequest(method, in.(string), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -130,4 +145,5 @@ func (hf *HttpClientFetcher) Close() {
 }
 
 // Static type assertion
-var _ Fetcher = &HttpClientFetcher{}
+//var _ Fetcher = &HttpClientFetcher{}
+var _ Fetcher = &SplashFetcher{}
