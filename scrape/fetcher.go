@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 
-	"github.com/slotix/dataflowkit/downloader"
+	"github.com/slotix/dataflowkit/splash"
 
 	"golang.org/x/net/publicsuffix"
 )
@@ -16,12 +16,14 @@ import (
 // Note: Fetchers may or may not be safe to use concurrently.  Please read the
 // documentation for each fetcher for more details.
 type Fetcher interface {
+	//Returns Fetcher type
+	//FType() string
 	// Prepare is called once at the beginning of the scrape.
 	Prepare() error
 
 	// Fetch is called to retrieve each document from the remote server.
 	//Fetch(method, url string) (io.ReadCloser, error)
-	Fetch(method string, in interface{}) (io.ReadCloser, error)
+	Fetch(request interface{}) (io.ReadCloser, error)
 
 	// Close is called when the scrape is finished, and can be used to clean up
 	// allocated resources or perform other cleanup actions.
@@ -77,11 +79,20 @@ func (sf *SplashFetcher) Prepare() error {
 	return nil
 }
 
+//func (sf *SplashFetcher) FType() string {
+//	return fmt.Sprintf("%T", sf)
+//}
+
 //method is not used here
-func (sf *SplashFetcher) Fetch(_dummyMethod string, req interface{}) (io.ReadCloser, error){	
-	splashURL, err := downloader.NewSplashConn(req.(downloader.FetchRequest))
+func (sf *SplashFetcher) Fetch(request interface{}) (io.ReadCloser, error) {
+	//var req downloader.FetchRequest
+	//err := json.Unmarshal(request, &req)
+	//if err != nil {
+	//	return nil, err
+	//}
+	splashURL, err := splash.NewSplashConn(request.(splash.FetchRequest))
 	sf.splashURL = splashURL
-	res, err := downloader.Fetch(sf.splashURL)
+	res, err := splash.Fetch(sf.splashURL)
 	if err != nil {
 		return nil, err
 	}
@@ -114,8 +125,19 @@ func (hf *HttpClientFetcher) Prepare() error {
 	return nil
 }
 
-func (hf *HttpClientFetcher) Fetch(method string, in interface{}) (io.ReadCloser, error) {
-	req, err := http.NewRequest(method, in.(string), nil)
+type HttpClientFetcherRequest struct {
+	URL    string
+	Method string
+}
+
+func (hf *HttpClientFetcher) Fetch(request interface{}) (io.ReadCloser, error) {
+	//	var r HttpClientFetcherRequest
+	//	err := json.Unmarshal(request, &r)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	r := request.(HttpClientFetcherRequest)
+	req, err := http.NewRequest(r.Method, r.URL, nil)
 	if err != nil {
 		return nil, err
 	}
