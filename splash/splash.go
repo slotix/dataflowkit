@@ -1,4 +1,4 @@
-package downloader
+package splash
 
 import (
 	"bytes"
@@ -219,8 +219,7 @@ func (r *SplashResponse) GetContent() (io.ReadCloser, error) {
 	//return []byte(r.HTML), nil
 }
 
-//Fetch content from url.
-//If no data is pulled through Splash server https://github.com/scrapinghub/splash/ .
+//Fetch content from url through Splash server https://github.com/scrapinghub/splash/ 
 func Fetch(splashURL string) (io.ReadCloser, error) {
 	response, err := GetResponse(splashURL)
 	if err != nil {

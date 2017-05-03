@@ -1,4 +1,4 @@
-package downloader
+package splash
 
 //LUA script for robots.txt files processing
 var robotsLUA = `
