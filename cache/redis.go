@@ -84,7 +84,7 @@ func (b *RedisConn) newPool() *redis.Pool {
 
 func (b *RedisConn) SetExpireAt(key string, expiresAt int64) error {
 	var expirationTimestamp int32
-	if expiresAt < 0 {
+	if expiresAt == 0 {
 		// expire results after 1 hour by default
 		expiresAt = 3600
 		expirationTimestamp = int32(time.Now().UTC().Unix()+ expiresAt)

@@ -18,12 +18,14 @@ type ParseService interface {
 type parseService struct{}
 
 func (parseService) GetResponse(req downloader.FetchRequest) (*downloader.SplashResponse, error) {
-	response, err := downloader.GetResponse(req)
+	splashURL, err := downloader.NewSplashConn(req)
+	response, err := downloader.GetResponse(splashURL)
 	return response, err
 }
 
 func (parseService) Fetch(req downloader.FetchRequest) (io.ReadCloser, error) {
-	content, err := downloader.Fetch(req)
+	splashURL, err := downloader.NewSplashConn(req)
+	content, err := downloader.Fetch(splashURL)
 	if err != nil {
 		return nil, err
 	}

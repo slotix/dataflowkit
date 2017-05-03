@@ -54,6 +54,9 @@ func (mw cachemw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, err 
 	//Check if it is cacheable
 	rv := cache.Cacheable(resp)
 	expTime := rv.OutExpirationTime.Unix()
+	if rv.OutExpirationTime.IsZero(){
+		expTime = 0
+	}
 	if debug {
 		if rv.OutErr != nil {
 			logger.Println("Errors: ", rv.OutErr)

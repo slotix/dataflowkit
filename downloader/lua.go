@@ -1,7 +1,10 @@
 package downloader
 
 import (
+	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 func paramsToLuaTable(params string) string {
@@ -9,3 +12,40 @@ func paramsToLuaTable(params string) string {
 	p := re.ReplaceAllString(params, "$1=\"$2\",")
 	return p
 }
+
+func (r *SplashResponse) cookieToLUATable() (string, error) {
+	headers := r.Response.Headers
+	var setCookie string
+	for _, h := range headers {
+		if h.Name == "Set-Cookie" {
+			setCookie = h.Value
+		}
+	}
+	
+	if setCookie != "" {
+		cookies := r.Cookies
+		for _, c := range cookies {
+			logger.Println(c.Name, setCookie)
+			if strings.Contains(setCookie, c.Name) {
+				//cookies = splash:add_cookie{name, value, path=nil, domain=nil, expires=nil, httpOnly=nil, secure=nil}
+				//cookieLUA := `"session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"`
+				expires := "nil"
+				if !c.Expires.IsZero() {
+					expires = c.Expires.String()
+				}
+				//logger.Println(c.Expires.IsZero())
+				LUA := fmt.Sprintf(`"%s", "%s", path="%s", domain="%s", expires=%s, httpOnly=%s, secure=%s`,
+					c.Name,
+					c.Value,
+					c.Path,
+					c.Domain,
+					expires,
+					strconv.FormatBool(c.HTTPOnly),
+					strconv.FormatBool(c.Secure))
+				return LUA, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("No cookies in response")
+}
+

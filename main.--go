@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/slotix/dataflowkit/downloader"
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/scrape"
@@ -45,12 +46,14 @@ func main() {
 	viper.Set("splash-resource-timeout", "30")
 	viper.Set("splash-wait", "0,5")
 	config := &scrape.ScrapeConfig{
+		//Fetcher: scrape.SplashFetcher{},
+		//Fetcher:    &scrape.HttpClientFetcher{},
 		DividePage: scrape.DividePageBySelector(".p"),
 
 		Pieces: []scrape.Piece{
 			{Name: "Price", Selector: ".pricen", Extractor: extract.Text{}},
 			{Name: "Title", Selector: ".product-container a", Extractor: extract.Text{}},
-		//	{Name: "BuyInfo", Selector: ".buy-info", Extractor: extract.Attr{Attr: "href"}},
+			{Name: "BuyInfo", Selector: ".buy-info", Extractor: extract.Attr{Attr: "href"}},
 		},
 		Paginator: paginate.BySelector(".next", "href"),
 	}
@@ -59,10 +62,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error creating scraper: %s\n", err)
 		os.Exit(1)
 	}
-
+	req := downloader.FetchRequest{URL: "https://drony.heureka.sk"}
+	//req := "https://drony.heureka.sk"
 	results, err := scraper.ScrapeWithOpts(
-		"https://drony.heureka.sk",
-		scrape.ScrapeOptions{MaxPages: 1},
+		req,
+		scrape.ScrapeOptions{MaxPages: 2},
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error scraping: %s\n", err)
