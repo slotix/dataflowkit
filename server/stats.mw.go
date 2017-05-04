@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/slotix/dataflowkit/cache"
-	"github.com/slotix/dataflowkit/downloader"
+	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 )
 
@@ -25,14 +25,14 @@ func (mw statsmw) ParseData(payload []byte) (output []byte, err error) {
 	return
 }
 
-func (mw statsmw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, err error) {
+func (mw statsmw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
 	mw.incrementCount()
 	output, err = mw.ParseService.Fetch(req)
 	logger.Println("stop")
 	return
 }
 
-func (mw statsmw) GetResponse(req downloader.FetchRequest) (output *downloader.SplashResponse, err error) {
+func (mw statsmw) GetResponse(req splash.Request) (output *splash.Response, err error) {
 	mw.incrementCount()
 	output, err = mw.ParseService.GetResponse(req)
 	return

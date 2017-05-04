@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/pquerna/cachecontrol/cacheobject"
-	"github.com/slotix/dataflowkit/downloader"
+	"github.com/slotix/dataflowkit/splash"
 )
 
 var logger *log.Logger
@@ -16,21 +16,13 @@ func init() {
 	logger = log.New(os.Stdout, "cache: ", log.Lshortfile)
 }
 
-func generateHTTPHeaders(dHeaders downloader.Headers) (header http.Header) {
-	header = make(map[string][]string)
-	for _, h := range dHeaders {
-		var str []string
-		str = append(str, h.Value)
-		header[h.Name] = str
-	}	
-	return header
-}
+
 
 //Cacheable check if resource is cacheable
-func Cacheable(resp *downloader.SplashResponse) (rv cacheobject.ObjectResults) {
-	
-	respHeader := generateHTTPHeaders(resp.Response.Headers)
-	reqHeader := generateHTTPHeaders(resp.Request.Headers)
+func Cacheable(resp *splash.Response) (rv cacheobject.ObjectResults) {
+
+	respHeader := splash.GenerateHTTPHeaders(resp.Response.Headers)
+	reqHeader := splash.GenerateHTTPHeaders(resp.Request.Headers)
 
 	reqDir, err := cacheobject.ParseRequestCacheControl(reqHeader.Get("Cache-Control"))
 	if err != nil {

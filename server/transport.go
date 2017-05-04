@@ -10,12 +10,12 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/slotix/dataflowkit/downloader"
+	"github.com/slotix/dataflowkit/splash"
 )
 
 func makeFetchEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(downloader.FetchRequest)
+		req := request.(splash.Request)
 		v, err := svc.Fetch(req)
 		//v, err := svc.GetHTML(request.(string))
 		if err != nil {
@@ -50,7 +50,7 @@ func makeCheckServicesEndpoint(svc ParseService) endpoint.Endpoint {
 */
 
 func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	var request downloader.FetchRequest
+	var request splash.Request
 	//request, err := ioutil.ReadAll(r.Body)
 	//if err != nil {
 	//	fmt.Println(err)
@@ -111,7 +111,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	//_, err := w.Write(response.([]byte))
 	data, err := ioutil.ReadAll(response.(io.Reader))
 	if err != nil {
-		return  err
+		return err
 	}
 	_, err = w.Write(data)
 

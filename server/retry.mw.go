@@ -3,7 +3,7 @@ package server
 import (
 	"io"
 
-	"github.com/slotix/dataflowkit/downloader"
+	"github.com/slotix/dataflowkit/splash"
 )
 
 ////TODO: RetryTimes = 2
@@ -24,7 +24,7 @@ type retrymw struct {
 	ParseService
 }
 
-func (mw retrymw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, err error) {
+func (mw retrymw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
 	output, err = mw.ParseService.Fetch(req)
 	if err != nil {
 		logger.Println(err)

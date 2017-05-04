@@ -3,29 +3,29 @@ package server
 import (
 	"io"
 
-	"github.com/slotix/dataflowkit/downloader"
 	"github.com/slotix/dataflowkit/parser"
+	"github.com/slotix/dataflowkit/splash"
 )
 
 // ParseService provides operations on strings.
 type ParseService interface {
-	GetResponse(req downloader.FetchRequest) (*downloader.SplashResponse, error)
-	Fetch(req downloader.FetchRequest) (io.ReadCloser, error)
+	GetResponse(req splash.Request) (*splash.Response, error)
+	Fetch(req splash.Request) (io.ReadCloser, error)
 	ParseData(payload []byte) ([]byte, error)
 	//	CheckServices() (status map[string]string)
 }
 
 type parseService struct{}
 
-func (parseService) GetResponse(req downloader.FetchRequest) (*downloader.SplashResponse, error) {
-	splashURL, err := downloader.NewSplashConn(req)
-	response, err := downloader.GetResponse(splashURL)
+func (parseService) GetResponse(req splash.Request) (*splash.Response, error) {
+	splashURL, err := splash.NewSplashConn(req)
+	response, err := splash.GetResponse(splashURL)
 	return response, err
 }
 
-func (parseService) Fetch(req downloader.FetchRequest) (io.ReadCloser, error) {
-	splashURL, err := downloader.NewSplashConn(req)
-	content, err := downloader.Fetch(splashURL)
+func (parseService) Fetch(req splash.Request) (io.ReadCloser, error) {
+	splashURL, err := splash.NewSplashConn(req)
+	content, err := splash.Fetch(splashURL)
 	if err != nil {
 		return nil, err
 	}

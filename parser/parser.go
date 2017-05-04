@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/slotix/dataflowkit/downloader"
 	"github.com/slotix/dataflowkit/helpers"
+	"github.com/slotix/dataflowkit/splash"
 	"golang.org/x/net/html"
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -49,9 +49,9 @@ func (p *Parser) Parse() (*Collections, error) {
 	//parse input and fill Payload structure
 	out := Collections{}
 	for _, collection := range p.Payloads {
-		req := downloader.FetchRequest{URL: collection.URL}
-		splashURL, err := downloader.NewSplashConn(req)
-		content, err := downloader.Fetch(splashURL)
+		req := splash.Request{URL: collection.URL}
+		splashURL, err := splash.NewSplashConn(req)
+		content, err := splash.Fetch(splashURL)
 		if err != nil {
 			logger.Println(err)
 			//return nil, err
@@ -190,7 +190,7 @@ func (p *payload) parseItem(r io.Reader) (col *collection, err error) {
 	//if err != nil {
 	//	return nil, err
 	//}
-//	doc := goquery.NewDocumentFromNode(node)
+	//	doc := goquery.NewDocumentFromNode(node)
 	doc, err := goquery.NewDocumentFromReader(r)
 	if err != nil {
 		return nil, err

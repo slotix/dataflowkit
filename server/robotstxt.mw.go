@@ -5,8 +5,10 @@ import (
 	"io"
 	"io/ioutil"
 	neturl "net/url"
+	"time"
 
-	"github.com/slotix/dataflowkit/downloader"
+	"github.com/slotix/dataflowkit/splash"
+	"github.com/temoto/robotstxt"
 )
 
 func robotsTxtMiddleware() ServiceMiddleware {
@@ -19,14 +21,14 @@ type robotstxtmw struct {
 	ParseService
 }
 
-func (mw robotstxtmw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, err error) {
+func (mw robotstxtmw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
 	allow := true
-	robotsURL, err := downloader.NewRobotsTxt(req.URL)
+	robotsURL, err := NewRobotsTxt(req.URL)
 	if err != nil {
 		//return nil, err
 		logger.Println(err)
 	} else {
-		r := downloader.FetchRequest{URL: *robotsURL}
+		r := splash.Request{URL: *robotsURL}
 		//robots, err := mw.ParseService.Download(*robotsURL)
 		robots, err := mw.ParseService.Fetch(r)
 		if err != nil {
@@ -36,7 +38,7 @@ func (mw robotstxtmw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, 
 		if err != nil {
 			return nil, err
 		}
-		robotsData := downloader.GetRobotsData(data)
+		robotsData := GetRobotsData(data)
 		parsedURL, err := neturl.Parse(req.URL)
 		if err != nil {
 			logger.Println("err")
@@ -58,4 +60,32 @@ func (mw robotstxtmw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, 
 		logger.Println(err)
 	}
 	return
+}
+
+func NewRobotsTxt(url string) (*string, error) {
+	var robotsURL string
+	parsedURL, err := neturl.Parse(url)
+	if err != nil {
+		return nil, err
+	}
+	robotsURL = fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
+
+	return &robotsURL, nil
+}
+
+func GetRobotsData(content []byte) *robotstxt.RobotsData {
+	r, err := robotstxt.FromBytes(content)
+	if err != nil {
+		fmt.Println("Robots.txt error:", err)
+	}
+	return r
+	//return Robots{r, parsedURL.Path}
+}
+
+func GetCrawlDelay(r *robotstxt.RobotsData) time.Duration {
+	if r != nil {
+		group := r.FindGroup("DataflowKitBot")
+		return group.CrawlDelay
+	}
+	return 0
 }

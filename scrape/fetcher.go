@@ -90,7 +90,7 @@ func (sf *SplashFetcher) Fetch(request interface{}) (io.ReadCloser, error) {
 	//if err != nil {
 	//	return nil, err
 	//}
-	splashURL, err := splash.NewSplashConn(request.(splash.FetchRequest))
+	splashURL, err := splash.NewSplashConn(request.(splash.Request))
 	sf.splashURL = splashURL
 	res, err := splash.Fetch(sf.splashURL)
 	if err != nil {
