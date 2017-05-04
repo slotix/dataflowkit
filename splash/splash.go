@@ -27,7 +27,7 @@ func init() {
 	logger = log.New(os.Stdout, "splash: ", log.Lshortfile)
 }
 
-type SplashConn struct {
+type Connection struct {
 	Host            string
 	User            string
 	Password        string
@@ -41,7 +41,7 @@ type Headers []struct {
 	Value string `json:"value"`
 }
 
-type FetchRequest struct {
+type Request struct {
 	URL    string  `json:"url"`
 	Params string  `json:"params,omitempty"` //params used for passing formdata to LUA script
 	Cookie string  `json:"cookie,omitempty"` //add cookie to request
@@ -59,16 +59,16 @@ type Cookies []struct {
 	HTTPOnly bool      `json:"httpOnly"`
 }
 
-type SplashResponse struct {
-	HTML    string `json:"html"`
-	Reason  string `json:"reason"`
-	Cookies  Cookies`json:"cookies"`
+type Response struct {
+	HTML    string  `json:"html"`
+	Reason  string  `json:"reason"`
+	Cookies Cookies `json:"cookies"`
 	Request struct {
 		Cookies     Cookies `json:"cookies"`
-		Method      string        `json:"method"`
-		HeadersSize int           `json:"headersSize"`
-		URL         string        `json:"url"`
-		HTTPVersion string        `json:"httpVersion"`
+		Method      string  `json:"method"`
+		HeadersSize int     `json:"headersSize"`
+		URL         string  `json:"url"`
+		HTTPVersion string  `json:"httpVersion"`
 		QueryString []struct {
 			Value string `json:"value"`
 			Name  string `json:"name"`
@@ -77,10 +77,10 @@ type SplashResponse struct {
 		BodySize int     `json:"bodySize"`
 	} `json:"request"`
 	Response struct {
-		Headers Headers `json:"headers"`
-		Cookies  Cookies`json:"cookies"`
-		HeadersSize int  `json:"headersSize"`
-		Ok          bool `json:"ok"`
+		Headers     Headers `json:"headers"`
+		Cookies     Cookies `json:"cookies"`
+		HeadersSize int     `json:"headersSize"`
+		Ok          bool    `json:"ok"`
 		Content     struct {
 			Text     string `json:"text"`
 			MimeType string `json:"mimeType"`
@@ -95,13 +95,13 @@ type SplashResponse struct {
 	} `json:"response"`
 }
 
-type SplashPingResponse struct {
+type PingResponse struct {
 	Maxrss int    `json:"maxrss"`
 	Status string `json:"status"`
 }
 
 //Ping returns status and maxrss from _ping  endpoint
-func Ping(host string) (*SplashPingResponse, error) {
+func Ping(host string) (*PingResponse, error) {
 	client := &http.Client{}
 	pingURL := fmt.Sprintf("http://%s/_ping", host)
 	req, err := http.NewRequest("GET", pingURL, nil)
@@ -114,7 +114,7 @@ func Ping(host string) (*SplashPingResponse, error) {
 	defer resp.Body.Close()
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(resp.Body)
-	var p SplashPingResponse
+	var p PingResponse
 	err = json.Unmarshal(buf.Bytes(), &p)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func Ping(host string) (*SplashPingResponse, error) {
 	return &p, nil
 }
 
-func GetLUA(req FetchRequest) string {
+func GetLUA(req Request) string {
 	if isRobotsTxt(req.URL) {
 		return robotsLUA
 	}
@@ -139,7 +139,7 @@ func GetLUA(req FetchRequest) string {
 }
 
 //NewSplashConn creates new connection to Splash Server
-func NewSplashConn(req FetchRequest) (splashURL string, err error) {
+func NewSplashConn(req Request) (splashURL string, err error) {
 	if req.URL == "" {
 		return "", errURLEmpty
 	}
@@ -154,7 +154,7 @@ func NewSplashConn(req FetchRequest) (splashURL string, err error) {
 
 //GetResponse is needed to be passed to  httpcaching middleware
 //to provide a RFC7234 compliant HTTP cache
-func GetResponse(splashURL string) (*SplashResponse, error) {
+func GetResponse(splashURL string) (*Response, error) {
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
@@ -171,7 +171,7 @@ func GetResponse(splashURL string) (*SplashResponse, error) {
 	}
 	//response from Splash service
 	if resp.StatusCode == 200 {
-		var sResponse SplashResponse
+		var sResponse Response
 		if err := json.Unmarshal(res, &sResponse); err != nil {
 			logger.Println("Json Unmarshall error", err)
 		}
@@ -193,7 +193,7 @@ func GetResponse(splashURL string) (*SplashResponse, error) {
 
 }
 
-func (r *SplashResponse) GetContent() (io.ReadCloser, error) {
+func (r *Response) GetContent() (io.ReadCloser, error) {
 	if r == nil {
 		logger.Println("empty response ")
 		return nil, errors.New("empty response")
@@ -219,7 +219,7 @@ func (r *SplashResponse) GetContent() (io.ReadCloser, error) {
 	//return []byte(r.HTML), nil
 }
 
-//Fetch content from url through Splash server https://github.com/scrapinghub/splash/ 
+//Fetch content from url through Splash server https://github.com/scrapinghub/splash/
 func Fetch(splashURL string) (io.ReadCloser, error) {
 	response, err := GetResponse(splashURL)
 	if err != nil {
@@ -230,4 +230,21 @@ func Fetch(splashURL string) (io.ReadCloser, error) {
 		return content, nil
 	}
 	return nil, err
+}
+
+func isRobotsTxt(url string) bool {
+	if strings.Contains(url, "robots.txt") {
+		return true
+	}
+	return false
+}
+
+func GenerateHTTPHeaders(dHeaders Headers) (header http.Header) {
+	header = make(map[string][]string)
+	for _, h := range dHeaders {
+		var str []string
+		str = append(str, h.Value)
+		header[h.Name] = str
+	}
+	return header
 }

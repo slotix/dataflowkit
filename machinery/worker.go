@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/slotix/dataflowkit/downloader"
+	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/parser"
 )
 
 //import "time"
 
 func GetHTML(url string) (string, error) {
-	_, err := downloader.Fetch(url)
+	_, err := splash.Fetch(url)
 	if err != nil {
 		return "", err
 	}
@@ -16,13 +16,15 @@ func GetHTML(url string) (string, error) {
 	return "200", nil
 }
 
+/*
 func GetHTML1(url string) (string, error) {
-	content, err := downloader.Fetch(url)
+	content, err := splash.Fetch(url)
 	if err != nil {
 		return "", err
 	}
 	return string(content), nil
 }
+*/
 
 func MarshalData(payload []byte) ([]byte, error) {
 	parser, err := parser.NewParser(payload)

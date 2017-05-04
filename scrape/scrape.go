@@ -220,7 +220,7 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 	switch v := req.(type) {
 	case HttpClientFetcherRequest:
 		url = v.URL
-	case splash.FetchRequest:
+	case splash.Request:
 		url = v.URL
 	}
 

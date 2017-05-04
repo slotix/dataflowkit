@@ -13,7 +13,7 @@ func paramsToLuaTable(params string) string {
 	return p
 }
 
-func (r *SplashResponse) cookieToLUATable() (string, error) {
+func (r *Response) cookieToLUATable() (string, error) {
 	headers := r.Response.Headers
 	var setCookie string
 	for _, h := range headers {
@@ -21,7 +21,7 @@ func (r *SplashResponse) cookieToLUATable() (string, error) {
 			setCookie = h.Value
 		}
 	}
-	
+
 	if setCookie != "" {
 		cookies := r.Cookies
 		for _, c := range cookies {
@@ -48,4 +48,3 @@ func (r *SplashResponse) cookieToLUATable() (string, error) {
 	}
 	return "", fmt.Errorf("No cookies in response")
 }
-

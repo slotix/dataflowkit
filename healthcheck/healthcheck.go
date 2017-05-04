@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/garyburd/redigo/redis"
-	"github.com/slotix/dataflowkit/downloader"
+	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 )
 
@@ -20,7 +20,7 @@ type redisConn struct {
 }
 
 type splashConn struct {
-	conn downloader.SplashConn
+	conn splash.Connection
 }
 
 func (r redisConn) serviceName() string {
@@ -49,7 +49,7 @@ func (r redisConn) isAlive() error {
 }
 
 func (s splashConn) isAlive() error {
-	resp, err := downloader.Ping(s.conn.Host)
+	resp, err := splash.Ping(s.conn.Host)
 	if err != nil {
 		return err
 	}
@@ -66,11 +66,11 @@ func CheckServices() (status map[string]string) {
 			network: viper.GetString("redis-network"),
 			host:    viper.GetString("redis")},
 		splashConn{
-			conn: downloader.SplashConn{
+			conn: splash.Connection{
 				Host: viper.GetString("splash"),
 			},
 		},
-		}
+	}
 	for _, srv := range services {
 		err := srv.isAlive()
 		if err != nil {

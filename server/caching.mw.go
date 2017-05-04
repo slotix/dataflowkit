@@ -7,8 +7,8 @@ import (
 	"fmt"
 
 	"github.com/slotix/dataflowkit/cache"
-	"github.com/slotix/dataflowkit/downloader"
 	"github.com/slotix/dataflowkit/parser"
+	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 )
 
@@ -24,7 +24,7 @@ type cachemw struct {
 
 var redisCon cache.RedisConn
 
-func (mw cachemw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, err error) {
+func (mw cachemw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
 	debug := true
 	redisURL := viper.GetString("redis")
 	redisPassword := ""
@@ -32,7 +32,7 @@ func (mw cachemw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, err 
 
 	redisValue, err := redisCon.GetValue(req.URL)
 	if err == nil {
-		var sResponse downloader.SplashResponse
+		var sResponse splash.Response
 		if err := json.Unmarshal(redisValue, &sResponse); err != nil {
 			logger.Println("Json Unmarshall error", err)
 		}
@@ -54,7 +54,7 @@ func (mw cachemw) Fetch(req downloader.FetchRequest) (output io.ReadCloser, err 
 	//Check if it is cacheable
 	rv := cache.Cacheable(resp)
 	expTime := rv.OutExpirationTime.Unix()
-	if rv.OutExpirationTime.IsZero(){
+	if rv.OutExpirationTime.IsZero() {
 		expTime = 0
 	}
 	if debug {
