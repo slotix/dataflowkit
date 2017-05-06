@@ -2,6 +2,7 @@ package splash
 
 import (
 	"fmt"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,15 +14,9 @@ func paramsToLuaTable(params string) string {
 	return p
 }
 
-func (r *Response) cookieToLUATable() (string, error) {
-	headers := r.Response.Headers
-	var setCookie string
-	for _, h := range headers {
-		if h.Name == "Set-Cookie" {
-			setCookie = h.Value
-		}
-	}
-
+func (r *Response) setCookieToLUATable() (string, error) {
+	headers := r.Response.Headers.(http.Header)
+	setCookie := headers.Get("Set-Cookie")
 	if setCookie != "" {
 		cookies := r.Cookies
 		for _, c := range cookies {

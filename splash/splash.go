@@ -13,7 +13,6 @@ import (
 	neturl "net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/spf13/viper"
 )
@@ -25,79 +24,6 @@ var errURLEmpty = errors.New("URL is empty")
 
 func init() {
 	logger = log.New(os.Stdout, "splash: ", log.Lshortfile)
-}
-
-type Connection struct {
-	Host            string
-	User            string
-	Password        string
-	Timeout         int
-	ResourceTimeout int
-	LUAScript       string
-}
-
-type Headers []struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-type Request struct {
-	URL    string  `json:"url"`
-	Params string  `json:"params,omitempty"` //params used for passing formdata to LUA script
-	Cookie string  `json:"cookie,omitempty"` //add cookie to request
-	Func   string  `json:"func,omitempty"`
-	Wait   float64 `json:"wait,omitempty"` //Time in seconds to wait until js scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
-}
-
-type Cookies []struct {
-	Name     string    `json:"name"`
-	Value    string    `json:"value"`
-	Expires  time.Time `json:"expires,omitempty"`
-	Domain   string    `json:"domain"`
-	Secure   bool      `json:"secure"`
-	Path     string    `json:"path"`
-	HTTPOnly bool      `json:"httpOnly"`
-}
-
-type Response struct {
-	HTML    string  `json:"html"`
-	Reason  string  `json:"reason"`
-	Cookies Cookies `json:"cookies"`
-	Request struct {
-		Cookies     Cookies `json:"cookies"`
-		Method      string  `json:"method"`
-		HeadersSize int     `json:"headersSize"`
-		URL         string  `json:"url"`
-		HTTPVersion string  `json:"httpVersion"`
-		QueryString []struct {
-			Value string `json:"value"`
-			Name  string `json:"name"`
-		} `json:"queryString"`
-		Headers  Headers `json:"headers"`
-		BodySize int     `json:"bodySize"`
-	} `json:"request"`
-	Response struct {
-		Headers     Headers `json:"headers"`
-		Cookies     Cookies `json:"cookies"`
-		HeadersSize int     `json:"headersSize"`
-		Ok          bool    `json:"ok"`
-		Content     struct {
-			Text     string `json:"text"`
-			MimeType string `json:"mimeType"`
-			Size     int    `json:"size"`
-			Encoding string `json:"encoding"`
-		} `json:"content"`
-		Status      int    `json:"status"`
-		URL         string `json:"url"`
-		HTTPVersion string `json:"httpVersion"`
-		StatusText  string `json:"statusText"`
-		RedirectURL string `json:"redirectURL"`
-	} `json:"response"`
-}
-
-type PingResponse struct {
-	Maxrss int    `json:"maxrss"`
-	Status string `json:"status"`
 }
 
 //Ping returns status and maxrss from _ping  endpoint
@@ -163,8 +89,6 @@ func GetResponse(splashURL string) (*Response, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	//var res []byte
-	//_, err = resp.Body.Read(res)
 	res, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -172,6 +96,7 @@ func GetResponse(splashURL string) (*Response, error) {
 	//response from Splash service
 	if resp.StatusCode == 200 {
 		var sResponse Response
+
 		if err := json.Unmarshal(res, &sResponse); err != nil {
 			logger.Println("Json Unmarshall error", err)
 		}
@@ -209,7 +134,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 		//r := bytes.NewReader(decoded)
 		return readCloser, nil
 	}
-	cookielua, err := r.cookieToLUATable()
+	cookielua, err := r.setCookieToLUATable()
 	if err != nil {
 		logger.Println(err)
 	}
@@ -239,12 +164,31 @@ func isRobotsTxt(url string) bool {
 	return false
 }
 
-func GenerateHTTPHeaders(dHeaders Headers) (header http.Header) {
+//http://choly.ca/post/go-json-marshalling/
+func (r *Response) UnmarshalJSON(data []byte) error {
+	type Alias Response
+	aux := &struct {
+		Headers interface{} `json:"headers"`
+		*Alias
+	}{
+		Alias: (*Alias)(r),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	r.Request.Headers = castHeaders(r.Request.Headers)
+	r.Response.Headers = castHeaders(r.Response.Headers)
+	return nil
+}
+
+//castHeaders serves for casting headers to standard http.Header type
+func castHeaders(splashHeaders interface{}) (header http.Header) {
 	header = make(map[string][]string)
-	for _, h := range dHeaders {
+	for _, h := range splashHeaders.([]interface{}) {
 		var str []string
-		str = append(str, h.Value)
-		header[h.Name] = str
+		v := h.(map[string]interface{})["value"].(string)
+		str = append(str, v)
+		header[h.(map[string]interface{})["name"].(string)] = str
 	}
 	return header
 }
