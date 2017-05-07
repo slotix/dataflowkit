@@ -5,17 +5,20 @@ import (
 
 	"github.com/slotix/dataflowkit/parser"
 	"github.com/slotix/dataflowkit/splash"
+	"github.com/slotix/dataflowkit/scrape"
 )
 
 // ParseService provides operations on strings.
 type ParseService interface {
 	GetResponse(req splash.Request) (*splash.Response, error)
 	Fetch(req splash.Request) (io.ReadCloser, error)
-	ParseData(payload []byte) ([]byte, error)
+	ParseData(payload []byte) (io.ReadCloser, error)
 	//	CheckServices() (status map[string]string)
 }
 
-type parseService struct{}
+type parseService struct {
+	//Fetcher scrape.Fetcher
+}
 
 func (parseService) GetResponse(req splash.Request) (*splash.Response, error) {
 	splashURL, err := splash.NewSplashConn(req)
@@ -24,6 +27,18 @@ func (parseService) GetResponse(req splash.Request) (*splash.Response, error) {
 }
 
 func (parseService) Fetch(req splash.Request) (io.ReadCloser, error) {
+	fetcher, err := scrape.NewSplashFetcher()
+	if err != nil {
+		logger.Println(err)
+	}
+	res, err := fetcher.Fetch(req)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (parseService) Fetch1(req splash.Request) (io.ReadCloser, error) {
 	splashURL, err := splash.NewSplashConn(req)
 	content, err := splash.Fetch(splashURL)
 	if err != nil {
@@ -32,7 +47,7 @@ func (parseService) Fetch(req splash.Request) (io.ReadCloser, error) {
 	return content, nil
 }
 
-func (parseService) ParseData(payload []byte) ([]byte, error) {
+func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	p, err := parser.NewParser(payload)
 	if err != nil {
 		return nil, err

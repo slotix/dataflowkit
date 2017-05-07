@@ -62,8 +62,8 @@ func Init(port string) {
 	)
 
 	marshalDataHandler := httptransport.NewServer(
-		makeMarshalDataEndpoint(svc),
-		decodeMarshalDataRequest,
+		makeParseEndpoint(svc),
+		decodeParseRequest,
 		encodeResponse,
 	)
 

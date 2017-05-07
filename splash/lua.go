@@ -15,6 +15,7 @@ func paramsToLuaTable(params string) string {
 }
 
 func (r *Response) setCookieToLUATable() (string, error) {
+//	logger.Printf("%T - %s", r.Response.Headers, r.Response.Headers)
 	headers := r.Response.Headers.(http.Header)
 	setCookie := headers.Get("Set-Cookie")
 	if setCookie != "" {

@@ -1,8 +1,10 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -98,7 +100,7 @@ func (mw cachemw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
 	return
 }
 
-func (mw cachemw) ParseData(payload []byte) (output []byte, err error) {
+func (mw cachemw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 	redisURL := viper.GetString("redis")
 	redisPassword := ""
 	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)
@@ -109,7 +111,8 @@ func (mw cachemw) ParseData(payload []byte) (output []byte, err error) {
 	redisKey := fmt.Sprintf("%s-%s", p.Format, p.PayloadMD5)
 	redisValue, err := redisCon.GetValue(redisKey)
 	if err == nil {
-		return redisValue, nil
+		readCloser := ioutil.NopCloser(bytes.NewReader(redisValue))
+		return readCloser, nil
 	}
 
 	output, err = mw.ParseService.ParseData(payload)

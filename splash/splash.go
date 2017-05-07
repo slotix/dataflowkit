@@ -58,7 +58,7 @@ func GetLUA(req Request) string {
 	if req.Params == "" {
 		return fmt.Sprintf(baseLUA, req.Wait)
 	}
-	if req.Cookie != "" {
+	if req.Cookies != "" {
 		return fmt.Sprintf(LUASetCookie, req.Wait)
 	}
 	return fmt.Sprintf(LUAPostFormData, paramsToLuaTable(req.Params), req.Wait)
@@ -75,6 +75,7 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 		viper.GetInt("splash-timeout"),
 		viper.GetInt("splash-resource-timeout"),
 		neturl.QueryEscape(GetLUA(req)))
+	//	logger.Println(splashURL)
 	return splashURL, nil
 }
 
@@ -120,7 +121,7 @@ func GetResponse(splashURL string) (*Response, error) {
 
 func (r *Response) GetContent() (io.ReadCloser, error) {
 	if r == nil {
-		logger.Println("empty response ")
+		//	logger.Println("empty response")
 		return nil, errors.New("empty response")
 	}
 	if isRobotsTxt(r.Request.URL) {
@@ -141,7 +142,6 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 	logger.Println(cookielua)
 	readCloser := ioutil.NopCloser(strings.NewReader(r.HTML))
 	return readCloser, nil
-	//return []byte(r.HTML), nil
 }
 
 //Fetch content from url through Splash server https://github.com/scrapinghub/splash/
@@ -165,6 +165,7 @@ func isRobotsTxt(url string) bool {
 }
 
 //http://choly.ca/post/go-json-marshalling/
+//UnmarshalJSON convert headers to http.Header type while unmarshaling
 func (r *Response) UnmarshalJSON(data []byte) error {
 	type Alias Response
 	aux := &struct {
@@ -176,19 +177,40 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
+
+	//logger.Println(t)
+	//if t == "[]interface {}" {
 	r.Request.Headers = castHeaders(r.Request.Headers)
 	r.Response.Headers = castHeaders(r.Response.Headers)
+	//}
 	return nil
 }
 
 //castHeaders serves for casting headers to standard http.Header type
 func castHeaders(splashHeaders interface{}) (header http.Header) {
+	//t := fmt.Sprintf("%T", splashHeaders)
+	//	logger.Printf("%T - %s", splashHeaders, splashHeaders)
 	header = make(map[string][]string)
-	for _, h := range splashHeaders.([]interface{}) {
-		var str []string
-		v := h.(map[string]interface{})["value"].(string)
-		str = append(str, v)
-		header[h.(map[string]interface{})["name"].(string)] = str
+	switch splashHeaders.(type) {
+	case []interface{}:
+		for _, h := range splashHeaders.([]interface{}) {
+			var str []string
+			v := h.(map[string]interface{})["value"].(string)
+			str = append(str, v)
+			header[h.(map[string]interface{})["name"].(string)] = str
+		}
+		return header
+	case map[string]interface{}:
+		for k, v := range splashHeaders.(map[string]interface{}) {
+			var str []string
+			for _, vv := range v.([]interface{}) {
+				str = append(str, vv.(string))
+			}
+			header[k] = str
+		}
+		return header
+	default:
+		logger.Println()
+		return nil
 	}
-	return header
 }

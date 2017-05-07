@@ -26,7 +26,7 @@ type instrmw struct {
 	ParseService
 }
 
-func (mw instrmw) ParseData(payload []byte) (output []byte, err error) {
+func (mw instrmw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "marshaldata", "error", fmt.Sprint(err != nil)}
 		mw.requestCount.With(lvs...).Add(1)

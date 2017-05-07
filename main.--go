@@ -32,18 +32,16 @@ func main() {
 			{Name: "BuyInfo", Selector: ".buy-info", Extractor: extract.Attr{Attr: "href"}},
 		},
 		Paginator: paginate.BySelector(".next", "href"),
+		Opts: scrape.ScrapeOptions{MaxPages: 2},
 	}
 	scraper, err := scrape.New(config)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating scraper: %s\n", err)
 		os.Exit(1)
 	}
-	req := splash.FetchRequest{URL: "https://drony.heureka.sk"}
+	req := splash.Request{URL: "https://drony.heureka.sk"}
 	//req := scrape.HttpClientFetcherRequest{Method: "GET", URL: "https://drony.heureka.sk"}
-	results, err := scraper.ScrapeWithOpts(
-		req,
-		scrape.ScrapeOptions{MaxPages: 2},
-	)
+	results, err := scraper.Scrape(req)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error scraping: %s\n", err)
 		os.Exit(1)

@@ -67,7 +67,7 @@ type Piece struct {
 // The main configuration for a scrape.  Pass this to the New() function.
 type ScrapeConfig struct {
 	// Fetcher is the underlying transport that is used to fetch documents.
-	// If this is not specified (i.e. left nil), then a default HttpClientFetcher
+	// If this is not specified (i.e. left nil), then a default SplashFetcher
 	// will be created and used.
 	Fetcher Fetcher
 
@@ -96,8 +96,11 @@ type ScrapeConfig struct {
 	// being aborted - this can be useful if you need to ensure that a given Piece
 	// is required, for example.
 	Pieces []Piece
-}
 
+	Opts ScrapeOptions
+
+}
+/*
 func (c *ScrapeConfig) clone() *ScrapeConfig {
 	ret := &ScrapeConfig{
 		Fetcher:    c.Fetcher,
@@ -107,6 +110,7 @@ func (c *ScrapeConfig) clone() *ScrapeConfig {
 	}
 	return ret
 }
+*/
 
 // ScrapeResults describes the results of a scrape.  It contains a list of all
 // pages (URLs) visited during the process, along with all results generated
@@ -178,7 +182,7 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 	}
 
 	// Clone the configuration and fill in the defaults.
-	config := c.clone()
+	config := c//.clone()
 	if config.Paginator == nil {
 		config.Paginator = dummyPaginator{}
 	}
@@ -203,9 +207,9 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 
 // Scrape a given URL with default options.  See 'ScrapeWithOpts' for more
 // information.
-func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
-	return s.ScrapeWithOpts(req, DefaultOptions)
-}
+//func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
+//	return s.ScrapeWithOpts(req, DefaultOptions)
+//}
 
 // Actually start scraping at the given URL.
 //
@@ -214,7 +218,7 @@ func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
 // strange behaviour - e.g. overwriting cookies in the underlying http.Client.
 // Please be careful when running multiple scrapes at a time, unless you know
 // that it's safe.
-func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeResults, error) {
+func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
 
 	var url string
 	switch v := req.(type) {
@@ -241,7 +245,7 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 		URLs:    []string{},
 		Results: [][]map[string]interface{}{},
 	}
-
+	opts := s.config.Opts
 	var numPages int
 	for {
 		// Repeat until we don't have any more URLs, or until we hit our page limit.
