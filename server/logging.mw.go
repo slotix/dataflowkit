@@ -19,7 +19,7 @@ type logmw struct {
 	ParseService
 }
 
-func (mw logmw) ParseData(payload []byte) (output []byte, err error) {
+func (mw logmw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		_ = mw.logger.Log(
 			"method", "marshaldata",

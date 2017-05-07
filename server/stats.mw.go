@@ -19,7 +19,7 @@ type statsmw struct {
 	ParseService
 }
 
-func (mw statsmw) ParseData(payload []byte) (output []byte, err error) {
+func (mw statsmw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 	mw.incrementCount()
 	output, err = mw.ParseService.ParseData(payload)
 	return

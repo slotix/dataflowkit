@@ -56,19 +56,13 @@ type HttpClientFetcher struct {
 }
 
 // SplashClientFetcher is a Fetcher that uses Scrapinghub splash
-// to fetch URLs.
+// to fetch URLs. Splash is a javascript rendering service
 type SplashFetcher struct {
-	//req downloader.FetchRequest
-	//conn *downloader.SplashConn
 	splashURL string
 }
 
 //func NewSplashFetcher(req downloader.FetchRequest) (*SplashFetcher, error) {
 func NewSplashFetcher() (*SplashFetcher, error) {
-	//splashURL, err := downloader.NewSplashConn(req)
-	//if err != nil {
-	//	return nil, err
-	//}
 	sf := &SplashFetcher{
 	//	splashURL: splashURL,
 	}
@@ -79,17 +73,8 @@ func (sf *SplashFetcher) Prepare() error {
 	return nil
 }
 
-//func (sf *SplashFetcher) FType() string {
-//	return fmt.Sprintf("%T", sf)
-//}
 
-//method is not used here
 func (sf *SplashFetcher) Fetch(request interface{}) (io.ReadCloser, error) {
-	//var req downloader.FetchRequest
-	//err := json.Unmarshal(request, &req)
-	//if err != nil {
-	//	return nil, err
-	//}
 	splashURL, err := splash.NewSplashConn(request.(splash.Request))
 	sf.splashURL = splashURL
 	res, err := splash.Fetch(sf.splashURL)

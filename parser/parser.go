@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -366,7 +367,7 @@ func findSelectors(doc *goquery.Document, what string) {
 }
 */
 //func MarshalData(payload []byte) ([]byte, error) {
-func (p *Parser) MarshalData() ([]byte, error) {
+func (p *Parser) MarshalData() (io.ReadCloser, error) {
 	cols, err := p.Parse()
 	if err != nil {
 		return nil, err
@@ -383,8 +384,8 @@ func (p *Parser) MarshalData() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	return b, nil
+	readCloser := ioutil.NopCloser(bytes.NewReader(b))
+	return readCloser, nil
 }
 
 //genAttrFieldName generates field name according to attributes
