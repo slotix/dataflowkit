@@ -38,7 +38,7 @@ func (parseService) Fetch(req splash.Request) (io.ReadCloser, error) {
 	return res, nil
 }
 
-func (parseService) Fetch1(req splash.Request) (io.ReadCloser, error) {
+func (parseService) Fetch_old(req splash.Request) (io.ReadCloser, error) {
 	splashURL, err := splash.NewSplashConn(req)
 	content, err := splash.Fetch(splashURL)
 	if err != nil {

@@ -59,6 +59,7 @@ type HttpClientFetcher struct {
 // to fetch URLs. Splash is a javascript rendering service
 type SplashFetcher struct {
 	splashURL string
+	PrepareSplash func() error
 }
 
 //func NewSplashFetcher(req downloader.FetchRequest) (*SplashFetcher, error) {
@@ -70,6 +71,9 @@ func NewSplashFetcher() (*SplashFetcher, error) {
 }
 
 func (sf *SplashFetcher) Prepare() error {
+	if sf.PrepareSplash != nil {
+		return sf.PrepareSplash()
+	}
 	return nil
 }
 

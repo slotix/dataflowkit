@@ -13,7 +13,9 @@ import (
 	neturl "net/url"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/spf13/viper"
 )
 
@@ -79,9 +81,10 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 	return splashURL, nil
 }
 
-//GetResponse is needed to be passed to  httpcaching middleware
+//GetResponse result is passed to  caching middleware
 //to provide a RFC7234 compliant HTTP cache
 func GetResponse(splashURL string) (*Response, error) {
+	//logger.Println(splashURL)
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
@@ -113,6 +116,11 @@ func GetResponse(splashURL string) (*Response, error) {
 		} else {
 			err = nil
 		}
+		//if cacheable ?
+		rv := sResponse.cacheable()
+		if len(rv.OutReasons) == 0 {
+			sResponse.Cacheable = true
+		}
 		return &sResponse, err
 	}
 	return nil, fmt.Errorf(string(res))
@@ -142,6 +150,67 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 	logger.Println(cookielua)
 	readCloser := ioutil.NopCloser(strings.NewReader(r.HTML))
 	return readCloser, nil
+}
+
+//cacheable check if resource is cacheable
+func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
+//func (r *Response) cacheable() bool {
+
+	respHeader := r.Response.Headers.(http.Header)
+	reqHeader := r.Request.Headers.(http.Header)
+
+	reqDir, err := cacheobject.ParseRequestCacheControl(reqHeader.Get("Cache-Control"))
+	if err != nil {
+		logger.Printf(err.Error())
+	}
+	resDir, err := cacheobject.ParseResponseCacheControl(respHeader.Get("Cache-Control"))
+	if err != nil {
+		logger.Printf(err.Error())
+	}
+	//logger.Println(respHeader)
+	expiresHeader, _ := http.ParseTime(respHeader.Get("Expires"))
+	dateHeader, _ := http.ParseTime(respHeader.Get("Date"))
+	lastModifiedHeader, _ := http.ParseTime(respHeader.Get("Last-Modified"))
+	obj := cacheobject.Object{
+		//	CacheIsPrivate:         false,
+		RespDirectives:         resDir,
+		RespHeaders:            respHeader,
+		RespStatusCode:         r.Response.Status,
+		RespExpiresHeader:      expiresHeader,
+		RespDateHeader:         dateHeader,
+		RespLastModifiedHeader: lastModifiedHeader,
+
+		ReqDirectives: reqDir,
+		ReqHeaders:    reqHeader,
+		ReqMethod:     r.Request.Method,
+
+		NowUTC: time.Now().UTC(),
+	}
+
+	rv = cacheobject.ObjectResults{}
+	cacheobject.CachableObject(&obj, &rv)
+	cacheobject.ExpirationObject(&obj, &rv)
+	//Check if it is cacheable
+
+	expTime := rv.OutExpirationTime.Unix()
+	if rv.OutExpirationTime.IsZero() {
+		expTime = 0
+	}
+	r.CacheExpirationTime = expTime
+	debug := false
+	if debug {
+		if rv.OutErr != nil {
+			logger.Println("Errors: ", rv.OutErr)
+		}
+		if rv.OutReasons != nil {
+			logger.Println("Reasons to not cache: ", rv.OutReasons)
+		}
+		if rv.OutWarnings != nil {
+			logger.Println("Warning headers to add: ", rv.OutWarnings)
+		}
+		logger.Println("Expiration: ", rv.OutExpirationTime.String())
+	}
+	return rv
 }
 
 //Fetch content from url through Splash server https://github.com/scrapinghub/splash/
@@ -179,10 +248,24 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 	}
 
 	//logger.Println(t)
-	//if t == "[]interface {}" {
+
 	r.Request.Headers = castHeaders(r.Request.Headers)
 	r.Response.Headers = castHeaders(r.Response.Headers)
-	//}
+	/*
+		switch r.Request.URL.(type) {
+		case string:
+			parsedURL, err := neturl.Parse(r.Request.URL.(string))
+			if err != nil {
+				return err
+			}
+			r.Request.URL = parsedURL
+		case map[string]interface{}:
+			for k, v := range r.Request.URL.(map[string]interface{}) {
+				logger.Println(k, v)
+				r.Request.URL.(map[string]interface{})[k] = v
+			}
+		}
+	*/
 	return nil
 }
 

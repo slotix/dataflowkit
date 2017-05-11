@@ -5,12 +5,9 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
-	"net/http"
-	"time"
 
 	"fmt"
 
-	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/slotix/dataflowkit/cache"
 	"github.com/slotix/dataflowkit/parser"
 	"github.com/slotix/dataflowkit/splash"
@@ -30,11 +27,11 @@ type cachemw struct {
 var redisCon cache.RedisConn
 
 func (mw cachemw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
-	debug := true
+
 	redisURL := viper.GetString("redis")
 	redisPassword := ""
 	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)
-
+	//if something in a cache return local copy
 	redisValue, err := redisCon.GetValue(req.URL)
 	if err == nil {
 		var sResponse splash.Response
@@ -51,31 +48,13 @@ func (mw cachemw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
 		}
 		return output, err
 	}
-
+	//fetch results if there is nothing in a cache
 	resp, respErr := mw.ParseService.GetResponse(req)
 	if respErr != nil {
 		return nil, respErr
 	}
-	//Check if it is cacheable
-	rv := cacheable(resp)
-	expTime := rv.OutExpirationTime.Unix()
-	if rv.OutExpirationTime.IsZero() {
-		expTime = 0
-	}
-	if debug {
-		if rv.OutErr != nil {
-			logger.Println("Errors: ", rv.OutErr)
-		}
-		if rv.OutReasons != nil {
-			logger.Println("Reasons to not cache: ", rv.OutReasons)
-		}
-		if rv.OutWarnings != nil {
-			logger.Println("Warning headers to add: ", rv.OutWarnings)
-		}
-		logger.Println("Expiration: ", rv.OutExpirationTime.String())
-	}
-	//write data to cache
-	if len(rv.OutReasons) == 0 {
+
+	if resp.Cacheable {
 		response, err := json.Marshal(resp)
 		if err != nil {
 			logger.Printf(err.Error())
@@ -84,13 +63,10 @@ func (mw cachemw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
 		if err != nil {
 			logger.Println(err.Error())
 		}
-		err = redisCon.SetExpireAt(req.URL, expTime)
+		err = redisCon.SetExpireAt(req.URL, resp.CacheExpirationTime)
 		if err != nil {
 			logger.Println(err.Error())
 		}
-	}
-	if respErr != nil {
-		return nil, respErr
 	}
 
 	output, err = resp.GetContent()
@@ -128,44 +104,4 @@ func (mw cachemw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 		logger.Println(err.Error())
 	}
 	return
-}
-
-//Cacheable check if resource is cacheable
-func cacheable(resp *splash.Response) (rv cacheobject.ObjectResults) {
-
-	respHeader := resp.Response.Headers.(http.Header)
-	reqHeader := resp.Request.Headers.(http.Header)
-
-	reqDir, err := cacheobject.ParseRequestCacheControl(reqHeader.Get("Cache-Control"))
-	if err != nil {
-		logger.Printf(err.Error())
-	}
-	resDir, err := cacheobject.ParseResponseCacheControl(respHeader.Get("Cache-Control"))
-	if err != nil {
-		logger.Printf(err.Error())
-	}
-	//logger.Println(respHeader)
-	expiresHeader, _ := http.ParseTime(respHeader.Get("Expires"))
-	dateHeader, _ := http.ParseTime(respHeader.Get("Date"))
-	lastModifiedHeader, _ := http.ParseTime(respHeader.Get("Last-Modified"))
-	obj := cacheobject.Object{
-		//	CacheIsPrivate:         false,
-		RespDirectives:         resDir,
-		RespHeaders:            respHeader,
-		RespStatusCode:         resp.Response.Status,
-		RespExpiresHeader:      expiresHeader,
-		RespDateHeader:         dateHeader,
-		RespLastModifiedHeader: lastModifiedHeader,
-
-		ReqDirectives: reqDir,
-		ReqHeaders:    reqHeader,
-		ReqMethod:     resp.Request.Method,
-
-		NowUTC: time.Now().UTC(),
-	}
-
-	rv = cacheobject.ObjectResults{}
-	cacheobject.CachableObject(&obj, &rv)
-	cacheobject.ExpirationObject(&obj, &rv)
-	return rv
 }

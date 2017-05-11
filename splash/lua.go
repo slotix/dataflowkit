@@ -15,7 +15,7 @@ func paramsToLuaTable(params string) string {
 }
 
 func (r *Response) setCookieToLUATable() (string, error) {
-//	logger.Printf("%T - %s", r.Response.Headers, r.Response.Headers)
+	//	logger.Printf("%T - %s", r.Response.Headers, r.Response.Headers)
 	headers := r.Response.Headers.(http.Header)
 	setCookie := headers.Get("Set-Cookie")
 	if setCookie != "" {
@@ -36,7 +36,8 @@ func (r *Response) setCookieToLUATable() (string, error) {
 					c.Path,
 					c.Domain,
 					expires,
-					strconv.FormatBool(c.HTTPOnly),
+					//	strconv.FormatBool(c.HTTPOnly),
+					strconv.FormatBool(c.HttpOnly),
 					strconv.FormatBool(c.Secure))
 				return LUA, nil
 			}
