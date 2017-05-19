@@ -57,13 +57,11 @@ func GetLUA(req Request) string {
 	if req.Wait == 0 {
 		req.Wait = viper.GetFloat64("splash-wait")
 	}
-	if req.Params == "" {
-		return fmt.Sprintf(baseLUA, req.Wait)
-	}
 	if req.Cookies != "" {
 		return fmt.Sprintf(LUASetCookie, req.Wait)
 	}
-	return fmt.Sprintf(LUAPostFormData, paramsToLuaTable(req.Params), req.Wait)
+	return baseLUA
+
 }
 
 //NewSplashConn creates new connection to Splash Server
@@ -72,12 +70,15 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 		return "", errURLEmpty
 	}
 	splashURL = fmt.Sprintf(
-		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&lua_source=%s", fmt.Sprintf("http://%s/", viper.GetString("splash")),
+		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&wait=%f&cookies=%s&formdata=%s&lua_source=%s", fmt.Sprintf("http://%s/", viper.GetString("splash")),
 		neturl.QueryEscape(req.URL),
 		viper.GetInt("splash-timeout"),
 		viper.GetInt("splash-resource-timeout"),
+		req.Wait,
+		req.Cookies,
+		paramsToLuaTable(req.Params),
 		neturl.QueryEscape(GetLUA(req)))
-	//	logger.Println(splashURL)
+		//logger.Println(splashURL)
 	return splashURL, nil
 }
 
@@ -293,7 +294,7 @@ func castHeaders(splashHeaders interface{}) (header http.Header) {
 		}
 		return header
 	default:
-		logger.Println()
+		//logger.Println()
 		return nil
 	}
 }

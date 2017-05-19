@@ -1,17 +1,41 @@
 package splash
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 )
-
+//paramsToLuaTable generates JSON string 
 func paramsToLuaTable(params string) string {
+	if params == "" {
+		return params
+	}
 	re := regexp.MustCompile("([\\w-]+)=([\\w%\\.]+)(&)?")
-	p := re.ReplaceAllString(params, "$1=\"$2\",")
+	p := re.ReplaceAllString(params, "\"$1\":\"$2\",")
+	p = strings.TrimSuffix(p,",") //remove last ","
+	p = fmt.Sprintf("{%s}", p)
 	return p
+}
+
+func paramsToJSON(params string) string {
+	if params == "" {
+		return params
+	}
+	m, err := url.ParseQuery(params)
+	if err != nil {
+		logger.Println(err)
+		return ""
+	}
+	jsonString, err := json.Marshal(m)
+	if err != nil {
+		logger.Println(err)
+		return ""
+	}
+	return string(jsonString)
 }
 
 func (r *Response) setCookieToLUATable() (string, error) {
@@ -21,7 +45,7 @@ func (r *Response) setCookieToLUATable() (string, error) {
 	if setCookie != "" {
 		cookies := r.Cookies
 		for _, c := range cookies {
-			logger.Println(c.Name, setCookie)
+			//logger.Println(c.Name, setCookie)
 			if strings.Contains(setCookie, c.Name) {
 				//cookies = splash:add_cookie{name, value, path=nil, domain=nil, expires=nil, httpOnly=nil, secure=nil}
 				//cookieLUA := `"session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"`

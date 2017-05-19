@@ -61,6 +61,7 @@ type SRequest struct {
 //Response returned by splash
 //It includes html body, response, request
 type Response struct {
+	URL                 string        `json:"url"`
 	HTML                string        `json:"html"`
 	Reason              string        `json:"reason"`
 	Cookies             []http.Cookie `json:"cookies"`
