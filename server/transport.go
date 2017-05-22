@@ -27,7 +27,7 @@ func makeFetchEndpoint(svc ParseService) endpoint.Endpoint {
 	}
 }
 
-func makeParseEndpoint(svc ParseService) endpoint.Endpoint {
+func makeParseDataEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		//	fmt.Println("from makeMarshalDataEndpoint",string(request.([]byte)))
 		v, err := svc.ParseData(request.([]byte))

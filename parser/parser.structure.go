@@ -6,20 +6,26 @@ type meta struct {
 }
 
 type field struct {
-	Name        string `json:"name" validate:"required"`
-	CSSSelector string `json:"css" validate:"required"`
-	Type        int    `json:"type"`
-	Count       int    `json:"count"`
-	Details     payload `json:"-" validate:"-"`
+	Name     string  `json:"name" validate:"required"`
+	Selector string  `json:"sel" validate:"required"`
+	Type     int     `json:"type"`
+	Count    int     `json:"count"`
+	Details  payload `json:"-" validate:"-"`
 	//Regex       string `json:"regex"`
 	//FieldType   string `json:"type"`
 }
 
-//easyjson:json
+type paginator struct {
+	Selector  string `json:"sel"`
+	Attribute string `json:"attr"`
+	MaxPages  int    `json:"max-pages"`
+}
 
+//easyjson:json
 type payload struct {
 	meta
-	Fields []field `json:"fields" validate:"gt=0"` //number of fields >0 
+	Fields    []field   `json:"fields" validate:"gt=0"` //number of fields >0
+	Paginator paginator `json:"paginator"`
 }
 
 //Parser structure stores input format and collections CSS Selectors
@@ -28,6 +34,8 @@ type Parser struct {
 	Format     string    `json:"format"`
 	Payloads   []payload `json:"collections"`
 	PayloadMD5 []byte    `json:"payloadMD5"`
+	//PayloadMD5 []byte
+
 }
 
 //easyjson:json
