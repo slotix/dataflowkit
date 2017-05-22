@@ -425,7 +425,7 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser4(in *jlexer.Lexer, ou
 				}
 				for !in.IsDelim(']') {
 					var v10 payload
-					easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser5(in, &v10)
+					(v10).UnmarshalEasyJSON(in)
 					out.Payloads = append(out.Payloads, v10)
 					in.WantComma()
 				}
@@ -468,7 +468,7 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser4(out *jwriter.Writer,
 			if v12 > 0 {
 				out.RawByte(',')
 			}
-			easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser5(out, v13)
+			(v13).MarshalEasyJSON(out)
 		}
 		out.RawByte(']')
 	}
@@ -538,6 +538,8 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser5(in *jlexer.Lexer, ou
 				}
 				in.Delim(']')
 			}
+		case "paginator":
+			easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser7(in, &out.Paginator)
 		case "name":
 			out.Name = string(in.String())
 		case "url":
@@ -574,6 +576,12 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser5(out *jwriter.Writer,
 		out.RawByte(',')
 	}
 	first = false
+	out.RawString("\"paginator\":")
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser7(out, in.Paginator)
+	if !first {
+		out.RawByte(',')
+	}
+	first = false
 	out.RawString("\"name\":")
 	out.String(string(in.Name))
 	if !first {
@@ -582,6 +590,82 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser5(out *jwriter.Writer,
 	first = false
 	out.RawString("\"url\":")
 	out.String(string(in.URL))
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v payload) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser5(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v payload) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser5(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *payload) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser5(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *payload) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser5(l, v)
+}
+func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser7(in *jlexer.Lexer, out *paginator) {
+	if in.IsNull() {
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeString()
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "sel":
+			out.Selector = string(in.String())
+		case "attr":
+			out.Attribute = string(in.String())
+		case "max-pages":
+			out.MaxPages = int(in.Int())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+}
+func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser7(out *jwriter.Writer, in paginator) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	if !first {
+		out.RawByte(',')
+	}
+	first = false
+	out.RawString("\"sel\":")
+	out.String(string(in.Selector))
+	if !first {
+		out.RawByte(',')
+	}
+	first = false
+	out.RawString("\"attr\":")
+	out.String(string(in.Attribute))
+	if !first {
+		out.RawByte(',')
+	}
+	first = false
+	out.RawString("\"max-pages\":")
+	out.Int(int(in.MaxPages))
 	out.RawByte('}')
 }
 func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser6(in *jlexer.Lexer, out *field) {
@@ -601,8 +685,8 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser6(in *jlexer.Lexer, ou
 		switch key {
 		case "name":
 			out.Name = string(in.String())
-		case "css":
-			out.CSSSelector = string(in.String())
+		case "sel":
+			out.Selector = string(in.String())
 		case "type":
 			out.Type = int(in.Int())
 		case "count":
@@ -628,8 +712,8 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser6(out *jwriter.Writer,
 		out.RawByte(',')
 	}
 	first = false
-	out.RawString("\"css\":")
-	out.String(string(in.CSSSelector))
+	out.RawString("\"sel\":")
+	out.String(string(in.Selector))
 	if !first {
 		out.RawByte(',')
 	}

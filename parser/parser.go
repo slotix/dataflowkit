@@ -41,6 +41,7 @@ func NewParser(payload []byte) (Parser, error) {
 	if p.Format == "" {
 		p.Format = "json"
 	}
+	logger.Println(p.Payloads[0].Paginator)
 	p.PayloadMD5 = helpers.GenerateMD5(payload)
 	return p, nil
 }
@@ -122,15 +123,15 @@ func (p *payload) parseItem1(h []byte) (col *collection, err error) {
 		if err != nil {
 			return nil, err
 		}
-		sel := doc.Find(f.CSSSelector)
-		logger.Println(f.CSSSelector, sel.Length())
+		sel := doc.Find(f.Selector)
+		logger.Println(f.Selector, sel.Length())
 		col.genAttrFieldName(f.Name, sel)
-		parents[f.CSSSelector] = doc.Find(f.CSSSelector).Parents()
+		parents[f.Selector] = doc.Find(f.Selector).Parents()
 		if sel.Length() > 0 { //don't add selectors to intersection if lenght is 0. Otherwise the whole intersection returns No selectors error
 			if i == 0 {
-				intersection = parents[f.CSSSelector]
+				intersection = parents[f.Selector]
 			} else {
-				intersection = intersection.Intersection(parents[f.CSSSelector])
+				intersection = intersection.Intersection(parents[f.Selector])
 			}
 
 		}
@@ -159,7 +160,7 @@ func (p *payload) parseItem1(h []byte) (col *collection, err error) {
 		logger.Println(i, attrOrDataValue(s))
 		itm := item{value: make(map[string]interface{})}
 		for _, field := range p.Fields {
-			filtered := s.Find(field.CSSSelector)
+			filtered := s.Find(field.Selector)
 			//pr(field.FieldName)
 			if filtered.Length() >= 1 {
 				itm.fillCollection(field.Name, filtered)
@@ -174,12 +175,15 @@ func (p *payload) parseItem1(h []byte) (col *collection, err error) {
 	col.CreatedAt = time.Now().UnixNano()
 	return col, nil
 }
+
 func intersectionFL(sel *goquery.Selection) *goquery.Selection {
 	first := sel.First()
 	last := sel.Last()
 	intersection := first.Parents().Intersection(last.Parents())
 	return intersection
 }
+
+
 
 func (p *payload) parseItem(r io.Reader) (col *collection, err error) {
 	col, err = newCollection(p)
@@ -202,8 +206,8 @@ func (p *payload) parseItem(r io.Reader) (col *collection, err error) {
 		if err != nil {
 			return nil, err
 		}
-		sel := doc.Find(f.CSSSelector)
-		logger.Println(f.CSSSelector, sel.Length())
+		sel := doc.Find(f.Selector)
+		logger.Println(f.Selector, sel.Length())
 		col.genAttrFieldName(f.Name, sel)
 		if sel.Length() > 0 { //don't add selectors to intersection if lenght is 0. Otherwise the whole intersection returns No selectors error
 			if i == 0 {
@@ -234,7 +238,7 @@ func (p *payload) parseItem(r io.Reader) (col *collection, err error) {
 		//logger.Println(i, attrOrDataValue(s))
 		itm := item{value: make(map[string]interface{})}
 		for _, field := range p.Fields {
-			filtered := s.Find(field.CSSSelector)
+			filtered := s.Find(field.Selector)
 			if filtered.Length() > 1 {
 				filtered.Each(func(i int, s *goquery.Selection) {
 					itm1 := item{value: make(map[string]interface{})}

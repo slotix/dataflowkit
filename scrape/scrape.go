@@ -98,8 +98,8 @@ type ScrapeConfig struct {
 	Pieces []Piece
 
 	Opts ScrapeOptions
-
 }
+
 /*
 func (c *ScrapeConfig) clone() *ScrapeConfig {
 	ret := &ScrapeConfig{
@@ -182,12 +182,13 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 	}
 
 	// Clone the configuration and fill in the defaults.
-	config := c//.clone()
+	config := c //.clone()
 	if config.Paginator == nil {
 		config.Paginator = dummyPaginator{}
 	}
 	if config.DividePage == nil {
-		config.DividePage = DividePageBySelector("body")
+		config.DividePage = DividePageBySelector1("body")
+
 	}
 
 	if config.Fetcher == nil {
@@ -280,21 +281,23 @@ func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
 				}
 
 				pieceResults, err := piece.Extractor.Extract(sel)
+				//logger.Println(attrOrDataValue(sel))
 				if err != nil {
 					return nil, err
 				}
 
 				// A nil response from an extractor means that we don't even include it in
 				// the results.
-				if pieceResults == nil {
+				//	logger.Println(pieceResults, pieceResults == nil)
+				if pieceResults == nil || pieceResults == "" {
 					continue
 				}
-
 				blockResults[piece.Name] = pieceResults
 			}
-
-			// Append the results from this block.
-			results = append(results, blockResults)
+			if len(blockResults) > 0 {
+				// Append the results from this block.
+				results = append(results, blockResults)
+			}
 		}
 
 		// Append the results from this page.
@@ -306,7 +309,13 @@ func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
 		if err != nil {
 			return nil, err
 		}
-		//req = downloader.FetchRequest{URL: url}
+
+		switch req.(type) {
+		case HttpClientFetcherRequest:
+			req = HttpClientFetcherRequest{URL: url}
+		case splash.Request:
+			req = splash.Request{URL: url}
+		}
 	}
 
 	// All good!

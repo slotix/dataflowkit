@@ -91,11 +91,18 @@ func (mw cachemw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 		return readCloser, nil
 	}
 
-	output, err = mw.ParseService.ParseData(payload)
+	parsed, err := mw.ParseService.ParseData(payload)
 	if err != nil {
 		return nil, err
 	}
-	err = redisCon.SetValue(redisKey, output)
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(parsed)
+	if err != nil {
+		logger.Println(err.Error())
+	}
+
+	err = redisCon.SetValue(redisKey, buf.Bytes())
+	
 	if err != nil {
 		logger.Println(err.Error())
 	}
@@ -103,5 +110,6 @@ func (mw cachemw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 	if err != nil {
 		logger.Println(err.Error())
 	}
+	output = ioutil.NopCloser(buf)
 	return
 }

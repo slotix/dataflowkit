@@ -61,8 +61,8 @@ func Init(port string) {
 		encodeResponse,
 	)
 
-	marshalDataHandler := httptransport.NewServer(
-		makeParseEndpoint(svc),
+	parseDataHandler := httptransport.NewServer(
+		makeParseDataEndpoint(svc),
 		decodeParseRequest,
 		encodeResponse,
 	)
@@ -77,7 +77,7 @@ func Init(port string) {
 
 	router := httprouter.New()
 	router.Handler("POST", "/app/gethtml", fetchHandler)
-	router.Handler("POST", "/app/marshaldata", marshalDataHandler)
+	router.Handler("POST", "/app/marshaldata", parseDataHandler)
 	//router.Handler("POST", "/app/chkservices", checkServicesHandler)
 	/*
 		router.ServeFiles("/static/*filepath", http.Dir("web/static"))

@@ -278,7 +278,8 @@ func castHeaders(splashHeaders interface{}) (header http.Header) {
 	switch splashHeaders.(type) {
 	case []interface{}:
 		for _, h := range splashHeaders.([]interface{}) {
-			var str []string
+			//var str []string
+			str := []string{}
 			v := h.(map[string]interface{})["value"].(string)
 			str = append(str, v)
 			header[h.(map[string]interface{})["name"].(string)] = str
