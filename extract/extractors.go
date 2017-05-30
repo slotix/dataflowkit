@@ -4,12 +4,22 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/andrew-d/goscrape"
+	scrape "github.com/slotix/dataflowkit/scrape"
 	"golang.org/x/net/html"
 )
+
+var logger *log.Logger
+
+func init() {
+	logger = log.New(os.Stdout, "extractor: ", log.Lshortfile)
+}
 
 // Const is a PieceExtractor that returns a constant value.
 type Const struct {
@@ -25,10 +35,27 @@ var _ scrape.PieceExtractor = Const{}
 
 // Text is a PieceExtractor that returns the combined text contents of
 // the given selection.
-type Text struct{}
+type Text struct {
+	// If text is empty in the selection, then return 'nil' from Extract,
+	// instead of the empty string.  This signals that the result of this Piece
+	// should be omitted entirely from the results, as opposed to including the
+	// empty string.
+	OmitIfEmpty bool
+}
 
 func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
+	if sel.Text() == "" && e.OmitIfEmpty {
+		return nil, nil
+	}
 	return sel.Text(), nil
+}
+
+func (t *Text) FillStruct(m map[string]interface{}) (error) {
+	err := FillStruct(m, t)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 var _ scrape.PieceExtractor = Text{}
@@ -120,7 +147,6 @@ type Regex struct {
 	// exactly one parenthesized subexpression (sometimes known as a "capturing
 	// group"), which will be extracted.
 	Regex *regexp.Regexp
-
 	// The subexpression of the regex to match.  If this value is not set, and if
 	// the given regex has more than one subexpression, an error will be thrown.
 	Subexpression int
@@ -276,4 +302,42 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 	}
 
 	return l, nil
+}
+
+func FillStruct(m map[string]interface{}, s interface{}) error {
+	logger.Println(m)
+	for k, v := range m {
+		err := SetField(s, k, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func SetField(obj interface{}, name string, value interface{}) error {
+	logger.Println(name, value)
+	structValue := reflect.ValueOf(obj).Elem()
+	//structFieldValue := structValue.FieldByName(name)
+	structFieldValue := structValue.FieldByName(strings.Title(name))
+
+	if !structFieldValue.IsValid() {
+		//skip non-existent fields
+		return nil
+		//return fmt.Errorf("No such field: %s in obj", name)
+	}
+
+	if !structFieldValue.CanSet() {
+		return fmt.Errorf("Cannot set %s field value", name)
+	}
+
+	structFieldType := structFieldValue.Type()
+	val := reflect.ValueOf(value)
+	if structFieldType != val.Type() {
+		invalidTypeError := errors.New("Provided value type didn't match obj field type")
+		return invalidTypeError
+	}
+
+	structFieldValue.Set(val)
+	return nil
 }

@@ -64,6 +64,7 @@ type Piece struct {
 	Extractor PieceExtractor
 }
 
+
 // The main configuration for a scrape.  Pass this to the New() function.
 type ScrapeConfig struct {
 	// Fetcher is the underlying transport that is used to fetch documents.
@@ -187,7 +188,7 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 		config.Paginator = dummyPaginator{}
 	}
 	if config.DividePage == nil {
-		config.DividePage = DividePageBySelector1("body")
+		config.DividePage = DividePageBySelector("body")
 
 	}
 
@@ -289,7 +290,8 @@ func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
 				// A nil response from an extractor means that we don't even include it in
 				// the results.
 				//	logger.Println(pieceResults, pieceResults == nil)
-				if pieceResults == nil || pieceResults == "" {
+				//if pieceResults == nil || pieceResults == "" {
+				if pieceResults == nil {
 					continue
 				}
 				blockResults[piece.Name] = pieceResults

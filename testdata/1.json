@@ -1,0 +1,65 @@
+{  
+   "format":"json",
+   "collections":[  
+      {  
+         "name":"collection2",
+         "url":"https://drony.heureka.sk",
+         "fields":[  
+            {  
+               "name":"Title_text",
+               "selector":".product-container a",
+               "extractor":{  
+                  "type":"text",
+                  "params":{  
+                     "omitIfEmpty":true
+                  }
+               }
+            },
+            {  
+               "name":"Title_href",
+               "selector":".product-container a",
+               "extractor":{  
+                  "type":"attr",
+                  "params":{  
+                     "attr":"href",
+                     "omitIfEmpty":true
+                  }
+               }
+            },
+            {  
+               "name":"Price",
+               "selector":".pricen",
+               "extractor":{  
+                  "type":"regex",
+                  "params":{  
+                     "regex":"(\\d+)",
+                     "omitIfEmpty":true
+                  }
+               }
+            },
+            {  
+               "name":"Description",
+               "selector":".desc .desc",
+               "extractor":{  
+                  "type":"text"
+               }
+            },
+            {  
+               "name":"Buyinfo",
+               "selector":".buy-info",
+               "extractor":{  
+                  "type":"text",
+                  "params":{  
+                     "omitIfEmpty":true
+                  }
+               }
+            }
+         ],
+         "paginator":{  
+            "selector":".next",
+            "attr":"href",
+            "max-pages":1
+         }
+      }
+   ]
+}
