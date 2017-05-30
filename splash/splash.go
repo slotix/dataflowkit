@@ -78,7 +78,7 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 		req.Cookies,
 		paramsToLuaTable(req.Params),
 		neturl.QueryEscape(GetLUA(req)))
-		//logger.Println(splashURL)
+	//logger.Println(splashURL)
 	return splashURL, nil
 }
 
@@ -144,18 +144,18 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 		//r := bytes.NewReader(decoded)
 		return readCloser, nil
 	}
-	cookielua, err := r.setCookieToLUATable()
+	_, err := r.setCookieToLUATable()
 	if err != nil {
 		logger.Println(err)
 	}
-	logger.Println(cookielua)
+	//logger.Println(cookielua)
 	readCloser := ioutil.NopCloser(strings.NewReader(r.HTML))
 	return readCloser, nil
 }
 
 //cacheable check if resource is cacheable
 func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
-//func (r *Response) cacheable() bool {
+	//func (r *Response) cacheable() bool {
 
 	respHeader := r.Response.Headers.(http.Header)
 	reqHeader := r.Request.Headers.(http.Header)
@@ -280,9 +280,11 @@ func castHeaders(splashHeaders interface{}) (header http.Header) {
 		for _, h := range splashHeaders.([]interface{}) {
 			//var str []string
 			str := []string{}
-			v := h.(map[string]interface{})["value"].(string)
-			str = append(str, v)
-			header[h.(map[string]interface{})["name"].(string)] = str
+			v, ok := h.(map[string]interface{})["value"].(string)
+			if ok {
+				str = append(str, v)
+				header[h.(map[string]interface{})["name"].(string)] = str
+			}
 		}
 		return header
 	case map[string]interface{}:

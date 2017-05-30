@@ -18,7 +18,7 @@ func (p dummyPaginator) NextPage(uri string, doc *goquery.Selection) (string, er
 // DividePageBySelector returns a function that divides a page into blocks by
 // CSS selector.  Each element in the page with the given selector is treated
 // as a new block.
-func DividePageBySelector1(sel string) DividePageFunc {
+func DividePageBySelector(sel string) DividePageFunc {
 	ret := func(doc *goquery.Selection) []*goquery.Selection {
 		sels := []*goquery.Selection{}
 		doc.Find(sel).Each(func(i int, s *goquery.Selection) {
@@ -53,11 +53,11 @@ func attrOrDataValue(s *goquery.Selection) (value string) {
 		return fmt.Sprintf("#%s", attr)
 	}
 	//if len(s.Nodes)>0 {
-		return s.Nodes[0].Data
-	//} 
+	return s.Nodes[0].Data
+	//}
 }
 
-func FindIntersection(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
+func findIntersection(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
 	var intersection *goquery.Selection
 	for i, f := range selectors {
 		//err := validate.Struct(f)
@@ -75,14 +75,14 @@ func FindIntersection(doc *goquery.Selection, selectors []string) (*goquery.Sele
 			}
 		}
 	}
-	logger.Println(attrOrDataValue(intersection))
+	//logger.Println(attrOrDataValue(intersection))
 	if intersection == nil || intersection.Length() == 0 {
 		return nil, errNoSelectors
 	}
 	intersectionWithParent := fmt.Sprintf("%s>%s",
 		attrOrDataValue(intersection.Parent()),
 		attrOrDataValue(intersection))
-	logger.Println(intersectionWithParent)
+	//logger.Println(intersectionWithParent)
 	items := doc.Find(intersectionWithParent)
 	//return intersectionWithParent, nil
 	//logger.Println(items.Length())
@@ -107,7 +107,7 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 	ret := func(doc *goquery.Selection) []*goquery.Selection {
 		sels := []*goquery.Selection{}
 		//doc.Find(sel).Each(func(i int, s *goquery.Selection) {
-		sel, err := FindIntersection(doc, selectors)
+		sel, err := findIntersection(doc, selectors)
 		if err != nil {
 			logger.Println(err)
 		}
@@ -115,6 +115,7 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 			sels = append(sels, s)
 			logger.Println(attrOrDataValue(s))
 		})
+		
 		return sels
 	}
 	return ret

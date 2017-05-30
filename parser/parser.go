@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -41,7 +42,6 @@ func NewParser(payload []byte) (Parser, error) {
 	if p.Format == "" {
 		p.Format = "json"
 	}
-	logger.Println(p.Payloads[0].Paginator)
 	p.PayloadMD5 = helpers.GenerateMD5(payload)
 	return p, nil
 }
@@ -182,8 +182,6 @@ func intersectionFL(sel *goquery.Selection) *goquery.Selection {
 	intersection := first.Parents().Intersection(last.Parents())
 	return intersection
 }
-
-
 
 func (p *payload) parseItem(r io.Reader) (col *collection, err error) {
 	col, err = newCollection(p)
@@ -460,4 +458,42 @@ func attrOrDataValue(s *goquery.Selection) (value string) {
 
 func dataValue(s *goquery.Selection) (value string) {
 	return s.Nodes[0].Data
+}
+
+func FillStruct(m map[string]interface{}, s interface{}) error {
+	logger.Println(m)
+	for k, v := range m {
+		err := SetField(s, k, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func SetField(obj interface{}, name string, value interface{}) error {
+	logger.Println(name, value)
+	structValue := reflect.ValueOf(obj).Elem()
+	//structFieldValue := structValue.FieldByName(name)
+	structFieldValue := structValue.FieldByName(strings.Title(name))
+
+	if !structFieldValue.IsValid() {
+		//skip non-existent fields
+		return nil
+		//return fmt.Errorf("No such field: %s in obj", name)
+	}
+
+	if !structFieldValue.CanSet() {
+		return fmt.Errorf("Cannot set %s field value", name)
+	}
+
+	structFieldType := structFieldValue.Type()
+	val := reflect.ValueOf(value)
+	if structFieldType != val.Type() {
+		invalidTypeError := errors.New("Provided value type didn't match obj field type")
+		return invalidTypeError
+	}
+
+	structFieldValue.Set(val)
+	return nil
 }

@@ -5,20 +5,25 @@ type meta struct {
 	URL  string `json:"url" xml:"url" validate:"required"`
 }
 
+type Extractor struct {
+	Type  string `json:"type"`
+	Params interface{} `json:"params"`
+}
+
 type field struct {
-	Name     string  `json:"name" validate:"required"`
-	Selector string  `json:"sel" validate:"required"`
-	Type     int     `json:"type"`
-	Count    int     `json:"count"`
-	Details  payload `json:"-" validate:"-"`
-	//Regex       string `json:"regex"`
+	Name     string `json:"name" validate:"required"`
+	Selector string `json:"selector" validate:"required"`
+	//Type     int     `json:"type"`
+	Count     int       `json:"count"`
+	Details   payload   `json:"-" validate:"-"`
+	Extractor Extractor `json:"extractor"`
 	//FieldType   string `json:"type"`
 }
 
 type paginator struct {
-	Selector  string `json:"sel"`
+	Selector  string `json:"selector"`
 	Attribute string `json:"attr"`
-	MaxPages  int    `json:"max-pages"`
+	MaxPages  int    `json:"maxPages"`
 }
 
 //easyjson:json
@@ -34,8 +39,6 @@ type Parser struct {
 	Format     string    `json:"format"`
 	Payloads   []payload `json:"collections"`
 	PayloadMD5 []byte    `json:"payloadMD5"`
-	//PayloadMD5 []byte
-
 }
 
 //easyjson:json
