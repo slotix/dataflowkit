@@ -116,7 +116,7 @@ func TestRegex(t *testing.T) {
 
 	ret, err = Regex{
 		Regex:       regexp.MustCompile("a(sd)f"),
-		OmitIfEmpty: true,
+		IncludeIfEmpty: false,
 	}.Extract(sel)
 	assert.NoError(t, err)
 	assert.Nil(t, ret)
@@ -161,7 +161,7 @@ func TestAttr(t *testing.T) {
 
 	ret, err = Attr{
 		Attr:        "href",
-		OmitIfEmpty: true,
+		IncludeIfEmpty: false,
 	}.Extract(sel.Find(".abc"))
 	assert.NoError(t, err)
 	assert.Nil(t, ret)
@@ -198,7 +198,7 @@ func TestCount(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, ret, 0)
 
-	ret, err = Count{OmitIfEmpty: true}.Extract(sel.Find(".bad"))
+	ret, err = Count{IncludeIfEmpty: false}.Extract(sel.Find(".bad"))
 	assert.NoError(t, err)
 	assert.Nil(t, ret)
 }

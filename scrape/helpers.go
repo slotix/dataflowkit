@@ -113,7 +113,7 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 		}
 		sel.Each(func(i int, s *goquery.Selection) {
 			sels = append(sels, s)
-			logger.Println(attrOrDataValue(s))
+		//	logger.Println(attrOrDataValue(s))
 		})
 		
 		return sels

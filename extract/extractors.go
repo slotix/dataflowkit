@@ -36,22 +36,22 @@ var _ scrape.PieceExtractor = Const{}
 // Text is a PieceExtractor that returns the combined text contents of
 // the given selection.
 type Text struct {
-	// If text is empty in the selection, then return 'nil' from Extract,
-	// instead of the empty string.  This signals that the result of this Piece
-	// should be omitted entirely from the results, as opposed to including the
+	// If text is empty in the selection, then return the empty string from Extract,
+	// instead of 'nil'.  This signals that the result of this Piece
+	// should be included to the results, as opposed to omiting the
 	// empty string.
-	OmitIfEmpty bool
+	IncludeIfEmpty bool
 }
 
 func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
-	if sel.Text() == "" && e.OmitIfEmpty {
+	if sel.Text() == "" && !e.IncludeIfEmpty {
 		return nil, nil
 	}
 	return sel.Text(), nil
 }
 
-func (t *Text) FillStruct(m map[string]interface{}) (error) {
-	err := FillStruct(m, t)
+func (e *Text) fillParams(m map[string]interface{}) error {
+	err := FillStruct(m, e)
 	if err != nil {
 		return err
 	}
@@ -63,11 +63,11 @@ var _ scrape.PieceExtractor = Text{}
 // MultipleText is a PieceExtractor that extracts the text from each element
 // in the given selection and returns the texts as an array.
 type MultipleText struct {
-	// If there are no items in the selection, then return 'nil' from Extract,
-	// instead of the empty list.  This signals that the result of this Piece
-	// should be omitted entirely from the results, as opposed to including the
+	// If there are no items in the selection, then return empty list from Extract,
+	// instead of the 'nil'.  This signals that the result of this Piece
+	// should be included to the results, as opposed to omiting the
 	// empty list.
-	OmitIfEmpty bool
+	IncludeIfEmpty bool
 }
 
 func (e MultipleText) Extract(sel *goquery.Selection) (interface{}, error) {
@@ -77,7 +77,7 @@ func (e MultipleText) Extract(sel *goquery.Selection) (interface{}, error) {
 		results = append(results, s.Text())
 	})
 
-	if len(results) == 0 && e.OmitIfEmpty {
+	if len(results) == 0 && !e.IncludeIfEmpty {
 		return nil, nil
 	}
 
@@ -161,11 +161,11 @@ type Regex struct {
 	// Extract function always returns an array.
 	AlwaysReturnList bool
 
-	// If no matches of the provided regex could be extracted, then return 'nil'
-	// from Extract, instead of the empty list.  This signals that the result of
-	// this Piece should be omitted entirely from the results, as opposed to
-	// including the empty list.
-	OmitIfEmpty bool
+	// If no matches of the provided regex could be extracted, then return the empty list
+	// from Extract, instead of 'nil'.  This signals that the result of
+	// this Piece should be included to the results, as opposed to
+	// omiting the empty list.
+	IncludeIfEmpty bool
 }
 
 func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
@@ -229,7 +229,7 @@ func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(results) == 0 && e.OmitIfEmpty {
+	if len(results) == 0 && !e.IncludeIfEmpty {
 		return nil, nil
 	}
 	if len(results) == 1 && !e.AlwaysReturnList {
@@ -237,6 +237,16 @@ func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 	}
 
 	return results, nil
+}
+
+func (e *Regex) fillParams(m map[string]interface{}) error {
+	err := FillStruct(m, e)
+	if err != nil {
+		return err
+	}
+	regExp := m["regexp"]
+	e.Regex = regexp.MustCompile(regExp.(string))
+	return nil
 }
 
 var _ scrape.PieceExtractor = Regex{}
@@ -254,11 +264,11 @@ type Attr struct {
 	// that the Extract function always returns an array.
 	AlwaysReturnList bool
 
-	// If no elements with this attribute are found, then return 'nil' from
-	// Extract, instead of the empty list.  This signals that the result of this
-	// Piece should be omitted entirely from the results, as opposed to including
+	// If no elements with this attribute are found, then return the empty list from
+	// Extract, instead of  'nil'.  This signals that the result of this
+	// Piece should be included to the results, as opposed to omiting
 	// the empty list.
-	OmitIfEmpty bool
+	IncludeIfEmpty bool
 }
 
 func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
@@ -274,7 +284,7 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 		}
 	})
 
-	if len(results) == 0 && e.OmitIfEmpty {
+	if len(results) == 0 && !e.IncludeIfEmpty {
 		return nil, nil
 	}
 	if len(results) == 1 && !e.AlwaysReturnList {
@@ -284,28 +294,89 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
+func (e *Attr) fillParams(m map[string]interface{}) error {
+	err := FillStruct(m, e)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 var _ scrape.PieceExtractor = Attr{}
 
 // Count extracts the count of elements that are matched and returns it.
 type Count struct {
-	// If no elements with this attribute are found, then return 'nil' from
-	// Extract, instead of a number.  This signals that the result of this
-	// Piece should be omitted entirely from the results, as opposed to including
+	// If no elements with this attribute are found, then return a number from
+	// Extract, instead of 'nil'.  This signals that the result of this
+	// Piece should be included to the results, as opposed to omiting
 	// the empty list.
-	OmitIfEmpty bool
+	IncludeIfEmpty bool
 }
 
 func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 	l := sel.Length()
-	if l == 0 && e.OmitIfEmpty {
+	if l == 0 && !e.IncludeIfEmpty {
 		return nil, nil
 	}
 
 	return l, nil
 }
 
+func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, error) {
+	var err error
+	/*
+	var e scrape.PieceExtractor
+	switch t {
+	case "text":
+		e = Text{}
+	case "attr":
+		e = Attr{}
+	case "regex":
+		e = Regex{}
+	}
+	if m != nil {
+		err := FillStruct(m, &e)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return e, nil
+	*/
+	
+	switch t {
+	case "text":
+		txt := Text{}
+		if m != nil {
+			err = txt.fillParams(m)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return txt, nil
+	case "attr":
+		a := Attr{}
+		if m != nil {
+			err = a.fillParams(m)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return a, nil
+	case "regex":
+		r := Regex{}
+		if m != nil {
+			err = r.fillParams(m)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return r, nil
+	}
+	return nil, err
+
+}
+
 func FillStruct(m map[string]interface{}, s interface{}) error {
-	logger.Println(m)
 	for k, v := range m {
 		err := SetField(s, k, v)
 		if err != nil {
@@ -316,7 +387,6 @@ func FillStruct(m map[string]interface{}, s interface{}) error {
 }
 
 func SetField(obj interface{}, name string, value interface{}) error {
-	logger.Println(name, value)
 	structValue := reflect.ValueOf(obj).Elem()
 	//structFieldValue := structValue.FieldByName(name)
 	structFieldValue := structValue.FieldByName(strings.Title(name))

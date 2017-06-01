@@ -2,10 +2,11 @@ package server
 
 import (
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"io"
 	"io/ioutil"
-	"regexp"
+	"strings"
 
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/paginate"
@@ -23,7 +24,6 @@ type ParseService interface {
 }
 
 type parseService struct {
-	//Fetcher scrape.Fetcher
 }
 
 func (parseService) GetResponse(req splash.Request) (*splash.Response, error) {
@@ -56,51 +56,16 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	pieces := []scrape.Piece{}
 	pl := p.Payloads[0]
 	selectors := []string{}
-
+	names := []string{}
 	for _, f := range pl.Fields {
 		var extractor scrape.PieceExtractor
-		switch f.Extractor.Type {
-		case "text":
-			t := extract.Text{}
-			if f.Extractor.Params != nil {
-				err := t.FillStruct(f.Extractor.Params.(map[string]interface{}))
-				if err != nil {
-					logger.Println(err)
-				}
-			}
-			extractor = t
-			/*
-				t := extract.Text{}
-				if f.Extractor.Params != nil {
-					err := parser.FillStruct(f.Extractor.Params.(map[string]interface{}), &t)
-					if err != nil {
-						logger.Println(err)
-					}
-				}
-				extractor = t
-			*/
-		case "attr":
-			a := extract.Attr{}
-			if f.Extractor.Params != nil {
-				err := parser.FillStruct(f.Extractor.Params.(map[string]interface{}), &a)
-
-				if err != nil {
-					logger.Println(err)
-				}
-			}
-			extractor = a
-		case "regex":
-			r := extract.Regex{}
-			if f.Extractor.Params != nil {
-				err := parser.FillStruct(f.Extractor.Params.(map[string]interface{}), &r)
-				if err != nil {
-					logger.Println(err)
-				}
-				regExp := f.Extractor.Params.(map[string]interface{})["regexp"]
-				//r.Regex = regexp.MustCompile(`(\d+)`)
-				r.Regex = regexp.MustCompile(regExp.(string))
-			}
-			extractor = r
+		params := make(map[string]interface{})
+		if f.Extractor.Params != nil {
+			params = f.Extractor.Params.(map[string]interface{})
+		}
+		extractor, err = extract.FillParams(f.Extractor.Type, params)
+		if err != nil {
+			logger.Println(err)
 		}
 		pieces = append(pieces, scrape.Piece{
 			Name:      f.Name,
@@ -108,6 +73,7 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 			Extractor: extractor,
 		})
 		selectors = append(selectors, f.Selector)
+		names = append(names, f.Name)
 	}
 
 	paginator := pl.Paginator
@@ -119,21 +85,61 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 		Pieces:     pieces,
 		//Paginator: paginate.BySelector(".next", "href"),
 		Paginator: paginate.BySelector(paginator.Selector, paginator.Attribute),
-		Opts:      scrape.ScrapeOptions{MaxPages: paginator.MaxPages},
+		Opts:      scrape.ScrapeOptions{MaxPages: paginator.MaxPages, Format: p.Format, },
 	}
 	scraper, err := scrape.New(config)
 	if err != nil {
 		return nil, err
 	}
 	req := splash.Request{URL: pl.URL}
-	results, err := scraper.Scrape(req)
+	results, err := scraper.ScrapeWithOpts(req, config.Opts)
 	if err != nil {
 		return nil, err
 	}
 	var buf bytes.Buffer
-	json.NewEncoder(&buf).Encode(results)
+	switch config.Opts.Format {
+	case "json":
+		json.NewEncoder(&buf).Encode(results)
+	case "csv":
+		//logger.Printf("%T", results.Results[0][0])
+		buf, err = encodeCSV(names, results.Results[0], ",")
+		if err != nil {
+			logger.Println(err)
+		}
+	}
+//	logger.Println(string(b))
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
+}
+
+func encodeCSV(columns []string, rows []map[string]interface{}, comma string) (bytes.Buffer, error) {
+	if comma == "" {
+		comma = ","
+	}
+	var buf bytes.Buffer
+	w := csv.NewWriter(&buf)
+	w.Comma = rune(comma[0])
+	if err := w.Write(columns); err != nil {
+		return buf, err
+	}
+	r := make([]string, len(columns))
+	for _, row := range rows {
+		for i, column := range columns {
+			switch v := row[column].(type) {
+			case string:
+				r[i] = v
+			case []string:
+				r[i] = strings.Join(v, ";")
+			case nil:
+				r[i] = ""
+			}
+		}
+		if err := w.Write(r); err != nil {
+			return buf, err
+		}
+	}
+	w.Flush()
+	return buf, nil
 }
 
 /*
