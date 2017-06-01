@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"reflect"
 	"strings"
 	"time"
 
@@ -42,6 +41,58 @@ func NewParser(payload []byte) (Parser, error) {
 	if p.Format == "" {
 		p.Format = "json"
 	}
+	/*
+		for _, payload := range p.Payloads {
+			for _, f := range payload.Fields {
+				//var extractor scrape.PieceExtractor
+				switch f.Extractor.Type {
+				case "text":
+					t := extract.Text{}
+					if f.Extractor.Params != nil {
+						err := t.FillStruct(f.Extractor.Params.(map[string]interface{}))
+						if err != nil {
+							logger.Println(err)
+						}
+					}
+					//extractor = t
+
+				case "attr":
+					a := extract.Attr{}
+					if f.Extractor.Params != nil {
+						err := FillStruct(f.Extractor.Params.(map[string]interface{}), &a)
+
+						if err != nil {
+							logger.Println(err)
+						}
+					}
+					//extractor = a
+				case "regex":
+					r := extract.Regex{}
+					if f.Extractor.Params != nil {
+						err := FillStruct(f.Extractor.Params.(map[string]interface{}), &r)
+						if err != nil {
+							logger.Println(err)
+						}
+						regExp := f.Extractor.Params.(map[string]interface{})["regexp"]
+						//r.Regex = regexp.MustCompile(`(\d+)`)
+						r.Regex = regexp.MustCompile(regExp.(string))
+					}
+					//	extractor = r
+				}
+				logger.Println(f.Extractor)
+			}
+		}
+	*/
+	/*e := p.Payloads[0].Fields[0].Extractor
+	t := extract.Text{}
+	if e.Params != nil {
+		err := t.FillParams(e.Params.(map[string]interface{}))
+		if err != nil {
+			logger.Println(err)
+		}
+	}
+	logger.Println(t)
+	*/
 	p.PayloadMD5 = helpers.GenerateMD5(payload)
 	return p, nil
 }
@@ -94,6 +145,7 @@ func newCollection(p *payload) (*collection, error) {
 	if len(p.Fields) == 0 {
 		return nil, errNoSelectors
 	}
+
 	return &c, nil
 }
 
@@ -294,6 +346,7 @@ func (p *payload) parseItem(r io.Reader) (col *collection, err error) {
 
 //generateTable create table used by MarshalExcelSheet and MarshalCSVItem
 func (c collection) generateTable() (buf [][]string) {
+	
 	header := true
 	if header {
 		buf = append(buf, c.Fields)
@@ -458,42 +511,4 @@ func attrOrDataValue(s *goquery.Selection) (value string) {
 
 func dataValue(s *goquery.Selection) (value string) {
 	return s.Nodes[0].Data
-}
-
-func FillStruct(m map[string]interface{}, s interface{}) error {
-	logger.Println(m)
-	for k, v := range m {
-		err := SetField(s, k, v)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func SetField(obj interface{}, name string, value interface{}) error {
-	logger.Println(name, value)
-	structValue := reflect.ValueOf(obj).Elem()
-	//structFieldValue := structValue.FieldByName(name)
-	structFieldValue := structValue.FieldByName(strings.Title(name))
-
-	if !structFieldValue.IsValid() {
-		//skip non-existent fields
-		return nil
-		//return fmt.Errorf("No such field: %s in obj", name)
-	}
-
-	if !structFieldValue.CanSet() {
-		return fmt.Errorf("Cannot set %s field value", name)
-	}
-
-	structFieldType := structFieldValue.Type()
-	val := reflect.ValueOf(value)
-	if structFieldType != val.Type() {
-		invalidTypeError := errors.New("Provided value type didn't match obj field type")
-		return invalidTypeError
-	}
-
-	structFieldValue.Set(val)
-	return nil
 }

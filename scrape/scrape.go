@@ -129,7 +129,6 @@ type ScrapeResults struct {
 
 // First returns the first set of results - i.e. the results from the first
 // block on the first page.
-//
 // This function can return nil if there were no blocks found on the first page
 // of the scrape.
 func (r *ScrapeResults) First() map[string]interface{} {
@@ -209,9 +208,9 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 
 // Scrape a given URL with default options.  See 'ScrapeWithOpts' for more
 // information.
-//func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
-//	return s.ScrapeWithOpts(req, DefaultOptions)
-//}
+func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
+	return s.ScrapeWithOpts(req, DefaultOptions)
+}
 
 // Actually start scraping at the given URL.
 //
@@ -220,7 +219,7 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 // strange behaviour - e.g. overwriting cookies in the underlying http.Client.
 // Please be careful when running multiple scrapes at a time, unless you know
 // that it's safe.
-func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
+func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeResults, error) {
 
 	var url string
 	switch v := req.(type) {
@@ -247,7 +246,7 @@ func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
 		URLs:    []string{},
 		Results: [][]map[string]interface{}{},
 	}
-	opts := s.config.Opts
+
 	var numPages int
 	for {
 		// Repeat until we don't have any more URLs, or until we hit our page limit.

@@ -8,9 +8,11 @@ type ScrapeOptions struct {
 	// returns no further URLs.  Set this value to 0 to indicate an unlimited
 	// number of pages can be scraped.
 	MaxPages int
+	Format string
 }
 
 // The default options during a scrape.
 var DefaultOptions = ScrapeOptions{
 	MaxPages: 0,
+	Format: "json",
 }
