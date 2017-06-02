@@ -25,26 +25,26 @@ func (mw robotstxtmw) Fetch(req splash.Request) (output io.ReadCloser, err error
 	allow := true
 	robotsURL, err := NewRobotsTxt(req.URL)
 	if err != nil {
-		//return nil, err
 		logger.Println(err)
 	} else {
 		r := splash.Request{URL: *robotsURL}
 		//robots, err := mw.ParseService.Download(*robotsURL)
 		robots, err := mw.ParseService.Fetch(r)
 		if err != nil {
-			return nil, err
-		}
-		data, err := ioutil.ReadAll(robots)
-		if err != nil {
-			return nil, err
-		}
-		robotsData := GetRobotsData(data)
-		parsedURL, err := neturl.Parse(req.URL)
-		if err != nil {
-			logger.Println("err")
-		}
-		if robotsData != nil {
-			allow = robotsData.TestAgent(parsedURL.Path, "DataflowKitBot")
+			logger.Println(err)
+		} else {
+			data, err := ioutil.ReadAll(robots)
+			if err != nil {
+				return nil, err
+			}
+			robotsData := GetRobotsData(data)
+			parsedURL, err := neturl.Parse(req.URL)
+			if err != nil {
+				logger.Println("err")
+			}
+			if robotsData != nil {
+				allow = robotsData.TestAgent(parsedURL.Path, "DataflowKitBot")
+			}
 		}
 	}
 

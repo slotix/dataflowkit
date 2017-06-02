@@ -33,7 +33,9 @@ func (parseService) GetResponse(req splash.Request) (*splash.Response, error) {
 }
 
 func (parseService) Fetch(req splash.Request) (io.ReadCloser, error) {
+	//logger.Println(req)
 	fetcher, err := scrape.NewSplashFetcher()
+	
 	if err != nil {
 		logger.Println(err)
 	}
@@ -143,7 +145,8 @@ func encodeCSV(columns []string, rows []map[string]interface{}, comma string) (b
 }
 
 /*
-func (parseService) Fetch_old(req splash.Request) (io.ReadCloser, error) {
+func (parseService) Fetch(req splash.Request) (io.ReadCloser, error) {
+	logger.Println(req)
 	splashURL, err := splash.NewSplashConn(req)
 	content, err := splash.Fetch(splashURL)
 	if err != nil {
