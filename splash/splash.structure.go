@@ -65,8 +65,8 @@ type Response struct {
 	HTML                string        `json:"html"`
 	Reason              string        `json:"reason"`
 	Cookies             []http.Cookie `json:"cookies"`
-	Request             SRequest      `json:"request"`
-	Response            SResponse     `json:"response"`
+	Request             *SRequest      `json:"request"`
+	Response            *SResponse     `json:"response"`
 	Cacheable           bool
 	CacheExpirationTime int64
 }
@@ -74,4 +74,10 @@ type Response struct {
 type PingResponse struct {
 	Maxrss int    `json:"maxrss"`
 	Status string `json:"status"`
+}
+
+type gcResponse struct {
+	CachedArgsRemoved  int    `json:"cached_args_removed"`
+	PyObjectsCollected int    `json:"pyobjects_collected"`
+	Status             string `json:"status"`
 }

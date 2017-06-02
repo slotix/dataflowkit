@@ -21,11 +21,39 @@ import (
 
 var logger *log.Logger
 
-// ErrURLEmpty is returned when an input string is empty.
+// errURLEmpty is returned when an input string is empty.
 var errURLEmpty = errors.New("URL is empty")
+
+// Sometimes errSplashResponse returned when no response, request recieved from Splash.
+// To solve this problem gc method should be called to clear WebKit caches and then
+// GetResponse again. See more at https://github.com/scrapinghub/splash/issues/613
+var errSplashResponse = errors.New("Splash returned empty response")
 
 func init() {
 	logger = log.New(os.Stdout, "splash: ", log.Lshortfile)
+}
+
+//Splash splash:history() may return empty list as it cannot retrieve cached results
+//in case request the same page twice. So the only solution for the moment is to call
+//http://localhost:8050/_gc if an error occures. It runs the Python garbage collector
+//and clears internal WebKit caches. See more at https://github.com/scrapinghub/splash/issues/613
+func gc(host string) (*gcResponse, error) {
+	client := &http.Client{}
+	gcURL := fmt.Sprintf("http://%s/_gc", host)
+	req, err := http.NewRequest("POST", gcURL, nil)
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	var gc gcResponse
+	err = json.Unmarshal(buf.Bytes(), &gc)
+	if err != nil {
+		return nil, err
+	}
+	return &gc, nil
 }
 
 //Ping returns status and maxrss from _ping  endpoint
@@ -35,7 +63,6 @@ func Ping(host string) (*PingResponse, error) {
 	req, err := http.NewRequest("GET", pingURL, nil)
 	//req.SetBasicAuth(userName, userPass)
 	resp, err := client.Do(req)
-	// Check Error
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +112,6 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 //GetResponse result is passed to  caching middleware
 //to provide a RFC7234 compliant HTTP cache
 func GetResponse(splashURL string) (*Response, error) {
-	//logger.Println(splashURL)
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
@@ -104,6 +130,18 @@ func GetResponse(splashURL string) (*Response, error) {
 
 		if err := json.Unmarshal(res, &sResponse); err != nil {
 			logger.Println("Json Unmarshall error", err)
+		}
+		if sResponse.Response == nil || sResponse.Request == nil {
+			//if splash returned no request/ response call gc and then GetResponse again
+			var response *Response
+			gcResponse, err := gc(viper.GetString("splash"))
+			if err == nil && gcResponse.Status == "ok" {
+				response, err = GetResponse(splashURL)
+				if err != nil {
+					return nil, err
+				}
+			}
+			return response, nil
 		}
 		if !sResponse.Response.Ok {
 			if sResponse.Response.Status != 0 {
@@ -156,7 +194,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 //cacheable check if resource is cacheable
 func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
 	//func (r *Response) cacheable() bool {
-
+	//logger.Printf("%T", r.Response.Headers)
 	respHeader := r.Response.Headers.(http.Header)
 	reqHeader := r.Request.Headers.(http.Header)
 
@@ -245,35 +283,22 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(r),
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
+		logger.Println(err)
 		return err
 	}
+	logger.Println(r.Response)
 
-	//logger.Println(t)
-
-	r.Request.Headers = castHeaders(r.Request.Headers)
-	r.Response.Headers = castHeaders(r.Response.Headers)
-	/*
-		switch r.Request.URL.(type) {
-		case string:
-			parsedURL, err := neturl.Parse(r.Request.URL.(string))
-			if err != nil {
-				return err
-			}
-			r.Request.URL = parsedURL
-		case map[string]interface{}:
-			for k, v := range r.Request.URL.(map[string]interface{}) {
-				logger.Println(k, v)
-				r.Request.URL.(map[string]interface{})[k] = v
-			}
-		}
-	*/
+	if r.Request != nil || r.Response != nil {
+		r.Request.Headers = castHeaders(r.Request.Headers)
+		r.Response.Headers = castHeaders(r.Response.Headers)
+	}
 	return nil
 }
 
 //castHeaders serves for casting headers to standard http.Header type
 func castHeaders(splashHeaders interface{}) (header http.Header) {
-	//t := fmt.Sprintf("%T", splashHeaders)
-	//	logger.Printf("%T - %s", splashHeaders, splashHeaders)
+	//	t := fmt.Sprintf("%T", splashHeaders)
+	//		logger.Printf("%T - %s", splashHeaders, splashHeaders)
 	header = make(map[string][]string)
 	switch splashHeaders.(type) {
 	case []interface{}:

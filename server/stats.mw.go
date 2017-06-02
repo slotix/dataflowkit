@@ -28,7 +28,6 @@ func (mw statsmw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 func (mw statsmw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
 	mw.incrementCount()
 	output, err = mw.ParseService.Fetch(req)
-	logger.Println("stop")
 	return
 }
 

@@ -15,12 +15,15 @@ import (
 func makeFetchEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(splash.Request)
+		logger.Println(req)
 		v, err := svc.Fetch(req)
+		//logger.Panic(err)
 		//v, err := svc.GetHTML(request.(string))
 		if err != nil {
 			//	return getHTMLResponse{v, err.Error()}, nil
 			//			return errResponse{err.Error()}, nil
 			return nil, err
+			//logger.Println(err)
 		}
 		//return getHTMLResponse{v, ""}, nil
 		return v, nil
