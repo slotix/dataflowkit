@@ -50,7 +50,7 @@ func Init(port string) {
 	var svc ParseService
 	svc = parseService{}
 	svc = statsMiddleware("18")(svc)
-	svc = cachingMiddleware()(svc)
+	//svc = cachingMiddleware()(svc)
 	svc = loggingMiddleware(serverLogger)(svc)
 	svc = robotsTxtMiddleware()(svc)
 	svc = instrumentingMiddleware(requestCount, requestLatency, countResult)(svc)

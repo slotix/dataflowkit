@@ -15,7 +15,7 @@ import (
 func makeFetchEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(splash.Request)
-		logger.Println(req)
+	//	logger.Println(req)
 		v, err := svc.Fetch(req)
 		//logger.Panic(err)
 		//v, err := svc.GetHTML(request.(string))
