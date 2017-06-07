@@ -20,13 +20,8 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
-	"log"
-	"os"
-	"strings"
-	"time"
 
 	"testing"
 
@@ -140,83 +135,12 @@ func initTasks() {
 		},
 	}
 }
-func generateGetHTMLTask(url string) *signatures.TaskSignature {
-	return &signatures.TaskSignature{
-		Name: "GetHTML",
-		Args: []signatures.TaskArg{
-			{
-				Type:  "string",
-				Value: url,
-			},
-		},
-	}
-}
-
-//SendItemsToQuery sends urls to fetchbot query to be parsed
-func SendTasksToRedis(urls []string, from, to int) {
-	workerStep := 5
-	var succeeded, failed int
-	start := time.Now()
-	i := from
-	for i < to {
-		if dif := to - i; dif < workerStep {
-			workerStep = dif
-		}
-		var tasks []*signatures.TaskSignature
-		fmt.Println("i=", i)
-		for j, url := range urls[i : i+workerStep] {
-			tasks = append(tasks, generateGetHTMLTask(url))
-			fmt.Printf("%d - %s \n", i+j, url)
-		}
-		group := machinery.NewGroup(tasks...)
-		asyncResults, err := server.SendGroup(group)
-		errors.Fail(err, "Could not send task")
-		for _, asyncResult := range asyncResults {
-			_, err := asyncResult.Get()
-			taskState := asyncResult.GetState()
-			fmt.Printf("URL: %v Current state of %v task is: %s\n", asyncResult.Signature.Args[0].Value, taskState.TaskUUID, taskState.State)
-			if taskState.State == "SUCCESS" {
-				succeeded++
-			} else {
-				failed++
-			}
-			if err != nil {
-				fmt.Println(err)
-			}
-		}
-		i += workerStep
-	}
-	fmt.Printf("Summary: %.2fm elapsed\n", time.Since(start).Minutes())
-	fmt.Printf("succeeded = %d; failed = %d\n", succeeded, failed)
-
-}
 
 func TestOut(t *testing.T) {
 	//initTasks()
 	fmt.Println("Send tasks:")
-	urls := LoadURLsFromCSV("forum_list.csv")
+	//urls := LoadURLsFromCSV("forum_list.csv")
 	//SendTasksToRedis(urls, from, to)
-	SendTasksToRedis(urls, 150, 175)
-}
-
-//LoadURLsFromCSV loads list of URLs from CSV
-func LoadURLsFromCSV(file string) []string {
-	// Load a CSV file.
-	f, err := os.Open(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	var urls []string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-
-		urls = append(urls, strings.TrimSpace(scanner.Text()))
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	return urls
-
+	//SendTasksToRedis(urls, 0, 11)
+	RunTasks(1000, 2000)
 }

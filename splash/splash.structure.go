@@ -1,9 +1,5 @@
 package splash
 
-import (
-	"net/http"
-)
-
 type Connection struct {
 	Host            string
 	User            string
@@ -21,14 +17,39 @@ type Request struct {
 	Wait    float64 `json:"wait,omitempty"` //Time in seconds to wait until js scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
 }
 
+type Header struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type Cookie struct {
+	Name  string
+	Value string
+
+	Path       string // optional
+	Domain     string // optional
+	Expires    string // optional
+	RawExpires string // for reading cookies only
+	// MaxAge=0 means no 'Max-Age' attribute specified.
+	// MaxAge<0 means delete cookie now, equivalently 'Max-Age: 0'
+	// MaxAge>0 means Max-Age attribute present and given in seconds
+	MaxAge   int
+	Secure   bool
+	HttpOnly bool
+	Raw      string
+	Unparsed []string // Raw text of unparsed attribute-value pairs
+}
+
 //SResponse returned by splash as a part of Response
 //It is needed to be passed to caching middleware
 type SResponse struct {
-	Headers     interface{}   `json:"headers"`
-	Cookies     []http.Cookie `json:"cookies"`
-	HeadersSize int           `json:"headersSize"`
-	Ok          bool          `json:"ok"`
-	Content     struct {
+	Headers interface{} `json:"headers"`
+	//Headers     []Header      `json:"headers"`
+	HeadersSize int      `json:"headersSize"`
+	Cookies     []Cookie `json:"cookies"`
+	//Cookies []Cookie `json:"cookies"`
+	Ok      bool `json:"ok"`
+	Content struct {
 		Text     string `json:"text"`
 		MimeType string `json:"mimeType"`
 		Size     int    `json:"size"`
@@ -44,29 +65,30 @@ type SResponse struct {
 //SRequest returned by splash as a part of Response
 //It is needed to be passed to caching middleware
 type SRequest struct {
-	Cookies     []http.Cookie `json:"cookies"`
-	Method      string        `json:"method"`
-	HeadersSize int           `json:"headersSize"`
-	URL         string        `json:"url"`
-	HTTPVersion string        `json:"httpVersion"`
+	Method  string      `json:"method"`
+	Headers interface{} `json:"headers"`
+	//Headers     []Header      `json:"headers"`
+	HeadersSize int      `json:"headersSize"`
+	Cookies     []Cookie `json:"cookies"`
+	//Cookies     []Cookie `json:"cookies"`
+	URL         string `json:"url"`
+	HTTPVersion string `json:"httpVersion"`
 	QueryString []struct {
 		Value string `json:"value"`
 		Name  string `json:"name"`
 	} `json:"queryString"`
-	Headers interface{} `json:"headers"`
-
 	BodySize int `json:"bodySize"`
 }
 
 //Response returned by splash
 //It includes html body, response, request
 type Response struct {
-	URL                 string        `json:"url"`
-	HTML                string        `json:"html"`
-	Reason              string        `json:"reason"`
-	Cookies             []http.Cookie `json:"cookies"`
-	Request             *SRequest      `json:"request"`
-	Response            *SResponse     `json:"response"`
+	URL    string `json:"url"`
+	HTML   string `json:"html"`
+	Reason string `json:"reason"`
+	//Cookies             []Cookie   `json:"cookies"`
+	Request             *SRequest  `json:"request"`
+	Response            *SResponse `json:"response"`
 	Cacheable           bool
 	CacheExpirationTime int64
 }

@@ -84,9 +84,9 @@ func GetLUA(req Request) string {
 	if req.Wait == 0 {
 		req.Wait = viper.GetFloat64("splash-wait")
 	}
-	if req.Cookies != "" {
-		return fmt.Sprintf(LUASetCookie, req.Wait)
-	}
+	//if req.Cookies != "" {
+	//	return fmt.Sprintf(LUASetCookie, req.Wait)
+	//}
 	return baseLUA
 
 }
@@ -96,18 +96,49 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 	if req.URL == "" {
 		return "", errURLEmpty
 	}
+
+	//"Set-Cookie" from response headers should be sent when accessing for the same domain second time   
+	
+	cookie := `PHPSESSID=ef75e2737a14b06a2749d0b73840354f; path=/; domain=.acer-a500.ru; HttpOnly
+dle_user_id=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=.acer-a500.ru; httponly
+dle_password=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=.acer-a500.ru; httponly
+dle_hash=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=.acer-a500.ru; httponly
+dle_forum_sessions=ef75e2737a14b06a2749d0b73840354f; expires=Wed, 06-Jun-2018 19:13:00 GMT; Max-Age=31536000; path=/; domain=.acer-a500.ru; httponly
+forum_last=1496801580; expires=Wed, 06-Jun-2018 19:13:00 GMT; Max-Age=31536000; path=/; domain=.acer-a500.ru; httponly`
+	//cookie := ""
+	
+	req.Cookies, err = generateCookie(cookie)
+	if err != nil {
+		logger.Println(err)
+	}
+	//logger.Println(req.Cookies)
+	
+	//---------
+	
+	//req.Params = `"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=dmsoft&rememberMe=1"`
+	
+
+	var wait float64
+	if req.Wait != 0{
+		wait = req.Wait
+	} else {
+		wait = viper.GetFloat64("splash-wait")
+	}
+
 	splashURL = fmt.Sprintf(
-		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&wait=%f&cookies=%s&formdata=%s&lua_source=%s", fmt.Sprintf("http://%s/", viper.GetString("splash")),
+		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s", fmt.Sprintf("http://%s/",viper.GetString("splash")),
 		neturl.QueryEscape(req.URL),
 		viper.GetInt("splash-timeout"),
 		viper.GetInt("splash-resource-timeout"),
-		req.Wait,
-		req.Cookies,
-		paramsToLuaTable(req.Params),
+		wait,
+		neturl.QueryEscape(req.Cookies),
+		neturl.QueryEscape(paramsToLuaTable(req.Params)),
 		neturl.QueryEscape(GetLUA(req)))
-	//logger.Println(splashURL)
+
+    //logger.Println(splashURL)
 	return splashURL, nil
 }
+
 
 //GetResponse result is passed to  caching middleware
 //to provide a RFC7234 compliant HTTP cache
@@ -131,7 +162,11 @@ func GetResponse(splashURL string) (*Response, error) {
 		if err := json.Unmarshal(res, &sResponse); err != nil {
 			logger.Println("Json Unmarshall error", err)
 		}
-		if sResponse.Response == nil || sResponse.Request == nil {
+		//if response status code is not 200
+		if sResponse.Reason != "" {
+			return nil, fmt.Errorf("error: %s", sResponse.Reason)
+		}
+		if sResponse.Response == nil || sResponse.Request == nil && sResponse.HTML != "" {
 			//if splash returned no request/ response call gc and then GetResponse again
 			var response *Response
 			gcResponse, err := gc(viper.GetString("splash"))
@@ -182,10 +217,10 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 		//r := bytes.NewReader(decoded)
 		return readCloser, nil
 	}
-	_, err := r.setCookieToLUATable()
-	if err != nil {
-		logger.Println(err)
-	}
+	//	_, err := r.setCookieToLUATable()
+	//	if err != nil {
+	//		logger.Println(err)
+	//	}
 	//logger.Println(cookielua)
 	readCloser := ioutil.NopCloser(strings.NewReader(r.HTML))
 	return readCloser, nil
@@ -197,6 +232,8 @@ func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
 	//logger.Printf("%T", r.Response.Headers)
 	respHeader := r.Response.Headers.(http.Header)
 	reqHeader := r.Request.Headers.(http.Header)
+	//	respHeader := r.Response.castHeaders()
+	//	reqHeader := r.Request.castHeaders()
 
 	reqDir, err := cacheobject.ParseRequestCacheControl(reqHeader.Get("Cache-Control"))
 	if err != nil {
@@ -272,29 +309,129 @@ func isRobotsTxt(url string) bool {
 	return false
 }
 
+/*
+func (h Header) UnmarshalJSON(data []byte) error {
+	var header map[string]string
+	err := json.Unmarshal(data, &header)
+	if err != nil {
+		return err
+	}
+	logger.Println(header)
+	for key, value := range header {
+		h.Name = key
+		h.Value = value
+	}
+	logger.Println(h.Name, h.Value)
+	return nil
+}
+*/
+type MyTime struct {
+	time.Time
+}
+
+func (self *MyTime) UnmarshalJSON(b []byte) (err error) {
+	s := string(b)
+	logger.Println(s)
+	// Get rid of the quotes "" around the value.
+	// A second option would be to include them
+	// in the date format string instead, like so below:
+	//   time.Parse(`"`+time.RFC3339Nano+`"`, s)
+
+	s = s[1 : len(s)-1]
+
+	t, err := time.Parse(time.RFC3339Nano, s)
+	if err != nil {
+		t, err = time.Parse("2006-01-02T15:04:05.999999999Z0700", s)
+	}
+	logger.Println(t)
+	self.Time = t
+
+	return
+}
+
 //http://choly.ca/post/go-json-marshalling/
 //UnmarshalJSON convert headers to http.Header type while unmarshaling
 func (r *Response) UnmarshalJSON(data []byte) error {
+	//	logger.Println(string(data))
 	type Alias Response
 	aux := &struct {
 		Headers interface{} `json:"headers"`
+		//	Cookies []Cookie    `json:"cookies"`
+		//Cookies interface{} `json:"cookies"`
 		*Alias
 	}{
 		Alias: (*Alias)(r),
 	}
+	//logger.Println(data)
 	if err := json.Unmarshal(data, &aux); err != nil {
 		logger.Println(err)
 		return err
 	}
-	logger.Println(r.Response)
+	//if aux.Cookies != nil {
+	//	for _, c := range aux.Cookies {
+	//		logger.Printf("%T", c.Expires)
+	//	}
+	//}
 
 	if r.Request != nil || r.Response != nil {
+		//r.Request.Headers = r.Request.castHeaders()
+		//r.Response.Headers = castHeaders(r.Response.Headers)
 		r.Request.Headers = castHeaders(r.Request.Headers)
 		r.Response.Headers = castHeaders(r.Response.Headers)
+
 	}
+	//logger.Println(r.Response.Headers)
+
 	return nil
 }
 
+/*
+func castCookies(cookies []Cookie) (out []http.Cookie) {
+	HTTPCookie := http.Cookie{}
+	for _, c := range cookies{
+		for _, k, v := range c{
+			if k == "Expires"{
+
+			}
+
+		}
+
+		out = append(out, c)
+	}
+}
+*/
+
+/*
+func (s *SRequest) castHeaders() (header http.Header) {
+	header = make(map[string][]string)
+	for _, h := range s.Headers {
+		//var str []string
+		str := []string{}
+		v := h.Value
+		//	if ok {
+		//			logger.Printf("%T", v)
+		str = append(str, v)
+		header[h.Name] = str
+		//	}
+	}
+	return header
+}
+
+func (s *SResponse) castHeaders() (header http.Header) {
+	header = make(map[string][]string)
+	for _, h := range s.Headers {
+		//var str []string
+		str := []string{}
+		v := h.Value
+		//	if ok {
+		//	logger.Printf("%T", v)
+		str = append(str, v)
+		header[h.Name] = str
+		//	}
+	}
+	return header
+}
+*/
 //castHeaders serves for casting headers to standard http.Header type
 func castHeaders(splashHeaders interface{}) (header http.Header) {
 	//	t := fmt.Sprintf("%T", splashHeaders)
@@ -302,6 +439,8 @@ func castHeaders(splashHeaders interface{}) (header http.Header) {
 	header = make(map[string][]string)
 	switch splashHeaders.(type) {
 	case []interface{}:
+		//case []map[string]interface{}:
+		//logger.Println(splashHeaders)
 		for _, h := range splashHeaders.([]interface{}) {
 			//var str []string
 			str := []string{}

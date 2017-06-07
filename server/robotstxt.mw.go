@@ -28,7 +28,6 @@ func (mw robotstxtmw) Fetch(req splash.Request) (output io.ReadCloser, err error
 		logger.Println(err)
 	} else {
 		r := splash.Request{URL: *robotsURL}
-		//robots, err := mw.ParseService.Download(*robotsURL)
 		robots, err := mw.ParseService.Fetch(r)
 		if err != nil {
 			logger.Println(err)
@@ -79,7 +78,6 @@ func GetRobotsData(content []byte) *robotstxt.RobotsData {
 		fmt.Println("Robots.txt error:", err)
 	}
 	return r
-	//return Robots{r, parsedURL.Path}
 }
 
 func GetCrawlDelay(r *robotstxt.RobotsData) time.Duration {

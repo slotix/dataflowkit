@@ -42,7 +42,7 @@ func init() {
 
 	// Register tasks
 	tasks := map[string]interface{}{
-		"GetHTML":      GetHTML,
+		"GetHTML":      GetResponse,
 		"marshal_data": MarshalData,
 	}
 	server.RegisterTasks(tasks)

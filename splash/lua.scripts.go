@@ -25,7 +25,14 @@ function main(splash)
     decoded = json.decode(formdata)
     http_method = "POST" 
   end
-  splash:init_cookies(cookies)
+  if cookies ~= "" then
+    cookies_array = json.decode(cookies)
+    for k,v in next,cookies_array,nil
+    do
+  	  splash:add_cookie(v)
+    end
+  end
+
   local ok, reason = splash:go{
     splash.args.url,
     headers = splash.args.headers,
@@ -50,7 +57,7 @@ function main(splash)
     url = splash:url(),
     request = request,
     response = response,
-    cookies = splash:get_cookies(),
+    -- cookies = splash:get_cookies(),
     html = splash:html(),
   }
 end
