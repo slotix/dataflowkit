@@ -37,7 +37,7 @@ func (mw instrmw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 	return
 }
 
-func (mw instrmw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
+func (mw instrmw) Fetch(req splash.Request) (output interface{}, err error) {
 	defer func(begin time.Time) {
 		lvs := []string{"method", "gethtml", "error", fmt.Sprint(err != nil)}
 		mw.requestCount.With(lvs...).Add(1)

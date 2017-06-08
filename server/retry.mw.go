@@ -1,8 +1,6 @@
 package server
 
 import (
-	"io"
-
 	"github.com/slotix/dataflowkit/splash"
 )
 
@@ -24,7 +22,7 @@ type retrymw struct {
 	ParseService
 }
 
-func (mw retrymw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
+func (mw retrymw) Fetch(req splash.Request) (output interface{}, err error) {
 	output, err = mw.ParseService.Fetch(req)
 	if err != nil {
 		logger.Println(err)

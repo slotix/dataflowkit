@@ -15,7 +15,7 @@ import (
 func makeFetchEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(splash.Request)
-	//	logger.Println(req)
+		//	logger.Println(req)
 		v, err := svc.Fetch(req)
 		//logger.Panic(err)
 		//v, err := svc.GetHTML(request.(string))
@@ -78,7 +78,28 @@ func decodeCheckServicesRequest(_ context.Context, r *http.Request) (interface{}
 	return request, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeFetchResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	sResponse := response.(*splash.Response)
+	content, err := sResponse.GetContent()
+	if err != nil {
+		return err
+	}
+
+	//data, err := ioutil.ReadAll(response.(io.Reader))
+	data, err := ioutil.ReadAll(content)
+
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(data)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func encodeParseResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	data, err := ioutil.ReadAll(response.(io.Reader))
 	if err != nil {
 		return err

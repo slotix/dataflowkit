@@ -26,7 +26,7 @@ type cachemw struct {
 
 var redisCon cache.RedisConn
 
-func (mw cachemw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
+func (mw cachemw) Fetch(req splash.Request) (output interface{}, err error) {
 
 	redisURL := viper.GetString("redis")
 	redisPassword := ""
@@ -34,7 +34,8 @@ func (mw cachemw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
 	//if something in a cache return local copy
 	redisValue, err := redisCon.GetValue(req.URL)
 	if err == nil {
-		var sResponse splash.Response
+		logger.Println("yes")
+		var sResponse *splash.Response
 		if err := json.Unmarshal(redisValue, &sResponse); err != nil {
 			logger.Println("Json Unmarshall error", err)
 		}
@@ -42,19 +43,22 @@ func (mw cachemw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
 		if sResponse.Response.Status == 404 {
 			return nil, fmt.Errorf("Error: 404. NOT FOUND")
 		}
-		output, err = sResponse.GetContent()
-		if err != nil {
-			logger.Printf(err.Error())
-		}
-		return output, err
-	}
-	//fetch results if there is nothing in a cache
-	resp, respErr := mw.ParseService.GetResponse(req)
-	if respErr != nil {
-		return nil, respErr
+		//output, err = sResponse.GetContent()
+		output = sResponse
+	//	if err != nil {
+	//		logger.Printf(err.Error())
+	//	}
+		return output, nil
 	}
 
-	if resp.Cacheable {
+		
+	//fetch results if there is nothing in a cache
+	resp, err := mw.ParseService.Fetch(req)
+	if err != nil {
+		return nil, err
+	}
+	sResponse := resp.(*splash.Response)
+	if sResponse.Cacheable {
 		response, err := json.Marshal(resp)
 		if err != nil {
 			logger.Printf(err.Error())
@@ -63,16 +67,14 @@ func (mw cachemw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
 		if err != nil {
 			logger.Println(err.Error())
 		}
-		err = redisCon.SetExpireAt(req.URL, resp.CacheExpirationTime)
+		err = redisCon.SetExpireAt(req.URL, sResponse.CacheExpirationTime)
 		if err != nil {
 			logger.Println(err.Error())
 		}
 	}
 
-	output, err = resp.GetContent()
-	if err != nil {
-		return nil, err
-	}
+	//output, err = sResponse.GetContent()
+	output= sResponse
 	return
 }
 

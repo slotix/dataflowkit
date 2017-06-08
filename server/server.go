@@ -50,7 +50,7 @@ func Init(port string) {
 	var svc ParseService
 	svc = parseService{}
 	svc = statsMiddleware("18")(svc)
-	//svc = cachingMiddleware()(svc)
+	svc = cachingMiddleware()(svc)
 	svc = loggingMiddleware(serverLogger)(svc)
 	svc = robotsTxtMiddleware()(svc)
 	svc = instrumentingMiddleware(requestCount, requestLatency, countResult)(svc)
@@ -58,16 +58,16 @@ func Init(port string) {
 	fetchHandler := httptransport.NewServer(
 		makeFetchEndpoint(svc),
 		decodeFetchRequest,
-		encodeResponse,
+		encodeFetchResponse,
 	)
 
 	parseDataHandler := httptransport.NewServer(
 		makeParseDataEndpoint(svc),
 		decodeParseRequest,
-		encodeResponse,
+		encodeParseResponse,
 	)
 
-	/*
+	/* 
 		checkServicesHandler := httptransport.NewServer(
 			makeCheckServicesEndpoint(svc),
 			decodeCheckServicesRequest,
