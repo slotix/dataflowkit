@@ -34,7 +34,7 @@ func generateCookie(setCookie string) (string, error) {
 			switch strings.ToLower(strings.Trim(cf[0], " ")) {
 			case "expires":
 				cookie.Expires = cf[1]
-		//		logger.Println(cookie)
+		    //logger.Println(cookie)
 			//case "Max-Age":
 			//cookie.MaxAge = cf[1]
 			case "path":
@@ -62,12 +62,21 @@ func generateCookie(setCookie string) (string, error) {
 	return fmt.Sprintf("[%s]",strings.Join(out,",")), nil
 }
 
-func (r *Response) setCookieToLUATable() (string, error) {
+func (r *Response) GetSetCookie() (string, error) {
 	headers := r.Response.Headers.(http.Header)
 	setCookie := headers.Get("Set-Cookie")
 	if setCookie == "" {
 		return "", fmt.Errorf("No Set-Cookie found")
 	}
+	return setCookie, nil
+}
+
+func (r *Response) SetCookieToRequest() (string, error) {
+	setCookie, err := r.GetSetCookie()
+	if err != nil{
+		return "", err
+	}
+	
 	//it may be more than one cookie in Set-Cookie
 	//heu_uzt=72e3502635d3af8fa2916cf397e93fee; expires=Tue, 04-Jul-2017 13:28:36 GMT; Max-Age=2592000; path=/; domain=.heu.tt
 	//heu_s=1; expires=Mon, 04-Jun-2018 13:28:36 GMT; Max-Age=31536000; path=/; domain=.heu.tt

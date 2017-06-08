@@ -25,19 +25,20 @@ func (mw statsmw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 	return
 }
 
-func (mw statsmw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
+func (mw statsmw) Fetch(req splash.Request) (output interface{}, err error) {
 	mw.incrementCount()
 	output, err = mw.ParseService.Fetch(req)
 	return
 }
-
+/*
 func (mw statsmw) GetResponse(req splash.Request) (output *splash.Response, err error) {
 	mw.incrementCount()
 	output, err = mw.ParseService.GetResponse(req)
 	return
 }
+*/
 
-//temporarily writing to redis
+//writing to redis
 func (mw statsmw) incrementCount() {
 	redisURL := viper.GetString("redis")
 	redisPassword := ""

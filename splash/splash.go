@@ -96,9 +96,8 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 	if req.URL == "" {
 		return "", errURLEmpty
 	}
-
+/*
 	//"Set-Cookie" from response headers should be sent when accessing for the same domain second time   
-	
 	cookie := `PHPSESSID=ef75e2737a14b06a2749d0b73840354f; path=/; domain=.acer-a500.ru; HttpOnly
 dle_user_id=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=.acer-a500.ru; httponly
 dle_password=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=.acer-a500.ru; httponly
@@ -114,7 +113,7 @@ forum_last=1496801580; expires=Wed, 06-Jun-2018 19:13:00 GMT; Max-Age=31536000; 
 	//logger.Println(req.Cookies)
 	
 	//---------
-	
+*/	
 	//req.Params = `"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=dmsoft&rememberMe=1"`
 	
 

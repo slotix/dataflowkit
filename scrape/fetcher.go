@@ -23,7 +23,7 @@ type Fetcher interface {
 
 	// Fetch is called to retrieve each document from the remote server.
 	//Fetch(method, url string) (io.ReadCloser, error)
-	Fetch(request interface{}) (io.ReadCloser, error)
+	Fetch(request interface{}) (interface{}, error)
 
 	// Close is called when the scrape is finished, and can be used to clean up
 	// allocated resources or perform other cleanup actions.
@@ -58,15 +58,12 @@ type HttpClientFetcher struct {
 // SplashClientFetcher is a Fetcher that uses Scrapinghub splash
 // to fetch URLs. Splash is a javascript rendering service
 type SplashFetcher struct {
-	splashURL string
 	PrepareSplash func() error
 }
 
 //func NewSplashFetcher(req downloader.FetchRequest) (*SplashFetcher, error) {
 func NewSplashFetcher() (*SplashFetcher, error) {
-	sf := &SplashFetcher{
-	//	splashURL: splashURL,
-	}
+	sf := &SplashFetcher{}
 	return sf, nil
 }
 
@@ -77,15 +74,28 @@ func (sf *SplashFetcher) Prepare() error {
 	return nil
 }
 
-
-func (sf *SplashFetcher) Fetch(request interface{}) (io.ReadCloser, error) {
+//Fetch retrieves document from the remote server. It returns splash.Response as it is not enough to get just page content but during scraping sessions auxiliary information like cookies should be avaialable.  
+func (sf *SplashFetcher) Fetch(request interface{}) (interface{}, error) {
 	splashURL, err := splash.NewSplashConn(request.(splash.Request))
-	sf.splashURL = splashURL
-	res, err := splash.Fetch(sf.splashURL)
-	if err != nil {
+	r, err := splash.GetResponse(splashURL)
+	if err != nil{
 		return nil, err
 	}
-	return res, nil
+	/*
+	setCookie, err := r.GetSetCookie()
+	if err != nil{
+		return nil, err
+	}
+	
+	//res, err := splash.Fetch(splashURL)
+	res, err := r.GetContent()
+
+	if err != nil {
+		return nil, err
+	}*/
+	//return res, nil
+	return r, nil
+
 }
 
 func (sf *SplashFetcher) Close() {

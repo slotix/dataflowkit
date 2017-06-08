@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	neturl "net/url"
 	"time"
@@ -21,7 +20,7 @@ type robotstxtmw struct {
 	ParseService
 }
 
-func (mw robotstxtmw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
+func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) {
 	allow := true
 	robotsURL, err := NewRobotsTxt(req.URL)
 	if err != nil {
@@ -32,7 +31,14 @@ func (mw robotstxtmw) Fetch(req splash.Request) (output io.ReadCloser, err error
 		if err != nil {
 			logger.Println(err)
 		} else {
-			data, err := ioutil.ReadAll(robots)
+			sResponse := robots.(*splash.Response)
+			//data, err := ioutil.ReadAll(robots)
+			content, err := sResponse.GetContent()
+			//logger.Println(content)
+			if err != nil {
+				return nil, err
+			}
+			data, err := ioutil.ReadAll(content)
 			if err != nil {
 				return nil, err
 			}

@@ -3,6 +3,7 @@ package scrape
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -63,7 +64,6 @@ type Piece struct {
 	// selector that is provided to this Piece.
 	Extractor PieceExtractor
 }
-
 
 // The main configuration for a scrape.  Pass this to the New() function.
 type ScrapeConfig struct {
@@ -254,10 +254,22 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 			break
 		}
 
-		resp, err := s.config.Fetcher.Fetch(req)
+		r, err := s.config.Fetcher.Fetch(req)
 
 		if err != nil {
 			return nil, err
+		}
+
+		var resp io.ReadCloser
+		switch req.(type) {
+		case HttpClientFetcherRequest:
+			resp = r.(io.ReadCloser)
+		case splash.Request:
+			sResponse := r.(*splash.Response)
+			resp, err = sResponse.GetContent()
+			if err != nil {
+				logger.Println(err)
+			}
 		}
 
 		// Create a goquery document.
@@ -303,6 +315,7 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 
 		// Append the results from this page.
 		res.Results = append(res.Results, results)
+
 		numPages++
 
 		// Get the next page.
@@ -315,7 +328,13 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 		case HttpClientFetcherRequest:
 			req = HttpClientFetcherRequest{URL: url}
 		case splash.Request:
-			req = splash.Request{URL: url}
+			//every time when getting a response the next request will be filled with updated cookie information 
+			sResponse := r.(*splash.Response)
+			setCookie, err := sResponse.SetCookieToRequest()
+			if err != nil {
+				return nil, err
+			}
+			req = splash.Request{URL: url, Cookies: setCookie}
 		}
 	}
 

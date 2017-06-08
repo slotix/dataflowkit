@@ -34,7 +34,7 @@ func (mw logmw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 	return
 }
 
-func (mw logmw) Fetch(req splash.Request) (output io.ReadCloser, err error) {
+func (mw logmw) Fetch(req splash.Request) (output interface{}, err error) {
 	defer func(begin time.Time) {
 		_ = mw.logger.Log(
 			"method", "gethtml",
