@@ -1,5 +1,9 @@
 package splash
 
+import (
+	"time"
+)
+
 type Connection struct {
 	Host            string
 	User            string
@@ -10,11 +14,16 @@ type Connection struct {
 }
 
 type Request struct {
-	URL     string  `json:"url"`
-	Params  string  `json:"params,omitempty"` //params used for passing formdata to LUA script
-	Cookies string  `json:"cookie,omitempty"` //add cookie to request
-	Func    string  `json:"func,omitempty"`
-	Wait    float64 `json:"wait,omitempty"` //Time in seconds to wait until js scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
+	URL string `json:"url"`
+	//Params used for passing formdata to LUA script
+	Params string `json:"params,omitempty"`
+	//Cookies contain cookies to be added to request
+	Cookies string `json:"cookie,omitempty"`
+	Func    string `json:"func,omitempty"`
+	//SplashWait - time in seconds to wait until js scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
+	SplashWait float64 `json:"wait,omitempty"`
+	//CrawlDelay - time between page requests on the same domain. Robotstxt middleware processes robots.txt files and returns  that information.   
+	CrawlDelay time.Duration
 }
 
 type Header struct {
@@ -22,6 +31,8 @@ type Header struct {
 	Value string `json:"value"`
 }
 
+//Cookie - Custom Cookie struct is used to avoid problems whith unmarshalling data with invalid Expires field which has time.Time type for original http.Cookie struct.
+//For some domains like http://yahoo.com it is easier to unmarshal Expires as string
 type Cookie struct {
 	Name  string
 	Value string
@@ -40,7 +51,7 @@ type Cookie struct {
 	Unparsed []string // Raw text of unparsed attribute-value pairs
 }
 
-//SResponse returned by splash as a part of Response
+//SResponse returned by Splash as a part of Response
 //It is needed to be passed to caching middleware
 type SResponse struct {
 	Headers interface{} `json:"headers"`
@@ -62,7 +73,7 @@ type SResponse struct {
 	RedirectURL string `json:"redirectURL"`
 }
 
-//SRequest returned by splash as a part of Response
+//SRequest returned by Splash as a part of Response
 //It is needed to be passed to caching middleware
 type SRequest struct {
 	Method  string      `json:"method"`
@@ -80,12 +91,14 @@ type SRequest struct {
 	BodySize int `json:"bodySize"`
 }
 
-//Response returned by splash
+//Response returned by Splash
 //It includes html body, response, request
 type Response struct {
-	URL    string `json:"url"`
-	HTML   string `json:"html"`
-	Reason string `json:"reason"`
+	URL  string `json:"url"`
+	HTML string `json:"html"`
+	//Error is returned in case of an error, f.e. "http404".
+	//All other fields will be nil if Error is not nil
+	Error string `json:"error"`
 	//Cookies             []Cookie   `json:"cookies"`
 	Request             *SRequest  `json:"request"`
 	Response            *SResponse `json:"response"`

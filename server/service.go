@@ -17,7 +17,7 @@ import (
 
 // ParseService provides operations on strings.
 type ParseService interface {
-//	GetResponse(req splash.Request) (*splash.Response, error)
+	//	GetResponse(req splash.Request) (*splash.Response, error)
 	Fetch(req splash.Request) (interface{}, error)
 	ParseData(payload []byte) (io.ReadCloser, error)
 	//	CheckServices() (status map[string]string)
@@ -25,17 +25,12 @@ type ParseService interface {
 
 type parseService struct {
 }
-/*
-func (parseService) GetResponse(req splash.Request) (*splash.Response, error) {
-	splashURL, err := splash.NewSplashConn(req)
-	response, err := splash.GetResponse(splashURL)
-	return response, err
-}
-*/
+
+//Fetch returns splash.Request
 func (parseService) Fetch(req splash.Request) (interface{}, error) {
 	//logger.Println(req)
 	fetcher, err := scrape.NewSplashFetcher()
-	
+
 	if err != nil {
 		logger.Println(err)
 	}
@@ -87,7 +82,7 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 		Pieces:     pieces,
 		//Paginator: paginate.BySelector(".next", "href"),
 		Paginator: paginate.BySelector(paginator.Selector, paginator.Attribute),
-		Opts:      scrape.ScrapeOptions{MaxPages: paginator.MaxPages, Format: p.Format, },
+		Opts:      scrape.ScrapeOptions{MaxPages: paginator.MaxPages, Format: p.Format},
 	}
 	scraper, err := scrape.New(config)
 	if err != nil {
@@ -104,25 +99,37 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 		json.NewEncoder(&buf).Encode(results)
 	case "csv":
 		//logger.Printf("%T", results.Results[0][0])
-		buf, err = encodeCSV(names, results.Results[0], ",")
-		if err != nil {
-			logger.Println(err)
+		addHeaders := true
+		w := csv.NewWriter(&buf)
+		for i, page := range results.Results {
+			if i != 0 {
+				addHeaders = false
+			}
+			err = encodeCSV(names, addHeaders, page, ",", w)
+			if err != nil {
+				logger.Println(err)
+			}
+			//buf.append(intBuf)
 		}
+		w.Flush()
 	}
-//	logger.Println(string(b))
+	//	logger.Println(string(b))
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
 }
 
-func encodeCSV(columns []string, rows []map[string]interface{}, comma string) (bytes.Buffer, error) {
+func encodeCSV(columns []string, addHeader bool, rows []map[string]interface{}, comma string, w *csv.Writer) (error) {
 	if comma == "" {
 		comma = ","
 	}
-	var buf bytes.Buffer
-	w := csv.NewWriter(&buf)
+	//var buf bytes.Buffer
+	//w := csv.NewWriter(&buf)
 	w.Comma = rune(comma[0])
-	if err := w.Write(columns); err != nil {
-		return buf, err
+	//Add Header string to csv or no
+	if addHeader {
+		if err := w.Write(columns); err != nil {
+			return err
+		}
 	}
 	r := make([]string, len(columns))
 	for _, row := range rows {
@@ -137,12 +144,20 @@ func encodeCSV(columns []string, rows []map[string]interface{}, comma string) (b
 			}
 		}
 		if err := w.Write(r); err != nil {
-			return buf, err
+			return err
 		}
 	}
-	w.Flush()
-	return buf, nil
+	//w.Flush()
+	return nil
 }
+
+/*
+func (parseService) GetResponse(req splash.Request) (*splash.Response, error) {
+	splashURL, err := splash.NewSplashConn(req)
+	response, err := splash.GetResponse(splashURL)
+	return response, err
+}
+*/
 
 /*
 func (parseService) Fetch(req splash.Request) (io.ReadCloser, error) {

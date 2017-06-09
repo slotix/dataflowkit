@@ -46,7 +46,7 @@ function main(splash)
   local last_entry = entries[#entries]
   if not ok then
        return {
-        reason = reason,
+        error = reason,
       }
   end
   if #entries>0  then

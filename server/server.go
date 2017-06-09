@@ -62,7 +62,7 @@ func Init(port string) {
 	)
 
 	parseDataHandler := httptransport.NewServer(
-		makeParseDataEndpoint(svc),
+		makeParseEndpoint(svc),
 		decodeParseRequest,
 		encodeParseResponse,
 	)

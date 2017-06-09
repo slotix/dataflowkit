@@ -81,8 +81,8 @@ func GetLUA(req Request) string {
 	if isRobotsTxt(req.URL) {
 		return robotsLUA
 	}
-	if req.Wait == 0 {
-		req.Wait = viper.GetFloat64("splash-wait")
+	if req.SplashWait == 0 {
+		req.SplashWait = viper.GetFloat64("splash-wait")
 	}
 	//if req.Cookies != "" {
 	//	return fmt.Sprintf(LUASetCookie, req.Wait)
@@ -118,8 +118,8 @@ forum_last=1496801580; expires=Wed, 06-Jun-2018 19:13:00 GMT; Max-Age=31536000; 
 	
 
 	var wait float64
-	if req.Wait != 0{
-		wait = req.Wait
+	if req.SplashWait != 0{
+		wait = req.SplashWait
 	} else {
 		wait = viper.GetFloat64("splash-wait")
 	}
@@ -162,8 +162,8 @@ func GetResponse(splashURL string) (*Response, error) {
 			logger.Println("Json Unmarshall error", err)
 		}
 		//if response status code is not 200
-		if sResponse.Reason != "" {
-			return nil, fmt.Errorf("error: %s", sResponse.Reason)
+		if sResponse.Error != "" {
+			return nil, fmt.Errorf("error: %s", sResponse.Error)
 		}
 		if sResponse.Response == nil || sResponse.Request == nil && sResponse.HTML != "" {
 			//if splash returned no request/ response call gc and then GetResponse again
@@ -184,7 +184,7 @@ func GetResponse(splashURL string) (*Response, error) {
 					sResponse.Response.StatusText)
 			} else {
 				err = fmt.Errorf("Error: %s",
-					sResponse.Reason)
+					sResponse.Error)
 			}
 		} else {
 			err = nil
@@ -194,6 +194,7 @@ func GetResponse(splashURL string) (*Response, error) {
 		if len(rv.OutReasons) == 0 {
 			sResponse.Cacheable = true
 		}
+		logger.Println(sResponse.URL)
 		return &sResponse, err
 	}
 	return nil, fmt.Errorf(string(res))
