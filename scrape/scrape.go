@@ -228,7 +228,7 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 	case splash.Request:
 		url = v.URL
 	}
-
+	logger.Println(req)
 	//rt := fmt.Sprintf("%T\n", req)
 	//logger.Println(r)
 

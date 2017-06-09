@@ -23,6 +23,7 @@ type robotstxtmw struct {
 func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) {
 	allow := true
 	robotsURL, err := NewRobotsTxt(req.URL)
+	var robotsData *robotstxt.RobotsData
 	if err != nil {
 		logger.Println(err)
 	} else {
@@ -42,7 +43,7 @@ func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) 
 			if err != nil {
 				return nil, err
 			}
-			robotsData := GetRobotsData(data)
+			robotsData = GetRobotsData(data)
 			parsedURL, err := neturl.Parse(req.URL)
 			if err != nil {
 				logger.Println("err")
@@ -55,6 +56,7 @@ func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) 
 
 	//allowed ?
 	if allow {
+		req.CrawlDelay = GetCrawlDelay(robotsData)
 		output, err = mw.ParseService.Fetch(req)
 		if err != nil {
 			logger.Println(err)

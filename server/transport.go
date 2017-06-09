@@ -30,12 +30,10 @@ func makeFetchEndpoint(svc ParseService) endpoint.Endpoint {
 	}
 }
 
-func makeParseDataEndpoint(svc ParseService) endpoint.Endpoint {
+func makeParseEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		//	fmt.Println("from makeMarshalDataEndpoint",string(request.([]byte)))
 		v, err := svc.ParseData(request.([]byte))
 		if err != nil {
-			//return errResponse{err.Error()}, nil
 			return nil, err
 		}
 		return v, nil
@@ -60,9 +58,7 @@ func decodeFetchRequest(ctx context.Context, r *http.Request) (interface{}, erro
 
 func decodeParseRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	request, err := ioutil.ReadAll(r.Body)
-	//fmt.Println("from decodeMarshalDataRequest",string(request))
 	if err != nil {
-		//fmt.Println(err)
 		return nil, err
 	}
 
@@ -85,7 +81,6 @@ func encodeFetchResponse(_ context.Context, w http.ResponseWriter, response inte
 		return err
 	}
 
-	//data, err := ioutil.ReadAll(response.(io.Reader))
 	data, err := ioutil.ReadAll(content)
 
 	if err != nil {
