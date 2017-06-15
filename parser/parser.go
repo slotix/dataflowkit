@@ -41,58 +41,7 @@ func NewParser(payload []byte) (Parser, error) {
 	if p.Format == "" {
 		p.Format = "json"
 	}
-	/*
-		for _, payload := range p.Payloads {
-			for _, f := range payload.Fields {
-				//var extractor scrape.PieceExtractor
-				switch f.Extractor.Type {
-				case "text":
-					t := extract.Text{}
-					if f.Extractor.Params != nil {
-						err := t.FillStruct(f.Extractor.Params.(map[string]interface{}))
-						if err != nil {
-							logger.Println(err)
-						}
-					}
-					//extractor = t
 
-				case "attr":
-					a := extract.Attr{}
-					if f.Extractor.Params != nil {
-						err := FillStruct(f.Extractor.Params.(map[string]interface{}), &a)
-
-						if err != nil {
-							logger.Println(err)
-						}
-					}
-					//extractor = a
-				case "regex":
-					r := extract.Regex{}
-					if f.Extractor.Params != nil {
-						err := FillStruct(f.Extractor.Params.(map[string]interface{}), &r)
-						if err != nil {
-							logger.Println(err)
-						}
-						regExp := f.Extractor.Params.(map[string]interface{})["regexp"]
-						//r.Regex = regexp.MustCompile(`(\d+)`)
-						r.Regex = regexp.MustCompile(regExp.(string))
-					}
-					//	extractor = r
-				}
-				logger.Println(f.Extractor)
-			}
-		}
-	*/
-	/*e := p.Payloads[0].Fields[0].Extractor
-	t := extract.Text{}
-	if e.Params != nil {
-		err := t.FillParams(e.Params.(map[string]interface{}))
-		if err != nil {
-			logger.Println(err)
-		}
-	}
-	logger.Println(t)
-	*/
 	p.PayloadMD5 = helpers.GenerateMD5(payload)
 	return p, nil
 }
@@ -126,7 +75,7 @@ func (p *Parser) Parse() (*Collections, error) {
 }
 
 //NewCollection initializes new collection
-func newCollection(p *payload) (*collection, error) {
+func newCollection(p *Payload) (*collection, error) {
 	meta := meta{
 		Name: p.Name,
 		URL:  p.URL,
@@ -150,7 +99,7 @@ func newCollection(p *payload) (*collection, error) {
 }
 
 //trying to determine common parent
-func (p *payload) parseItem1(h []byte) (col *collection, err error) {
+func (p *Payload) parseItem1(h []byte) (col *collection, err error) {
 	col, err = newCollection(p)
 	if err != nil {
 		return nil, err
@@ -235,7 +184,7 @@ func intersectionFL(sel *goquery.Selection) *goquery.Selection {
 	return intersection
 }
 
-func (p *payload) parseItem(r io.Reader) (col *collection, err error) {
+func (p *Payload) parseItem(r io.Reader) (col *collection, err error) {
 	col, err = newCollection(p)
 	if err != nil {
 		return nil, err

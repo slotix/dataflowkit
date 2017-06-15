@@ -15,7 +15,7 @@ type field struct {
 	Selector string `json:"selector" validate:"required"`
 	//Type     int     `json:"type"`
 	Count     int       `json:"count"`
-	Details   payload   `json:"-" validate:"-"`
+	Details   Payload   `json:"-" validate:"-"`
 	Extractor Extractor `json:"extractor"`
 	//FieldType   string `json:"type"`
 }
@@ -27,7 +27,7 @@ type paginator struct {
 }
 
 //easyjson:json
-type payload struct {
+type Payload struct {
 	meta
 	Fields    []field   `json:"fields" validate:"gt=0"` //number of fields >0
 	Paginator paginator `json:"paginator"`
@@ -37,7 +37,7 @@ type payload struct {
 //easyjson:json
 type Parser struct {
 	Format     string    `json:"format"`
-	Payloads   []payload `json:"collections"`
+	Payloads   []Payload `json:"collections"`
 	PayloadMD5 []byte    `json:"payloadMD5"`
 }
 

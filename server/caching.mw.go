@@ -34,7 +34,6 @@ func (mw cachemw) Fetch(req splash.Request) (output interface{}, err error) {
 	//if something in a cache return local copy
 	redisValue, err := redisCon.GetValue(req.URL)
 	if err == nil {
-		logger.Println("yes")
 		var sResponse *splash.Response
 		if err := json.Unmarshal(redisValue, &sResponse); err != nil {
 			logger.Println("Json Unmarshall error", err)
@@ -45,36 +44,35 @@ func (mw cachemw) Fetch(req splash.Request) (output interface{}, err error) {
 		}
 		//output, err = sResponse.GetContent()
 		output = sResponse
-	//	if err != nil {
-	//		logger.Printf(err.Error())
-	//	}
+		//	if err != nil {
+		//		logger.Printf(err.Error())
+		//	}
 		return output, nil
 	}
 
-		
 	//fetch results if there is nothing in a cache
 	resp, err := mw.ParseService.Fetch(req)
 	if err != nil {
 		return nil, err
 	}
-	sResponse := resp.(*splash.Response)
-	if sResponse.Cacheable {
-		response, err := json.Marshal(resp)
-		if err != nil {
-			logger.Printf(err.Error())
+	if sResponse, ok := resp.(*splash.Response); ok {
+		if sResponse.Cacheable {
+			response, err := json.Marshal(resp)
+			if err != nil {
+				logger.Printf(err.Error())
+			}
+			err = redisCon.SetValue(req.URL, response)
+			if err != nil {
+				logger.Println(err.Error())
+			}
+			err = redisCon.SetExpireAt(req.URL, sResponse.CacheExpirationTime)
+			if err != nil {
+				logger.Println(err.Error())
+			}
 		}
-		err = redisCon.SetValue(req.URL, response)
-		if err != nil {
-			logger.Println(err.Error())
-		}
-		err = redisCon.SetExpireAt(req.URL, sResponse.CacheExpirationTime)
-		if err != nil {
-			logger.Println(err.Error())
-		}
+		output = sResponse
 	}
-
 	//output, err = sResponse.GetContent()
-	output= sResponse
 	return
 }
 
@@ -104,7 +102,7 @@ func (mw cachemw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 	}
 
 	err = redisCon.SetValue(redisKey, buf.Bytes())
-	
+
 	if err != nil {
 		logger.Println(err.Error())
 	}

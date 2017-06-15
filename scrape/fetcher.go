@@ -1,7 +1,6 @@
 package scrape
 
 import (
-	"io"
 	"net/http"
 	"net/http/cookiejar"
 
@@ -74,29 +73,19 @@ func (sf *SplashFetcher) Prepare() error {
 	return nil
 }
 
-//Fetch retrieves document from the remote server. It returns splash.Response as it is not enough to get just page content but during scraping sessions auxiliary information like cookies should be avaialable.  
+//Fetch retrieves document from the remote server. It returns splash.Response as it is not enough to get just page content but during scraping sessions auxiliary information like cookies should be avaialable.
 func (sf *SplashFetcher) Fetch(request interface{}) (interface{}, error) {
 	splashURL, err := splash.NewSplashConn(request.(splash.Request))
 	r, err := splash.GetResponse(splashURL)
-	if err != nil{
-		return nil, err
-	}
-	/*
-	setCookie, err := r.GetSetCookie()
-	if err != nil{
-		return nil, err
-	}
-	
-	//res, err := splash.Fetch(splashURL)
-	res, err := r.GetContent()
-
 	if err != nil {
 		return nil, err
-	}*/
-	//return res, nil
+	}
+
 	return r, nil
 
 }
+
+var _ Fetcher = &SplashFetcher{}
 
 func (sf *SplashFetcher) Close() {
 	return
@@ -129,7 +118,7 @@ type HttpClientFetcherRequest struct {
 	Method string
 }
 
-func (hf *HttpClientFetcher) Fetch(request interface{}) (io.ReadCloser, error) {
+func (hf *HttpClientFetcher) Fetch(request interface{}) (interface{}, error) {
 	//	var r HttpClientFetcherRequest
 	//	err := json.Unmarshal(request, &r)
 	//	if err != nil {
@@ -158,7 +147,8 @@ func (hf *HttpClientFetcher) Fetch(request interface{}) (io.ReadCloser, error) {
 		}
 	}
 
-	return resp.Body.(io.ReadCloser), nil
+	//return resp.Body.(io.ReadCloser), nil
+	return resp.Body, nil
 }
 
 func (hf *HttpClientFetcher) Close() {
@@ -166,5 +156,4 @@ func (hf *HttpClientFetcher) Close() {
 }
 
 // Static type assertion
-//var _ Fetcher = &HttpClientFetcher{}
-var _ Fetcher = &SplashFetcher{}
+var _ Fetcher = &HttpClientFetcher{}
