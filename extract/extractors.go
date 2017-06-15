@@ -322,9 +322,12 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 	return l, nil
 }
 
+
+
+
 func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, error) {
-	var err error
-	/*
+	var err error	
+/*
 	var e scrape.PieceExtractor
 	switch t {
 	case "text":
@@ -342,7 +345,7 @@ func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, erro
 	}
 	return e, nil
 	*/
-	
+
 	switch t {
 	case "text":
 		txt := Text{}

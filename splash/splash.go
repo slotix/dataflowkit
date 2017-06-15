@@ -146,10 +146,12 @@ func GetResponse(splashURL string) (*Response, error) {
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
 	resp, err := client.Do(request)
+	if resp != nil {
+        defer resp.Body.Close()
+    }
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 	res, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err

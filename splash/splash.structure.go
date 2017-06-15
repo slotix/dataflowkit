@@ -1,6 +1,7 @@
 package splash
 
 import (
+	"net/http"
 	"time"
 )
 
@@ -22,17 +23,17 @@ type Request struct {
 	Func    string `json:"func,omitempty"`
 	//SplashWait - time in seconds to wait until js scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
 	SplashWait float64 `json:"wait,omitempty"`
-	//CrawlDelay - time between page requests on the same domain. Robotstxt middleware processes robots.txt files and returns  that information.   
+	//CrawlDelay - time between page requests on the same domain. Robotstxt middleware processes robots.txt files and returns  that information.
 	CrawlDelay time.Duration
 }
-
+/*
 type Header struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
+*/
+/*
 
-//Cookie - Custom Cookie struct is used to avoid problems whith unmarshalling data with invalid Expires field which has time.Time type for original http.Cookie struct.
-//For some domains like http://yahoo.com it is easier to unmarshal Expires as string
 type Cookie struct {
 	Name  string
 	Value string
@@ -49,6 +50,16 @@ type Cookie struct {
 	HttpOnly bool
 	Raw      string
 	Unparsed []string // Raw text of unparsed attribute-value pairs
+}
+*/
+
+
+
+//Cookie - Custom Cookie struct is used to avoid problems whith unmarshalling data with invalid Expires field which has time.Time type for original http.Cookie struct.
+//For some domains like http://yahoo.com it is easier to unmarshal Expires as string
+type Cookie struct {
+	http.Cookie
+	Expires string // optional
 }
 
 //SResponse returned by Splash as a part of Response

@@ -265,10 +265,11 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 		case HttpClientFetcherRequest:
 			resp = r.(io.ReadCloser)
 		case splash.Request:
-			sResponse := r.(*splash.Response)
-			resp, err = sResponse.GetContent()
-			if err != nil {
-				logger.Println(err)
+			if sResponse, ok := r.(*splash.Response); ok {
+				resp, err = sResponse.GetContent()
+				if err != nil {
+					logger.Println(err)
+				}
 			}
 		}
 
@@ -328,13 +329,14 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 		case HttpClientFetcherRequest:
 			req = HttpClientFetcherRequest{URL: url}
 		case splash.Request:
-			//every time when getting a response the next request will be filled with updated cookie information 
-			sResponse := r.(*splash.Response)
-			setCookie, err := sResponse.SetCookieToRequest()
-			if err != nil {
-				return nil, err
+			//every time when getting a response the next request will be filled with updated cookie information
+			if sResponse, ok := r.(*splash.Response); ok {
+				setCookie, err := sResponse.SetCookieToRequest()
+				if err != nil {
+					return nil, err
+				}
+				req = splash.Request{URL: url, Cookies: setCookie}
 			}
-			req = splash.Request{URL: url, Cookies: setCookie}
 		}
 	}
 

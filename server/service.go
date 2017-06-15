@@ -74,7 +74,6 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	}
 
 	paginator := pl.Paginator
-	//logger.Println(paginator)
 	config := &scrape.ScrapeConfig{
 		Fetcher: fetcher,
 		//DividePage: scrape.DividePageBySelector(".p"),
@@ -93,47 +92,81 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+	//logger.Println(results.Results[0][0])
 	var buf bytes.Buffer
 	switch config.Opts.Format {
 	case "json":
 		json.NewEncoder(&buf).Encode(results)
 	case "csv":
-		//logger.Printf("%T", results.Results[0][0])
-		addHeaders := true
+		includeHeader := true
 		w := csv.NewWriter(&buf)
 		for i, page := range results.Results {
 			if i != 0 {
-				addHeaders = false
+				includeHeader = false
 			}
-			err = encodeCSV(names, addHeaders, page, ",", w)
+			err = encodeCSV(names, includeHeader, page, ",", w)
 			if err != nil {
 				logger.Println(err)
 			}
-			//buf.append(intBuf)
 		}
 		w.Flush()
 	}
 	//	logger.Println(string(b))
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
+
+	/*
+		res, err := formatResults(results, config.Opts.Format)
+		if err !=nil {
+			return nil, err
+		}
+		return res, nil*/
 }
 
-func encodeCSV(columns []string, addHeader bool, rows []map[string]interface{}, comma string, w *csv.Writer) (error) {
+/*
+func formatResults(res *scrape.ScrapeResults, format string)(io.ReadCloser, error){
+	var buf bytes.Buffer
+	switch format {
+	case "json":
+		json.NewEncoder(&buf).Encode(res)
+	case "csv":
+	includeHeader := true
+		w := csv.NewWriter(&buf)
+		for i, page := range res.Results {
+			if i != 0 {
+				includeHeader = false
+			}
+			err = encodeCSV(names, includeHeader, page, ",", w)
+			if err != nil {
+				logger.Println(err)
+			}
+		}
+		w.Flush()
+	}
+	//	logger.Println(string(b))
+	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
+	return readCloser, nil
+
+}
+*/
+//encodeCSV writes data to w *csv.Writee.
+//header - headers for csv.
+//includeHeader include headers or not.
+//rows - csv records to be written.
+func encodeCSV(header []string, includeHeader bool, rows []map[string]interface{}, comma string, w *csv.Writer) error {
 	if comma == "" {
 		comma = ","
 	}
-	//var buf bytes.Buffer
-	//w := csv.NewWriter(&buf)
 	w.Comma = rune(comma[0])
 	//Add Header string to csv or no
-	if addHeader {
-		if err := w.Write(columns); err != nil {
+	if includeHeader {
+		if err := w.Write(header); err != nil {
 			return err
 		}
 	}
-	r := make([]string, len(columns))
+	r := make([]string, len(header))
 	for _, row := range rows {
-		for i, column := range columns {
+		for i, column := range header {
 			switch v := row[column].(type) {
 			case string:
 				r[i] = v
@@ -147,7 +180,6 @@ func encodeCSV(columns []string, addHeader bool, rows []map[string]interface{}, 
 			return err
 		}
 	}
-	//w.Flush()
 	return nil
 }
 

@@ -474,15 +474,15 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser4(in *jlexer.Lexer, ou
 				in.Delim('[')
 				if out.Payloads == nil {
 					if !in.IsDelim(']') {
-						out.Payloads = make([]payload, 0, 1)
+						out.Payloads = make([]Payload, 0, 1)
 					} else {
-						out.Payloads = []payload{}
+						out.Payloads = []Payload{}
 					}
 				} else {
 					out.Payloads = (out.Payloads)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v10 payload
+					var v10 Payload
 					(v10).UnmarshalEasyJSON(in)
 					out.Payloads = append(out.Payloads, v10)
 					in.WantComma()
@@ -565,7 +565,7 @@ func (v *Parser) UnmarshalJSON(data []byte) error {
 func (v *Parser) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser4(l, v)
 }
-func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser5(in *jlexer.Lexer, out *payload) {
+func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser5(in *jlexer.Lexer, out *Payload) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -623,7 +623,7 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser5(in *jlexer.Lexer, ou
 		in.Consumed()
 	}
 }
-func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser5(out *jwriter.Writer, in payload) {
+func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser5(out *jwriter.Writer, in Payload) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -666,26 +666,26 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser5(out *jwriter.Writer,
 }
 
 // MarshalJSON supports json.Marshaler interface
-func (v payload) MarshalJSON() ([]byte, error) {
+func (v Payload) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
 	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser5(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
-func (v payload) MarshalEasyJSON(w *jwriter.Writer) {
+func (v Payload) MarshalEasyJSON(w *jwriter.Writer) {
 	easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser5(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
-func (v *payload) UnmarshalJSON(data []byte) error {
+func (v *Payload) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
 	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser5(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *payload) UnmarshalEasyJSON(l *jlexer.Lexer) {
+func (v *Payload) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser5(l, v)
 }
 func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser7(in *jlexer.Lexer, out *paginator) {
