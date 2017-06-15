@@ -5,7 +5,7 @@ import (
 
 	machinery "github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
-	"github.com/RichardKnop/machinery/v1/errors"
+	"fmt"
 )
 
 // Define flags
@@ -31,15 +31,17 @@ func init() {
 
 	// Parse the config
 	// NOTE: If a config file is present, it has priority over flags
-	data, err := config.ReadFromFile(*configPath)
-	if err == nil {
-		err = config.ParseYAMLConfig(&data, &cnf)
-		errors.Fail(err, "Could not parse config file")
-	}
+	//data, err := config.ReadFromFile(*configPath)
+	//if err == nil {
+	//	err = config.ParseYAMLConfig(&data, &cnf)
+	//	errors.Fail(err, "Could not parse config file")
+	//}
 
 	server, err := machinery.NewServer(&cnf)
-	errors.Fail(err, "Could not initialize server")
-
+	if err != nil {
+		fmt.Println(err, "Could not initialize server")
+	}
+	
 	// Register tasks
 	tasks := map[string]interface{}{
 		"GetHTML":      GetResponse,
@@ -54,5 +56,7 @@ func init() {
 
 func main() {
 	err := worker.Launch()
-	errors.Fail(err, "Could not launch worker")
+	if err != nil {
+		fmt.Println(err, "Could not launch worker")
+	}
 }

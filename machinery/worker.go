@@ -10,9 +10,7 @@ import (
 
 	"fmt"
 
-	machinery "github.com/RichardKnop/machinery/v1"
-	"github.com/RichardKnop/machinery/v1/errors"
-	"github.com/RichardKnop/machinery/v1/signatures"
+	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/slotix/dataflowkit/parser"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
@@ -41,8 +39,8 @@ func GetResponse(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if response.Reason != "" {
-		return fmt.Sprintf("%s : %s", url, response.Reason), err
+	if response.Error != "" {
+		return fmt.Sprintf("%s : %s", url, response.Error), err
 	}
 	return fmt.Sprintf("%s : %s", url, "Ok"), err
 
@@ -78,10 +76,10 @@ func LoadURLsFromCSV(file string) []string {
 
 }
 
-func generateGetHTMLTask(url string) *signatures.TaskSignature {
-	return &signatures.TaskSignature{
+func generateGetHTMLTask(url string) *tasks.Signature {
+	return &tasks.Signature{
 		Name: "GetHTML",
-		Args: []signatures.TaskArg{
+		Args: []tasks.Arg{
 			{
 				Type:  "string",
 				Value: url,
@@ -89,7 +87,6 @@ func generateGetHTMLTask(url string) *signatures.TaskSignature {
 		},
 	}
 }
-
 
 //SendItemsToQuery sends urls to fetchbot query to be parsed
 func SendTasksToRedis(urls []string, from, to int) {
@@ -101,17 +98,20 @@ func SendTasksToRedis(urls []string, from, to int) {
 		if dif := to - i; dif < workerStep {
 			workerStep = dif
 		}
-		var tasks []*signatures.TaskSignature
+		var tsks []*tasks.Signature
 		fmt.Println("i=", i)
 		for j, url := range urls[i : i+workerStep] {
-			tasks = append(tasks, generateGetHTMLTask(url))
+			tsks = append(tsks, generateGetHTMLTask(url))
 			fmt.Printf("%d - %s \n", i+j, url)
 		}
-		group := machinery.NewGroup(tasks...)
+		group := tasks.NewGroup(tsks...)
 		asyncResults, err := server.SendGroup(group)
-		errors.Fail(err, "Could not send task")
+		if err != nil {
+			fmt.Println(err, "Could not send task")
+		}
+
 		for _, asyncResult := range asyncResults {
-			_, err := asyncResult.Get()
+			_, err := asyncResult.Get(time.Duration(time.Millisecond * 5))
 			taskState := asyncResult.GetState()
 			fmt.Printf("URL: %v Current state of %v task is: %s\n", asyncResult.Signature.Args[0].Value, taskState.TaskUUID, taskState.State)
 			if taskState.State == "SUCCESS" {
