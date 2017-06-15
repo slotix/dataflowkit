@@ -76,8 +76,8 @@ func Init(port string) {
 	*/
 
 	router := httprouter.New()
-	router.Handler("POST", "/app/gethtml", fetchHandler)
-	router.Handler("POST", "/app/marshaldata", parseDataHandler)
+	router.Handler("POST", "/app/fetch", fetchHandler)
+	router.Handler("POST", "/app/parse", parseDataHandler)
 	//router.Handler("POST", "/app/chkservices", checkServicesHandler)
 	router.Handler("GET", "/metrics", promhttp.Handler())
 

@@ -37,8 +37,8 @@ func main() {
 			"index.html",
 			nil)
 	})
-	r.POST("/app/gethtml", ReverseProxy())
-	r.POST("/app/marshaldata", ReverseProxy())
+	r.POST("/app/fetch", ReverseProxy())
+	r.POST("/app/parse", ReverseProxy())
 	r.Run(*port)
 }
 
