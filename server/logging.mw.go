@@ -22,7 +22,7 @@ type logmw struct {
 func (mw logmw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		_ = mw.logger.Log(
-			"method", "marshaldata",
+			"method", "parse",
 			//"input", payload,
 			//"output", output,
 			"err", err,
@@ -37,7 +37,7 @@ func (mw logmw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 func (mw logmw) Fetch(req splash.Request) (output interface{}, err error) {
 	defer func(begin time.Time) {
 		_ = mw.logger.Log(
-			"method", "gethtml",
+			"method", "fetch",
 			"input", req.URL,
 			//	"output", output,
 			"err", err,

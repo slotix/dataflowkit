@@ -21,14 +21,6 @@ import (
 
 var logger *log.Logger
 
-// errURLEmpty is returned when an input string is empty.
-var errURLEmpty = errors.New("URL is empty")
-
-// Sometimes errSplashResponse returned when no response, request recieved from Splash.
-// To solve this problem gc method should be called to clear WebKit caches and then
-// GetResponse again. See more at https://github.com/scrapinghub/splash/issues/613
-var errSplashResponse = errors.New("Splash returned empty response")
-
 func init() {
 	logger = log.New(os.Stdout, "splash: ", log.Lshortfile)
 }
@@ -94,38 +86,37 @@ func GetLUA(req Request) string {
 //NewSplashConn creates new connection to Splash Server
 func NewSplashConn(req Request) (splashURL string, err error) {
 	if req.URL == "" {
-		return "", errURLEmpty
+		return "", errors.New("URL is empty")
 	}
-/*
-	//"Set-Cookie" from response headers should be sent when accessing for the same domain second time   
-	cookie := `PHPSESSID=ef75e2737a14b06a2749d0b73840354f; path=/; domain=.acer-a500.ru; HttpOnly
-dle_user_id=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=.acer-a500.ru; httponly
-dle_password=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=.acer-a500.ru; httponly
-dle_hash=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=.acer-a500.ru; httponly
-dle_forum_sessions=ef75e2737a14b06a2749d0b73840354f; expires=Wed, 06-Jun-2018 19:13:00 GMT; Max-Age=31536000; path=/; domain=.acer-a500.ru; httponly
-forum_last=1496801580; expires=Wed, 06-Jun-2018 19:13:00 GMT; Max-Age=31536000; path=/; domain=.acer-a500.ru; httponly`
-	//cookie := ""
-	
-	req.Cookies, err = generateCookie(cookie)
-	if err != nil {
-		logger.Println(err)
-	}
-	//logger.Println(req.Cookies)
-	
-	//---------
-*/	
+	/*
+	   	//"Set-Cookie" from response headers should be sent when accessing for the same domain second time
+	   	cookie := `PHPSESSID=ef75e2737a14b06a2749d0b73840354f; path=/; domain=.acer-a500.ru; HttpOnly
+	   dle_user_id=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=.acer-a500.ru; httponly
+	   dle_password=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=.acer-a500.ru; httponly
+	   dle_hash=deleted; expires=Thu, 01-Jan-1970 00:00:01 GMT; Max-Age=0; path=/; domain=.acer-a500.ru; httponly
+	   dle_forum_sessions=ef75e2737a14b06a2749d0b73840354f; expires=Wed, 06-Jun-2018 19:13:00 GMT; Max-Age=31536000; path=/; domain=.acer-a500.ru; httponly
+	   forum_last=1496801580; expires=Wed, 06-Jun-2018 19:13:00 GMT; Max-Age=31536000; path=/; domain=.acer-a500.ru; httponly`
+	   	//cookie := ""
+
+	   	req.Cookies, err = generateCookie(cookie)
+	   	if err != nil {
+	   		logger.Println(err)
+	   	}
+	   	//logger.Println(req.Cookies)
+
+	   	//---------
+	*/
 	//req.Params = `"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=dmsoft&rememberMe=1"`
-	
 
 	var wait float64
-	if req.SplashWait != 0{
+	if req.SplashWait != 0 {
 		wait = req.SplashWait
 	} else {
 		wait = viper.GetFloat64("splash-wait")
 	}
 
 	splashURL = fmt.Sprintf(
-		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s", fmt.Sprintf("http://%s/",viper.GetString("splash")),
+		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s", fmt.Sprintf("http://%s/", viper.GetString("splash")),
 		neturl.QueryEscape(req.URL),
 		viper.GetInt("splash-timeout"),
 		viper.GetInt("splash-resource-timeout"),
@@ -134,10 +125,9 @@ forum_last=1496801580; expires=Wed, 06-Jun-2018 19:13:00 GMT; Max-Age=31536000; 
 		neturl.QueryEscape(paramsToLuaTable(req.Params)),
 		neturl.QueryEscape(GetLUA(req)))
 
-    //logger.Println(splashURL)
+	//logger.Println(splashURL)
 	return splashURL, nil
 }
-
 
 //GetResponse result is passed to  caching middleware
 //to provide a RFC7234 compliant HTTP cache
@@ -147,8 +137,8 @@ func GetResponse(splashURL string) (*Response, error) {
 	//req.SetBasicAuth(s.user, s.password)
 	resp, err := client.Do(request)
 	if resp != nil {
-        defer resp.Body.Close()
-    }
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +158,9 @@ func GetResponse(splashURL string) (*Response, error) {
 			return nil, fmt.Errorf("error: %s", sResponse.Error)
 		}
 		if sResponse.Response == nil || sResponse.Request == nil && sResponse.HTML != "" {
-			//if splash returned no request/ response call gc and then GetResponse again
+			// Sometimes no response, request returned  by Splash.
+			// To solve this problem gc method should be called to clear WebKit caches and then
+			// GetResponse again. See more at https://github.com/scrapinghub/splash/issues/613
 			var response *Response
 			gcResponse, err := gc(viper.GetString("splash"))
 			if err == nil && gcResponse.Status == "ok" {
@@ -205,7 +197,6 @@ func GetResponse(splashURL string) (*Response, error) {
 
 func (r *Response) GetContent() (io.ReadCloser, error) {
 	if r == nil {
-		//	logger.Println("empty response")
 		return nil, errors.New("empty response")
 	}
 	if isRobotsTxt(r.Request.URL) {

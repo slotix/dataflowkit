@@ -12,7 +12,7 @@ import (
 var (
 	port    = flag.String("p", ":8080", "HTTP listen address")
 	dfkPort = flag.String("d", ":8000", "DataFlow kit port")
-	baseDir = flag.String("b", "/web", "HTML files location.")
+	baseDir = flag.String("b", "web", "HTML files location.")
 )
 
 func main() {
@@ -30,11 +30,19 @@ func main() {
 	r.Static("/static", staticStr)
 	r.StaticFile("/favicon.ico", fmt.Sprintf("%s/favicon.ico", staticStr))
 
-	r.LoadHTMLFiles(fmt.Sprintf("%s/index.html", *baseDir))
+	r.LoadHTMLFiles(fmt.Sprintf("%s/index.html", *baseDir),
+		fmt.Sprintf("%s/get_started.html", *baseDir))
+	//r.LoadHTMLGlob(fmt.Sprintf("%s/*", *baseDir))
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(
 			http.StatusOK,
 			"index.html",
+			nil)
+	})
+	r.GET("/get_started", func(c *gin.Context) {
+		c.HTML(
+			http.StatusOK,
+			"get_started.html",
 			nil)
 	})
 	r.POST("/app/fetch", ReverseProxy())
@@ -44,7 +52,7 @@ func main() {
 
 func ReverseProxy() gin.HandlerFunc {
 
-	target := fmt.Sprintf("localhost%s",*dfkPort)
+	target := fmt.Sprintf("localhost%s", *dfkPort)
 
 	//target := "localhost:8000"
 
@@ -62,5 +70,3 @@ func ReverseProxy() gin.HandlerFunc {
 		proxy.ServeHTTP(c.Writer, c.Request)
 	}
 }
-
-

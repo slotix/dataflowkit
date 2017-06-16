@@ -288,6 +288,7 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 
 			// Process each piece of this block
 			for _, piece := range s.config.Pieces {
+				//logger.Println(piece)
 				sel := block
 				if piece.Selector != "." {
 					sel = sel.Find(piece.Selector)
@@ -301,11 +302,11 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 
 				// A nil response from an extractor means that we don't even include it in
 				// the results.
-				//	logger.Println(pieceResults, pieceResults == nil)
 				//if pieceResults == nil || pieceResults == "" {
 				if pieceResults == nil {
 					continue
 				}
+				
 				blockResults[piece.Name] = pieceResults
 			}
 			if len(blockResults) > 0 {
