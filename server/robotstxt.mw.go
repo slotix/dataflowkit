@@ -6,6 +6,7 @@ import (
 	neturl "net/url"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/temoto/robotstxt"
 )
@@ -27,10 +28,11 @@ func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) 
 	if err != nil {
 		logger.Println(err)
 	} else {
-		r := splash.Request{URL: *robotsURL}
+		r := splash.Request{URL: robotsURL}
 		robots, err := mw.ParseService.Fetch(r)
 		if err != nil {
 			logger.Println(err)
+			//errors.Wrap(err, "robots.txt")
 		} else {
 			sResponse := robots.(*splash.Response)
 			//data, err := ioutil.ReadAll(robots)
@@ -69,15 +71,18 @@ func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) 
 	return
 }
 
-func NewRobotsTxt(url string) (*string, error) {
+func NewRobotsTxt(url string) (string, error) {
+	if url == "" {
+		return "", errors.New("empty URL")
+	}
 	var robotsURL string
 	parsedURL, err := neturl.Parse(url)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	robotsURL = fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
 
-	return &robotsURL, nil
+	return robotsURL, nil
 }
 
 func GetRobotsData(content []byte) *robotstxt.RobotsData {

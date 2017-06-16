@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"fmt"
+
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/parser"
@@ -60,17 +62,86 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 		if f.Extractor.Params != nil {
 			params = f.Extractor.Params.(map[string]interface{})
 		}
-		extractor, err = extract.FillParams(f.Extractor.Type, params)
-		if err != nil {
-			logger.Println(err)
+		switch f.Extractor.Type {
+		//For Link type by default Two pieces with different Text and Attr="href" extractors will be added for field selector.
+		case "link":
+			extractor, err = extract.FillParams("text", params)
+			if err != nil {
+				logger.Println(err)
+			}
+			fName := fmt.Sprintf("%s_text", f.Name)
+			pieces = append(pieces, scrape.Piece{
+				Name:      fName,
+				Selector:  f.Selector,
+				Extractor: extractor,
+			})
+			names = append(names, fName)
+
+			params["Attr"] = "href"
+			extractor, err = extract.FillParams("attr", params)
+			if err != nil {
+				logger.Println(err)
+			}
+			fName = fmt.Sprintf("%s_link", f.Name)
+			pieces = append(pieces, scrape.Piece{
+				Name:      fName,
+				Selector:  f.Selector,
+				Extractor: extractor,
+			})
+			names = append(names, fName)
+			//Add selector just one time for link type
+			selectors = append(selectors, f.Selector)
+		
+		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
+		case "image":
+			params["Attr"] = "src"
+			extractor, err = extract.FillParams("attr", params)
+			if err != nil {
+				logger.Println(err)
+			}
+			fName := fmt.Sprintf("%s_src", f.Name)
+			pieces = append(pieces, scrape.Piece{
+				Name:      fName,
+				Selector:  f.Selector,
+				Extractor: extractor,
+			})
+			names = append(names, fName)
+
+			params["Attr"] = "alt"
+			extractor, err = extract.FillParams("attr", params)
+			if err != nil {
+				logger.Println(err)
+			}
+			fName = fmt.Sprintf("%s_alt", f.Name)
+			pieces = append(pieces, scrape.Piece{
+				Name:      fName,
+				Selector:  f.Selector,
+				Extractor: extractor,
+			})
+			names = append(names, fName)
+			//Add selector just one time for link type
+			selectors = append(selectors, f.Selector)
+		default:
+			extractor, err = extract.FillParams(f.Extractor.Type, params)
+			if err != nil {
+				logger.Println(err)
+			}
+
+			pieces = append(pieces, scrape.Piece{
+				Name:      f.Name,
+				Selector:  f.Selector,
+				Extractor: extractor,
+			})
+
+			selectors = append(selectors, f.Selector)
+			names = append(names, f.Name)
+
 		}
-		pieces = append(pieces, scrape.Piece{
-			Name:      f.Name,
-			Selector:  f.Selector,
-			Extractor: extractor,
-		})
-		selectors = append(selectors, f.Selector)
-		names = append(names, f.Name)
+		//	if f.Extractor.Type == "link" {
+
+		//	} else {
+
+		//	}
 	}
 
 	paginator := pl.Paginator

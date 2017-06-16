@@ -32,7 +32,35 @@ func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 var _ scrape.PieceExtractor = Const{}
+/*
+type Link struct {
+	Text *Text
+	Attr *Attr
+}
 
+func (e Link) Extract(sel *goquery.Selection) (interface{}, error) {
+	out := make(map[string]interface{})
+	t := Text{}
+	tExtract, err := t.Extract(sel)
+	if err != nil {
+		return nil, err
+	} 
+	if tExtract != nil {
+		out["text"] = tExtract.(string)
+	}
+	a := Attr{Attr: "href"}
+	aExtract, err := a.Extract(sel)
+	if err != nil {
+		return nil, err
+	}
+	if aExtract != nil {
+		out["href"] = aExtract.(string)
+	}
+	return out, nil
+}
+
+var _ scrape.PieceExtractor = Link{}
+*/
 // Text is a PieceExtractor that returns the combined text contents of
 // the given selection.
 type Text struct {
@@ -260,7 +288,7 @@ type Attr struct {
 
 	// By default, if there is only a single attribute extracted, AttrExtractor
 	// will return the match itself (as opposed to an array containing the single
-	// match).  Set AlwaysReturnList to true to disable this behaviour, ensuring
+	// match). Set AlwaysReturnList to true to disable this behaviour, ensuring
 	// that the Extract function always returns an array.
 	AlwaysReturnList bool
 
@@ -302,6 +330,16 @@ func (e *Attr) fillParams(m map[string]interface{}) error {
 	return nil
 }
 
+/*
+func (e *Link) fillParams(m map[string]interface{}) error {
+	err := FillStruct(m, e)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+*/
+
 var _ scrape.PieceExtractor = Attr{}
 
 // Count extracts the count of elements that are matched and returns it.
@@ -322,28 +360,25 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 	return l, nil
 }
 
-
-
-
 func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, error) {
-	var err error	
-/*
-	var e scrape.PieceExtractor
-	switch t {
-	case "text":
-		e = Text{}
-	case "attr":
-		e = Attr{}
-	case "regex":
-		e = Regex{}
-	}
-	if m != nil {
-		err := FillStruct(m, &e)
-		if err != nil {
-			return nil, err
+	var err error
+	/*
+		var e scrape.PieceExtractor
+		switch t {
+		case "text":
+			e = Text{}
+		case "attr":
+			e = Attr{}
+		case "regex":
+			e = Regex{}
 		}
-	}
-	return e, nil
+		if m != nil {
+			err := FillStruct(m, &e)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return e, nil
 	*/
 
 	switch t {
@@ -365,6 +400,17 @@ func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, erro
 			}
 		}
 		return a, nil
+	/*
+	case "link":
+		link := Link{}
+		if m != nil {
+			err = link.fillParams(m)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return link, nil
+	*/
 	case "regex":
 		r := Regex{}
 		if m != nil {
