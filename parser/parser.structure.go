@@ -6,18 +6,16 @@ type meta struct {
 }
 
 type Extractor struct {
-	Type  string `json:"type"`
+	Type   string      `json:"type"`
 	Params interface{} `json:"params"`
 }
 
 type field struct {
-	Name     string `json:"name" validate:"required"`
-	Selector string `json:"selector" validate:"required"`
-	//Type     int     `json:"type"`
+	Name      string    `json:"name" validate:"required"`
+	Selector  string    `json:"selector" validate:"required"`
 	Count     int       `json:"count"`
 	Details   Payload   `json:"-" validate:"-"`
 	Extractor Extractor `json:"extractor"`
-	//FieldType   string `json:"type"`
 }
 
 type paginator struct {

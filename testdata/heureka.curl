@@ -1,4 +1,4 @@
-curl -XPOST  127.0.0.1:8080/app/parse -d '
+curl -XPOST  http://dataflowkit.org/app/parse -d '
 { 
 "format":"json",
 "collections":[ 

@@ -32,35 +32,7 @@ func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 var _ scrape.PieceExtractor = Const{}
-/*
-type Link struct {
-	Text *Text
-	Attr *Attr
-}
 
-func (e Link) Extract(sel *goquery.Selection) (interface{}, error) {
-	out := make(map[string]interface{})
-	t := Text{}
-	tExtract, err := t.Extract(sel)
-	if err != nil {
-		return nil, err
-	} 
-	if tExtract != nil {
-		out["text"] = tExtract.(string)
-	}
-	a := Attr{Attr: "href"}
-	aExtract, err := a.Extract(sel)
-	if err != nil {
-		return nil, err
-	}
-	if aExtract != nil {
-		out["href"] = aExtract.(string)
-	}
-	return out, nil
-}
-
-var _ scrape.PieceExtractor = Link{}
-*/
 // Text is a PieceExtractor that returns the combined text contents of
 // the given selection.
 type Text struct {
@@ -330,15 +302,6 @@ func (e *Attr) fillParams(m map[string]interface{}) error {
 	return nil
 }
 
-/*
-func (e *Link) fillParams(m map[string]interface{}) error {
-	err := FillStruct(m, e)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-*/
 
 var _ scrape.PieceExtractor = Attr{}
 
@@ -400,17 +363,6 @@ func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, erro
 			}
 		}
 		return a, nil
-	/*
-	case "link":
-		link := Link{}
-		if m != nil {
-			err = link.fillParams(m)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return link, nil
-	*/
 	case "regex":
 		r := Regex{}
 		if m != nil {
