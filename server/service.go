@@ -137,11 +137,6 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 			names = append(names, f.Name)
 
 		}
-		//	if f.Extractor.Type == "link" {
-
-		//	} else {
-
-		//	}
 	}
 
 	paginator := pl.Paginator
@@ -163,7 +158,6 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	//logger.Println(results.Results[0][0])
 	var buf bytes.Buffer
 	switch config.Opts.Format {
 	case "json":
@@ -185,41 +179,9 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	//	logger.Println(string(b))
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
-
-	/*
-		res, err := formatResults(results, config.Opts.Format)
-		if err !=nil {
-			return nil, err
-		}
-		return res, nil*/
 }
 
-/*
-func formatResults(res *scrape.ScrapeResults, format string)(io.ReadCloser, error){
-	var buf bytes.Buffer
-	switch format {
-	case "json":
-		json.NewEncoder(&buf).Encode(res)
-	case "csv":
-	includeHeader := true
-		w := csv.NewWriter(&buf)
-		for i, page := range res.Results {
-			if i != 0 {
-				includeHeader = false
-			}
-			err = encodeCSV(names, includeHeader, page, ",", w)
-			if err != nil {
-				logger.Println(err)
-			}
-		}
-		w.Flush()
-	}
-	//	logger.Println(string(b))
-	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
-	return readCloser, nil
 
-}
-*/
 //encodeCSV writes data to w *csv.Writee.
 //header - headers for csv.
 //includeHeader include headers or not.
