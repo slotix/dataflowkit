@@ -8,11 +8,15 @@ type ScrapeOptions struct {
 	// returns no further URLs.  Set this value to 0 to indicate an unlimited
 	// number of pages can be scraped.
 	MaxPages int
+	//Output format 
 	Format string
-}
+	//paginated results are returned. Single list of combined results from every block on all pages is returned by default. Paginated results is actual for JSON and XML formats. Combined list of results is always returned for CSV format.  
+	PaginatedResults bool
+}	
 
 // The default options during a scrape.
 var DefaultOptions = ScrapeOptions{
 	MaxPages: 0,
 	Format: "json",
+	PaginatedResults: false,
 }

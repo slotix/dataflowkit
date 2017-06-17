@@ -466,6 +466,8 @@ func easyjsonBc4ecbcDecodeGithubComSlotixDataflowkitParser4(in *jlexer.Lexer, ou
 		switch key {
 		case "format":
 			out.Format = string(in.String())
+		case "paginatedResults":
+			out.PaginatedResults = bool(in.Bool())
 		case "collections":
 			if in.IsNull() {
 				in.Skip()
@@ -516,6 +518,12 @@ func easyjsonBc4ecbcEncodeGithubComSlotixDataflowkitParser4(out *jwriter.Writer,
 	first = false
 	out.RawString("\"format\":")
 	out.String(string(in.Format))
+	if !first {
+		out.RawByte(',')
+	}
+	first = false
+	out.RawString("\"paginatedResults\":")
+	out.Bool(bool(in.PaginatedResults))
 	if !first {
 		out.RawByte(',')
 	}

@@ -11,6 +11,7 @@ import (
 
 	"fmt"
 
+	"github.com/Diggernaut/mxj"
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/parser"
@@ -152,13 +153,11 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 					logger.Println(err)
 				}
 			}
-
 			pieces = append(pieces, scrape.Piece{
 				Name:      f.Name,
 				Selector:  f.Selector,
 				Extractor: e,
 			})
-
 			selectors = append(selectors, f.Selector)
 			names = append(names, f.Name)
 		}
@@ -172,7 +171,10 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 		Pieces:     pieces,
 		//Paginator: paginate.BySelector(".next", "href"),
 		Paginator: paginate.BySelector(paginator.Selector, paginator.Attribute),
-		Opts:      scrape.ScrapeOptions{MaxPages: paginator.MaxPages, Format: p.Format},
+		Opts: scrape.ScrapeOptions{
+			MaxPages:         paginator.MaxPages,
+			Format:           p.Format,
+			PaginatedResults: p.PaginatedResults},
 	}
 	scraper, err := scrape.New(config)
 	if err != nil {
@@ -186,20 +188,52 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	var buf bytes.Buffer
 	switch config.Opts.Format {
 	case "json":
-		json.NewEncoder(&buf).Encode(results)
-	case "csv":
-		includeHeader := true
-		w := csv.NewWriter(&buf)
-		for i, page := range results.Results {
-			if i != 0 {
-				includeHeader = false
-			}
-			err = encodeCSV(names, includeHeader, page, ",", w)
-			if err != nil {
-				logger.Println(err)
-			}
+		if config.Opts.PaginatedResults {
+			json.NewEncoder(&buf).Encode(results)
+		} else {
+			json.NewEncoder(&buf).Encode(results.AllBlocks())
 		}
-		w.Flush()
+	case "csv":
+
+		/*
+			includeHeader := true
+			w := csv.NewWriter(&buf)
+			for i, page := range results.Results {
+				if i != 0 {
+					includeHeader = false
+				}
+				err = encodeCSV(names, includeHeader, page, ",", w)
+				if err != nil {
+					logger.Println(err)
+				}
+			}
+			w.Flush()
+		*/
+		w := csv.NewWriter(&buf)
+		err = encodeCSV(names, true, results.AllBlocks(), ",", w)
+
+	case "xml":
+		mxj.XMLEscapeChars(true)
+		m, err := mxj.NewMapStruct(results.First())
+		if err != nil {
+			return nil, err
+		}
+		_, err = m.Xml()
+		if err != nil {
+			return nil, err
+		}
+		//logger.Println(string(res))
+		logger.Println(m)
+
+		//b, err := m.XmlIndent("", "  ", "Collections")
+		b, err := m.XmlIndent("", "  ", "Col")
+		if err != nil {
+			return nil, err
+		}
+		_, err = buf.Write(b)
+		if err != nil {
+			return nil, err
+		}
 	}
 	//	logger.Println(string(b))
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))

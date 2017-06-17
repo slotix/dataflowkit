@@ -34,9 +34,10 @@ type Payload struct {
 //Parser structure stores input format and collections CSS Selectors
 //easyjson:json
 type Parser struct {
-	Format     string    `json:"format"`
-	Payloads   []Payload `json:"collections"`
-	PayloadMD5 []byte    `json:"payloadMD5"`
+	Format           string    `json:"format"`
+	PaginatedResults bool      `json:"paginatedResults"`
+	Payloads         []Payload `json:"collections"`
+	PayloadMD5       []byte    `json:"payloadMD5"`
 }
 
 //easyjson:json
