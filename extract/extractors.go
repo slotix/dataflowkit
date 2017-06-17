@@ -302,7 +302,6 @@ func (e *Attr) fillParams(m map[string]interface{}) error {
 	return nil
 }
 
-
 var _ scrape.PieceExtractor = Attr{}
 
 // Count extracts the count of elements that are matched and returns it.
@@ -324,61 +323,68 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, error) {
-	var err error
-	/*
-		var e scrape.PieceExtractor
-		switch t {
-		case "text":
-			e = Text{}
-		case "attr":
-			e = Attr{}
-		case "regex":
-			e = Regex{}
-		}
-		if m != nil {
-			err := FillStruct(m, &e)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return e, nil
-	*/
+	//var err error
 
+	logger.Println(t)
+	var e scrape.PieceExtractor
 	switch t {
 	case "text":
-		txt := Text{}
-		if m != nil {
-			err = txt.fillParams(m)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return txt, nil
+		e = &Text{}
 	case "attr":
-		a := Attr{}
-		if m != nil {
-			err = a.fillParams(m)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return a, nil
+		e = &Attr{}
 	case "regex":
-		r := Regex{}
-		if m != nil {
-			err = r.fillParams(m)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return r, nil
+		//e = &Regex{}
+		r := &Regex{}
+		regExp := m["regexp"]
+		r.Regex = regexp.MustCompile(regExp.(string))
+		e = r
 	}
-	return nil, err
+	if m != nil {
+		err := FillStruct(m, e)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return e, nil
 
+	/*
+		switch t {
+		case "text":
+			txt := Text{}
+			if m != nil {
+				err = txt.fillParams(m)
+				if err != nil {
+					return nil, err
+				}
+			}
+			return txt, nil
+		case "attr":
+			a := Attr{}
+			if m != nil {
+				err = a.fillParams(m)
+				if err != nil {
+					return nil, err
+				}
+			}
+			return a, nil
+		case "regex":
+			r := Regex{}
+			if m != nil {
+				err = r.fillParams(m)
+				if err != nil {
+					return nil, err
+				}
+			}
+			return r, nil
+		}
+
+		return nil, err
+*/
 }
 
 func FillStruct(m map[string]interface{}, s interface{}) error {
 	for k, v := range m {
+		logger.Println(k,v)
 		err := SetField(s, k, v)
 		if err != nil {
 			return err
@@ -388,6 +394,7 @@ func FillStruct(m map[string]interface{}, s interface{}) error {
 }
 
 func SetField(obj interface{}, name string, value interface{}) error {
+//logger.Printf("%T, %t", obj, obj)
 	structValue := reflect.ValueOf(obj).Elem()
 	//structFieldValue := structValue.FieldByName(name)
 	structFieldValue := structValue.FieldByName(strings.Title(name))
