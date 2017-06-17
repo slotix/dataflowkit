@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	scrape "github.com/slotix/dataflowkit/scrape"
 	"golang.org/x/net/html"
 )
 
@@ -19,6 +18,18 @@ var logger *log.Logger
 
 func init() {
 	logger = log.New(os.Stdout, "extractor: ", log.Lshortfile)
+}
+
+// The PieceExtractor interface represents something that can extract data from
+// a selection.
+type PieceExtractor interface {
+	// Extract some data from the given Selection and return it.  The returned
+	// data should be encodable - i.e. passing it to json.Marshal should succeed.
+	// If the returned data is nil, then the output from this piece will not be
+	// included.
+	//
+	// If this function returns an error, then the scrape is aborted.
+	Extract(*goquery.Selection) (interface{}, error)
 }
 
 // Const is a PieceExtractor that returns a constant value.
@@ -32,7 +43,7 @@ func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 
-var _ scrape.PieceExtractor = Const{}
+var _ PieceExtractor = Const{}
 
 // Text is a PieceExtractor that returns the combined text contents of
 // the given selection.
@@ -59,7 +70,7 @@ func (e Text) FillParams(m map[string]interface{}) error {
 	return nil
 }
 */
-var _ scrape.PieceExtractor = Text{}
+var _ PieceExtractor = Text{}
 
 // MultipleText is a PieceExtractor that extracts the text from each element
 // in the given selection and returns the texts as an array.
@@ -86,7 +97,7 @@ func (e MultipleText) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 
-var _ scrape.PieceExtractor = MultipleText{}
+var _ PieceExtractor = MultipleText{}
 
 // Html extracts and returns the HTML from inside each element of the
 // given selection, as a string.
@@ -119,7 +130,7 @@ func (e Html) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 
-var _ scrape.PieceExtractor = Html{}
+var _ PieceExtractor = Html{}
 
 // OuterHtml extracts and returns the HTML of each element of the
 // given selection, as a string.
@@ -143,7 +154,7 @@ func (e OuterHtml) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 
-var _ scrape.PieceExtractor = OuterHtml{}
+var _ PieceExtractor = OuterHtml{}
 
 // Regex runs the given regex over the contents of each element in the
 // given selection, and, for each match, extracts the given subexpression.
@@ -256,7 +267,7 @@ func (e Regex) FillParams(m map[string]interface{}) error {
 	return nil
 }
 */
-var _ scrape.PieceExtractor = Regex{}
+var _ PieceExtractor = Regex{}
 
 // Attr extracts the value of a given HTML attribute from each element
 // in the selection, and returns them as a list.
@@ -310,7 +321,7 @@ func (e *Attr) fillParams(m map[string]interface{}) error {
 }
 */
 
-var _ scrape.PieceExtractor = Attr{}
+var _ PieceExtractor = Attr{}
 
 // Count extracts the count of elements that are matched and returns it.
 type Count struct {
@@ -331,7 +342,7 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 
-var _ scrape.PieceExtractor = Count{}
+var _ PieceExtractor = Count{}
 /*
 func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, error) {
 	//var err error

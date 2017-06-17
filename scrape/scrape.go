@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/splash"
 )
 
@@ -24,18 +25,6 @@ var (
 // The DividePageFunc type is used to extract a page's blocks during a scrape.
 // For more information, please see the documentation on the ScrapeConfig type.
 type DividePageFunc func(*goquery.Selection) []*goquery.Selection
-
-// The PieceExtractor interface represents something that can extract data from
-// a selection.
-type PieceExtractor interface {
-	// Extract some data from the given Selection and return it.  The returned
-	// data should be encodable - i.e. passing it to json.Marshal should succeed.
-	// If the returned data is nil, then the output from this piece will not be
-	// included.
-	//
-	// If this function returns an error, then the scrape is aborted.
-	Extract(*goquery.Selection) (interface{}, error)
-}
 
 // The Paginator interface should be implemented by things that can retrieve the
 // next page from the current one.
@@ -62,7 +51,7 @@ type Piece struct {
 
 	// Extractor contains the logic on how to extract some results from the
 	// selector that is provided to this Piece.
-	Extractor PieceExtractor
+	Extractor extract.PieceExtractor
 }
 
 // The main configuration for a scrape.  Pass this to the New() function.
@@ -306,7 +295,7 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 				if pieceResults == nil {
 					continue
 				}
-				
+
 				blockResults[piece.Name] = pieceResults
 			}
 			if len(blockResults) > 0 {
