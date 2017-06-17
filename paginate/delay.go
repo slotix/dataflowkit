@@ -4,17 +4,16 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/andrew-d/goscrape"
 )
 
 type withDelayPaginator struct {
 	delay time.Duration
-	p     scrape.Paginator
+	p     Paginator
 }
 
 // WithDelay returns a Paginator that will wait the given duration whenever the
 // next page is requested, and will then dispatch to the underling Paginator.
-func WithDelay(delay time.Duration, p scrape.Paginator) scrape.Paginator {
+func WithDelay(delay time.Duration, p Paginator) Paginator {
 	return &withDelayPaginator{
 		delay: delay,
 		p:     p,

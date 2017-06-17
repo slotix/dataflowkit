@@ -5,8 +5,21 @@ import (
 	"strconv"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/andrew-d/goscrape"
+	
 )
+
+// The Paginator interface should be implemented by things that can retrieve the
+// next page from the current one.
+type Paginator interface {
+	// NextPage controls the progress of the scrape.  It is called for each input
+	// page, starting with the origin URL, and is expected to return the URL of
+	// the next page to process.  Note that order matters - calling 'NextPage' on
+	// page 1 should return page 2, not page 3.  The function should return an
+	// empty string when there are no more pages to process.
+	NextPage(url string, document *goquery.Selection) (string, error)
+	// TODO(andrew-d): should this return a string, a url.URL, ???
+}
+
 
 // RelUrl is a helper function that aids in calculating the absolute URL from a
 // base URL and relative URL.
@@ -32,7 +45,7 @@ type bySelectorPaginator struct {
 // BySelector returns a Paginator that extracts the next page from a document by
 // querying a given CSS selector and extracting the given HTML attribute from the
 // resulting element.
-func BySelector(sel, attr string) scrape.Paginator {
+func BySelector(sel, attr string) Paginator {
 	return &bySelectorPaginator{
 		sel: sel, attr: attr,
 	}
@@ -55,7 +68,7 @@ type byQueryParamPaginator struct {
 // by incrementing a given query parameter.  Note that this will paginate
 // infinitely - you probably want to specify a maximum number of pages to
 // scrape by using the ScrapeWithOpts method.
-func ByQueryParam(param string) scrape.Paginator {
+func ByQueryParam(param string) Paginator {
 	return &byQueryParamPaginator{param}
 }
 
