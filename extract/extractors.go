@@ -31,6 +31,7 @@ func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
 	return e.Val, nil
 }
 
+
 var _ scrape.PieceExtractor = Const{}
 
 // Text is a PieceExtractor that returns the combined text contents of
@@ -49,15 +50,15 @@ func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
 	}
 	return sel.Text(), nil
 }
-
-func (e *Text) fillParams(m map[string]interface{}) error {
-	err := FillStruct(m, e)
+/*
+func (e Text) FillParams(m map[string]interface{}) error {
+	err := FillStruct(m, &e)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-
+*/
 var _ scrape.PieceExtractor = Text{}
 
 // MultipleText is a PieceExtractor that extracts the text from each element
@@ -83,6 +84,9 @@ func (e MultipleText) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	return results, nil
 }
+
+
+var _ scrape.PieceExtractor = MultipleText{}
 
 // Html extracts and returns the HTML from inside each element of the
 // given selection, as a string.
@@ -114,6 +118,7 @@ func (e Html) Extract(sel *goquery.Selection) (interface{}, error) {
 	return ret, nil
 }
 
+
 var _ scrape.PieceExtractor = Html{}
 
 // OuterHtml extracts and returns the HTML of each element of the
@@ -136,6 +141,7 @@ func (e OuterHtml) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	return output.String(), nil
 }
+
 
 var _ scrape.PieceExtractor = OuterHtml{}
 
@@ -238,17 +244,18 @@ func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	return results, nil
 }
-
-func (e *Regex) fillParams(m map[string]interface{}) error {
-	err := FillStruct(m, e)
+/*
+func (e Regex) FillParams(m map[string]interface{}) error {
+	err := FillStruct(m, &e)
 	if err != nil {
 		return err
 	}
 	regExp := m["regexp"]
 	e.Regex = regexp.MustCompile(regExp.(string))
+	logger.Println(e)
 	return nil
 }
-
+*/
 var _ scrape.PieceExtractor = Regex{}
 
 // Attr extracts the value of a given HTML attribute from each element
@@ -293,14 +300,15 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	return results, nil
 }
-
+/*
 func (e *Attr) fillParams(m map[string]interface{}) error {
-	err := FillStruct(m, e)
+	err := FillStruct(m, &e)
 	if err != nil {
 		return err
 	}
 	return nil
 }
+*/
 
 var _ scrape.PieceExtractor = Attr{}
 
@@ -322,6 +330,9 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 	return l, nil
 }
 
+
+var _ scrape.PieceExtractor = Count{}
+/*
 func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, error) {
 	//var err error
 
@@ -347,44 +358,13 @@ func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, erro
 	}
 	return e, nil
 
-	/*
-		switch t {
-		case "text":
-			txt := Text{}
-			if m != nil {
-				err = txt.fillParams(m)
-				if err != nil {
-					return nil, err
-				}
-			}
-			return txt, nil
-		case "attr":
-			a := Attr{}
-			if m != nil {
-				err = a.fillParams(m)
-				if err != nil {
-					return nil, err
-				}
-			}
-			return a, nil
-		case "regex":
-			r := Regex{}
-			if m != nil {
-				err = r.fillParams(m)
-				if err != nil {
-					return nil, err
-				}
-			}
-			return r, nil
-		}
-
-		return nil, err
-*/
 }
+*/
+
 
 func FillStruct(m map[string]interface{}, s interface{}) error {
 	for k, v := range m {
-		logger.Println(k,v)
+	//	logger.Println(k,v)
 		err := SetField(s, k, v)
 		if err != nil {
 			return err
@@ -394,7 +374,7 @@ func FillStruct(m map[string]interface{}, s interface{}) error {
 }
 
 func SetField(obj interface{}, name string, value interface{}) error {
-//logger.Printf("%T, %t", obj, obj)
+	logger.Printf("%T, %t", obj, obj)
 	structValue := reflect.ValueOf(obj).Elem()
 	//structFieldValue := structValue.FieldByName(name)
 	structFieldValue := structValue.FieldByName(strings.Title(name))
