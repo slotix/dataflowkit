@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"regexp"
 	"strings"
 
 	"fmt"
@@ -57,85 +58,109 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	selectors := []string{}
 	names := []string{}
 	for _, f := range pl.Fields {
-		var extractor scrape.PieceExtractor
+		//var extractor scrape.PieceExtractor
 		params := make(map[string]interface{})
 		if f.Extractor.Params != nil {
 			params = f.Extractor.Params.(map[string]interface{})
 		}
-		switch f.Extractor.Type {
+		switch eType := f.Extractor.Type; eType {
 		//For Link type by default Two pieces with different Text and Attr="href" extractors will be added for field selector.
 		case "link":
-			extractor, err = extract.FillParams("text", params)
-			if err != nil {
-				logger.Println(err)
+			t := &extract.Text{}
+			if params != nil {
+				err := extract.FillStruct(params, t)
+				if err != nil {
+					logger.Println(err)
+				}
 			}
 			fName := fmt.Sprintf("%s_text", f.Name)
 			pieces = append(pieces, scrape.Piece{
-				Name:      fName,
-				Selector:  f.Selector,
-				Extractor: extractor,
+				Name:     fName,
+				Selector: f.Selector,
+				Extractor: t,
 			})
 			names = append(names, fName)
 
-			params["Attr"] = "href"
-			extractor, err = extract.FillParams("attr", params)
-			if err != nil {
-				logger.Println(err)
+			a := &extract.Attr{Attr: "href"}
+			if params != nil {
+				err := extract.FillStruct(params, a)
+				if err != nil {
+					logger.Println(err)
+				}
 			}
-			fName = fmt.Sprintf("%s_link", f.Name)
+		    fName = fmt.Sprintf("%s_link", f.Name)
 			pieces = append(pieces, scrape.Piece{
-				Name:      fName,
-				Selector:  f.Selector,
-				Extractor: extractor,
+				Name:     fName,
+				Selector: f.Selector,
+				Extractor: a,
 			})
 			names = append(names, fName)
 			//Add selector just one time for link type
 			selectors = append(selectors, f.Selector)
-		
 		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
 		case "image":
-			params["Attr"] = "src"
-			extractor, err = extract.FillParams("attr", params)
-			if err != nil {
-				logger.Println(err)
+			a := &extract.Attr{Attr: "src"}
+			if params != nil {
+				err := extract.FillStruct(params, a)
+				if err != nil {
+					logger.Println(err)
+				}
 			}
 			fName := fmt.Sprintf("%s_src", f.Name)
 			pieces = append(pieces, scrape.Piece{
 				Name:      fName,
 				Selector:  f.Selector,
-				Extractor: extractor,
+				Extractor: a,
 			})
 			names = append(names, fName)
 
-			params["Attr"] = "alt"
-			extractor, err = extract.FillParams("attr", params)
-			if err != nil {
-				logger.Println(err)
+			a = &extract.Attr{Attr: "alt"}
+			if params != nil {
+				err := extract.FillStruct(params, a)
+				if err != nil {
+					logger.Println(err)
+				}
 			}
 			fName = fmt.Sprintf("%s_alt", f.Name)
 			pieces = append(pieces, scrape.Piece{
 				Name:      fName,
 				Selector:  f.Selector,
-				Extractor: extractor,
+				Extractor: a,
 			})
 			names = append(names, fName)
 			//Add selector just one time for link type
 			selectors = append(selectors, f.Selector)
+
 		default:
-			extractor, err = extract.FillParams(f.Extractor.Type, params)
-			if err != nil {
-				logger.Println(err)
+			var e scrape.PieceExtractor
+			switch eType {
+			case "text":
+				e = &extract.Text{}
+			case "attr":
+				e = &extract.Attr{}
+			case "regex":
+				r := &extract.Regex{}
+				regExp := params["regexp"]
+				r.Regex = regexp.MustCompile(regExp.(string))
+				e = r
+			}
+			//extractor, err := extract.FillParams(f.Extractor.Type, params)
+			//err := e.FillParams(params)
+			if params != nil {
+				err := extract.FillStruct(params, e)
+				if err != nil {
+					logger.Println(err)
+				}
 			}
 
 			pieces = append(pieces, scrape.Piece{
 				Name:      f.Name,
 				Selector:  f.Selector,
-				Extractor: extractor,
+				Extractor: e,
 			})
 
 			selectors = append(selectors, f.Selector)
 			names = append(names, f.Name)
-
 		}
 	}
 
@@ -180,7 +205,6 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
 }
-
 
 //encodeCSV writes data to w *csv.Writee.
 //header - headers for csv.
