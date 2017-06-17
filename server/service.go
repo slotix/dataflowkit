@@ -75,8 +75,8 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 			}
 			fName := fmt.Sprintf("%s_text", f.Name)
 			pieces = append(pieces, scrape.Piece{
-				Name:     fName,
-				Selector: f.Selector,
+				Name:      fName,
+				Selector:  f.Selector,
 				Extractor: t,
 			})
 			names = append(names, fName)
@@ -88,10 +88,10 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 					logger.Println(err)
 				}
 			}
-		    fName = fmt.Sprintf("%s_link", f.Name)
+			fName = fmt.Sprintf("%s_link", f.Name)
 			pieces = append(pieces, scrape.Piece{
-				Name:     fName,
-				Selector: f.Selector,
+				Name:      fName,
+				Selector:  f.Selector,
 				Extractor: a,
 			})
 			names = append(names, fName)
@@ -132,7 +132,7 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 			selectors = append(selectors, f.Selector)
 
 		default:
-			var e scrape.PieceExtractor
+			var e extract.PieceExtractor
 			switch eType {
 			case "text":
 				e = &extract.Text{}
