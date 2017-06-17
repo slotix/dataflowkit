@@ -385,7 +385,7 @@ func FillStruct(m map[string]interface{}, s interface{}) error {
 }
 
 func SetField(obj interface{}, name string, value interface{}) error {
-	logger.Printf("%T, %t", obj, obj)
+	//logger.Printf("%T, %t", obj, obj)
 	structValue := reflect.ValueOf(obj).Elem()
 	//structFieldValue := structValue.FieldByName(name)
 	structFieldValue := structValue.FieldByName(strings.Title(name))
