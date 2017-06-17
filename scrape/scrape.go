@@ -9,6 +9,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/slotix/dataflowkit/extract"
+	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/splash"
 )
 
@@ -25,18 +26,6 @@ var (
 // The DividePageFunc type is used to extract a page's blocks during a scrape.
 // For more information, please see the documentation on the ScrapeConfig type.
 type DividePageFunc func(*goquery.Selection) []*goquery.Selection
-
-// The Paginator interface should be implemented by things that can retrieve the
-// next page from the current one.
-type Paginator interface {
-	// NextPage controls the progress of the scrape.  It is called for each input
-	// page, starting with the origin URL, and is expected to return the URL of
-	// the next page to process.  Note that order matters - calling 'NextPage' on
-	// page 1 should return page 2, not page 3.  The function should return an
-	// empty string when there are no more pages to process.
-	NextPage(url string, document *goquery.Selection) (string, error)
-	// TODO(andrew-d): should this return a string, a url.URL, ???
-}
 
 // A Piece represents a given chunk of data that is to be extracted from every
 // block in each page of a scrape.
@@ -65,7 +54,7 @@ type ScrapeConfig struct {
 	//
 	// If Paginator is nil, then no pagination is performed and it is assumed that
 	// the initial URL is the only page.
-	Paginator Paginator
+	Paginator paginate.Paginator
 
 	// DividePage splits a page into individual 'blocks'.  When scraping, we treat
 	// each page as if it contains some number of 'blocks', each of which can be
