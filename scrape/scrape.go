@@ -76,6 +76,9 @@ type ScrapeConfig struct {
 	// is required, for example.
 	Pieces []Piece
 
+	//CSVHeader store column names for CSV data. They are generated after payload fields parsing according their types 
+	CSVHeader []string
+
 	Opts ScrapeOptions
 }
 
@@ -103,6 +106,7 @@ type ScrapeResults struct {
 	// is for each page, the second-level array is for each block in a page, and
 	// the final map[string]interface{} is the mapping of Piece.Name to results.
 	Results [][]map[string]interface{}
+	Header []string
 }
 
 // First returns the first set of results - i.e. the results from the first
