@@ -9,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/slotix/dataflowkit/cache"
-	"github.com/slotix/dataflowkit/parser"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 )
@@ -80,7 +79,7 @@ func (mw cachemw) ParseData(payload []byte) (output io.ReadCloser, err error) {
 	redisURL := viper.GetString("redis")
 	redisPassword := ""
 	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)
-	p, err := parser.NewParser(payload)
+	p, err := NewPayload(payload)
 	if err != nil {
 		return nil, err
 	}

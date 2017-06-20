@@ -13,8 +13,8 @@ import (
 
 	"github.com/clbanning/mxj"
 	"github.com/slotix/dataflowkit/extract"
+	"github.com/slotix/dataflowkit/helpers"
 	"github.com/slotix/dataflowkit/paginate"
-	"github.com/slotix/dataflowkit/parser"
 	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
 )
@@ -45,8 +45,52 @@ func (parseService) Fetch(req splash.Request) (interface{}, error) {
 	return res, nil
 }
 
-func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
-	p, err := parser.NewParser(payload)
+type Extractor struct {
+	Type   string      `json:"type"`
+	Params interface{} `json:"params"`
+}
+
+type field struct {
+	Name      string    `json:"name" validate:"required"`
+	Selector  string    `json:"selector" validate:"required"`
+	Count     int       `json:"count"`
+	Details   Payload   `json:"-" validate:"-"`
+	Extractor Extractor `json:"extractor"`
+}
+
+type paginator struct {
+	Selector  string `json:"selector"`
+	Attribute string `json:"attr"`
+	MaxPages  int    `json:"maxPages"`
+}
+
+type Payload struct {
+	Name             string    `json:"name" xml:"name" validate:"required"`
+	URL              string    `json:"url" xml:"url" validate:"required"`
+	Fields           []field   `json:"fields" validate:"gt=0"` //number of fields
+	Paginator        paginator `json:"paginator"`
+	PayloadMD5       []byte    `json:"payloadMD5"`
+	Format           string    `json:"format"`
+	PaginatedResults bool      `json:"paginatedResults"`
+}
+
+//NewParser initializes new Parser struct
+func NewPayload(payload []byte) (Payload, error) {
+	var p Payload
+	err := json.Unmarshal(payload, &p)
+	//err := p.UnmarshalJSON(payload)
+	if err != nil {
+		return p, err
+	}
+	if p.Format == "" {
+		p.Format = "json"
+	}
+	p.PayloadMD5 = helpers.GenerateMD5(payload)
+	return p, nil
+}
+
+func (p Payload) payloadToScrapeConfig() (config *scrape.ScrapeConfig, err error) {
+
 	if err != nil {
 		return nil, err
 	}
@@ -55,10 +99,10 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 		logger.Println(err)
 	}
 	pieces := []scrape.Piece{}
-	pl := p.Payloads[0]
+	//pl := p.Payloads[0]
 	selectors := []string{}
 	names := []string{}
-	for _, f := range pl.Fields {
+	for _, f := range p.Fields {
 		//var extractor scrape.PieceExtractor
 		params := make(map[string]interface{})
 		if f.Extractor.Params != nil {
@@ -163,24 +207,37 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 		}
 	}
 
-	paginator := pl.Paginator
-	config := &scrape.ScrapeConfig{
+	paginator := p.Paginator
+	config = &scrape.ScrapeConfig{
 		Fetcher: fetcher,
 		//DividePage: scrape.DividePageBySelector(".p"),
 		DividePage: scrape.DividePageByIntersection(selectors),
 		Pieces:     pieces,
 		//Paginator: paginate.BySelector(".next", "href"),
+		CSVHeader: names,
 		Paginator: paginate.BySelector(paginator.Selector, paginator.Attribute),
 		Opts: scrape.ScrapeOptions{
 			MaxPages:         paginator.MaxPages,
 			Format:           p.Format,
 			PaginatedResults: p.PaginatedResults},
 	}
+	return
+}
+
+func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
+	p, err := NewPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+	config, err := p.payloadToScrapeConfig()
+	if err != nil {
+		return nil, err
+	}
 	scraper, err := scrape.New(config)
 	if err != nil {
 		return nil, err
 	}
-	req := splash.Request{URL: pl.URL}
+	req := splash.Request{URL: p.URL}
 	results, err := scraper.ScrapeWithOpts(req, config.Opts)
 	if err != nil {
 		return nil, err
@@ -210,7 +267,7 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 			w.Flush()
 		*/
 		w := csv.NewWriter(&buf)
-		err = encodeCSV(names, true, results.AllBlocks(), ",", w)
+		err = encodeCSV(config.CSVHeader, true, results.AllBlocks(), ",", w)
 		w.Flush()
 	/*
 		case "xmlviajson":
@@ -228,6 +285,11 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 			}
 	*/
 	case "xml":
+		err = encodeXML(results.AllBlocks(), &buf)
+		if err != nil{
+			return nil, err
+		}
+		/*
 		mxj.XMLEscapeChars(true)
 		//write header to xml
 		buf.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>`))
@@ -241,6 +303,7 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 			}
 		}
 		buf.Write([]byte("</doc>"))
+		*/
 	}
 
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
@@ -278,6 +341,23 @@ func encodeCSV(header []string, includeHeader bool, rows []map[string]interface{
 			return err
 		}
 	}
+	return nil
+}
+
+func encodeXML(blocks []map[string]interface{}, buf *bytes.Buffer) error {
+	mxj.XMLEscapeChars(true)
+	//write header to xml
+	buf.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>`))
+	buf.Write([]byte("<doc>"))
+	for _, piece := range blocks {
+		m := mxj.Map(piece)
+		//err := m.XmlIndentWriter(&buf, "", "  ", "object")
+		err := m.XmlWriter(buf, "object")
+		if err != nil {
+			return err
+		}
+	}
+	buf.Write([]byte("</doc>"))
 	return nil
 }
 
