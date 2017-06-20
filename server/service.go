@@ -228,19 +228,18 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 
 	case "xml":
 		mxj.XMLEscapeChars(true)
+		//write header to xml
+		buf.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>`))
+		buf.Write([]byte("<doc>"))
 		for _, piece := range results.AllBlocks() {
 			m := mxj.Map(piece)
-			for k, v := range m{
-				logger.Printf("%T-%T\n", k, v)
-				logger.Println(m)
-			}
-			err := m.XmlIndentWriter(&buf, "", "  ", "object")
-			//err := m.XmlWriter(&buf)
+			//err := m.XmlIndentWriter(&buf, "", "  ", "object")
+			err := m.XmlWriter(&buf, "object")
 			if err != nil {
 				logger.Println(err)
 			}
 		}
-	
+		buf.Write([]byte("</doc>"))	
 	}
 
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
