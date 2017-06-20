@@ -11,7 +11,7 @@ import (
 
 	"fmt"
 
-	"github.com/slotix/mxj"
+	"github.com/clbanning/mxj"
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/parser"
@@ -212,20 +212,21 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 		w := csv.NewWriter(&buf)
 		err = encodeCSV(names, true, results.AllBlocks(), ",", w)
 		w.Flush()
-	case "xmlviajson":
-		var jbuf bytes.Buffer
-		if config.Opts.PaginatedResults {
-			json.NewEncoder(&jbuf).Encode(results)
-		} else {
-			json.NewEncoder(&jbuf).Encode(results.AllBlocks())
-		}
-		//var buf bytes.Buffer
-		m, err := mxj.NewMapJson(jbuf.Bytes())
-		err = m.XmlIndentWriter(&buf, "", "  ")
-		if err != nil {
-			logger.Println(err)
-		}
-
+	/*
+		case "xmlviajson":
+			var jbuf bytes.Buffer
+			if config.Opts.PaginatedResults {
+				json.NewEncoder(&jbuf).Encode(results)
+			} else {
+				json.NewEncoder(&jbuf).Encode(results.AllBlocks())
+			}
+			//var buf bytes.Buffer
+			m, err := mxj.NewMapJson(jbuf.Bytes())
+			err = m.XmlIndentWriter(&buf, "", "  ")
+			if err != nil {
+				logger.Println(err)
+			}
+	*/
 	case "xml":
 		mxj.XMLEscapeChars(true)
 		//write header to xml
@@ -239,14 +240,14 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 				logger.Println(err)
 			}
 		}
-		buf.Write([]byte("</doc>"))	
+		buf.Write([]byte("</doc>"))
 	}
 
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
 }
 
-//encodeCSV writes data to w *csv.Writee.
+//encodeCSV writes data to w *csv.Writer.
 //header - headers for csv.
 //includeHeader include headers or not.
 //rows - csv records to be written.
