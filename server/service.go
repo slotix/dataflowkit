@@ -11,7 +11,7 @@ import (
 
 	"fmt"
 
-	"github.com/Diggernaut/mxj"
+	"github.com/slotix/mxj"
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/parser"
@@ -211,31 +211,38 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 		*/
 		w := csv.NewWriter(&buf)
 		err = encodeCSV(names, true, results.AllBlocks(), ",", w)
+		w.Flush()
+	case "xmlviajson":
+		var jbuf bytes.Buffer
+		if config.Opts.PaginatedResults {
+			json.NewEncoder(&jbuf).Encode(results)
+		} else {
+			json.NewEncoder(&jbuf).Encode(results.AllBlocks())
+		}
+		//var buf bytes.Buffer
+		m, err := mxj.NewMapJson(jbuf.Bytes())
+		err = m.XmlIndentWriter(&buf, "", "  ")
+		if err != nil {
+			logger.Println(err)
+		}
 
 	case "xml":
 		mxj.XMLEscapeChars(true)
-		m, err := mxj.NewMapStruct(results.First())
-		if err != nil {
-			return nil, err
+		for _, piece := range results.AllBlocks() {
+			m := mxj.Map(piece)
+			for k, v := range m{
+				logger.Printf("%T-%T\n", k, v)
+				logger.Println(m)
+			}
+			err := m.XmlIndentWriter(&buf, "", "  ", "object")
+			//err := m.XmlWriter(&buf)
+			if err != nil {
+				logger.Println(err)
+			}
 		}
-		_, err = m.Xml()
-		if err != nil {
-			return nil, err
-		}
-		//logger.Println(string(res))
-		logger.Println(m)
-
-		//b, err := m.XmlIndent("", "  ", "Collections")
-		b, err := m.XmlIndent("", "  ", "Col")
-		if err != nil {
-			return nil, err
-		}
-		_, err = buf.Write(b)
-		if err != nil {
-			return nil, err
-		}
+	
 	}
-	//	logger.Println(string(b))
+
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
 }
