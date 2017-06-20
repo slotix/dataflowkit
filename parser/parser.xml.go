@@ -6,10 +6,10 @@ package parser
 import (
 	"bufio"
 	"os"
-
-	"github.com/Diggernaut/mxj"
+	"github.com/slotix/mxj"
 )
 
+//"github.com/Diggernaut/mxj"
 //original lib
 //import "github.com/clbanning/mxj"
 

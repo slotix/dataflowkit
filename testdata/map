@@ -1,0 +1,21 @@
+map[Title_text: Sample Title  
+    Title_link:https://example.com/item 
+    Image_src:[https://example.com/150x150.jpg https://example.com/2-150x150.jpg] Image_alt:Sample Image]
+
+
+
+<object>
+  <Image_alt>Sample Image</Image_alt>
+  <string>https://example.com/150x150.jpg</string>
+  <string>https://example.com/2-150x150.jpg</string></Image_src>
+  <Title_link>https://example.com/item</Title_link>
+  <Title_text>Sample Title</Title_text>
+</object>
+
+<object>
+  <Image_alt>Sample Image</Image_alt>
+  <Image_src>https://example.com/150x150.jpg</Image_src>
+  <Image_src>https://example.com/2-150x150.jpg</Image_src>
+  <Title_link>https://example.com/item</Title_link>
+  <Title_text>Sample Title</Title_text>
+</object>

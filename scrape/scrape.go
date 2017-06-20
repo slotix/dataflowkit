@@ -312,7 +312,8 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 			if sResponse, ok := r.(*splash.Response); ok {
 				setCookie, err := sResponse.SetCookieToRequest()
 				if err != nil {
-					return nil, err
+					//return nil, err
+					logger.Println(err)
 				}
 				req = splash.Request{URL: url, Cookies: setCookie}
 			}
