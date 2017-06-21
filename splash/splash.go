@@ -188,7 +188,7 @@ func GetResponse(splashURL string) (*Response, error) {
 		if len(rv.OutReasons) == 0 {
 			sResponse.Cacheable = true
 		}
-		logger.Println(sResponse.URL)
+		//logger.Println(sResponse.URL)
 		return &sResponse, err
 	}
 	return nil, fmt.Errorf(string(res))

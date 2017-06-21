@@ -55,6 +55,12 @@ func Init(port string) {
 	svc = robotsTxtMiddleware()(svc)
 	svc = instrumentingMiddleware(requestCount, requestLatency, countResult)(svc)
 
+	fetchSplashResponseHandler := httptransport.NewServer(
+		makeFetchEndpoint(svc),
+		decodeFetchRequest,
+		encodeSplashResponse,
+	)
+
 	fetchHandler := httptransport.NewServer(
 		makeFetchEndpoint(svc),
 		decodeFetchRequest,
@@ -66,7 +72,7 @@ func Init(port string) {
 		decodeParseRequest,
 		encodeParseResponse,
 	)
-
+	
 	/* 
 		checkServicesHandler := httptransport.NewServer(
 			makeCheckServicesEndpoint(svc),
@@ -77,6 +83,7 @@ func Init(port string) {
 
 	router := httprouter.New()
 	router.Handler("POST", "/app/fetch", fetchHandler)
+	router.Handler("POST", "/app/response", fetchSplashResponseHandler)
 	router.Handler("POST", "/app/parse", parseDataHandler)
 	//router.Handler("POST", "/app/chkservices", checkServicesHandler)
 	router.Handler("GET", "/metrics", promhttp.Handler())

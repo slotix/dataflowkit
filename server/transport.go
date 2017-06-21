@@ -12,20 +12,25 @@ import (
 	"github.com/slotix/dataflowkit/splash"
 )
 
+
+func makeSplashResponseEndpoint(svc ParseService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(splash.Request)
+		v, err := svc.Fetch(req)
+		if err != nil {
+			return nil, err
+		}
+		return v, nil
+	}
+}
+
 func makeFetchEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(splash.Request)
-		//	logger.Println(req)
 		v, err := svc.Fetch(req)
-		//logger.Panic(err)
-		//v, err := svc.GetHTML(request.(string))
 		if err != nil {
-			//	return getHTMLResponse{v, err.Error()}, nil
-			//			return errResponse{err.Error()}, nil
 			return nil, err
-			//logger.Println(err)
 		}
-		//return getHTMLResponse{v, ""}, nil
 		return v, nil
 	}
 }
@@ -87,6 +92,26 @@ func encodeFetchResponse(_ context.Context, w http.ResponseWriter, response inte
 		return err
 	}
 	_, err = w.Write(data)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func encodeSplashResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	sResponse := response.(*splash.Response)
+	//content, err := sResponse.GetContent()
+	//if err != nil {
+	//	return err
+	//}
+	b, err := json.Marshal(sResponse)
+	//data, err := ioutil.ReadAll(b)
+
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(b)
 
 	if err != nil {
 		return err
