@@ -76,7 +76,7 @@ type ScrapeConfig struct {
 	// is required, for example.
 	Pieces []Piece
 
-	//CSVHeader store column names for CSV data. They are generated after payload fields parsing according their types 
+	//CSVHeader store column names for CSV data. They are generated after payload fields parsing according their types
 	CSVHeader []string
 
 	Opts ScrapeOptions
@@ -106,7 +106,7 @@ type ScrapeResults struct {
 	// is for each page, the second-level array is for each block in a page, and
 	// the final map[string]interface{} is the mapping of Piece.Name to results.
 	Results [][]map[string]interface{}
-	Header []string
+	Header  []string
 }
 
 // First returns the first set of results - i.e. the results from the first
@@ -136,7 +136,7 @@ func (r *ScrapeResults) AllBlocks() []map[string]interface{} {
 }
 
 type Scraper struct {
-	config *ScrapeConfig
+	Config *ScrapeConfig
 }
 
 // Create a new scraper with the provided configuration.
@@ -183,15 +183,15 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 
 	// All set!
 	ret := &Scraper{
-		config: config,
+		Config: config,
 	}
 	return ret, nil
 }
 
-// Scrape a given URL with default options.  See 'ScrapeWithOpts' for more
+// ScrapeWithDefaultOpts Scrape a given URL with default options.  See 'Scrape' for more
 // information.
-func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
-	return s.ScrapeWithOpts(req, DefaultOptions)
+func (s *Scraper) ScrapeWithDefaultOpts(req interface{}) (*ScrapeResults, error) {
+	return s.Scrape(req, DefaultOptions)
 }
 
 // Actually start scraping at the given URL.
@@ -201,7 +201,7 @@ func (s *Scraper) Scrape(req interface{}) (*ScrapeResults, error) {
 // strange behaviour - e.g. overwriting cookies in the underlying http.Client.
 // Please be careful when running multiple scrapes at a time, unless you know
 // that it's safe.
-func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeResults, error) {
+func (s *Scraper) Scrape(req interface{}, opts ScrapeOptions) (*ScrapeResults, error) {
 
 	var url string
 	switch v := req.(type) {
@@ -219,7 +219,7 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 	}
 
 	// Prepare the fetcher.
-	err := s.config.Fetcher.Prepare()
+	err := s.Config.Fetcher.Prepare()
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +236,7 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 			break
 		}
 
-		r, err := s.config.Fetcher.Fetch(req)
+		r, err := s.Config.Fetcher.Fetch(req)
 
 		if err != nil {
 			return nil, err
@@ -265,11 +265,11 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 		results := []map[string]interface{}{}
 
 		// Divide this page into blocks
-		for _, block := range s.config.DividePage(doc.Selection) {
+		for _, block := range s.Config.DividePage(doc.Selection) {
 			blockResults := map[string]interface{}{}
 
 			// Process each piece of this block
-			for _, piece := range s.config.Pieces {
+			for _, piece := range s.Config.Pieces {
 				//logger.Println(piece)
 				sel := block
 				if piece.Selector != "." {
@@ -303,7 +303,7 @@ func (s *Scraper) ScrapeWithOpts(req interface{}, opts ScrapeOptions) (*ScrapeRe
 		numPages++
 
 		// Get the next page.
-		url, err = s.config.Paginator.NextPage(url, doc.Selection)
+		url, err = s.Config.Paginator.NextPage(url, doc.Selection)
 		if err != nil {
 			return nil, err
 		}

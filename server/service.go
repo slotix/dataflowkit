@@ -4,13 +4,16 @@ import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"regexp"
 	"strings"
 
 	"fmt"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/clbanning/mxj"
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/helpers"
@@ -34,7 +37,6 @@ type parseService struct {
 func (parseService) Fetch(req splash.Request) (interface{}, error) {
 	//logger.Println(req)
 	fetcher, err := scrape.NewSplashFetcher()
-
 	if err != nil {
 		logger.Println(err)
 	}
@@ -65,13 +67,13 @@ type paginator struct {
 }
 
 type Payload struct {
-	Name             string    `json:"name" xml:"name" validate:"required"`
-	URL              string    `json:"url" xml:"url" validate:"required"`
-	Fields           []field   `json:"fields" validate:"gt=0"` //number of fields
-	Paginator        paginator `json:"paginator"`
-	PayloadMD5       []byte    `json:"payloadMD5"`
-	Format           string    `json:"format"`
-	PaginatedResults bool      `json:"paginatedResults"`
+	Name             string         `json:"name" validate:"required"`
+	Request          splash.Request `json:"request"`
+	Fields           []field        `json:"fields" validate:"gt=0"` //number of fields
+	Paginator        paginator      `json:"paginator"`
+	PayloadMD5       []byte         `json:"payloadMD5"`
+	Format           string         `json:"format"`
+	PaginatedResults bool           `json:"paginatedResults"`
 }
 
 //NewParser initializes new Parser struct
@@ -224,7 +226,7 @@ func (p Payload) payloadToScrapeConfig() (config *scrape.ScrapeConfig, err error
 	return
 }
 
-func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
+func (ps parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	p, err := NewPayload(payload)
 	if err != nil {
 		return nil, err
@@ -237,8 +239,9 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	req := splash.Request{URL: p.URL}
-	results, err := scraper.ScrapeWithOpts(req, config.Opts)
+	req := splash.Request{URL: p.Request.URL}
+	//results, err := scraper.Scrape(req, config.Opts)
+	results, err := ps.scrape(req, scraper) //, config.Opts)
 	if err != nil {
 		return nil, err
 	}
@@ -286,28 +289,129 @@ func (parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	*/
 	case "xml":
 		err = encodeXML(results.AllBlocks(), &buf)
-		if err != nil{
+		if err != nil {
 			return nil, err
 		}
-		/*
-		mxj.XMLEscapeChars(true)
-		//write header to xml
-		buf.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>`))
-		buf.Write([]byte("<doc>"))
-		for _, piece := range results.AllBlocks() {
-			m := mxj.Map(piece)
-			//err := m.XmlIndentWriter(&buf, "", "  ", "object")
-			err := m.XmlWriter(&buf, "object")
-			if err != nil {
-				logger.Println(err)
-			}
-		}
-		buf.Write([]byte("</doc>"))
-		*/
 	}
 
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
+}
+
+func (ps parseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.ScrapeResults, error) {
+	url := req.URL
+	if len(url) == 0 {
+		return nil, errors.New("no URL provided")
+	}
+
+	res := &scrape.ScrapeResults{
+		URLs:    []string{},
+		Results: [][]map[string]interface{}{},
+	}
+
+	var numPages int
+	for {
+		// Repeat until we don't have any more URLs, or until we hit our page limit.
+		if len(url) == 0 || (s.Config.Opts.MaxPages > 0 && numPages >= s.Config.Opts.MaxPages) {
+			break
+		}
+		//fetch content
+		b, err := json.Marshal(req)
+		if err != nil {
+			return nil, err
+		}
+
+		reader := bytes.NewReader(b)
+		request, err := http.NewRequest("POST", "http://127.0.0.1:8000/app/response", reader)
+		request.Header.Set("Content-Type", "application/json")
+		client := &http.Client{}
+		r, err := client.Do(request)
+		if r != nil {
+			defer r.Body.Close()
+		}
+		if err != nil {
+			panic(err)
+		}
+		resp, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return nil, err
+		}
+		var sResponse splash.Response
+		if err := json.Unmarshal(resp, &sResponse); err != nil {
+			logger.Println("Json Unmarshall error", err)
+		}
+		content, err := sResponse.GetContent()
+		if err != nil {
+			return nil, err
+		}
+		// Create a goquery document.
+		//doc, err := goquery.NewDocumentFromReader(resp)
+		doc, err := goquery.NewDocumentFromReader(content)
+		//doc, err := goquery.NewDocumentFromResponse(r)
+		//resp.Close()
+		if err != nil {
+			return nil, err
+		}
+		res.URLs = append(res.URLs, url)
+		results := []map[string]interface{}{}
+
+		// Divide this page into blocks
+		for _, block := range s.Config.DividePage(doc.Selection) {
+			blockResults := map[string]interface{}{}
+
+			// Process each piece of this block
+			for _, piece := range s.Config.Pieces {
+				//logger.Println(piece)
+				sel := block
+				if piece.Selector != "." {
+					sel = sel.Find(piece.Selector)
+				}
+
+				pieceResults, err := piece.Extractor.Extract(sel)
+				//logger.Println(attrOrDataValue(sel))
+				if err != nil {
+					return nil, err
+				}
+
+				// A nil response from an extractor means that we don't even include it in
+				// the results.
+				if pieceResults == nil {
+					continue
+				}
+
+				blockResults[piece.Name] = pieceResults
+			}
+			if len(blockResults) > 0 {
+				// Append the results from this block.
+				results = append(results, blockResults)
+			}
+		}
+
+		// Append the results from this page.
+		res.Results = append(res.Results, results)
+
+		numPages++
+
+		// Get the next page.
+		url, err = s.Config.Paginator.NextPage(url, doc.Selection)
+		if err != nil {
+			return nil, err
+		}
+
+		//every time when getting a response the next request will be filled with updated cookie information
+
+		//if sResponse, ok := rr.(*splash.Response); ok {
+		setCookie, err := sResponse.SetCookieToRequest()
+		if err != nil {
+			//return nil, err
+			logger.Println(err)
+		}
+		req = splash.Request{URL: url, Cookies: setCookie}
+		//}
+	}
+
+	// All good!
+	return res, nil
 }
 
 //encodeCSV writes data to w *csv.Writer.
@@ -344,6 +448,7 @@ func encodeCSV(header []string, includeHeader bool, rows []map[string]interface{
 	return nil
 }
 
+//encodeXML writes data blocks to XML.
 func encodeXML(blocks []map[string]interface{}, buf *bytes.Buffer) error {
 	mxj.XMLEscapeChars(true)
 	//write header to xml
@@ -361,38 +466,6 @@ func encodeXML(blocks []map[string]interface{}, buf *bytes.Buffer) error {
 	return nil
 }
 
-/*
-func (parseService) GetResponse(req splash.Request) (*splash.Response, error) {
-	splashURL, err := splash.NewSplashConn(req)
-	response, err := splash.GetResponse(splashURL)
-	return response, err
-}
-*/
-
-/*
-func (parseService) Fetch(req splash.Request) (io.ReadCloser, error) {
-	logger.Println(req)
-	splashURL, err := splash.NewSplashConn(req)
-	content, err := splash.Fetch(splashURL)
-	if err != nil {
-		return nil, err
-	}
-	return content, nil
-}
-
-func (parseService) ParseData_old(payload []byte) (io.ReadCloser, error) {
-	p, err := parser.NewParser(payload)
-	if err != nil {
-		return nil, err
-	}
-	res, err := p.MarshalData()
-	if err != nil {
-		logger.Println(res, err)
-		return nil, err
-	}
-	return res, nil
-}
-*/
 //func (parseService) CheckServices() (status map[string]string) {
 //	return CheckServices() //, allAlive
 //}
