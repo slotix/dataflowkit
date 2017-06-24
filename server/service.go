@@ -13,6 +13,8 @@ import (
 
 	"fmt"
 
+	"time"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/clbanning/mxj"
 	"github.com/slotix/dataflowkit/extract"
@@ -219,9 +221,12 @@ func (p Payload) payloadToScrapeConfig() (config *scrape.ScrapeConfig, err error
 		CSVHeader: names,
 		Paginator: paginate.BySelector(paginator.Selector, paginator.Attribute),
 		Opts: scrape.ScrapeOptions{
-			MaxPages:         paginator.MaxPages,
-			Format:           p.Format,
-			PaginatedResults: p.PaginatedResults},
+			MaxPages:            paginator.MaxPages,
+			Format:              p.Format,
+			PaginatedResults:    p.PaginatedResults,
+			FetchDelay:          500 * time.Millisecond,
+			RandomizeFetchDelay: true,
+		},
 	}
 	return
 }
@@ -239,6 +244,7 @@ func (ps parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	req := splash.Request{URL: p.Request.URL}
 	//results, err := scraper.Scrape(req, config.Opts)
 	results, err := ps.scrape(req, scraper) //, config.Opts)
@@ -308,7 +314,6 @@ func (ps parseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.Sc
 		URLs:    []string{},
 		Results: [][]map[string]interface{}{},
 	}
-
 	var numPages int
 	for {
 		// Repeat until we don't have any more URLs, or until we hit our page limit.
@@ -407,9 +412,17 @@ func (ps parseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.Sc
 			logger.Println(err)
 		}
 		req = splash.Request{URL: url, Cookies: setCookie}
-		//}
-	}
 
+		if s.Config.Opts.RandomizeFetchDelay {
+			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
+			rand := scrape.Random(500, 1500)
+			delay := s.Config.Opts.FetchDelay * time.Duration(rand) / 1000
+			time.Sleep(delay)
+		} else {
+			time.Sleep(s.Config.Opts.FetchDelay)
+		}
+
+	}
 	// All good!
 	return res, nil
 }

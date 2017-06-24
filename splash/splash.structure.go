@@ -23,11 +23,11 @@ type Request struct {
 	Func    string `json:"func,omitempty"`
 	//SplashWait - time in seconds to wait until js scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
 	SplashWait float64 `json:"wait,omitempty"`
-	//CrawlDelay - time between page requests on the same domain. Robotstxt middleware processes robots.txt files and returns  that information.
-	CrawlDelay time.Duration
+	//CrawlDelay - time between consecutive requests to the same domain. Robotstxt middleware processes robots.txt files and returns  that information.
+	CrawlDelay          time.Duration
+	//
+	//RandomizeCrawlDelay bool
 }
-
-
 
 //Cookie - Custom Cookie struct is used to avoid problems whith unmarshalling data with invalid Expires field which has time.Time type for original http.Cookie struct.
 //For some domains like http://yahoo.com it is easier to unmarshal Expires as string

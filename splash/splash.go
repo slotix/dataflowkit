@@ -188,7 +188,6 @@ func GetResponse(splashURL string) (*Response, error) {
 		if len(rv.OutReasons) == 0 {
 			sResponse.Cacheable = true
 		}
-		//logger.Println(sResponse.URL)
 		return &sResponse, err
 	}
 	return nil, fmt.Errorf(string(res))
@@ -201,6 +200,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 	}
 	if isRobotsTxt(r.Request.URL) {
 		decoded, err := base64.StdEncoding.DecodeString(r.Response.Content.Text)
+		//logger.Println(string(decoded))
 		if err != nil {
 			logger.Println("decode error:", err)
 			//return nil, fmt.Errorf(string(res))
@@ -252,7 +252,6 @@ func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
 		ReqDirectives: reqDir,
 		ReqHeaders:    reqHeader,
 		ReqMethod:     r.Request.Method,
-
 		NowUTC: time.Now().UTC(),
 	}
 
@@ -302,22 +301,7 @@ func isRobotsTxt(url string) bool {
 	return false
 }
 
-/*
-func (h Header) UnmarshalJSON(data []byte) error {
-	var header map[string]string
-	err := json.Unmarshal(data, &header)
-	if err != nil {
-		return err
-	}
-	logger.Println(header)
-	for key, value := range header {
-		h.Name = key
-		h.Value = value
-	}
-	logger.Println(h.Name, h.Value)
-	return nil
-}
-*/
+
 type MyTime struct {
 	time.Time
 }
@@ -349,34 +333,76 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 	type Alias Response
 	aux := &struct {
 		Headers interface{} `json:"headers"`
-		//	Cookies []Cookie    `json:"cookies"`
-		//Cookies interface{} `json:"cookies"`
 		*Alias
 	}{
 		Alias: (*Alias)(r),
 	}
-	//logger.Println(data)
 	if err := json.Unmarshal(data, &aux); err != nil {
 		logger.Println(err)
 		return err
 	}
-	//if aux.Cookies != nil {
-	//	for _, c := range aux.Cookies {
-	//		logger.Printf("%T", c.Expires)
-	//	}
-	//}
 
-	if r.Request != nil || r.Response != nil {
-		//r.Request.Headers = r.Request.castHeaders()
-		//r.Response.Headers = castHeaders(r.Response.Headers)
+	if r.Request != nil {
 		r.Request.Headers = castHeaders(r.Request.Headers)
-		r.Response.Headers = castHeaders(r.Response.Headers)
-
 	}
-	//logger.Println(r.Response.Headers)
+	if r.Response != nil {
+		r.Response.Headers = castHeaders(r.Response.Headers)
+	}
 
 	return nil
 }
+
+
+//castHeaders serves for casting headers to standard http.Header type
+func castHeaders(splashHeaders interface{}) (header http.Header) {
+	//	t := fmt.Sprintf("%T", splashHeaders)
+	//		logger.Printf("%T - %s", splashHeaders, splashHeaders)
+	header = make(map[string][]string)
+	switch splashHeaders.(type) {
+	case []interface{}:
+		//case []map[string]interface{}:
+		//logger.Println(splashHeaders)
+		for _, h := range splashHeaders.([]interface{}) {
+			//var str []string
+			str := []string{}
+			v, ok := h.(map[string]interface{})["value"].(string)
+			if ok {
+				str = append(str, v)
+				header[h.(map[string]interface{})["name"].(string)] = str
+			}
+		}
+		return header
+	case map[string]interface{}:
+		for k, v := range splashHeaders.(map[string]interface{}) {
+			var str []string
+			for _, vv := range v.([]interface{}) {
+				str = append(str, vv.(string))
+			}
+			header[k] = str
+		}
+		return header
+	default:
+		//logger.Println()
+		return nil
+	}
+}
+
+/*
+func (h Header) UnmarshalJSON(data []byte) error {
+	var header map[string]string
+	err := json.Unmarshal(data, &header)
+	if err != nil {
+		return err
+	}
+	logger.Println(header)
+	for key, value := range header {
+		h.Name = key
+		h.Value = value
+	}
+	logger.Println(h.Name, h.Value)
+	return nil
+}
+*/
 
 /*
 func castCookies(cookies []Cookie) (out []http.Cookie) {
@@ -425,36 +451,3 @@ func (s *SResponse) castHeaders() (header http.Header) {
 	return header
 }
 */
-//castHeaders serves for casting headers to standard http.Header type
-func castHeaders(splashHeaders interface{}) (header http.Header) {
-	//	t := fmt.Sprintf("%T", splashHeaders)
-	//		logger.Printf("%T - %s", splashHeaders, splashHeaders)
-	header = make(map[string][]string)
-	switch splashHeaders.(type) {
-	case []interface{}:
-		//case []map[string]interface{}:
-		//logger.Println(splashHeaders)
-		for _, h := range splashHeaders.([]interface{}) {
-			//var str []string
-			str := []string{}
-			v, ok := h.(map[string]interface{})["value"].(string)
-			if ok {
-				str = append(str, v)
-				header[h.(map[string]interface{})["name"].(string)] = str
-			}
-		}
-		return header
-	case map[string]interface{}:
-		for k, v := range splashHeaders.(map[string]interface{}) {
-			var str []string
-			for _, vv := range v.([]interface{}) {
-				str = append(str, vv.(string))
-			}
-			header[k] = str
-		}
-		return header
-	default:
-		//logger.Println()
-		return nil
-	}
-}
