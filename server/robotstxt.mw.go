@@ -30,7 +30,6 @@ func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) 
 	} else {
 		r := splash.Request{URL: robotsURL}
 		robots, err := mw.ParseService.Fetch(r)
-		logger.Println(r.URL)
 		if err != nil {
 			logger.Println(err)
 			//errors.Wrap(err, "robots.txt")
@@ -94,7 +93,7 @@ func GetRobotsData(content []byte) *robotstxt.RobotsData {
 	return r
 }
 
-//GetCrawlDelay retrieves Crawl-delay directive from robots.txt. Crawl-delay is not in the standard robots.txt protocol, and according to Wikipedia, some bots have different interpretations for this value. That's why maybe many websites don't even bother defining the rate limits in robots.txt.
+//GetCrawlDelay retrieves Crawl-delay directive from robots.txt. Crawl-delay is not in the standard robots.txt protocol, and according to Wikipedia, some bots have different interpretations for this value. That's why maybe many websites don't even bother defining the rate limits in robots.txt. Crawl-delay value does not have an effect on delays between consecutive requests to the same domain for the moment. FetchDelay and RandomizeFetchDelay from ScrapeOptions are used for throttling a crawler speed.
 func GetCrawlDelay(r *robotstxt.RobotsData) time.Duration {
 	if r != nil {
 		group := r.FindGroup("DataflowKitBot")

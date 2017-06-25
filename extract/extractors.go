@@ -61,15 +61,7 @@ func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
 	}
 	return sel.Text(), nil
 }
-/*
-func (e Text) FillParams(m map[string]interface{}) error {
-	err := FillStruct(m, &e)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-*/
+
 var _ PieceExtractor = Text{}
 
 // MultipleText is a PieceExtractor that extracts the text from each element

@@ -35,5 +35,4 @@ func TestRandInt(t *testing.T){
 	rand := Random(500, 1500)
 	m := s * time.Duration(rand)/1000
 	fmt.Println(s, rand, m)
-
 }
