@@ -3,14 +3,12 @@ package scrape
 import (
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"os"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/paginate"
-	"github.com/slotix/dataflowkit/splash"
 )
 
 var logger *log.Logger
@@ -188,6 +186,7 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 	return ret, nil
 }
 
+/*
 // ScrapeWithDefaultOpts Scrape a given URL with default options.  See 'Scrape' for more
 // information.
 func (s *Scraper) ScrapeWithDefaultOpts(req interface{}) (*ScrapeResults, error) {
@@ -201,6 +200,7 @@ func (s *Scraper) ScrapeWithDefaultOpts(req interface{}) (*ScrapeResults, error)
 // strange behaviour - e.g. overwriting cookies in the underlying http.Client.
 // Please be careful when running multiple scrapes at a time, unless you know
 // that it's safe.
+
 func (s *Scraper) Scrape(req interface{}, opts ScrapeOptions) (*ScrapeResults, error) {
 
 	var url string
@@ -327,3 +327,4 @@ func (s *Scraper) Scrape(req interface{}, opts ScrapeOptions) (*ScrapeResults, e
 	// All good!
 	return res, nil
 }
+*/
