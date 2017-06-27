@@ -27,8 +27,8 @@ func TestGetResponse(t *testing.T) {
 		if err != nil {
 			logger.Println(err)
 		} else {
-			if response.Reason != "" {
-				logger.Println(response.Reason)
+			if response.Error != "" {
+				logger.Println(response.Error)
 			} else {
 				logger.Println(response.Response.Ok)
 			}

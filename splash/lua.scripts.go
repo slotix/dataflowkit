@@ -62,7 +62,7 @@ function main(splash)
   }
 end
 `
-
+/*
 //LUA script for general pages processing
 var baseLUAOld = `
 json = require("json")
@@ -115,6 +115,7 @@ function main(splash)
   } 
 end
 `
+*/
 
 //LUA script for formdata Post requests
 //For example it may be used for processing pages which require authentication
@@ -182,7 +183,7 @@ function main(splash)
   } 
 end
 `
-
+/*
 var debugLUA = `
 treat = require("treat")
 function string.ends(String,End)
@@ -232,3 +233,4 @@ function main(splash)
   } 
 end
 `
+*/

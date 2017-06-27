@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"io"
 	"log"
 	"os"
 	"strings"
@@ -11,7 +10,6 @@ import (
 	"fmt"
 
 	"github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/slotix/dataflowkit/parser"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 )
@@ -139,15 +137,16 @@ func GetHTML1(url string) (string, error) {
 	return string(content), nil
 }
 */
-
+/*
 func MarshalData(payload []byte) (io.ReadCloser, error) {
-	parser, err := parser.NewParser(payload)
+	parser, err := scrape.NewPayload(payload)
 	if err != nil {
 		return nil, err
 	}
-	res, err := parser.MarshalData()
-	if err != nil {
-		return nil, err
-	}
+	//res, err := parser.MarshalData()
+	//if err != nil {
+	//	return nil, err
+	//}
 	return res, nil
 }
+*/

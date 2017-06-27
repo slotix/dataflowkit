@@ -1,0 +1,48 @@
+{
+  "name": "parsleyjs",
+  "version": "2.0.7",
+  "ignore": [
+    "**/.*",
+    "build",
+    "test",
+    "doc",
+    "*.md",
+    ".json",
+    "*.html",
+    "AUTHORS.txt",
+    "Gruntfile.js",
+    "package.json"
+  ],
+  "devDependencies": {
+    "jquery": "~1.10.0",
+    "validator.js": "~1.0.0",
+    "requirejs": "~2.1.0",
+    "bootstrap": "~3.0.3",
+    "sinonjs": "~1.7.3",
+    "uwidget": "~0.0.1"
+  },
+  "keywords": [
+    "parsley",
+    "form",
+    "validation",
+    "html5",
+    "polyfill"
+  ],
+  "author": {
+    "name": "Guillaume Potier",
+    "email": "guillaume@wisembly.com",
+    "url": "http://guillaumepotier.com/"
+  },
+  "license": "MIT",
+  "main": "dist/parsley.js",
+  "homepage": "https://github.com/guillaumepotier/Parsley.js",
+  "_release": "2.0.7",
+  "_resolution": {
+    "type": "version",
+    "tag": "2.0.7",
+    "commit": "dad30ac817c4477c693501e753c890b6d72f5bf8"
+  },
+  "_source": "https://github.com/guillaumepotier/Parsley.js.git",
+  "_target": "~2.0.7",
+  "_originalSource": "parsleyjs"
+}

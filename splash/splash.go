@@ -221,8 +221,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 
 //cacheable check if resource is cacheable
 func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
-	//func (r *Response) cacheable() bool {
-	//logger.Printf("%T", r.Response.Headers)
+	
 	respHeader := r.Response.Headers.(http.Header)
 	reqHeader := r.Request.Headers.(http.Header)
 	//	respHeader := r.Response.castHeaders()

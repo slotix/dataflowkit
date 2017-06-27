@@ -1,0 +1,41 @@
+<html>
+    <head>
+        <title>Bootstrap 3 Timepicker demo</title>
+        <script src="//code.jquery.com/jquery-1.10.1.min.js"></script>
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+
+        <link href="../css/bootstrap-timepicker.css" rel="stylesheet">
+        <script src="../js/bootstrap-timepicker.js"></script>
+    </head>
+    <body>
+        <br><br>
+        <div class="container">
+            <div class="col-md-12 well">
+                <h5>No Seconds</h5>
+                <div class="bootstrap-timepicker">
+                    <input type="text" id="timepicker1" class="form-control" placeholder="Choose Time">
+                </div>
+
+                <br><br>
+
+                <h5>With Seconds</h5>
+                <div class="bootstrap-timepicker">
+                    <input type="text" id="timepicker2" class="form-control" placeholder="Choose Time">
+                </div>
+
+                <br><br>
+
+                <h5>As Modal</h5>
+                <div class="bootstrap-timepicker">
+                    <input type="text" id="timepicker3" class="form-control" placeholder="Choose Time">
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            $('#timepicker1').timepicker({ showSeconds: false })
+            $('#timepicker2').timepicker({ showSeconds: true })
+            $('#timepicker3').timepicker({ showSeconds: true, template: 'modal' })
+        </script>
+    </body>
+</html>

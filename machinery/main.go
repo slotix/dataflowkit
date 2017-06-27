@@ -10,7 +10,7 @@ import (
 
 // Define flags
 var (
-	configPath    = flag.String("c", "config.yml", "Path to a configuration file")
+	//configPath    = flag.String("c", "config.yml", "Path to a configuration file")
 	broker        = flag.String("b", "redis://127.0.0.1:6379", "Broker URL")
 	resultBackend = flag.String("r", "redis://127.0.0.1:6379", "Result backend")
 
@@ -45,7 +45,7 @@ func init() {
 	// Register tasks
 	tasks := map[string]interface{}{
 		"GetHTML":      GetResponse,
-		"marshal_data": MarshalData,
+	//	"Parse": Parse,
 	}
 	server.RegisterTasks(tasks)
 

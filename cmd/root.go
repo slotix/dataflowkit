@@ -33,7 +33,6 @@ import (
 
 var (
 	VERSION               string // VERSION is set during build
-	cfgFile               string
 	port                  string
 	redisHost             string
 	redisExpire           int
