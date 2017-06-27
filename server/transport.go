@@ -13,16 +13,7 @@ import (
 )
 
 
-func makeSplashResponseEndpoint(svc ParseService) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(splash.Request)
-		v, err := svc.Fetch(req)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
-	}
-}
+
 
 func makeFetchEndpoint(svc ParseService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
@@ -70,6 +61,7 @@ func decodeParseRequest(_ context.Context, r *http.Request) (interface{}, error)
 	return request, nil
 }
 
+/*
 func decodeCheckServicesRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	request, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -78,7 +70,7 @@ func decodeCheckServicesRequest(_ context.Context, r *http.Request) (interface{}
 	}
 	return request, nil
 }
-
+*/
 func encodeFetchResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	sResponse := response.(*splash.Response)
 	content, err := sResponse.GetContent()
@@ -131,11 +123,11 @@ func encodeParseResponse(_ context.Context, w http.ResponseWriter, response inte
 	}
 	return nil
 }
-
+/*
 func encodeCheckServicesResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	return json.NewEncoder(w).Encode(response)
 }
-
+*/
 /*
 func encodeRequest(_ context.Context, r *http.Request, request interface{}) error {
 	var buf *bytes.Buffer
@@ -172,7 +164,8 @@ func decodeCheckServicesResponse(_ context.Context, r *http.Response) (interface
 	return string(response), nil
 }
 */
-
+/*
 type checkServicesResponse struct {
 	Status map[string]string `json:"status,omitempty"`
 }
+*/
