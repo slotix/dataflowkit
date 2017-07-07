@@ -1,7 +1,8 @@
 # Payload Extractor types
 
 ## Simple types
-* ### text - returns the combined text contents of the given selection.
+* ### text  
+    returns the combined text contents of the given selection.
     * params
         * includeIfEmpty - If text is empty in the selection, then return the empty string, instead of 'nil'.  This signals that the result of this Piece should be included to the results, as opposed to omiting the empty string.
 * ### multipleText - extracts the text from each element in the given selection and returns the texts as an array.
