@@ -263,7 +263,7 @@ var _ PieceExtractor = Regex{}
 
 // Attr extracts the value of a given HTML attribute from each element
 // in the selection, and returns them as a list.
-// The return type of the extractor is a list of attribute valueus (i.e. []string).
+// The return type of the extractor is a list of attribute values (i.e. []string).
 type Attr struct {
 	// The HTML attribute to extract from each element.
 	Attr string
@@ -303,15 +303,7 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	return results, nil
 }
-/*
-func (e *Attr) fillParams(m map[string]interface{}) error {
-	err := FillStruct(m, &e)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-*/
+
 
 var _ PieceExtractor = Attr{}
 
