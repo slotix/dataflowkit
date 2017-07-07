@@ -112,8 +112,18 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 		default:
 			var e extract.PieceExtractor
 			switch eType {
+			case "const": 
+				e = &extract.Const{}
+			case "count": 
+				e = &extract.Count{}
 			case "text":
 				e = &extract.Text{}
+			case "multipleText":
+				e = &extract.MultipleText{}
+			case "html":
+				e = &extract.Html{}
+			case "outerHtml":
+				e = &extract.OuterHtml{}
 			case "attr":
 				e = &extract.Attr{}
 			case "regex":
