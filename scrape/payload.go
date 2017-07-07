@@ -113,7 +113,8 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 			var e extract.PieceExtractor
 			switch eType {
 			case "const": 
-				e = &extract.Const{}
+				c := &extract.Const{Val: params["value"]}
+				e = c
 			case "count": 
 				e = &extract.Count{}
 			case "text":
