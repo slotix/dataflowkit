@@ -1,8 +1,8 @@
 ```json
 {
-   "name":"collection2",
+   "name":"collection",
    "request":{
-      "url":"https://drony.heureka.sk"
+      "url":"https://example.com"
    },
    "fields":[
       {
