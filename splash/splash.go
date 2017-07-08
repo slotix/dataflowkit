@@ -85,6 +85,7 @@ func GetLUA(req Request) string {
 
 //NewSplashConn creates new connection to Splash Server
 func NewSplashConn(req Request) (splashURL string, err error) {
+	req.URL = strings.TrimSpace(req.URL)
 	if req.URL == "" {
 		return "", errors.New("URL is empty")
 	}

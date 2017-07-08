@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/temoto/robotstxt"
+	"strings"
 )
 
 func robotsTxtMiddleware() ServiceMiddleware {
@@ -23,7 +24,8 @@ type robotstxtmw struct {
 
 func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) {
 	allow := true
-	robotsURL, err := NewRobotsTxt(req.URL)
+	url := strings.TrimSpace(req.URL)
+	robotsURL, err := NewRobotsTxt(url)
 	var robotsData *robotstxt.RobotsData
 	if err != nil {
 		logger.Println(err)
@@ -46,7 +48,7 @@ func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) 
 				return nil, err
 			}
 			robotsData = GetRobotsData(data)
-			parsedURL, err := neturl.Parse(req.URL)
+			parsedURL, err := neturl.Parse(url)
 			if err != nil {
 				logger.Println("err")
 			}
@@ -65,7 +67,7 @@ func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) 
 		}
 	} else {
 		output = nil
-		err = fmt.Errorf("%s: forbidden by robots.txt", req.URL)
+		err = fmt.Errorf("%s: forbidden by robots.txt", url)
 		logger.Println(err)
 	}
 	return
