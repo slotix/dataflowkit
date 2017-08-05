@@ -104,7 +104,7 @@ type ScrapeResults struct {
 	// is for each page, the second-level array is for each block in a page, and
 	// the final map[string]interface{} is the mapping of Piece.Name to results.
 	Results [][]map[string]interface{}
-	Header  []string
+	//Header  []string
 }
 
 // First returns the first set of results - i.e. the results from the first

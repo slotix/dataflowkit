@@ -1,4 +1,4 @@
-package server
+package fetch
 
 import (
 	"fmt"
@@ -6,23 +6,24 @@ import (
 	neturl "net/url"
 	"time"
 
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/temoto/robotstxt"
-	"strings"
 )
 
-func robotsTxtMiddleware() ServiceMiddleware {
-	return func(next ParseService) ParseService {
-		return robotstxtmw{next}
+func RobotsTxtMiddleware() ServiceMiddleware {
+	return func(next Service) Service {
+		return robotstxtMiddleware{next}
 	}
 }
 
-type robotstxtmw struct {
-	ParseService
+type robotstxtMiddleware struct {
+	Service
 }
 
-func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) {
+func (mw robotstxtMiddleware) Fetch(req splash.Request) (output interface{}, err error) {
 	allow := true
 	url := strings.TrimSpace(req.URL)
 	robotsURL, err := NewRobotsTxt(url)
@@ -31,7 +32,7 @@ func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) 
 		logger.Println(err)
 	} else {
 		r := splash.Request{URL: robotsURL}
-		robots, err := mw.ParseService.Fetch(r)
+		robots, err := mw.Service.Fetch(r)
 		if err != nil {
 			logger.Println(err)
 			//errors.Wrap(err, "robots.txt")
@@ -61,7 +62,7 @@ func (mw robotstxtmw) Fetch(req splash.Request) (output interface{}, err error) 
 	//allowed ?
 	if allow {
 		//req.CrawlDelay = GetCrawlDelay(robotsData)
-		output, err = mw.ParseService.Fetch(req)
+		output, err = mw.Service.Fetch(req)
 		if err != nil {
 			logger.Println(err)
 		}

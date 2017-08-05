@@ -1,4 +1,4 @@
-package server
+package parse
 
 import (
 	"bytes"

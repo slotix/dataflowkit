@@ -1,35 +1,28 @@
-package server
+package fetch
 
 import (
-	"io"
-
 	"github.com/slotix/dataflowkit/cache"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 )
 
-func statsMiddleware(userID string) ServiceMiddleware {
-	return func(next ParseService) ParseService {
-		return statsmw{userID, next}
+func StatsMiddleware(userID string) ServiceMiddleware {
+	return func(next Service) Service {
+		return statsMiddleware{userID, next}
 	}
 }
 
-type statsmw struct {
+type statsMiddleware struct {
 	userID string
-	ParseService
+	Service
 }
 
-func (mw statsmw) ParseData(payload []byte) (output io.ReadCloser, err error) {
+func (mw statsMiddleware) Fetch(req splash.Request) (output interface{}, err error) {
 	mw.incrementCount()
-	output, err = mw.ParseService.ParseData(payload)
+	output, err = mw.Service.Fetch(req)
 	return
 }
 
-func (mw statsmw) Fetch(req splash.Request) (output interface{}, err error) {
-	mw.incrementCount()
-	output, err = mw.ParseService.Fetch(req)
-	return
-}
 /*
 func (mw statsmw) GetResponse(req splash.Request) (output *splash.Response, err error) {
 	mw.incrementCount()
@@ -39,8 +32,9 @@ func (mw statsmw) GetResponse(req splash.Request) (output *splash.Response, err 
 */
 
 //writing to redis
-func (mw statsmw) incrementCount() {
+func (mw statsMiddleware) incrementCount() {
 	redisURL := viper.GetString("redis")
+	logger.Println(redisURL)
 	redisPassword := ""
 	redis := cache.NewRedisConn(redisURL, redisPassword, "", 0)
 	count, err := redis.GetIntValue(mw.userID)

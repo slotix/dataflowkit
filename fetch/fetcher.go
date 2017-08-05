@@ -1,4 +1,4 @@
-package scrape
+package fetch
 
 import (
 	"net/http"
@@ -83,9 +83,7 @@ func (sf *SplashFetcher) Fetch(request interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return r, nil
-
 }
 
 var _ Fetcher = &SplashFetcher{}

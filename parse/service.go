@@ -1,47 +1,37 @@
-package server
+package parse
 
 import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
-
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-
+	"github.com/slotix/dataflowkit/robotstxt"
 	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
 )
 
-// ParseService provides operations on strings.
-type ParseService interface {
-	//	GetResponse(req splash.Request) (*splash.Response, error)
-	Fetch(req splash.Request) (interface{}, error)
+// Define service interface
+type Service interface {
 	ParseData(payload []byte) (io.ReadCloser, error)
-	//	CheckServices() (status map[string]string)
 }
 
-type parseService struct {
+// Implement service with empty struct
+type ParseService struct {
+	
 }
+
+// create type that return function.
+// this will be needed in main.go
+type ServiceMiddleware func(Service) Service
 
 //Fetch returns splash.Request
-func (parseService) Fetch(req splash.Request) (interface{}, error) {
-	//logger.Println(req)
-	fetcher, err := scrape.NewSplashFetcher()
-	if err != nil {
-		logger.Println(err)
-	}
-	res, err := fetcher.Fetch(req)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
-func (ps parseService) ParseData(payload []byte) (io.ReadCloser, error) {
+func (ps ParseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	p, err := scrape.NewPayload(payload)
 	if err != nil {
 		return nil, err
@@ -65,7 +55,7 @@ func (ps parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	var buf bytes.Buffer
 	switch config.Opts.Format {
 	case "json":
-		if config.Opts.PaginatedResults {
+		if config.Opts.PaginateResults {
 			json.NewEncoder(&buf).Encode(results)
 		} else {
 			json.NewEncoder(&buf).Encode(results.AllBlocks())
@@ -92,7 +82,7 @@ func (ps parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	/*
 		case "xmlviajson":
 			var jbuf bytes.Buffer
-			if config.Opts.PaginatedResults {
+			if config.Opts.PaginateResults {
 				json.NewEncoder(&jbuf).Encode(results)
 			} else {
 				json.NewEncoder(&jbuf).Encode(results.AllBlocks())
@@ -115,18 +105,28 @@ func (ps parseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
-func (ps parseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.ScrapeResults, error) {
+func (ps ParseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.ScrapeResults, error) {
 	url := req.URL
 	if len(url) == 0 {
 		return nil, errors.New("no URL provided")
 	}
-
+	//get Robotstxt Data
+	robotsData, err := robotstxt.RobotsTxtData(req)
+	//err := scrape.AllowedByRobots(req)
+	if err != nil {
+		return nil, err
+	}
 	res := &scrape.ScrapeResults{
 		URLs:    []string{},
 		Results: [][]map[string]interface{}{},
 	}
 	var numPages int
+	//var retryTimes int
 	for {
+		if !robotstxt.Allowed(url, robotsData) {
+			err = fmt.Errorf("%s: forbidden by robots.txt", url)
+			return nil, err
+		}
 		// Repeat until we don't have any more URLs, or until we hit our page limit.
 		if len(url) == 0 || (s.Config.Opts.MaxPages > 0 && numPages >= s.Config.Opts.MaxPages) {
 			break
@@ -240,7 +240,6 @@ func (ps parseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.Sc
 			}
 		}
 		req.URL = url
-
 		if s.Config.Opts.RandomizeFetchDelay {
 			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 			rand := scrape.Random(500, 1500)
@@ -255,10 +254,3 @@ func (ps parseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.Sc
 	// All good!
 	return res, nil
 }
-
-//func (parseService) CheckServices() (status map[string]string) {
-//	return CheckServices() //, allAlive
-//}
-
-// ServiceMiddleware is a chainable behavior modifier for ParseService.
-type ServiceMiddleware func(ParseService) ParseService

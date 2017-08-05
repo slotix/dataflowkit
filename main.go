@@ -1,10 +1,8 @@
-package main // import "github.com/slotix/dataflowkit"
+package main
 
 import (
 	"fmt"
-
 	"github.com/slotix/dataflowkit/cmd"
-
 
 )
 

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"time"
 
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/helpers"
@@ -20,8 +19,21 @@ func NewPayload(payload []byte) (Payload, error) {
 		return p, err
 	}
 	if p.Format == "" {
-		p.Format = "json"
+		p.Format = DefaultOptions.Format
 	}
+	if p.RetryTimes == 0 {
+		p.RetryTimes = DefaultOptions.RetryTimes
+	}
+	if p.FetchDelay == 0 {
+		p.FetchDelay = DefaultOptions.FetchDelay
+	}
+	if p.RandomizeFetchDelay == nil {
+		p.RandomizeFetchDelay = &DefaultOptions.RandomizeFetchDelay
+	}
+	if p.PaginateResults == nil {
+		p.PaginateResults = &DefaultOptions.PaginateResults
+	}
+
 	p.PayloadMD5 = helpers.GenerateMD5(payload)
 	return p, nil
 }
@@ -112,10 +124,10 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 		default:
 			var e extract.PieceExtractor
 			switch eType {
-			case "const": 
+			case "const":
 				c := &extract.Const{Val: params["value"]}
 				e = c
-			case "count": 
+			case "count":
 				e = &extract.Count{}
 			case "text":
 				e = &extract.Text{}
@@ -163,9 +175,10 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 		Opts: ScrapeOptions{
 			MaxPages:            paginator.MaxPages,
 			Format:              p.Format,
-			PaginatedResults:    p.PaginatedResults,
-			FetchDelay:          500 * time.Millisecond,
-			RandomizeFetchDelay: true,
+			PaginateResults:     *p.PaginateResults,
+			FetchDelay:          p.FetchDelay,
+			RandomizeFetchDelay: *p.RandomizeFetchDelay,
+			RetryTimes:          p.RetryTimes,
 		},
 	}
 	return

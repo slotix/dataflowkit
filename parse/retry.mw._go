@@ -1,4 +1,4 @@
-package server
+package parse
 
 import (
 	"github.com/slotix/dataflowkit/splash"
@@ -12,18 +12,18 @@ import (
 
 //Failed pages should be rescheduled for download at the end. once the spider has finished crawling all other (non failed) pages.
 
-func retryMiddleware() ServiceMiddleware {
-	return func(next ParseService) ParseService {
-		return retrymw{next}
+type retryMiddleware struct {
+	Service
+}
+
+func RetryMiddleware() ServiceMiddleware {
+	return func(next Service) Service {
+		return retryMiddleware{next}
 	}
 }
 
-type retrymw struct {
-	ParseService
-}
-
-func (mw retrymw) Fetch(req splash.Request) (output interface{}, err error) {
-	output, err = mw.ParseService.Fetch(req)
+func (mw retryMiddleware) Fetch(req splash.Request) (output interface{}, err error) {
+	output, err = mw.Service.Fetch(req)
 	if err != nil {
 		logger.Println(err)
 	}
