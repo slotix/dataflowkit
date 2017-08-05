@@ -7,15 +7,36 @@ import (
 	"net/http/httputil"
 
 	"gopkg.in/gin-gonic/gin.v1"
+	//"github.com/slotix/dataflowkit/cmd"
 )
 
 var (
-	port    = flag.String("p", ":8080", "HTTP listen address")
-	dfkPort = flag.String("d", ":8000", "DataFlow kit port")
-	baseDir = flag.String("b", "web", "HTML files location.")
+	port          = flag.String("p", ":8080", "HTTP listen address")
+	fetcherPort   = flag.String("f", ":8000", "Fetcher port")
+	dfkParserPort = flag.String("d", ":8001", "DFK Parser port")
+	baseDir       = flag.String("b", "web", "HTML files location.")
 )
 
+//var VERSION = "0.1"
+//var buildTime = "No buildstamp"
+
+//var githash = "No githash"
+/*
+func init() {
+	viper.Set("splash", "127.0.0.1:8050")
+	viper.Set("splash-timeout", "20")
+	viper.Set("splash-resource-timeout", "30")
+	viper.Set("splash-wait", "0,5")
+	viper.Set("redis", "127.0.0.1:6379")
+	viper.Set("redis-expire", "3600")
+	viper.Set("redis-network", "tcp")
+}
+*/
+
 func main() {
+	//version := fmt.Sprintf("%s\nBuild time: %s\n", VERSION, buildTime)
+	//cmd.Execute(fmt.Sprintf(version))
+
 	flag.Parse()
 	//gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
@@ -32,7 +53,6 @@ func main() {
 
 	r.LoadHTMLFiles(fmt.Sprintf("%s/index.html", *baseDir),
 		fmt.Sprintf("%s/get_started.html", *baseDir))
-	//r.LoadHTMLGlob(fmt.Sprintf("%s/*", *baseDir))
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(
 			http.StatusOK,
@@ -45,16 +65,15 @@ func main() {
 			"get_started.html",
 			nil)
 	})
-	r.POST("/app/fetch", ReverseProxy())
-	r.POST("/app/parse", ReverseProxy())
+
+	r.POST("/app/fetch", ReverseProxy(fetcherPort))
+	r.POST("/app/parse", ReverseProxy(dfkParserPort))
 	r.Run(*port)
 }
 
-func ReverseProxy() gin.HandlerFunc {
+func ReverseProxy(t *string) gin.HandlerFunc {
 
-	target := fmt.Sprintf("localhost%s", *dfkPort)
-
-	//target := "localhost:8000"
+	target := fmt.Sprintf("localhost%s", *t)
 
 	return func(c *gin.Context) {
 		director := func(req *http.Request) {
@@ -62,9 +81,6 @@ func ReverseProxy() gin.HandlerFunc {
 			req = r
 			req.URL.Scheme = "http"
 			req.URL.Host = target
-			req.Header["my-header"] = []string{r.Header.Get("my-header")}
-			// Golang camelcases headers
-			delete(req.Header, "My-Header")
 		}
 		proxy := &httputil.ReverseProxy{Director: director}
 		proxy.ServeHTTP(c.Writer, c.Request)

@@ -78,14 +78,14 @@ type Response struct {
 	HTML string `json:"html"`
 	//Error is returned in case of an error, f.e. "http404".
 	//All other fields will be nil if Error is not nil
-	Error string `json:"error"`
+	Error string `json:"error,omitempty"`
 	//Cookies             []Cookie   `json:"cookies"`
 	Request             *SRequest  `json:"request"`
 	Response            *SResponse `json:"response"`
 	Cacheable           bool
 	CacheExpirationTime int64
 }
-
+//PingResponse returned by Splash _ping  endpoint
 type PingResponse struct {
 	Maxrss int    `json:"maxrss"`
 	Status string `json:"status"`

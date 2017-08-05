@@ -1,0 +1,31 @@
+package parse
+
+import (
+	"github.com/slotix/dataflowkit/splash"
+)
+
+////TODO: RetryTimes = 2
+//Maximum number of times to retry, in addition to the first download.
+
+//RETRY_HTTP_CODES
+//Default: [500, 502, 503, 504, 408]
+
+//Failed pages should be rescheduled for download at the end. once the spider has finished crawling all other (non failed) pages.
+
+type retryMiddleware struct {
+	Service
+}
+
+func RetryMiddleware() ServiceMiddleware {
+	return func(next Service) Service {
+		return retryMiddleware{next}
+	}
+}
+
+func (mw retryMiddleware) Fetch(req splash.Request) (output interface{}, err error) {
+	output, err = mw.Service.Fetch(req)
+	if err != nil {
+		logger.Println(err)
+	}
+	return
+}

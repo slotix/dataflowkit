@@ -39,6 +39,6 @@
       "maxPages":3
    },
    "format":"json",
-   "paginatedResults":false
+   "paginateResults":false
 }
 ```

@@ -1,6 +1,7 @@
 package scrape
 
 import "github.com/slotix/dataflowkit/splash"
+import "time"
 
 type Extractor struct {
 	Type   string      `json:"type"`
@@ -22,11 +23,14 @@ type paginator struct {
 }
 
 type Payload struct {
-	Name             string         `json:"name" validate:"required"`
-	Request          splash.Request `json:"request"`
-	Fields           []field        `json:"fields" validate:"gt=0"`
-	Paginator        paginator      `json:"paginator"`
-	PayloadMD5       []byte         `json:"payloadMD5"`
-	Format           string         `json:"format"`
-	PaginatedResults bool           `json:"paginatedResults"`
+	Name                string         `json:"name" validate:"required"`
+	Request             splash.Request `json:"request"`
+	Fields              []field        `json:"fields" validate:"gt=0"`
+	Paginator           paginator      `json:"paginator"`
+	PayloadMD5          []byte         `json:"payloadMD5"`
+	Format              string         `json:"format"`
+	PaginateResults     *bool           `json:"paginateResults"`
+	FetchDelay          time.Duration  `json:"fetchDelay"`
+	RandomizeFetchDelay *bool           `json:"randomizeFetchDelay"`
+	RetryTimes          int            `json:"retryTimes"`
 }

@@ -60,7 +60,7 @@ type SplashFetcher struct {
 	PrepareSplash func() error
 }
 
-//func NewSplashFetcher(req downloader.FetchRequest) (*SplashFetcher, error) {
+
 func NewSplashFetcher() (*SplashFetcher, error) {
 	sf := &SplashFetcher{}
 	return sf, nil
