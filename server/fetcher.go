@@ -1,4 +1,4 @@
-package fetch
+package server
 
 import (
 	"net/http"

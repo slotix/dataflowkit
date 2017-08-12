@@ -1,6 +1,7 @@
-package fetch
+package server
 
 import (
+	"io"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -33,5 +34,20 @@ func (mw loggingMiddleware) Fetch(req splash.Request) (output interface{}, err e
 		)
 	}(time.Now())
 	output, err = mw.Service.Fetch(req)
+	return
+}
+
+// Implement Service Interface for LoggingMiddleware
+func (mw loggingMiddleware) ParseData(payload []byte) (output io.ReadCloser, err error) {
+	defer func(begin time.Time) {
+		mw.logger.Log(
+			"function", "parse",
+			//"input", payload,
+			//"output", output,
+			"err", err,
+			"took", time.Since(begin),
+		)
+	}(time.Now())
+	output, err = mw.Service.ParseData(payload)
 	return
 }

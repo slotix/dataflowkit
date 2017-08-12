@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,11 +13,10 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/spf13/viper"
 
-	"github.com/slotix/dataflowkit/parse"
+	"github.com/slotix/dataflowkit/server"
 )
 
 func main() {
-
 	viper.Set("splash", "127.0.0.1:8050")
 	viper.Set("splash-timeout", "20")
 	viper.Set("splash-resource-timeout", "30")
@@ -24,7 +24,10 @@ func main() {
 	viper.Set("redis", "127.0.0.1:6379")
 	viper.Set("redis-expire", "3600")
 	viper.Set("redis-network", "tcp")
-
+	var (
+		port = flag.String("listen", ":8000", "HTTP listen address")
+	)
+	flag.Parse()
 	ctx := context.Background()
 	errChan := make(chan error)
 
@@ -37,37 +40,28 @@ func main() {
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 
-	var svc parse.Service
-	svc = parse.ParseService{}
-	svc = parse.CachingMiddleware()(svc)
-	svc = parse.LoggingMiddleware(logger)(svc)
+	var svc server.Service
+	svc = server.ParseService{}
+	svc = server.StatsMiddleware("18")(svc)
+	//svc = server.CachingMiddleware()(svc)
+	//svc = server.ProxyingMiddleware(ctx, "http://127.0.0.1:8000")(svc)
+	//svc = server.ProxyingMiddleware(ctx,"")(svc)
 
-	endpoint := parse.Endpoints{
-		ParseEndpoint: parse.MakeParseEndpoint(svc),
+	svc = server.LoggingMiddleware(logger)(svc)
+	svc = server.RobotsTxtMiddleware()(svc)
+
+	endpoints := server.Endpoints{
+		FetchEndpoint: server.MakeFetchEndpoint(svc),
+		ParseEndpoint: server.MakeParseEndpoint(svc),
 	}
 
-	r := parse.MakeHttpHandler(ctx, endpoint, logger)
+	r := server.MakeHttpHandler(ctx, endpoints, logger)
 
 	// HTTP transport
 	go func() {
-		/*fmt.Println("Checking services ... ")
-		status := healthcheck.CheckServices()
-		allAlive := true
-		for k, v := range status {
-			fmt.Printf("%s: %s\n", k, v)
-			if v != "Ok" {
-				allAlive = false
-			}
-		}
-		if allAlive {
-			fmt.Println("Starting server at port 8001")
-			handler := r
-			errChan <- http.ListenAndServe(":8001", handler)
-		}
-		*/
-		fmt.Println("Starting server at port 8001")
+		fmt.Printf("Starting server at port %s\n", *port)
 		handler := r
-		errChan <- http.ListenAndServe(":8001", handler)
+		errChan <- http.ListenAndServe(*port, handler)
 	}()
 
 	go func() {

@@ -1,8 +1,9 @@
-package fetch
+package server
 
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -64,6 +65,29 @@ func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 	return nil
 }
 
+//decodeParseRequest
+func decodeParseRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	request, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return request, nil
+}
+
+func encodeParseResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	data, err := ioutil.ReadAll(response.(io.Reader))
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(data)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // errorer is implemented by all concrete response types that may contain
 // errors. It allows us to change the HTTP response code without needing to
 // trigger an endpoint (transport-level) error.
@@ -106,6 +130,13 @@ func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger)
 		endpoint.FetchEndpoint,
 		decodeFetchRequest,
 		encodeFetchResponse,
+		options...,
+	))
+
+	r.Methods("POST").Path("/app/parse").Handler(httptransport.NewServer(
+		endpoint.ParseEndpoint,
+		decodeParseRequest,
+		encodeParseResponse,
 		options...,
 	))
 
