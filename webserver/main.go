@@ -13,7 +13,7 @@ import (
 var (
 	port          = flag.String("p", ":8080", "HTTP listen address")
 	fetcherPort   = flag.String("f", ":8000", "Fetcher port")
-	dfkParserPort = flag.String("d", ":8001", "DFK Parser port")
+	dfkParserPort = flag.String("d", ":8000", "DFK Parser port")
 	baseDir       = flag.String("b", "web", "HTML files location.")
 )
 
@@ -71,16 +71,16 @@ func main() {
 	r.Run(*port)
 }
 
-func ReverseProxy(t *string) gin.HandlerFunc {
+func ReverseProxy(p *string) gin.HandlerFunc {
 
-	target := fmt.Sprintf("localhost%s", *t)
+	port := fmt.Sprintf("localhost%s", *p)
 
 	return func(c *gin.Context) {
 		director := func(req *http.Request) {
 			r := c.Request
 			req = r
 			req.URL.Scheme = "http"
-			req.URL.Host = target
+			req.URL.Host = port
 		}
 		proxy := &httputil.ReverseProxy{Director: director}
 		proxy.ServeHTTP(c.Writer, c.Request)

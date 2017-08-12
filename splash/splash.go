@@ -133,6 +133,7 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 //GetResponse result is passed to  caching middleware
 //to provide a RFC7234 compliant HTTP cache
 func GetResponse(splashURL string) (*Response, error) {
+	//logger.Println(splashURL)
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
@@ -186,6 +187,9 @@ func GetResponse(splashURL string) (*Response, error) {
 		}
 		//if cacheable ?
 		rv := sResponse.cacheable()
+		logger.Println(rv.OutReasons)
+		logger.Println(rv.OutWarnings)
+		logger.Println(rv.OutExpirationTime)
 		if len(rv.OutReasons) == 0 {
 			sResponse.Cacheable = true
 		}
@@ -283,10 +287,12 @@ func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
 
 //Fetch content from url through Splash server https://github.com/scrapinghub/splash/
 func Fetch(splashURL string) (io.ReadCloser, error) {
+	logger.Println(splashURL)
 	response, err := GetResponse(splashURL)
 	if err != nil {
 		return nil, err
 	}
+	logger.Println(err)
 	content, err := response.GetContent()
 	if err == nil {
 		return content, nil
@@ -302,34 +308,10 @@ func isRobotsTxt(url string) bool {
 }
 
 
-type MyTime struct {
-	time.Time
-}
-
-func (self *MyTime) UnmarshalJSON(b []byte) (err error) {
-	s := string(b)
-	logger.Println(s)
-	// Get rid of the quotes "" around the value.
-	// A second option would be to include them
-	// in the date format string instead, like so below:
-	//   time.Parse(`"`+time.RFC3339Nano+`"`, s)
-
-	s = s[1 : len(s)-1]
-
-	t, err := time.Parse(time.RFC3339Nano, s)
-	if err != nil {
-		t, err = time.Parse("2006-01-02T15:04:05.999999999Z0700", s)
-	}
-	logger.Println(t)
-	self.Time = t
-
-	return
-}
 
 //http://choly.ca/post/go-json-marshalling/
 //UnmarshalJSON convert headers to http.Header type while unmarshaling
 func (r *Response) UnmarshalJSON(data []byte) error {
-	//	logger.Println(string(data))
 	type Alias Response
 	aux := &struct {
 		Headers interface{} `json:"headers"`
@@ -338,7 +320,6 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 		Alias: (*Alias)(r),
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
-		logger.Println(err)
 		return err
 	}
 
@@ -353,15 +334,13 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 }
 
 
-//castHeaders serves for casting headers to standard http.Header type
+//castHeaders serves for casting headers returned by Splash to standard http.Header type
 func castHeaders(splashHeaders interface{}) (header http.Header) {
 	//	t := fmt.Sprintf("%T", splashHeaders)
 	//		logger.Printf("%T - %s", splashHeaders, splashHeaders)
 	header = make(map[string][]string)
 	switch splashHeaders.(type) {
 	case []interface{}:
-		//case []map[string]interface{}:
-		//logger.Println(splashHeaders)
 		for _, h := range splashHeaders.([]interface{}) {
 			//var str []string
 			str := []string{}
@@ -382,72 +361,6 @@ func castHeaders(splashHeaders interface{}) (header http.Header) {
 		}
 		return header
 	default:
-		//logger.Println()
 		return nil
 	}
 }
-
-/*
-func (h Header) UnmarshalJSON(data []byte) error {
-	var header map[string]string
-	err := json.Unmarshal(data, &header)
-	if err != nil {
-		return err
-	}
-	logger.Println(header)
-	for key, value := range header {
-		h.Name = key
-		h.Value = value
-	}
-	logger.Println(h.Name, h.Value)
-	return nil
-}
-*/
-
-/*
-func castCookies(cookies []Cookie) (out []http.Cookie) {
-	HTTPCookie := http.Cookie{}
-	for _, c := range cookies{
-		for _, k, v := range c{
-			if k == "Expires"{
-
-			}
-
-		}
-
-		out = append(out, c)
-	}
-}
-*/
-
-/*
-func (s *SRequest) castHeaders() (header http.Header) {
-	header = make(map[string][]string)
-	for _, h := range s.Headers {
-		//var str []string
-		str := []string{}
-		v := h.Value
-		//	if ok {
-		//			logger.Printf("%T", v)
-		str = append(str, v)
-		header[h.Name] = str
-		//	}
-	}
-	return header
-}
-
-func (s *SResponse) castHeaders() (header http.Header) {
-	header = make(map[string][]string)
-	for _, h := range s.Headers {
-		//var str []string
-		str := []string{}
-		v := h.Value
-		//	if ok {
-		//	logger.Printf("%T", v)
-		str = append(str, v)
-		header[h.Name] = str
-		//	}
-	}
-	return header
-}
-*/

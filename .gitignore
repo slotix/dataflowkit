@@ -40,5 +40,6 @@ webserver/webserver
 config/dfk-server.service
 machinery/machinery
 goscrape/goscrape
+server/server.d/server.d
 
 deploy.sh
