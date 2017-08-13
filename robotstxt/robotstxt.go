@@ -37,6 +37,7 @@ func RobotsTxtData(req splash.Request) (robotsData *robotstxt.RobotsData, err er
 	robots, err := fetcher.Fetch(r)
 	if err != nil {
 		logger.Println(err)
+		//return nil, err
 	} else {
 		sResponse := robots.(*splash.Response)
 		content, err := sResponse.GetContent()
@@ -47,12 +48,10 @@ func RobotsTxtData(req splash.Request) (robotsData *robotstxt.RobotsData, err er
 		if err != nil {
 			return nil, err
 		}
-
 		robotsData, err = robotstxt.FromBytes(data)
 		if err != nil {
 			fmt.Println("Robots.txt error:", err)
 		}
-
 	}
 	return robotsData, nil
 }
