@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package cmd
+package main
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	VERSION               string // VERSION is set during build
+	//VERSION               string // VERSION is set during build
 	port                  string
 	redisHost             string
 	redisExpire           int
@@ -86,8 +86,8 @@ var RootCmd = &cobra.Command{
 		}
 
 		if allAlive {
-			fmt.Printf("Starting Server ... %s\n", port)
-			server.Init(port)
+			fmt.Printf("Starting Server %s\n", port)
+			server.Start(port)
 		}
 	},
 }
@@ -115,8 +115,8 @@ func init() {
 	RootCmd.Flags().IntVarP(&redisExpire, "redis-expire", "", 3600, "Default Redis expire value")
 	RootCmd.Flags().StringVarP(&redisNetwork, "redis-network", "", "tcp", "Redis Network")
 	RootCmd.Flags().StringVarP(&splashHost, "splash", "s", "127.0.0.1:8050", "Splash host address")
-	RootCmd.Flags().IntVarP(&splashTimeout, "splash-timeout", "", 20, "Default Timeout for Splash")
-	RootCmd.Flags().IntVarP(&splashResourceTimeout, "splash-resource-timeout", "", 30, "Default Timeout for Splash")
+	RootCmd.Flags().IntVarP(&splashTimeout, "splash-timeout", "", 20, "A timeout (in seconds) for the render.")
+	RootCmd.Flags().IntVarP(&splashResourceTimeout, "splash-resource-timeout", "", 30, "A timeout (in seconds) for individual network requests.")
 	RootCmd.Flags().Float64VarP(&splashWait, "splash-wait", "", 0.5, "Time in seconds to wait until js scripts loaded.")
 	viper.AutomaticEnv() // read in environment variables that match
 	viper.BindPFlag("port", RootCmd.Flags().Lookup("port"))

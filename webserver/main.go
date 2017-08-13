@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
-
 	"gopkg.in/gin-gonic/gin.v1"
-	//"github.com/slotix/dataflowkit/cmd"
 )
 
 var (
@@ -17,26 +15,8 @@ var (
 	baseDir       = flag.String("b", "web", "HTML files location.")
 )
 
-//var VERSION = "0.1"
-//var buildTime = "No buildstamp"
-
-//var githash = "No githash"
-/*
-func init() {
-	viper.Set("splash", "127.0.0.1:8050")
-	viper.Set("splash-timeout", "20")
-	viper.Set("splash-resource-timeout", "30")
-	viper.Set("splash-wait", "0,5")
-	viper.Set("redis", "127.0.0.1:6379")
-	viper.Set("redis-expire", "3600")
-	viper.Set("redis-network", "tcp")
-}
-*/
 
 func main() {
-	//version := fmt.Sprintf("%s\nBuild time: %s\n", VERSION, buildTime)
-	//cmd.Execute(fmt.Sprintf(version))
-
 	flag.Parse()
 	//gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()

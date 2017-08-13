@@ -77,7 +77,7 @@ type Response struct {
 	URL  string `json:"url"`
 	HTML string `json:"html"`
 	//Error is returned in case of an error, f.e. "http404".
-	//All other fields will be nil if Error is not nil
+	//If Error is not nil all other fields will be nil 
 	Error string `json:"error,omitempty"`
 	//Cookies             []Cookie   `json:"cookies"`
 	Request             *SRequest  `json:"request"`

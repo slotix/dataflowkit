@@ -33,6 +33,9 @@ func gc(host string) (*gcResponse, error) {
 	client := &http.Client{}
 	gcURL := fmt.Sprintf("http://%s/_gc", host)
 	req, err := http.NewRequest("POST", gcURL, nil)
+	if err != nil {
+		return nil, err
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -53,6 +56,9 @@ func Ping(host string) (*PingResponse, error) {
 	client := &http.Client{}
 	pingURL := fmt.Sprintf("http://%s/_ping", host)
 	req, err := http.NewRequest("GET", pingURL, nil)
+	if err != nil {
+		return nil, err
+	}
 	//req.SetBasicAuth(userName, userPass)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -84,6 +90,7 @@ func GetLUA(req Request) string {
 }
 
 //NewSplashConn creates new connection to Splash Server
+//Generated Splash URL and error are returned 
 func NewSplashConn(req Request) (splashURL string, err error) {
 	req.URL = strings.TrimSpace(req.URL)
 	if req.URL == "" {
@@ -107,7 +114,7 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 
 	   	//---------
 	*/
-	//req.Params = `"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=dmsoft&rememberMe=1"`
+	//req.Params = `"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=asfwwe!444D&rememberMe=1"`
 
 	var wait float64
 	if req.SplashWait != 0 {
@@ -148,54 +155,60 @@ func GetResponse(splashURL string) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	//response from Splash service
-	if resp.StatusCode == 200 {
-		var sResponse Response
 
-		if err := json.Unmarshal(res, &sResponse); err != nil {
-			logger.Println("Json Unmarshall error", err)
-		}
-		//if response status code is not 200
-		if sResponse.Error != "" {
-			return nil, fmt.Errorf("error: %s", sResponse.Error)
-		}
-		if sResponse.Response == nil || sResponse.Request == nil && sResponse.HTML != "" {
-			// Sometimes no response, request returned  by Splash.
-			// To solve this problem gc method should be called to clear WebKit caches and then
-			// GetResponse again. See more at https://github.com/scrapinghub/splash/issues/613
-			var response *Response
-			gcResponse, err := gc(viper.GetString("splash"))
-			if err == nil && gcResponse.Status == "ok" {
-				response, err = GetResponse(splashURL)
-				if err != nil {
-					return nil, err
-				}
-			}
-			return response, nil
-		}
-		if !sResponse.Response.Ok {
-			if sResponse.Response.Status != 0 {
-				err = fmt.Errorf("Error: %d. %s",
-					sResponse.Response.Status,
-					sResponse.Response.StatusText)
-			} else {
-				err = fmt.Errorf("Error: %s",
-					sResponse.Error)
-			}
-		} else {
-			err = nil
-		}
-		//if cacheable ?
-		rv := sResponse.cacheable()
-		logger.Println(rv.OutReasons)
-		logger.Println(rv.OutWarnings)
-		logger.Println(rv.OutExpirationTime)
-		if len(rv.OutReasons) == 0 {
-			sResponse.Cacheable = true
-		}
-		return &sResponse, err
+	//response from Splash service.
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf(string(res))
 	}
-	return nil, fmt.Errorf(string(res))
+
+	var sResponse Response
+
+	if err := json.Unmarshal(res, &sResponse); err != nil {
+		logger.Println("Json Unmarshall error", err)
+	}
+	//if response status code is not 200
+	//logger.Println(sResponse)
+	if sResponse.Error != "" {
+		return nil, fmt.Errorf("%s", sResponse.Error)
+	}
+	// Sometimes no response, request returned  by Splash.
+	// To solve this problem gc method should be called to clear WebKit caches and then
+	// GetResponse again. See more at https://github.com/scrapinghub/splash/issues/613
+	if sResponse.Response == nil || sResponse.Request == nil && sResponse.HTML != "" {
+
+		var response *Response
+		gcResponse, err := gc(viper.GetString("splash"))
+		if err == nil && gcResponse.Status == "ok" {
+			response, err = GetResponse(splashURL)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return response, nil
+	}
+
+	//logger.Printf("OK: %b, status : %d, status text: %s, error: %s", sResponse.Response.Ok, sResponse.Response.Status, sResponse.Response.StatusText, sResponse.Error)
+	if !sResponse.Response.Ok {
+		if sResponse.Response.Status == 0 {
+			err = fmt.Errorf("%s",
+				//sResponse.Error)
+				sResponse.Response.StatusText)
+		} else {
+			err = fmt.Errorf("%d. %s",
+				sResponse.Response.Status,
+				sResponse.Response.StatusText)
+		}
+		return nil, err
+	}
+	//if cacheable ?
+	rv := sResponse.cacheable()
+	//logger.Println(rv.OutReasons)
+	//logger.Println(rv.OutWarnings)
+	//logger.Println(rv.OutExpirationTime)
+	if len(rv.OutReasons) == 0 {
+		sResponse.Cacheable = true
+	}
+	return &sResponse, nil
 
 }
 
@@ -205,10 +218,8 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 	}
 	if isRobotsTxt(r.Request.URL) {
 		decoded, err := base64.StdEncoding.DecodeString(r.Response.Content.Text)
-		//logger.Println(string(decoded))
 		if err != nil {
 			logger.Println("decode error:", err)
-			//return nil, fmt.Errorf(string(res))
 			return nil, err
 		}
 		readCloser := ioutil.NopCloser(bytes.NewReader(decoded))
@@ -226,7 +237,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 
 //cacheable check if resource is cacheable
 func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
-	
+
 	respHeader := r.Response.Headers.(http.Header)
 	reqHeader := r.Request.Headers.(http.Header)
 	//	respHeader := r.Response.castHeaders()
@@ -256,7 +267,7 @@ func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
 		ReqDirectives: reqDir,
 		ReqHeaders:    reqHeader,
 		ReqMethod:     r.Request.Method,
-		NowUTC: time.Now().UTC(),
+		NowUTC:        time.Now().UTC(),
 	}
 
 	rv = cacheobject.ObjectResults{}
@@ -307,8 +318,6 @@ func isRobotsTxt(url string) bool {
 	return false
 }
 
-
-
 //http://choly.ca/post/go-json-marshalling/
 //UnmarshalJSON convert headers to http.Header type while unmarshaling
 func (r *Response) UnmarshalJSON(data []byte) error {
@@ -332,7 +341,6 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
-
 
 //castHeaders serves for casting headers returned by Splash to standard http.Header type
 func castHeaders(splashHeaders interface{}) (header http.Header) {
