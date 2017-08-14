@@ -28,19 +28,17 @@ type Request struct {
 //For some domains like http://yahoo.com it is easier to unmarshal Expires as string
 type Cookie struct {
 	http.Cookie
-	Expires string // optional
+	Expires string
 }
 
 //SResponse returned by Splash as a part of Response
 //It is needed to be passed to caching middleware
 type SResponse struct {
-	Headers interface{} `json:"headers"`
-	//Headers     []Header      `json:"headers"`
-	HeadersSize int      `json:"headersSize"`
-	Cookies     []Cookie `json:"cookies"`
-	//Cookies []Cookie `json:"cookies"`
-	Ok      bool `json:"ok"`
-	Content struct {
+	Headers     interface{} `json:"headers"`
+	HeadersSize int         `json:"headersSize"`
+	Cookies     []Cookie    `json:"cookies"`
+	Ok          bool        `json:"ok"`
+	Content     struct {
 		Text     string `json:"text"`
 		MimeType string `json:"mimeType"`
 		Size     int    `json:"size"`
@@ -56,14 +54,12 @@ type SResponse struct {
 //SRequest returned by Splash as a part of Response
 //It is needed to be passed to caching middleware
 type SRequest struct {
-	Method  string      `json:"method"`
-	Headers interface{} `json:"headers"`
-	//Headers     []Header      `json:"headers"`
-	HeadersSize int      `json:"headersSize"`
-	Cookies     []Cookie `json:"cookies"`
-	//Cookies     []Cookie `json:"cookies"`
-	URL         string `json:"url"`
-	HTTPVersion string `json:"httpVersion"`
+	Method      string      `json:"method"`
+	Headers     interface{} `json:"headers"`
+	HeadersSize int         `json:"headersSize"`
+	Cookies     []Cookie    `json:"cookies"`
+	URL         string      `json:"url"`
+	HTTPVersion string      `json:"httpVersion"`
 	QueryString []struct {
 		Value string `json:"value"`
 		Name  string `json:"name"`
@@ -77,14 +73,14 @@ type Response struct {
 	URL  string `json:"url"`
 	HTML string `json:"html"`
 	//Error is returned in case of an error, f.e. "http404".
-	//If Error is not nil all other fields will be nil 
-	Error string `json:"error,omitempty"`
-	//Cookies             []Cookie   `json:"cookies"`
+	//If Error is not nil all other fields will be nil
+	Error               string     `json:"error,omitempty"`
 	Request             *SRequest  `json:"request"`
 	Response            *SResponse `json:"response"`
 	Cacheable           bool
 	CacheExpirationTime int64
 }
+
 //PingResponse returned by Splash _ping  endpoint
 type PingResponse struct {
 	Maxrss int    `json:"maxrss"`

@@ -75,19 +75,6 @@ func Ping(host string) (*PingResponse, error) {
 	return &p, nil
 }
 
-func GetLUA(req Request) string {
-	if isRobotsTxt(req.URL) {
-		return robotsLUA
-	}
-	if req.SplashWait == 0 {
-		req.SplashWait = viper.GetFloat64("splash-wait")
-	}
-	//if req.Cookies != "" {
-	//	return fmt.Sprintf(LUASetCookie, req.Wait)
-	//}
-	return baseLUA
-
-}
 
 //NewSplashConn creates new connection to Splash Server
 //Generated Splash URL and error are returned 
@@ -122,6 +109,13 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 	} else {
 		wait = viper.GetFloat64("splash-wait")
 	}
+	var LUAScript string  
+	if isRobotsTxt(req.URL) {
+		LUAScript = robotsLUA
+	} else {
+		LUAScript = baseLUA
+	}
+	
 
 	splashURL = fmt.Sprintf(
 		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s", fmt.Sprintf("http://%s/", viper.GetString("splash")),
@@ -131,7 +125,7 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 		wait,
 		neturl.QueryEscape(req.Cookies),
 		neturl.QueryEscape(paramsToLuaTable(req.Params)),
-		neturl.QueryEscape(GetLUA(req)))
+		neturl.QueryEscape(LUAScript))
 
 	//logger.Println(splashURL)
 	return splashURL, nil
@@ -223,14 +217,8 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 			return nil, err
 		}
 		readCloser := ioutil.NopCloser(bytes.NewReader(decoded))
-		//r := bytes.NewReader(decoded)
 		return readCloser, nil
 	}
-	//	_, err := r.setCookieToLUATable()
-	//	if err != nil {
-	//		logger.Println(err)
-	//	}
-	//logger.Println(cookielua)
 	readCloser := ioutil.NopCloser(strings.NewReader(r.HTML))
 	return readCloser, nil
 }
@@ -338,7 +326,6 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 	if r.Response != nil {
 		r.Response.Headers = castHeaders(r.Response.Headers)
 	}
-
 	return nil
 }
 
