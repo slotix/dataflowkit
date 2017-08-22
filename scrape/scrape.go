@@ -39,6 +39,7 @@ type Piece struct {
 	// Extractor contains the logic on how to extract some results from the
 	// selector that is provided to this Piece.
 	Extractor extract.PieceExtractor
+	Details *ScrapeConfig
 }
 
 // The main configuration for a scrape.  Pass this to the New() function.
@@ -80,17 +81,7 @@ type ScrapeConfig struct {
 	Opts ScrapeOptions
 }
 
-/*
-func (c *ScrapeConfig) clone() *ScrapeConfig {
-	ret := &ScrapeConfig{
-		Fetcher:    c.Fetcher,
-		Paginator:  c.Paginator,
-		DividePage: c.DividePage,
-		Pieces:     c.Pieces,
-	}
-	return ret
-}
-*/
+
 
 // ScrapeResults describes the results of a scrape.  It contains a list of all
 // pages (URLs) visited during the process, along with all results generated

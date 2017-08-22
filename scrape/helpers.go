@@ -67,7 +67,7 @@ func findIntersection(doc *goquery.Selection, selectors []string) (*goquery.Sele
 		sel := doc.Find(f)
 		//logger.Println(f, sel.Length())
 		//col.genAttrFieldName(f.Name, sel)
-		if sel.Length() > 0 { //don't add selectors to intersection if lenght is 0. Otherwise the whole intersection returns No selectors error
+		if sel.Length() > 0 { //don't add selectors to intersection if length is 0. Otherwise the whole intersection returns No selectors error
 			if i == 0 {
 				intersection = intersectionFL(sel)
 			} else {

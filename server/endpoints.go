@@ -18,7 +18,6 @@ func MakeFetchEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {			
 		req := request.(splash.Request)
 		v, err := svc.Fetch(req)
-		//logger.Println(err)
 		if err != nil {
 			return nil, err
 		}

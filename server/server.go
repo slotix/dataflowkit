@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/spf13/viper"
 	"context"
 	"fmt"
 	"net/http"
@@ -32,13 +33,14 @@ func Start(port string) {
 
 	var svc Service
 	svc = ParseService{}
-	svc = StatsMiddleware("18")(svc)
-	svc = CachingMiddleware()(svc)
-	//svc = server.ProxyingMiddleware(ctx, "http://127.0.0.1:8000")(svc)
-	//svc = server.ProxyingMiddleware(ctx,"")(svc)
+	//svc = ProxyingMiddleware(ctx, "http://127.0.0.1:8000")(svc)
+	//svc = StatsMiddleware("18")(svc)
+	//svc = CachingMiddleware()(svc)
+	
+	svc = ProxyingMiddleware(ctx, viper.GetString("proxy"))(svc)
 
-	svc = LoggingMiddleware(logger)(svc)
-	svc = RobotsTxtMiddleware()(svc)
+	//svc = LoggingMiddleware(logger)(svc)
+	//svc = RobotsTxtMiddleware()(svc)
 
 	endpoints := Endpoints{
 		FetchEndpoint: MakeFetchEndpoint(svc),
