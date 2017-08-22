@@ -32,7 +32,7 @@ type ServiceMiddleware func(Service) Service
 
 //Fetch returns splash.Request
 func (ParseService) Fetch(req splash.Request) (interface{}, error) {
-	//logger.Println(req)
+	logger.Println("service fetch",req)
 	fetcher, err := NewSplashFetcher()
 	if err != nil {
 		logger.Println(err)

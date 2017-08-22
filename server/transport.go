@@ -29,14 +29,17 @@ var (
 func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var request splash.Request
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		logger.Println(err)
 		return nil, err
 	}
+	//logger.Println(request)
 	//request.URL normalization and validation
 	reqURL := strings.TrimSpace(request.URL)
 	if _, err := url.ParseRequestURI(reqURL); err != nil {
 		return nil, err
 	}
 	request.URL = reqURL
+	logger.Println("transport request",request.URL)
 	return request, nil
 }
 
@@ -48,6 +51,10 @@ func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 		return nil
 	}
 	sResponse := response.(*splash.Response)
+	logger.Println("transport response", sResponse.Error)
+	if sResponse.Error != ""{
+		return errors.New(sResponse.Error)
+	}
 	content, err := sResponse.GetContent()
 	if err != nil {
 		return err

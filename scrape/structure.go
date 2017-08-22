@@ -11,9 +11,9 @@ type Extractor struct {
 type field struct {
 	Name      string    `json:"name" validate:"required"`
 	Selector  string    `json:"selector" validate:"required"`
-	Count     int       `json:"count"`
-	Details   Payload   `json:"-" validate:"-"`
+	//Count     int       `json:"count"`
 	Extractor Extractor `json:"extractor"`
+	Details   *Payload  `json:"details"`
 }
 
 type paginator struct {
@@ -26,11 +26,11 @@ type Payload struct {
 	Name                string         `json:"name" validate:"required"`
 	Request             splash.Request `json:"request"`
 	Fields              []field        `json:"fields" validate:"gt=0"`
-	Paginator           paginator      `json:"paginator"`
 	PayloadMD5          []byte         `json:"payloadMD5"`
 	Format              string         `json:"format"`
-	PaginateResults     *bool           `json:"paginateResults"`
+	Paginator           paginator      `json:"paginator"`
+	PaginateResults     *bool          `json:"paginateResults"`
 	FetchDelay          time.Duration  `json:"fetchDelay"`
-	RandomizeFetchDelay *bool           `json:"randomizeFetchDelay"`
+	RandomizeFetchDelay *bool          `json:"randomizeFetchDelay"`
 	RetryTimes          int            `json:"retryTimes"`
 }

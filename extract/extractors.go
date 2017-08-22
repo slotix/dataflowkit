@@ -50,7 +50,7 @@ var _ PieceExtractor = Const{}
 type Text struct {
 	// If text is empty in the selection, then return the empty string from Extract,
 	// instead of 'nil'.  This signals that the result of this Piece
-	// should be included to the results, as opposed to omiting the
+	// should be included to the results, as opposed to omitting the
 	// empty string.
 	IncludeIfEmpty bool
 }
@@ -69,7 +69,7 @@ var _ PieceExtractor = Text{}
 type MultipleText struct {
 	// If there are no items in the selection, then return empty list from Extract,
 	// instead of the 'nil'.  This signals that the result of this Piece
-	// should be included to the results, as opposed to omiting the
+	// should be included to the results, as opposed to omitting the
 	// empty list.
 	IncludeIfEmpty bool
 }
@@ -173,7 +173,7 @@ type Regex struct {
 	// If no matches of the provided regex could be extracted, then return the empty list
 	// from Extract, instead of 'nil'.  This signals that the result of
 	// this Piece should be included to the results, as opposed to
-	// omiting the empty list.
+	// omitting the empty list.
 	IncludeIfEmpty bool
 }
 
@@ -276,7 +276,7 @@ type Attr struct {
 
 	// If no elements with this attribute are found, then return the empty list from
 	// Extract, instead of  'nil'.  This signals that the result of this
-	// Piece should be included to the results, as opposed to omiting
+	// Piece should be included to the results, as opposed to omitting
 	// the empty list.
 	IncludeIfEmpty bool
 }
@@ -311,7 +311,7 @@ var _ PieceExtractor = Attr{}
 type Count struct {
 	// If no elements with this attribute are found, then return a number from
 	// Extract, instead of 'nil'.  This signals that the result of this
-	// Piece should be included to the results, as opposed to omiting
+	// Piece should be included to the results, as opposed to omitting
 	// the empty list.
 	IncludeIfEmpty bool
 }

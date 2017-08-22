@@ -134,7 +134,7 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 //GetResponse result is passed to  caching middleware
 //to provide a RFC7234 compliant HTTP cache
 func GetResponse(splashURL string) (*Response, error) {
-	//logger.Println(splashURL)
+	logger.Println(splashURL)
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
@@ -168,6 +168,7 @@ func GetResponse(splashURL string) (*Response, error) {
 	// Sometimes no response, request returned  by Splash.
 	// To solve this problem gc method should be called to clear WebKit caches and then
 	// GetResponse again. See more at https://github.com/scrapinghub/splash/issues/613
+	
 	if sResponse.Response == nil || sResponse.Request == nil && sResponse.HTML != "" {
 
 		var response *Response
@@ -300,7 +301,7 @@ func Fetch(splashURL string) (io.ReadCloser, error) {
 }
 
 func isRobotsTxt(url string) bool {
-	if strings.Contains(url, "robots.txt") {
+	if strings.HasSuffix(url, "robots.txt") {
 		return true
 	}
 	return false

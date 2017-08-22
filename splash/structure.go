@@ -4,15 +4,6 @@ import (
 	"net/http"
 )
 
-type Connection struct {
-	Host            string
-	User            string
-	Password        string
-	Timeout         int
-	ResourceTimeout int
-	LUAScript       string
-}
-
 type Request struct {
 	URL string `json:"url"`
 	//Params used for passing formdata to LUA script
@@ -24,7 +15,7 @@ type Request struct {
 	SplashWait float64 `json:"wait,omitempty"`
 }
 
-//Cookie - Custom Cookie struct is used to avoid problems whith unmarshalling data with invalid Expires field which has time.Time type for original http.Cookie struct.
+//Cookie - Custom Cookie struct is used to avoid problems with unmarshalling data with invalid Expires field which has time.Time type for original http.Cookie struct.
 //For some domains like http://yahoo.com it is easier to unmarshal Expires as string
 type Cookie struct {
 	http.Cookie
@@ -77,7 +68,7 @@ type Response struct {
 	Error               string     `json:"error,omitempty"`
 	Request             *SRequest  `json:"request"`
 	Response            *SResponse `json:"response"`
-	Cacheable           bool
+	Cacheable      bool
 	CacheExpirationTime int64
 }
 

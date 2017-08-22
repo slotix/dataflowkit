@@ -44,7 +44,6 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 		logger.Println(err)
 	}
 	pieces := []Piece{}
-	//pl := p.Payloads[0]
 	selectors := []string{}
 	names := []string{}
 	for _, f := range p.Fields {

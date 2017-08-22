@@ -34,6 +34,7 @@ import (
 var (
 	//VERSION               string // VERSION is set during build
 	port                  string
+	proxy                 string
 	redisHost             string
 	redisExpire           int
 	redisNetwork          string
@@ -110,7 +111,8 @@ func init() {
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
 
-	RootCmd.Flags().StringVarP(&port, "port", "p", ":8000", "HTTP listen address")
+	RootCmd.Flags().StringVarP(&port, "listen", "l", ":8000", "HTTP listen address")
+	RootCmd.Flags().StringVarP(&proxy, "proxy", "p", "", "Optional comma-separated list of URLs to proxy uppercase requests")
 	RootCmd.Flags().StringVarP(&redisHost, "redis", "r", "127.0.0.1:6379", "Redis host address")
 	RootCmd.Flags().IntVarP(&redisExpire, "redis-expire", "", 3600, "Default Redis expire value")
 	RootCmd.Flags().StringVarP(&redisNetwork, "redis-network", "", "tcp", "Redis Network")
@@ -120,6 +122,7 @@ func init() {
 	RootCmd.Flags().Float64VarP(&splashWait, "splash-wait", "", 0.5, "Time in seconds to wait until js scripts loaded.")
 	viper.AutomaticEnv() // read in environment variables that match
 	viper.BindPFlag("port", RootCmd.Flags().Lookup("port"))
+	viper.BindPFlag("proxy", RootCmd.Flags().Lookup("proxy"))
 	viper.BindPFlag("redis", RootCmd.Flags().Lookup("redis"))
 	viper.BindPFlag("redis-expire", RootCmd.Flags().Lookup("redis-expire"))
 	viper.BindPFlag("redis-network", RootCmd.Flags().Lookup("redis-network"))
