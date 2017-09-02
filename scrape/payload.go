@@ -2,8 +2,11 @@ package scrape
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
+	"strings"
 
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/helpers"
@@ -53,11 +56,11 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 			params = f.Extractor.Params.(map[string]interface{})
 		}
 		switch eType := f.Extractor.Type; eType {
-		//For Link type by default Two pieces with different Text and Attr="href" extractors will be added for field selector.
+		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
 		case "link":
 			t := &extract.Text{}
 			if params != nil {
-				err := extract.FillStruct(params, t)
+				err := FillStruct(params, t)
 				if err != nil {
 					logger.Println(err)
 				}
@@ -72,7 +75,7 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 
 			a := &extract.Attr{Attr: "href"}
 			if params != nil {
-				err := extract.FillStruct(params, a)
+				err := FillStruct(params, a)
 				if err != nil {
 					logger.Println(err)
 				}
@@ -86,11 +89,12 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 			names = append(names, fName)
 			//Add selector just one time for link type
 			selectors = append(selectors, f.Selector)
+		
 		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
 		case "image":
 			a := &extract.Attr{Attr: "src"}
 			if params != nil {
-				err := extract.FillStruct(params, a)
+				err := FillStruct(params, a)
 				if err != nil {
 					logger.Println(err)
 				}
@@ -105,7 +109,7 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 
 			a = &extract.Attr{Attr: "alt"}
 			if params != nil {
-				err := extract.FillStruct(params, a)
+				err := FillStruct(params, a)
 				if err != nil {
 					logger.Println(err)
 				}
@@ -117,15 +121,16 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 				Extractor: a,
 			})
 			names = append(names, fName)
-			//Add selector just one time for link type
+			//Add selector just one time for image type
 			selectors = append(selectors, f.Selector)
 
 		default:
 			var e extract.PieceExtractor
 			switch eType {
 			case "const":
-				c := &extract.Const{Val: params["value"]}
-				e = c
+				//	c := &extract.Const{Val: params["value"]}
+				//	e = c
+				e = &extract.Const{}
 			case "count":
 				e = &extract.Count{}
 			case "text":
@@ -144,10 +149,9 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 				r.Regex = regexp.MustCompile(regExp.(string))
 				e = r
 			}
-			//extractor, err := extract.FillParams(f.Extractor.Type, params)
-			//err := e.FillParams(params)
+			
 			if params != nil {
-				err := extract.FillStruct(params, e)
+				err := FillStruct(params, e)
 				if err != nil {
 					logger.Println(err)
 				}
@@ -181,4 +185,42 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 		},
 	}
 	return
+}
+
+func FillStruct(m map[string]interface{}, s interface{}) error {
+	for k, v := range m {
+		//	logger.Println(k,v)
+		err := SetField(s, k, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func SetField(obj interface{}, name string, value interface{}) error {
+	//logger.Printf("%T, %t", obj, obj)
+	structValue := reflect.ValueOf(obj).Elem()
+	//structFieldValue := structValue.FieldByName(name)
+	structFieldValue := structValue.FieldByName(strings.Title(name))
+
+	if !structFieldValue.IsValid() {
+		//skip non-existent fields
+		return nil
+		//return fmt.Errorf("No such field: %s in obj", name)
+	}
+
+	if !structFieldValue.CanSet() {
+		return fmt.Errorf("Cannot set %s field value", name)
+	}
+
+	structFieldType := structFieldValue.Type()
+	val := reflect.ValueOf(value)
+	if structFieldType != val.Type() {
+		invalidTypeError := errors.New("Provided value type didn't match obj field type")
+		return invalidTypeError
+	}
+
+	structFieldValue.Set(val)
+	return nil
 }

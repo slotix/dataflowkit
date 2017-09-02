@@ -30,7 +30,7 @@ type ScrapeOptions struct {
 
 // The default options during a scrape.
 var DefaultOptions = ScrapeOptions{
-	MaxPages: 0,
+	MaxPages: 1,
 	Format: "json",
 	PaginateResults: false,
 	FetchDelay: 500 * time.Millisecond,

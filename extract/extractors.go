@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 	"regexp"
-	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/net/html"
@@ -41,7 +39,6 @@ type Const struct {
 func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
 	return e.Val, nil
 }
-
 
 var _ PieceExtractor = Const{}
 
@@ -88,7 +85,6 @@ func (e MultipleText) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
-
 var _ PieceExtractor = MultipleText{}
 
 // Html extracts and returns the HTML from inside each element of the
@@ -121,7 +117,6 @@ func (e Html) Extract(sel *goquery.Selection) (interface{}, error) {
 	return ret, nil
 }
 
-
 var _ PieceExtractor = Html{}
 
 // OuterHtml extracts and returns the HTML of each element of the
@@ -144,7 +139,6 @@ func (e OuterHtml) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	return output.String(), nil
 }
-
 
 var _ PieceExtractor = OuterHtml{}
 
@@ -247,6 +241,7 @@ func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	return results, nil
 }
+
 /*
 func (e Regex) FillParams(m map[string]interface{}) error {
 	err := FillStruct(m, &e)
@@ -304,7 +299,6 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
-
 var _ PieceExtractor = Attr{}
 
 // Count extracts the count of elements that are matched and returns it.
@@ -325,8 +319,36 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 	return l, nil
 }
 
-
 var _ PieceExtractor = Count{}
+
+/*
+// Link is a PieceExtractor that returns the combined text contents and  Attr{Attr: "href"} of
+// the given selection
+type Link struct {
+	// Piece should be included to the results, as opposed to omitting
+	// the empty list.
+	//IncludeIfEmpty bool
+}
+
+type LinkResult struct {
+	text string
+	href string
+}
+
+func (e Link) Extract(sel *goquery.Selection) (interface{}, error) {
+	t, err := Text{}.Extract(sel)
+	if err != nil {
+		logger.Println(err)
+	}
+	a, err := Attr{Attr: "href"}.Extract(sel)
+	if err != nil {
+		logger.Println(err)
+	}
+	return LinkResult{t.(string), a.(string)}, nil
+}
+
+var _ PieceExtractor = Link{}
+*/
 /*
 func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, error) {
 	//var err error
@@ -355,42 +377,3 @@ func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, erro
 
 }
 */
-
-
-func FillStruct(m map[string]interface{}, s interface{}) error {
-	for k, v := range m {
-	//	logger.Println(k,v)
-		err := SetField(s, k, v)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func SetField(obj interface{}, name string, value interface{}) error {
-	//logger.Printf("%T, %t", obj, obj)
-	structValue := reflect.ValueOf(obj).Elem()
-	//structFieldValue := structValue.FieldByName(name)
-	structFieldValue := structValue.FieldByName(strings.Title(name))
-
-	if !structFieldValue.IsValid() {
-		//skip non-existent fields
-		return nil
-		//return fmt.Errorf("No such field: %s in obj", name)
-	}
-
-	if !structFieldValue.CanSet() {
-		return fmt.Errorf("Cannot set %s field value", name)
-	}
-
-	structFieldType := structFieldValue.Type()
-	val := reflect.ValueOf(value)
-	if structFieldType != val.Type() {
-		invalidTypeError := errors.New("Provided value type didn't match obj field type")
-		return invalidTypeError
-	}
-
-	structFieldValue.Set(val)
-	return nil
-}

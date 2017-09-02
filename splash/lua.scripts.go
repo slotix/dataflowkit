@@ -33,7 +33,7 @@ end
 //Response object headers may contain an Object like
 //name: "Set-Cookie"
 //value: "session_id=29d7b97879209ca89316181ed14eb01f; path=/; httponly"
-//These parameters should be passed to the next pages on the same domain.
+//This cookie should be passed to the next pages on the same domain.
 //splash:add_cookie{"session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"}
 
 

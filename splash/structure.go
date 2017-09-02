@@ -5,6 +5,7 @@ import (
 )
 
 type Request struct {
+	//URL is required to be passed to Fetch Endpoint
 	URL string `json:"url"`
 	//Params used for passing formdata to LUA script
 	Params string `json:"params,omitempty"`

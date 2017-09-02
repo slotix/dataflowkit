@@ -1,0 +1,11 @@
+FROM scrapinghub/splash
+MAINTAINER kev <dm@slotix.sk>
+
+ADD https://github.com/alexellis/faas/releases/download/0.5.6-alpha/fwatchdog /usr/bin
+RUN chmod +x /usr/bin/fwatchdog
+EXPOSE 8050 8051 5023
+ENV fprocess "python3 /app/bin/splash --proxy-profiles-path /etc/splash/proxy-profiles --js-profiles-path /etc/splash/js-profiles --filters-path /etc/splash/filters --lua-package-path /etc/splash/lua_modules/?.lua"
+
+HEALTHCHECK --interval=5s CMD [ -e /tmp/.lock ] || exit 1
+
+CMD ["/usr/bin/fwatchdog"]
