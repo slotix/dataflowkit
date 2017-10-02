@@ -15,10 +15,10 @@ import (
 )
 
 func init() {
-	viper.Set("splash", "127.0.0.1:8050")
-	viper.Set("splash-timeout", "20")
-	viper.Set("splash-resource-timeout", "30")
-	viper.Set("splash-wait", "0,5")
+	viper.Set("SPLASH", "127.0.0.1:8050")
+	viper.Set("SPLASH_TIMEOUT", "20")
+	viper.Set("SPLASH_RESOURCE_TIMEOUT", "30")
+	viper.Set("SPLASH_WAIT", "0,5")
 }
 
 func RunTasks(from, to int) {

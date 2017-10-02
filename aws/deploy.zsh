@@ -92,7 +92,9 @@ aws lambda create-function                                                     \
   --function-name fetch                                               \
   --zip-file fileb://handler.zip                                               \
   --role $ROLE_ARN                                                             \
-  --runtime python2.7                                                          \
+  --environment Variables="{SPLASH=ec2-107-22-94-252.compute-1.amazonaws.com:8050,SPLASH_TIMEOUT=20,SPLASH_RESOURCE_TIMEOUT=30,SPLASH_WAIT='0.5'}"              \
+  --runtime python2.7              \
+  --timeout 3                      \
   --handler handler.Handle || exit 1
 
 echo

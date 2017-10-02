@@ -1,0 +1,6 @@
+.env
+.serverless
+*.so
+*.zip
+
+.idea

@@ -133,14 +133,15 @@ func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger)
 		httptransport.ServerErrorEncoder(encodeError),
 	}
 
-	r.Methods("POST").Path("/app/fetch").Handler(httptransport.NewServer(
+	//"/app/parse"
+	r.Methods("POST").Path("/fetch").Handler(httptransport.NewServer(
 		endpoint.FetchEndpoint,
 		decodeFetchRequest,
 		encodeFetchResponse,
 		options...,
 	))
 
-	r.Methods("POST").Path("/app/parse").Handler(httptransport.NewServer(
+	r.Methods("POST").Path("/parse").Handler(httptransport.NewServer(
 		endpoint.ParseEndpoint,
 		decodeParseRequest,
 		encodeParseResponse,

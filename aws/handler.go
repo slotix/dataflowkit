@@ -4,26 +4,19 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
-	"os"
 
 	"github.com/eawsy/aws-lambda-go-core/service/lambda/runtime"
 	"github.com/slotix/dataflowkit/server"
 	"github.com/slotix/dataflowkit/splash"
-	"github.com/spf13/viper"
 )
 
-var logger *log.Logger
-
-func init() {
-	logger = log.New(os.Stdout, "fetch: ", log.Lshortfile)
-}
 
 func Fetch(req splash.Request) (string, error) {
-	viper.Set("splash", "107.22.94.252:8050")
-	viper.Set("splash-timeout", "20")
-	viper.Set("splash-resource-timeout", "30")
-	viper.Set("splash-wait", "0,5")
-
+	//viper.Set("SPLASH", "107.22.94.252:8050")
+	//viper.Set("SPLASH_TIMEOUT", "20")
+	//viper.Set("SPLASH_RESOURCE_TIMEOUT", "30")
+	//viper.Set("SPLASH_WAIT", "0,5")
+	log.Printf("Fetching %s\n", req.URL)
 	fetcher, err := server.NewSplashFetcher()
 	if err != nil {
 		log.Println(err)

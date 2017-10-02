@@ -1,7 +1,6 @@
 package server
 
 import (
-	"github.com/spf13/viper"
 	"context"
 	"fmt"
 	"net/http"
@@ -11,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
-	
 )
 
 func Start(port string) {
@@ -36,8 +34,8 @@ func Start(port string) {
 	//svc = ProxyingMiddleware(ctx, "http://127.0.0.1:8000")(svc)
 	//svc = StatsMiddleware("18")(svc)
 	//svc = CachingMiddleware()(svc)
-	
-	svc = ProxyingMiddleware(ctx, viper.GetString("proxy"))(svc)
+
+	//svc = ProxyingMiddleware(ctx, viper.GetString("proxy"))(svc)
 
 	//svc = LoggingMiddleware(logger)(svc)
 	//svc = RobotsTxtMiddleware()(svc)

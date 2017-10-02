@@ -75,7 +75,7 @@ func CheckServices() (status map[string]string) {
 		splashConn{
 			//conn: splash.Connection{
 				
-				Host: viper.GetString("splash"),
+				Host: viper.GetString("SPLASH"),
 		},
 	}
 	for _, srv := range services {

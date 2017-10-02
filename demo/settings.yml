@@ -1,0 +1,7 @@
+---
+project: demo
+default-region: us-east-1
+code-bucket: gordon-demo-438e3425
+apps:
+  - gordon.contrib.lambdas
+# - firstapp

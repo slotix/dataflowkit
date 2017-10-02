@@ -1,0 +1,16 @@
+service: dfk
+package:
+  artifact: package.zip
+provider:
+  name: aws
+  runtime: python2.7
+  stage: ${env:ENV}
+  region: ${env:AWS_REGION}
+functions:
+  fetch:
+    handler: handler.Handler
+    events:
+      - http:
+          path: fetch
+          method: post
+          cors: true

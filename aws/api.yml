@@ -1,0 +1,63 @@
+---
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: "Dataflow Kit"
+host: "y44g6skp50.execute-api.us-east-1.amazonaws.com"
+basePath: "/prod"
+schemes:
+- "https"
+paths:
+  /fetch:
+    post:
+      operationId: "fetchURL"
+      consumes:
+      - "application/json"
+      produces:
+      - "text/html"
+      parameters:
+      - in: "body"
+        name: "Request"
+        required: true
+        schema:
+          $ref: "#/definitions/Request"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/Response"
+        400:
+          description: "400 response"
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: "200"
+          Invalid Request.*:
+            statusCode: "400"
+        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:060679207441:function:fetch/invocations"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws"
+definitions:
+  Response:
+    type: "object"
+    title: "Response"
+  Request:
+    type: "object"
+    required:
+    - "url"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      url:
+        type: "string"
+      params:
+        type: "string"
+      cookie:
+        type: "string"
+      func:
+        type: "string"
+      wait:
+        type: "number"
