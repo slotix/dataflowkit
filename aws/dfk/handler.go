@@ -20,13 +20,9 @@ func init() {
 
 func NewHandler() apigatewayproxy.Handler {
 	ln := net.Listen()
-
 	handle := apigatewayproxy.New(ln, nil).Handle
-
 	http.HandleFunc("/fetch", handleFetch)
-
 	go http.Serve(ln, nil)
-
 	return handle
 }
 
@@ -34,15 +30,18 @@ func handleFetch(w http.ResponseWriter, r *http.Request) {
 	var request splash.Request
 	req, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	err = json.Unmarshal(req, &request)
 	if err != nil {
-		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	response, err := Fetch(request)
 	if err != nil {
-		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
@@ -50,11 +49,6 @@ func handleFetch(w http.ResponseWriter, r *http.Request) {
 }
 
 func Fetch(req splash.Request) (string, error) {
-	//viper.Set("SPLASH", "107.22.94.252:8050")
-	//viper.Set("SPLASH_TIMEOUT", "20")
-	//viper.Set("SPLASH_RESOURCE_TIMEOUT", "30")
-	//viper.Set("SPLASH_WAIT", "0,5")
-	log.Printf("Fetching %s\n", req.URL)
 	fetcher, err := server.NewSplashFetcher()
 	if err != nil {
 		log.Println(err)

@@ -9,12 +9,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/afex/hystrix-go"
-  packages = ["hystrix","hystrix/metric_collector","hystrix/rolling"]
-  revision = "f118cd938f786d24f46cc307981d8f63b7951020"
-
-[[projects]]
-  branch = "master"
   name = "github.com/andybalholm/cascadia"
   packages = ["."]
   revision = "349dd0209470eabd9514242c688c403c0926d266"
@@ -41,7 +35,7 @@
   branch = "master"
   name = "github.com/eawsy/aws-lambda-go-net"
   packages = ["service/lambda/runtime/net","service/lambda/runtime/net/apigatewayproxy"]
-  revision = "5bc0f1130ff6a7590f08add77c01f23bb58772c1"
+  revision = "86f857e2e4413fc7ccb271063aa37b9cd5288af7"
 
 [[projects]]
   name = "github.com/fsnotify/fsnotify"
@@ -57,7 +51,7 @@
 
 [[projects]]
   name = "github.com/go-kit/kit"
-  packages = ["circuitbreaker","endpoint","log","ratelimit","sd","sd/lb","transport/http"]
+  packages = ["endpoint","log","transport/http"]
   revision = "a9ca6725cbbea455e61c6bc8a1ed28e81eb3493b"
   version = "v0.5.0"
 
@@ -90,12 +84,6 @@
   name = "github.com/hashicorp/hcl"
   packages = [".","hcl/ast","hcl/parser","hcl/scanner","hcl/strconv","hcl/token","json/parser","json/scanner","json/token"]
   revision = "68e816d1c783414e79bc65b3994d9ab6b0a722ab"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/juju/ratelimit"
-  packages = ["."]
-  revision = "5b9ff866471762aa2ab2dced63c9fb6f53921342"
 
 [[projects]]
   branch = "master"
@@ -137,19 +125,13 @@
   branch = "master"
   name = "github.com/slotix/dataflowkit"
   packages = ["cache","extract","helpers","paginate","robotstxt","scrape","server","splash"]
-  revision = "0682c809b80918d00a4fdd174fad87956bf103ed"
-
-[[projects]]
-  name = "github.com/sony/gobreaker"
-  packages = ["."]
-  revision = "e9556a45379ef1da12e54847edb2fb3d7d566f36"
-  version = "0.3.0"
+  revision = "49777cd237cb89d576f28628400ff5c1534ce096"
 
 [[projects]]
   branch = "master"
   name = "github.com/spf13/afero"
   packages = [".","mem"]
-  revision = "ee1bd8ee15a1306d1f9201acc41ef39cd9f99a1b"
+  revision = "8a6ade7159a9b7fff5d2feac091c425177ac1b28"
 
 [[projects]]
   name = "github.com/spf13/cast"
@@ -174,12 +156,6 @@
   packages = ["."]
   revision = "25b30aa063fc18e48662b86996252eabdcf2f0c7"
   version = "v1.0.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/streadway/handy"
-  packages = ["breaker"]
-  revision = "f450267a206e480d863d2a92846a40f6e2896b2a"
 
 [[projects]]
   branch = "master"

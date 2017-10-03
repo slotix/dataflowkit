@@ -9,6 +9,11 @@ provider:
 functions:
   fetch:
     handler: handler.Handler
+    environment:
+      SPLASH: ${env:SPLASH}
+      SPLASH_TIMEOUT: ${env:SPLASH_TIMEOUT}
+      SPLASH_RESOURCE_TIMEOUT: ${env:SPLASH_RESOURCE_TIMEOUT}
+      SPLASH_WAIT: ${env:SPLASH_WAIT}
     events:
       - http:
           path: fetch
