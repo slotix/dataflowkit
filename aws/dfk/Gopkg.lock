@@ -125,13 +125,13 @@
   branch = "master"
   name = "github.com/slotix/dataflowkit"
   packages = ["cache","extract","helpers","paginate","robotstxt","scrape","server","splash"]
-  revision = "49777cd237cb89d576f28628400ff5c1534ce096"
+  revision = "46fb9cbc1836760100b388ece7866816bdf41ced"
 
 [[projects]]
   branch = "master"
   name = "github.com/spf13/afero"
   packages = [".","mem"]
-  revision = "8a6ade7159a9b7fff5d2feac091c425177ac1b28"
+  revision = "3de492c3cda9570c77bc1f495857bfbf4b760efd"
 
 [[projects]]
   name = "github.com/spf13/cast"
@@ -167,7 +167,7 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["html","html/atom","idna","publicsuffix"]
-  revision = "0a9397675ba34b2845f758fe3cd68828369c6517"
+  revision = "a04bdaca5b32abe1c069418fb7088ae607de5bd0"
 
 [[projects]]
   branch = "master"
@@ -196,6 +196,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b0cf5bb9f55aa630461e9d5d5f8cd16e1ff79558af186e1399ce163f151823cf"
+  inputs-digest = "afbf004b72266937cb33d6607ba64abcf47a347931ba6789559c3450e577cdd0"
   solver-name = "gps-cdcl"
   solver-version = 1

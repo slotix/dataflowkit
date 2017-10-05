@@ -19,3 +19,7 @@ functions:
           path: fetch
           method: post
           cors: true
+      - http:
+          path: parse
+          method: post
+          cors: true

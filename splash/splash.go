@@ -135,7 +135,7 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 //GetResponse result is passed to  caching middleware
 //to provide a RFC7234 compliant HTTP cache
 func GetResponse(splashURL string) (*Response, error) {
-	logger.Println(splashURL)
+	//logger.Println(splashURL)
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
