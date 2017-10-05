@@ -37,8 +37,8 @@ func Start(port string) {
 
 	//svc = ProxyingMiddleware(ctx, viper.GetString("proxy"))(svc)
 
-	//svc = LoggingMiddleware(logger)(svc)
-	//svc = RobotsTxtMiddleware()(svc)
+	svc = LoggingMiddleware(logger)(svc)
+	svc = RobotsTxtMiddleware()(svc)
 
 	endpoints := Endpoints{
 		FetchEndpoint: MakeFetchEndpoint(svc),
