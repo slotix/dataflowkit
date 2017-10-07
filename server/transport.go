@@ -137,7 +137,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	//w.WriteHeader(http.StatusInternalServerError)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		//"errorType": "BadRequest",
-		"httpStatus": httpStatus,
+		//"httpStatus": httpStatus,
 		"message": err.Error(),
 	})
 }
