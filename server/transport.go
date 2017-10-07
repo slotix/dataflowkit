@@ -25,21 +25,32 @@ var (
 	ErrInvalidURL = errors.New("invalid URL specified")
 )
 
-//decodeFetchRequest
+type errorFetchRequest struct {
+	err  error
+}
+
+func (e *errorFetchRequest) Error() string { return e.err.Error() }
+
+
+//decodeFetchRequest 
+//if error is not nil, server should return  
+//400 Bad Request
+//The server cannot or will not process the request due to an apparent client error (e.g., malformed request syntax, size too large, invalid request message framing, or deceptive request routing).
 func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var request splash.Request
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		logger.Println(err)
-		return nil, err
+		logger.Printf("Type: %T\n", err)
+		return nil, &errorFetchRequest{err}//err
 	}
-	//logger.Println(request)
 	//request.URL normalization and validation
 	reqURL := strings.TrimSpace(request.URL)
 	if _, err := url.ParseRequestURI(reqURL); err != nil {
-		return nil, err
+		//logger.Printf("Type: %T\n", err)
+		//logger.Printf("Op: %s\n", err.(*url.Error).Op)
+		return nil, &errorFetchRequest{err}
 	}
 	request.URL = reqURL
-	logger.Println("transport request",request.URL)
+	logger.Println("transport request", request.URL)
 	return request, nil
 }
 
@@ -52,7 +63,7 @@ func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 	}
 	sResponse := response.(*splash.Response)
 	logger.Println("transport response", sResponse.Error)
-	if sResponse.Error != ""{
+	if sResponse.Error != "" {
 		return errors.New(sResponse.Error)
 	}
 	content, err := sResponse.GetContent()
@@ -108,9 +119,26 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		panic("encodeError with nil error")
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusInternalServerError)
+	//logger.Printf("Type: %T\n", err)
+	//logger.Println(err)
+	//t = err.(type)
+	var httpStatus int
+	switch err.(type) {
+	default:
+		httpStatus = http.StatusInternalServerError
+		w.WriteHeader(httpStatus)
+		
+	case *errorFetchRequest:
+		//return 400 Status
+		httpStatus = http.StatusBadRequest
+		w.WriteHeader(httpStatus)
+	}
+	
+	//w.WriteHeader(http.StatusInternalServerError)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"error": err.Error(),
+		//"errorType": "BadRequest",
+		"httpStatus": httpStatus,
+		"message": err.Error(),
 	})
 }
 
