@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/eawsy/aws-lambda-go-net/service/lambda/runtime/net"
 	"github.com/eawsy/aws-lambda-go-net/service/lambda/runtime/net/apigatewayproxy"
+	"github.com/go-kit/kit/log"
 	"github.com/slotix/dataflowkit/server"
 )
 
@@ -27,20 +30,29 @@ func NewHandler() apigatewayproxy.Handler {
 
 func NewHandler() apigatewayproxy.Handler {
 	ctx := context.Background()
-	
+	// Logging domain.
+	var logger log.Logger
+	{
+		logger = log.NewLogfmtLogger(os.Stderr)
+		//logger = log.With(logger, "ts", log.DefaultTimestampUTC)
+		logger = log.With(logger, "ts", time.Now().Format("Jan _2 15:04:05"))
+		logger = log.With(logger, "caller", log.DefaultCaller)
+	}
+
 	var svc server.Service
 	svc = server.ParseService{}
 
 	//svc = StatsMiddleware("18")(svc)
 	//svc = CachingMiddleware()(svc)
-	//svc = LoggingMiddleware(logger)(svc)
+	svc = server.LoggingMiddleware(logger)(svc)
 	svc = server.RobotsTxtMiddleware()(svc)
 
 	endpoints := server.Endpoints{
 		FetchEndpoint: server.MakeFetchEndpoint(svc),
 		ParseEndpoint: server.MakeParseEndpoint(svc),
 	}
-	r := server.MakeHttpHandler(ctx, endpoints, nil)
+	//r := server.MakeHttpHandler(ctx, endpoints, nil)
+	r := server.MakeHttpHandler(ctx, endpoints, logger)
 	ln := net.Listen()
 	handle := apigatewayproxy.New(ln, nil).Handle
 	go http.Serve(ln, r)
