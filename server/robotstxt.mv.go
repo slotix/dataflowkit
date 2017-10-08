@@ -15,20 +15,13 @@ type robotstxtMiddleware struct {
 	Service
 }
 
-//403 Forbidden
-type errorForbiddenByRobots struct {
-	URL string
-}
-
-func (e *errorForbiddenByRobots) Error() string { return e.URL + ": forbidden by robots.txt" }
-
 func (mw robotstxtMiddleware) Fetch(req splash.Request) (output interface{}, err error) {
 	robotsData, err := robotstxt.RobotsTxtData(req)
 	if err != nil {
 		return nil, err
 	}
 	if !robotstxt.Allowed(req.URL, robotsData) {
-		return nil, &errorForbiddenByRobots{req.URL}
+		return nil, &splash.ErrorForbiddenByRobots{req.URL}
 	}
 	output, err = mw.Service.Fetch(req)
 	if err != nil {

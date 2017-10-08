@@ -25,29 +25,22 @@ var (
 	ErrInvalidURL = errors.New("invalid URL specified")
 )
 
-//400 Bad Request
-type errorBadRequest struct {
-	err error
-}
-
-func (e *errorBadRequest) Error() string { return e.err.Error() }
-
 //decodeFetchRequest
 //if error is not nil, server should return
 //400 Bad Request
-//The server cannot or will not process the request due to an apparent client error (e.g., malformed request syntax, size too large, invalid request message framing, or deceptive request routing).
+
 func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var request splash.Request
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		logger.Printf("Type: %T\n", err)
-		return nil, &errorBadRequest{err} //err
+		return nil, &splash.ErrorBadRequest{err} //err
 	}
 	//request.URL normalization and validation
 	reqURL := strings.TrimSpace(request.URL)
 	if _, err := url.ParseRequestURI(reqURL); err != nil {
 		//logger.Printf("Type: %T\n", err)
 		//logger.Printf("Op: %s\n", err.(*url.Error).Op)
-		return nil, &errorBadRequest{err}
+		return nil, &splash.ErrorBadRequest{err}
 	}
 	request.URL = reqURL
 	logger.Println("transport request", request.URL)
@@ -126,17 +119,19 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch err.(type) {
 	default:
 		httpStatus = http.StatusInternalServerError
-	case *errorBadRequest:
+	case *splash.ErrorBadRequest, *splash.ErrorInvalidHost,
+		*splash.Error:
 		//return 400 Status
 		httpStatus = http.StatusBadRequest
-	case *errorForbiddenByRobots:
+	case *splash.ErrorForbiddenByRobots:
 		//return 403 Status
 		httpStatus = http.StatusForbidden
+	case *splash.ErrorNotFound:
+		//return 404 Status
+		httpStatus = http.StatusNotFound
 	}
 
 	w.WriteHeader(httpStatus)
-
-	//w.WriteHeader(http.StatusInternalServerError)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		//"errorType": "BadRequest",
 		//"httpStatus": httpStatus,

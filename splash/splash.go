@@ -76,9 +76,8 @@ func Ping(host string) (*PingResponse, error) {
 	return &p, nil
 }
 
-
 //NewSplashConn creates new connection to Splash Server
-//Generated Splash URL and error are returned 
+//Generated Splash URL and error are returned
 func NewSplashConn(req Request) (splashURL string, err error) {
 	req.URL = strings.TrimSpace(req.URL)
 	if req.URL == "" {
@@ -110,13 +109,12 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 	} else {
 		wait = viper.GetFloat64("SPLASH_WAIT")
 	}
-	var LUAScript string  
+	var LUAScript string
 	if isRobotsTxt(req.URL) {
 		LUAScript = robotsLUA
 	} else {
 		LUAScript = baseLUA
 	}
-	
 
 	splashURL = fmt.Sprintf(
 		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s", fmt.Sprintf("http://%s/", viper.GetString("SPLASH")),
@@ -135,7 +133,6 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 //GetResponse result is passed to  caching middleware
 //to provide a RFC7234 compliant HTTP cache
 func GetResponse(splashURL string) (*Response, error) {
-	logger.Println(splashURL)
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
@@ -162,14 +159,21 @@ func GetResponse(splashURL string) (*Response, error) {
 		logger.Println("Json Unmarshall error", err)
 	}
 	//if response status code is not 200
-	//logger.Println(sResponse)
 	if sResponse.Error != "" {
-		return nil, fmt.Errorf("%s", sResponse.Error)
+		switch sResponse.Error {
+		case "http404":
+			return nil, &ErrorNotFound{sResponse.URL}
+		case "network3":
+			return nil, &ErrorInvalidHost{sResponse.URL}
+		default:
+			return nil, &Error{sResponse.Error}
+		}
+		//return nil, fmt.Errorf("%s", sResponse.Error)
 	}
 	// Sometimes no response, request returned  by Splash.
 	// To solve this problem gc method should be called to clear WebKit caches and then
 	// GetResponse again. See more at https://github.com/scrapinghub/splash/issues/613
-	
+
 	if sResponse.Response == nil || sResponse.Request == nil && sResponse.HTML != "" {
 
 		var response *Response
@@ -183,7 +187,6 @@ func GetResponse(splashURL string) (*Response, error) {
 		return response, nil
 	}
 
-	//logger.Printf("OK: %b, status : %d, status text: %s, error: %s", sResponse.Response.Ok, sResponse.Response.Status, sResponse.Response.StatusText, sResponse.Error)
 	if !sResponse.Response.Ok {
 		if sResponse.Response.Status == 0 {
 			err = fmt.Errorf("%s",
@@ -212,6 +215,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 	if r == nil {
 		return nil, errors.New("empty response")
 	}
+	
 	if isRobotsTxt(r.Request.URL) {
 		decoded, err := base64.StdEncoding.DecodeString(r.Response.Content.Text)
 		if err != nil {
