@@ -13,6 +13,12 @@ type ErrorForbiddenByRobots struct {
 }
 func (e *ErrorForbiddenByRobots) Error() string { return e.URL + ": forbidden by robots.txt" }
 
+type ErrorForbidden struct {
+	URL string
+}
+func (e *ErrorForbidden) Error() string { return e.URL + ": forbidden" }
+
+
 //404 Not Found
 type ErrorNotFound struct {
 	URL    string
@@ -27,6 +33,13 @@ type ErrorInvalidHost struct {
 }
 func (e *ErrorInvalidHost) Error() string {
 	return e.URL + ": Invalid Host" 	
+}
+
+//504 Gateway Time-out
+type ErrorGatewayTimeout struct {
+}
+func (e *ErrorGatewayTimeout) Error() string {
+	return "Timeout exceeded rendering page" 	
 }
 
 //All the rest. Unspecified errors 

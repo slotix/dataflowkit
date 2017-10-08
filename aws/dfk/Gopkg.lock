@@ -125,7 +125,7 @@
   branch = "master"
   name = "github.com/slotix/dataflowkit"
   packages = ["cache","extract","helpers","paginate","robotstxt","scrape","server","splash"]
-  revision = "25684526d0cf4f69982609772a037b895e2809f4"
+  revision = "af2fe94ba8b10c1bce6f5c4681dd414c279b2179"
 
 [[projects]]
   branch = "master"

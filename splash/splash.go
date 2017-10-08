@@ -161,10 +161,15 @@ func GetResponse(req Request) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	//response from Splash service.
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf(string(res))
+	statusCode := resp.StatusCode
+	if statusCode != 200 {
+		switch statusCode {
+		case 504:
+			return nil, &ErrorGatewayTimeout{}
+		default:
+			return nil, fmt.Errorf(string(res))
+		}	
 	}
 
 	var sResponse Response
@@ -173,10 +178,13 @@ func GetResponse(req Request) (*Response, error) {
 		logger.Println("Json Unmarshall error", err)
 	}
 	//if response status code is not 200
+	logger.Println(sResponse.Error)
 	if sResponse.Error != "" {
 		switch sResponse.Error {
 		case "http404":
 			return nil, &ErrorNotFound{sResponse.URL}
+		case "http403":
+			return nil, &ErrorForbidden{sResponse.URL}
 		case "network3":
 			return nil, &ErrorInvalidHost{sResponse.URL}
 		default:

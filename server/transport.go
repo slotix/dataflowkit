@@ -110,16 +110,21 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch err.(type) {
 	default:
 		httpStatus = http.StatusInternalServerError
-	case *splash.ErrorBadRequest, *splash.ErrorInvalidHost,
+	case *splash.ErrorBadRequest,
+		*splash.ErrorInvalidHost,
 		*splash.Error:
 		//return 400 Status
 		httpStatus = http.StatusBadRequest
-	case *splash.ErrorForbiddenByRobots:
+	case *splash.ErrorForbiddenByRobots,
+		*splash.ErrorForbidden:
 		//return 403 Status
 		httpStatus = http.StatusForbidden
 	case *splash.ErrorNotFound:
 		//return 404 Status
 		httpStatus = http.StatusNotFound
+	case *splash.ErrorGatewayTimeout:
+		//return 504 Status
+		httpStatus = http.StatusGatewayTimeout
 	}
 
 	w.WriteHeader(httpStatus)

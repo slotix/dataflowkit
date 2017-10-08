@@ -4,6 +4,7 @@ package:
 provider:
   name: aws
   runtime: python2.7
+  timeout: 10,
   stage: ${env:ENV}
   region: ${env:AWS_REGION}
 functions:
