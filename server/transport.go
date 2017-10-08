@@ -17,13 +17,14 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/slotix/dataflowkit/splash"
 )
-
+/*
 var (
 	// ErrBadRouting is returned when an expected path variable is missing.
 	ErrBadRouting = errors.New("inconsistent mapping between route and handler (programmer error)")
 	//ErrInvalidURL is returned if validation of URL fails
 	ErrInvalidURL = errors.New("invalid URL specified")
 )
+*/
 
 //decodeFetchRequest
 //if error is not nil, server should return

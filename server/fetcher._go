@@ -75,11 +75,11 @@ func (sf *SplashFetcher) Prepare() error {
 
 //Fetch retrieves document from the remote server. It returns splash.Response as it is not enough to get just page content but during scraping sessions auxiliary information like cookies should be avaialable.
 func (sf *SplashFetcher) Fetch(request interface{}) (interface{}, error) {
-	splashURL, err := splash.NewSplashConn(request.(splash.Request))
-	if err != nil {
-		return nil, err
-	}
-	r, err := splash.GetResponse(splashURL)
+	//splashURL, err := splash.NewSplashConn(request.(splash.Request))
+	//if err != nil {
+	//	return nil, err
+	//}
+	r, err := splash.GetResponse(request.(splash.Request))
 	if err != nil {
 		return nil, err
 	}

@@ -9,7 +9,6 @@ import (
 
 // RedisConn represents a Redis Connection structure
 type RedisConn struct {
-	//config   *config.Config
 	host     string
 	password string
 	db       int
