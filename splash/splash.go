@@ -76,13 +76,26 @@ func Ping(host string) (*PingResponse, error) {
 	return &p, nil
 }
 
+type splashConn struct {
+	host string
+	//password string
+	timeout         int
+	resourceTimeout int
+	wait            float64
+}
+
 //NewSplashConn creates new connection to Splash Server
-//Generated Splash URL and error are returned
-func NewSplashConn(req Request) (splashURL string, err error) {
-	req.URL = strings.TrimSpace(req.URL)
-	if req.URL == "" {
-		return "", errors.New("Invalid Request. URL is empty")
+func NewSplashConn(host string, timeout, resourceTimeout int, wait float64) splashConn {
+	return splashConn{
+		host:            host,
+		timeout:         timeout,
+		resourceTimeout: resourceTimeout,
+		wait:            wait,
 	}
+}
+
+//GenerateSplashURL Generates Splash URL and return error
+func (s *splashConn) GenerateSplashURL(req Request) string{
 	/*
 	   	//"Set-Cookie" from response headers should be sent when accessing for the same domain second time
 	   	cookie := `PHPSESSID=ef75e2737a14b06a2749d0b73840354f; path=/; domain=.acer-a500.ru; HttpOnly
@@ -102,37 +115,38 @@ func NewSplashConn(req Request) (splashURL string, err error) {
 	   	//---------
 	*/
 	//req.Params = `"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=asfwwe!444D&rememberMe=1"`
-
-	var wait float64
-	if req.SplashWait != 0 {
-		wait = req.SplashWait
-	} else {
-		wait = viper.GetFloat64("SPLASH_WAIT")
-	}
+	
 	var LUAScript string
 	if isRobotsTxt(req.URL) {
 		LUAScript = robotsLUA
 	} else {
 		LUAScript = baseLUA
 	}
-
-	splashURL = fmt.Sprintf(
-		"%sexecute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s", fmt.Sprintf("http://%s/", viper.GetString("SPLASH")),
+	splashURL := fmt.Sprintf(
+		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s",
+		s.host,
 		neturl.QueryEscape(req.URL),
-		viper.GetInt("SPLASH_TIMEOUT"),
-		viper.GetInt("SPLASH_RESOURCE_TIMEOUT"),
-		wait,
+		s.timeout,
+		s.resourceTimeout,
+		s.wait,
 		neturl.QueryEscape(req.Cookies),
 		neturl.QueryEscape(paramsToLuaTable(req.Params)),
 		neturl.QueryEscape(LUAScript))
 
-	//logger.Println(splashURL)
-	return splashURL, nil
+		return splashURL
 }
+
 
 //GetResponse result is passed to  caching middleware
 //to provide a RFC7234 compliant HTTP cache
-func GetResponse(splashURL string) (*Response, error) {
+func GetResponse(req Request) (*Response, error) {
+	sConn := NewSplashConn(
+		viper.GetString("SPLASH"),
+		viper.GetInt("SPLASH_TIMEOUT"),
+		viper.GetInt("SPLASH_RESOURCE_TIMEOUT"),
+		viper.GetFloat64("SPLASH_WAIT"),
+	)
+	splashURL := sConn.GenerateSplashURL(req)
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
@@ -179,7 +193,7 @@ func GetResponse(splashURL string) (*Response, error) {
 		var response *Response
 		gcResponse, err := gc(viper.GetString("SPLASH"))
 		if err == nil && gcResponse.Status == "ok" {
-			response, err = GetResponse(splashURL)
+			response, err = GetResponse(req)
 			if err != nil {
 				return nil, err
 			}
@@ -215,7 +229,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 	if r == nil {
 		return nil, errors.New("empty response")
 	}
-	
+
 	if isRobotsTxt(r.Request.URL) {
 		decoded, err := base64.StdEncoding.DecodeString(r.Response.Content.Text)
 		if err != nil {
@@ -291,9 +305,9 @@ func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
 }
 
 //Fetch content from url through Splash server https://github.com/scrapinghub/splash/
-func Fetch(splashURL string) (io.ReadCloser, error) {
-	logger.Println(splashURL)
-	response, err := GetResponse(splashURL)
+func Fetch(req Request) (io.ReadCloser, error) {
+	//logger.Println(splashURL)
+	response, err := GetResponse(req)
 	if err != nil {
 		return nil, err
 	}

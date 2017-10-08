@@ -13,7 +13,7 @@ type Request struct {
 	Cookies string `json:"cookie,omitempty"`
 	Func    string `json:"func,omitempty"`
 	//SplashWait - time in seconds to wait until js scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
-	SplashWait float64 `json:"wait,omitempty"`
+//	SplashWait float64 `json:"wait,omitempty"`
 }
 
 //Cookie - Custom Cookie struct is used to avoid problems with unmarshalling data with invalid Expires field which has time.Time type for original http.Cookie struct.
