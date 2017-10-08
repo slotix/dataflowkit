@@ -132,10 +132,17 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 
 	w.WriteHeader(httpStatus)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	//AWS error payload should looks like
+	//{
 		//"errorType": "BadRequest",
 		//"httpStatus": httpStatus,
+		//"requestId" : "<context.awsRequestId>",
 		//"message": err.Error(),
+	//}
+	//according to the information from https://aws.amazon.com/blogs/compute/error-handling-patterns-in-amazon-api-gateway-and-aws-lambda/
+
+	//But it seems enough to w.WriteHeader(httpStatus) and send an error only
+	json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": err.Error(),
 	})
 }
