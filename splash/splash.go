@@ -327,7 +327,7 @@ func isRobotsTxt(url string) bool {
 }
 
 //http://choly.ca/post/go-json-marshalling/
-//UnmarshalJSON convert headers to http.Header type while unmarshaling
+//UnmarshalJSON convert headers to http.Header type 
 func (r *Response) UnmarshalJSON(data []byte) error {
 	type Alias Response
 	aux := &struct {
@@ -351,8 +351,6 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 
 //castHeaders serves for casting headers returned by Splash to standard http.Header type
 func castHeaders(splashHeaders interface{}) (header http.Header) {
-	//	t := fmt.Sprintf("%T", splashHeaders)
-	//		logger.Printf("%T - %s", splashHeaders, splashHeaders)
 	header = make(map[string][]string)
 	switch splashHeaders.(type) {
 	case []interface{}:

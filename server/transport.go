@@ -17,14 +17,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/slotix/dataflowkit/splash"
 )
-/*
-var (
-	// ErrBadRouting is returned when an expected path variable is missing.
-	ErrBadRouting = errors.New("inconsistent mapping between route and handler (programmer error)")
-	//ErrInvalidURL is returned if validation of URL fails
-	ErrInvalidURL = errors.New("invalid URL specified")
-)
-*/
 
 //decodeFetchRequest
 //if error is not nil, server should return
@@ -56,7 +48,6 @@ func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 		return nil
 	}
 	sResponse := response.(*splash.Response)
-	logger.Println("transport response", sResponse.Error)
 	if sResponse.Error != "" {
 		return errors.New(sResponse.Error)
 	}
@@ -83,7 +74,6 @@ func decodeParseRequest(_ context.Context, r *http.Request) (interface{}, error)
 	if err != nil {
 		return nil, err
 	}
-
 	return request, nil
 }
 
@@ -135,10 +125,10 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	w.WriteHeader(httpStatus)
 	//AWS error payload should looks like
 	//{
-		//"errorType": "BadRequest",
-		//"httpStatus": httpStatus,
-		//"requestId" : "<context.awsRequestId>",
-		//"message": err.Error(),
+	//"errorType": "BadRequest",
+	//"httpStatus": httpStatus,
+	//"requestId" : "<context.awsRequestId>",
+	//"message": err.Error(),
 	//}
 	//according to the information from https://aws.amazon.com/blogs/compute/error-handling-patterns-in-amazon-api-gateway-and-aws-lambda/
 
