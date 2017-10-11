@@ -26,59 +26,10 @@ func init() {
 	logger = log.New(os.Stdout, "splash: ", log.Lshortfile)
 }
 
-//Splash splash:history() may return empty list as it cannot retrieve cached results
-//in case request the same page twice. So the only solution for the moment is to call
-//http://localhost:8050/_gc if an error occures. It runs the Python garbage collector
-//and clears internal WebKit caches. See more at https://github.com/scrapinghub/splash/issues/613
-func gc(host string) (*gcResponse, error) {
-	client := &http.Client{}
-	gcURL := fmt.Sprintf("http://%s/_gc", host)
-	req, err := http.NewRequest("POST", gcURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(resp.Body)
-	var gc gcResponse
-	err = json.Unmarshal(buf.Bytes(), &gc)
-	if err != nil {
-		return nil, err
-	}
-	return &gc, nil
-}
-
-//Ping returns status and maxrss from _ping  endpoint
-func Ping(host string) (*PingResponse, error) {
-	client := &http.Client{}
-	pingURL := fmt.Sprintf("http://%s/_ping", host)
-	req, err := http.NewRequest("GET", pingURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	//req.SetBasicAuth(userName, userPass)
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(resp.Body)
-	var p PingResponse
-	err = json.Unmarshal(buf.Bytes(), &p)
-	if err != nil {
-		return nil, err
-	}
-	return &p, nil
-}
-
 type splashConn struct {
-	host string
+	host string //splash server address
 	//password string
+	//Splash parameters:
 	timeout         int
 	resourceTimeout int
 	wait            float64
@@ -95,7 +46,7 @@ func NewSplashConn(host string, timeout, resourceTimeout int, wait float64) spla
 }
 
 //GenerateSplashURL Generates Splash URL and return error
-func (s *splashConn) GenerateSplashURL(req Request) string{
+func (s *splashConn) GenerateSplashURL(req Request) string {
 	/*
 	   	//"Set-Cookie" from response headers should be sent when accessing for the same domain second time
 	   	cookie := `PHPSESSID=ef75e2737a14b06a2749d0b73840354f; path=/; domain=.acer-a500.ru; HttpOnly
@@ -115,7 +66,7 @@ func (s *splashConn) GenerateSplashURL(req Request) string{
 	   	//---------
 	*/
 	//req.Params = `"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=asfwwe!444D&rememberMe=1"`
-	
+
 	var LUAScript string
 	if isRobotsTxt(req.URL) {
 		LUAScript = robotsLUA
@@ -133,11 +84,10 @@ func (s *splashConn) GenerateSplashURL(req Request) string{
 		neturl.QueryEscape(paramsToLuaTable(req.Params)),
 		neturl.QueryEscape(LUAScript))
 
-		return splashURL
+	return splashURL
 }
 
-
-//GetResponse result is passed to  caching middleware
+//GetResponse result is passed to caching middleware
 //to provide a RFC7234 compliant HTTP cache
 func GetResponse(req Request) (*Response, error) {
 	sConn := NewSplashConn(
@@ -169,7 +119,7 @@ func GetResponse(req Request) (*Response, error) {
 			return nil, &ErrorGatewayTimeout{}
 		default:
 			return nil, fmt.Errorf(string(res))
-		}	
+		}
 	}
 
 	var sResponse Response
@@ -335,7 +285,7 @@ func isRobotsTxt(url string) bool {
 }
 
 //http://choly.ca/post/go-json-marshalling/
-//UnmarshalJSON convert headers to http.Header type 
+//UnmarshalJSON convert headers to http.Header type
 func (r *Response) UnmarshalJSON(data []byte) error {
 	type Alias Response
 	aux := &struct {
@@ -384,4 +334,54 @@ func castHeaders(splashHeaders interface{}) (header http.Header) {
 	default:
 		return nil
 	}
+}
+
+//Splash splash:history() may return empty list as it cannot retrieve cached results
+//in case request the same page twice. So the only solution for the moment is to call
+//http://localhost:8050/_gc if an error occures. It runs the Python garbage collector
+//and clears internal WebKit caches. See more at https://github.com/scrapinghub/splash/issues/613
+func gc(host string) (*gcResponse, error) {
+	client := &http.Client{}
+	gcURL := fmt.Sprintf("http://%s/_gc", host)
+	req, err := http.NewRequest("POST", gcURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	var gc gcResponse
+	err = json.Unmarshal(buf.Bytes(), &gc)
+	if err != nil {
+		return nil, err
+	}
+	return &gc, nil
+}
+
+//Ping returns status and maxrss from _ping  endpoint
+func Ping(host string) (*PingResponse, error) {
+	client := &http.Client{}
+	pingURL := fmt.Sprintf("http://%s/_ping", host)
+	req, err := http.NewRequest("GET", pingURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	//req.SetBasicAuth(userName, userPass)
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+	var p PingResponse
+	err = json.Unmarshal(buf.Bytes(), &p)
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
 }
