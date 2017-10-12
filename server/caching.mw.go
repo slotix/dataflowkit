@@ -27,13 +27,15 @@ func CachingMiddleware() ServiceMiddleware {
 
 var redisCon cache.RedisConn
 
-func (mw cachingMiddleware) Fetch(req splash.Request) (output interface{}, err error) {
+func (mw cachingMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 
 	redisURL := viper.GetString("redis")
 	redisPassword := ""
 	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)
 	//if something in a cache return local copy
-	redisValue, err := redisCon.GetValue(req.URL)
+	//redisValue, err := redisCon.GetValue(req.URL)
+	redisValue, err := redisCon.GetValue(mw.GetURL(req))
+	
 	if err == nil {
 		var sResponse *splash.Response
 		if err := json.Unmarshal(redisValue, &sResponse); err != nil {
@@ -62,11 +64,11 @@ func (mw cachingMiddleware) Fetch(req splash.Request) (output interface{}, err e
 			if err != nil {
 				logger.Printf(err.Error())
 			}
-			err = redisCon.SetValue(req.URL, response)
+			err = redisCon.SetValue(mw.GetURL(req), response)
 			if err != nil {
 				logger.Println(err.Error())
 			}
-			err = redisCon.SetExpireAt(req.URL, sResponse.CacheExpirationTime)
+			err = redisCon.SetExpireAt(mw.GetURL(req), sResponse.CacheExpirationTime)
 			if err != nil {
 				logger.Println(err.Error())
 			}

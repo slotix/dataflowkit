@@ -18,22 +18,55 @@ import (
 
 // Define service interface
 type Service interface {
-	Fetch(req splash.Request) (interface{}, error)
+	Fetch(req interface{}) (interface{}, error)
+	GetURL(req interface{}) string
+	//	SetURL(url string)
 	ParseData(payload []byte) (io.ReadCloser, error)
 }
 
 // Implement service with empty struct
 type ParseService struct {
+	//fetcher scrape.Fetcher
 }
 
 // create type that return function.
 // this will be needed in main.go
 type ServiceMiddleware func(Service) Service
 
+func (ps ParseService) GetURL(req interface{}) string {
+	var url string
+	switch req.(type) {
+	case splash.Request:
+		url = req.(splash.Request).URL
+	case scrape.HttpClientFetcherRequest:
+		url = req.(scrape.HttpClientFetcherRequest).URL
+	}
+	return url
+
+	//logger.Println(req)
+	//logger.Printf("%T", req)
+	//return ""
+	/*
+		url := &struct{
+			URL: string `json:"url"`
+		}
+		if err := json.Unmarshal(data, &aux); err != nil {
+			return err
+		}
+	*/
+
+}
+
+//func (ps ParseService) SetURL(url string) {
+//	ps.fetcher.
+//}
 //Fetch returns splash.Request
-func (ParseService) Fetch(req splash.Request) (interface{}, error) {
-	logger.Println("service fetch",req)
+func (ps ParseService) Fetch(req interface{}) (interface{}, error) {
+	logger.Println("service fetch", req)
 	fetcher, err := scrape.NewSplashFetcher()
+	//var err error
+	//ps.fetcher, err = scrape.NewSplashFetcher()
+	//fetcher, err := scrape.NewHttpClientFetcher()
 	if err != nil {
 		logger.Println(err)
 	}
@@ -49,7 +82,7 @@ func (ps ParseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	logger.Println(p.Request)
 	config, err := p.PayloadToScrapeConfig()
 	if err != nil {
 		return nil, err
@@ -59,7 +92,10 @@ func (ps ParseService) ParseData(payload []byte) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	req := splash.Request{URL: p.Request.URL}
+	//req := splash.Request{URL: p.Request.(splash.Request).URL}
+	req := splash.Request{URL: ps.GetURL(p.Request)}
+	//req := scrape.HttpClientFetcherRequest{URL: ps.GetURL(p.Request)}
+
 	//results, err := scraper.Scrape(req, config.Opts)
 	results, err := ps.scrape(req, scraper) //, config.Opts)
 	if err != nil {
@@ -118,13 +154,14 @@ func (ps ParseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
-func (ps ParseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.ScrapeResults, error) {
-	url := req.URL
+func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape.ScrapeResults, error) {
+	url := ps.GetURL(req)
 	if len(url) == 0 {
 		return nil, errors.New("no URL provided")
 	}
 	//get Robotstxt Data
-	robotsData, err := robotstxt.RobotsTxtData(req)
+
+	robotsData, err := robotstxt.RobotsTxtData(url)
 	if err != nil {
 		return nil, err
 	}
@@ -135,17 +172,18 @@ func (ps ParseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.Sc
 	var numPages int
 	//var retryTimes int
 	for {
+		//TODO ! VYshe perenesti... proverku etu
 		if !robotstxt.Allowed(url, robotsData) {
 			err = fmt.Errorf("%s: forbidden by robots.txt", url)
 			return nil, err
 		}
 		// Repeat until we don't have any more URLs, or until we hit our page limit.
-		if len(url) == 0 || (s.Config.Opts.MaxPages > 0 && numPages >= s.Config.Opts.MaxPages) {
+		if len(url) == 0 || (scraper.Config.Opts.MaxPages > 0 && numPages >= scraper.Config.Opts.MaxPages) {
 			break
 		}
-		
+
 		r, err := ps.Fetch(req)
-	//	r, err := s.Config.Fetcher.Fetch(req)
+		//	r, err := s.Config.Fetcher.Fetch(req)
 		if err != nil {
 			return nil, err
 		}
@@ -202,11 +240,11 @@ func (ps ParseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.Sc
 		results := []map[string]interface{}{}
 
 		// Divide this page into blocks
-		for _, block := range s.Config.DividePage(doc.Selection) {
+		for _, block := range scraper.Config.DividePage(doc.Selection) {
 			blockResults := map[string]interface{}{}
 
 			// Process each piece of this block
-			for _, piece := range s.Config.Pieces {
+			for _, piece := range scraper.Config.Pieces {
 				//logger.Println(piece)
 				sel := block
 				if piece.Selector != "." {
@@ -239,37 +277,41 @@ func (ps ParseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.Sc
 		numPages++
 
 		// Get the next page.
-		url, err = s.Config.Paginator.NextPage(url, doc.Selection)
+		url, err = scraper.Config.Paginator.NextPage(url, doc.Selection)
 		if err != nil {
 			return nil, err
 		}
 
+		//ps.fetcher.type
 		//every time when getting a response the next request will be filled with updated cookie information
-
+		sRequest := req.(splash.Request)
 		if sResponse, ok := r.(*splash.Response); ok {
-			err := sResponse.SetCookieToRequest(&req)
+			//sRequest := req.(splash.Request)
+			err := sResponse.SetCookieToRequest(&sRequest)
 			if err != nil {
 				//return nil, err
 				logger.Println(err)
 			}
+
 		}
-		req.URL = url
-		if s.Config.Opts.RandomizeFetchDelay {
+		sRequest.URL = url
+		req = sRequest
+		//req.URL = url
+
+		if scraper.Config.Opts.RandomizeFetchDelay {
 			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 			rand := scrape.Random(500, 1500)
-			delay := s.Config.Opts.FetchDelay * time.Duration(rand) / 1000
+			delay := scraper.Config.Opts.FetchDelay * time.Duration(rand) / 1000
 			logger.Println(delay)
 			time.Sleep(delay)
 		} else {
-			time.Sleep(s.Config.Opts.FetchDelay)
+			time.Sleep(scraper.Config.Opts.FetchDelay)
 		}
 
 	}
 	// All good!
 	return res, nil
 }
-
-
 
 /*
 //Original
@@ -342,7 +384,7 @@ func (ps ParseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.Sc
 			if err != nil {
 				return nil, err
 			}
-		*/
+*/
 /*
 		// Create a goquery document.
 		doc, err := goquery.NewDocumentFromReader(resp)

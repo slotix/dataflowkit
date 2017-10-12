@@ -4,7 +4,6 @@ import (
 	"io"
 
 	"github.com/slotix/dataflowkit/cache"
-	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 )
 
@@ -19,7 +18,7 @@ type statsMiddleware struct {
 	Service
 }
 
-func (mw statsMiddleware) Fetch(req splash.Request) (output interface{}, err error) {
+func (mw statsMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 	mw.incrementCount()
 	output, err = mw.Service.Fetch(req)
 	return

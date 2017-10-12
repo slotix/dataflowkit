@@ -15,8 +15,9 @@ type Endpoints struct {
 
 // creating Fetch Endpoint
 func MakeFetchEndpoint(svc Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {			
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(splash.Request)
+		//req := request
 		v, err := svc.Fetch(req)
 		if err != nil {
 			return nil, err

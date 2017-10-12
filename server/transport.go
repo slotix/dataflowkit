@@ -24,6 +24,7 @@ import (
 
 func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var request splash.Request
+	//var request scrape.HttpClientFetcherRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		logger.Printf("Type: %T\n", err)
 		return nil, &splash.ErrorBadRequest{err} //err
@@ -47,6 +48,7 @@ func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 		encodeError(ctx, e.error(), w)
 		return nil
 	}
+
 	sResponse := response.(*splash.Response)
 	if sResponse.Error != "" {
 		return errors.New(sResponse.Error)

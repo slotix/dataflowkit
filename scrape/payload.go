@@ -9,15 +9,40 @@ import (
 	"strings"
 
 	"github.com/slotix/dataflowkit/extract"
-	"github.com/slotix/dataflowkit/helpers"
 	"github.com/slotix/dataflowkit/paginate"
+	"github.com/slotix/dataflowkit/splash"
 )
+
+//http://choly.ca/post/go-json-marshalling/
+//UnmarshalJSON convert headers to http.Header type
+func (p *Payload) UnmarshalJSON(data []byte) error {
+	type Alias Payload
+	aux := &struct {
+		Request interface{} `json:"request"`
+		*Alias
+	}{
+		Alias: (*Alias)(p),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	logger.Println(aux.Request)
+	splashRequest := splash.Request{}
+	//err := FillStruct(aux.Request.(map[string]interface{}), splashRequest)
+	err := FillStruct(aux.Request.(map[string]interface{}), &splashRequest)
+	if err != nil {
+		return err
+	}
+	p.Request = splashRequest
+	//logger.Println(splashRequest)
+	return nil
+}
 
 //NewParser initializes new Parser struct
 func NewPayload(payload []byte) (Payload, error) {
 	var p Payload
 	err := json.Unmarshal(payload, &p)
-	//err := p.UnmarshalJSON(payload)
+	
 	if err != nil {
 		return p, err
 	}
@@ -37,12 +62,14 @@ func NewPayload(payload []byte) (Payload, error) {
 		p.PaginateResults = &DefaultOptions.PaginateResults
 	}
 
-	p.PayloadMD5 = helpers.GenerateMD5(payload)
+	p.PayloadMD5 = GenerateMD5(payload)
 	return p, nil
 }
 
 func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 	fetcher, err := NewSplashFetcher()
+	//fetcher, err := NewHttpClientFetcher()
+	
 	if err != nil {
 		logger.Println(err)
 	}
@@ -89,7 +116,7 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 			names = append(names, fName)
 			//Add selector just one time for link type
 			selectors = append(selectors, f.Selector)
-		
+
 		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
 		case "image":
 			a := &extract.Attr{Attr: "src"}
@@ -149,7 +176,7 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 				r.Regex = regexp.MustCompile(regExp.(string))
 				e = r
 			}
-			
+
 			if params != nil {
 				err := FillStruct(params, e)
 				if err != nil {
@@ -187,6 +214,7 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 	return
 }
 
+//FillStruct fills s Structure with values from m map
 func FillStruct(m map[string]interface{}, s interface{}) error {
 	for k, v := range m {
 		//	logger.Println(k,v)
@@ -201,14 +229,26 @@ func FillStruct(m map[string]interface{}, s interface{}) error {
 func SetField(obj interface{}, name string, value interface{}) error {
 	//logger.Printf("%T, %t", obj, obj)
 	structValue := reflect.ValueOf(obj).Elem()
-	//structFieldValue := structValue.FieldByName(name)
-	structFieldValue := structValue.FieldByName(strings.Title(name))
-
-	if !structFieldValue.IsValid() {
-		//skip non-existent fields
-		return nil
-		//return fmt.Errorf("No such field: %s in obj", name)
+	//Value which come from json usually is in lowercase but outgoing structs may contain fields in Title Case or in UPPERCASE - f.e. URL. So we should check if there are fields in Title case or upper case before skipping non-existent fields.
+	//It is unlikely there is a situation when there are several fields like url, Url, URL in the same structure.
+	fValues := []reflect.Value{
+		structValue.FieldByName(name),
+		structValue.FieldByName(strings.Title(name)),
+		structValue.FieldByName(strings.ToUpper(name)),
 	}
+	
+	var structFieldValue reflect.Value
+	for _, structFieldValue = range fValues{
+		if structFieldValue.IsValid() {
+			break
+		}
+	}
+	
+//	if !structFieldValue.IsValid() {
+		//skip non-existent fields
+//		return nil
+		//return fmt.Errorf("No such field: %s in obj", name)
+//	}
 
 	if !structFieldValue.CanSet() {
 		return fmt.Errorf("Cannot set %s field value", name)
