@@ -33,7 +33,7 @@ func Start(port string) {
 	svc = ParseService{}
 	//svc = ProxyingMiddleware(ctx, "http://127.0.0.1:8000")(svc)
 	//svc = StatsMiddleware("18")(svc)
-	//svc = CachingMiddleware()(svc)
+	svc = CachingMiddleware()(svc)
 
 	//svc = ProxyingMiddleware(ctx, viper.GetString("proxy"))(svc)
 

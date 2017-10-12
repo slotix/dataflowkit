@@ -2,7 +2,7 @@ package robotstxt
 
 import (
 	"fmt"
-	"net/http"
+	"io/ioutil"
 	neturl "net/url"
 	"time"
 
@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/slotix/dataflowkit/scrape"
+	"github.com/slotix/dataflowkit/splash"
 	"github.com/temoto/robotstxt"
 )
 
@@ -32,11 +33,11 @@ func RobotsTxtData(URL string) (robotsData *robotstxt.RobotsData, err error) {
 	robotsURL = fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
 
 	//fetch robots.txt
-	//r := splash.Request{URL: robotsURL}
-	//fetcher, err := scrape.NewSplashFetcher()
+	r := splash.Request{URL: robotsURL}
+	fetcher, err := scrape.NewSplashFetcher()
 
-	r := scrape.HttpClientFetcherRequest{URL: robotsURL}
-	fetcher, err := scrape.NewHttpClientFetcher()
+	//r := scrape.HttpClientFetcherRequest{URL: robotsURL}
+	//fetcher, err := scrape.NewHttpClientFetcher()
 	if err != nil {
 		return nil, err
 	}
@@ -45,24 +46,24 @@ func RobotsTxtData(URL string) (robotsData *robotstxt.RobotsData, err error) {
 		logger.Println(err)
 		//return nil, err
 	} else {
-		robotsData, err = robotstxt.FromResponse(robots.(*http.Response))
-		/*
-			sResponse := robots.(*splash.Response)
-			content, err := sResponse.GetContent()
-			if err != nil {
-				return nil, err
-			}
-			data, err := ioutil.ReadAll(content)
-			if err != nil {
-				return nil, err
-			}
-			robotsData, err = robotstxt.FromBytes(data)
-			if err != nil {
-				fmt.Println("Robots.txt error:", err)
-			}
-		*/
+		//	robotsData, err = robotstxt.FromResponse(robots.(*http.Response))
+
+		sResponse := robots.(*splash.Response)
+		content, err := sResponse.GetContent()
+		if err != nil {
+			return nil, err
+		}
+		data, err := ioutil.ReadAll(content)
+		if err != nil {
+			return nil, err
+		}
+		robotsData, err = robotstxt.FromBytes(data)
+		if err != nil {
+			fmt.Println("Robots.txt error:", err)
+		}
+
 	}
-	logger.Println(robotsData)
+	//logger.Println(robotsData)
 	return robotsData, nil
 }
 
