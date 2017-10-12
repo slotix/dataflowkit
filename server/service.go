@@ -20,13 +20,11 @@ import (
 type Service interface {
 	Fetch(req interface{}) (interface{}, error)
 	GetURL(req interface{}) string
-	//	SetURL(url string)
 	ParseData(payload []byte) (io.ReadCloser, error)
 }
 
 // Implement service with empty struct
 type ParseService struct {
-	//fetcher scrape.Fetcher
 }
 
 // create type that return function.
@@ -42,30 +40,13 @@ func (ps ParseService) GetURL(req interface{}) string {
 		url = req.(scrape.HttpClientFetcherRequest).URL
 	}
 	return url
-
-	//logger.Println(req)
-	//logger.Printf("%T", req)
-	//return ""
-	/*
-		url := &struct{
-			URL: string `json:"url"`
-		}
-		if err := json.Unmarshal(data, &aux); err != nil {
-			return err
-		}
-	*/
-
 }
 
-//func (ps ParseService) SetURL(url string) {
-//	ps.fetcher.
-//}
+
 //Fetch returns splash.Request
 func (ps ParseService) Fetch(req interface{}) (interface{}, error) {
 	logger.Println("service fetch", req)
 	fetcher, err := scrape.NewSplashFetcher()
-	//var err error
-	//ps.fetcher, err = scrape.NewSplashFetcher()
 	//fetcher, err := scrape.NewHttpClientFetcher()
 	if err != nil {
 		logger.Println(err)
@@ -160,7 +141,6 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 		return nil, errors.New("no URL provided")
 	}
 	//get Robotstxt Data
-
 	robotsData, err := robotstxt.RobotsTxtData(url)
 	if err != nil {
 		return nil, err
@@ -172,7 +152,7 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 	var numPages int
 	//var retryTimes int
 	for {
-		//TODO ! VYshe perenesti... proverku etu
+		//check if scraping of current url is not forbidden
 		if !robotstxt.Allowed(url, robotsData) {
 			err = fmt.Errorf("%s: forbidden by robots.txt", url)
 			return nil, err

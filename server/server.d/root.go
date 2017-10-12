@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/slotix/dataflowkit/healthcheck"
 	"github.com/slotix/dataflowkit/server"
 
 	"github.com/spf13/cobra"
@@ -76,17 +77,16 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Checking services ... ")
 
-		//status := healthcheck.CheckServices()
+		status := healthcheck.CheckServices()
 		allAlive := true
 
-		/*
-			for k, v := range status {
-				fmt.Printf("%s: %s\n", k, v)
-				if v != "Ok" {
-					allAlive = false
-				}
+		for k, v := range status {
+			fmt.Printf("%s: %s\n", k, v)
+			if v != "Ok" {
+				allAlive = false
 			}
-		*/
+		}
+
 		if allAlive {
 			fmt.Printf("Starting Server %s\n", port)
 			server.Start(port)
@@ -114,9 +114,9 @@ func init() {
 
 	RootCmd.Flags().StringVarP(&port, "listen", "l", ":8000", "HTTP listen address")
 	//RootCmd.Flags().StringVarP(&proxy, "proxy", "p", "", "Optional comma-separated list of URLs to proxy uppercase requests")
-	RootCmd.Flags().StringVarP(&redisHost, "redis", "r", "127.0.0.1:6379", "Redis host address")
-	RootCmd.Flags().IntVarP(&redisExpire, "redis-expire", "", 3600, "Default Redis expire value")
-	RootCmd.Flags().StringVarP(&redisNetwork, "redis-network", "", "tcp", "Redis Network")
+	RootCmd.Flags().StringVarP(&redisHost, "REDIS", "r", "127.0.0.1:6379", "Redis host address")
+	RootCmd.Flags().IntVarP(&redisExpire, "REDIS_EXPIRE", "", 3600, "Default Redis expire value")
+	RootCmd.Flags().StringVarP(&redisNetwork, "REDIS_NETWORK", "", "tcp", "Redis Network")
 	RootCmd.Flags().StringVarP(&splashHost, "SPLASH", "s", "127.0.0.1:8050", "Splash host address")
 	RootCmd.Flags().IntVarP(&splashTimeout, "SPLASH_TIMEOUT", "", 20, "A timeout (in seconds) for the render.")
 	RootCmd.Flags().IntVarP(&splashResourceTimeout, "SPLASH_RESOURCE_TIMEOUT", "", 30, "A timeout (in seconds) for individual network requests.")
@@ -124,9 +124,9 @@ func init() {
 	viper.AutomaticEnv() // read in environment variables that match
 	viper.BindPFlag("port", RootCmd.Flags().Lookup("port"))
 	viper.BindPFlag("proxy", RootCmd.Flags().Lookup("proxy"))
-	//viper.BindPFlag("redis", RootCmd.Flags().Lookup("redis"))
-	//viper.BindPFlag("redis-expire", RootCmd.Flags().Lookup("redis-expire"))
-	//viper.BindPFlag("redis-network", RootCmd.Flags().Lookup("redis-network"))
+	viper.BindPFlag("REDIS", RootCmd.Flags().Lookup("REDIS"))
+	viper.BindPFlag("REDIS_EXPIRE", RootCmd.Flags().Lookup("REDIS_EXPIRE"))
+	viper.BindPFlag("REDIS_NETWORK", RootCmd.Flags().Lookup("REDIS_NETWORK"))
 	viper.BindPFlag("SPLASH", RootCmd.Flags().Lookup("SPLASH"))
 	viper.BindPFlag("SPLASH_TIMEOUT", RootCmd.Flags().Lookup("SPLASH_TIMEOUT"))
 	viper.BindPFlag("SPLASH_RESOURCE_TIMEOUT", RootCmd.Flags().Lookup("SPLASH_RESOURCE_TIMEOUT"))

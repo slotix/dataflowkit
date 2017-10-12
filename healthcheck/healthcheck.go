@@ -70,8 +70,8 @@ func CheckServices() (status map[string]string) {
 	status = make(map[string]string)
 	services := []healthChecker{
 		redisConn{
-			network: viper.GetString("redis-network"),
-			host:    viper.GetString("redis")},
+			network: viper.GetString("REDIS_NETWORK"),
+			host:    viper.GetString("REDIS")},
 		splashConn{
 			//conn: splash.Connection{
 				

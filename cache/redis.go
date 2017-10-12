@@ -5,6 +5,7 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 	"gopkg.in/redsync.v1"
+	"github.com/spf13/viper"
 )
 
 // RedisConn represents a Redis Connection structure
@@ -85,7 +86,7 @@ func (b *RedisConn) SetExpireAt(key string, expiresAt int64) error {
 	var expirationTimestamp int32
 	if expiresAt == 0 {
 		// expire results after 1 hour by default
-		expiresAt = 3600
+		expiresAt = viper.GetInt64("REDIS_EXPIRE")
 		expirationTimestamp = int32(time.Now().UTC().Unix()+ expiresAt)
 	} else {
 		expirationTimestamp = int32(expiresAt)
@@ -102,7 +103,8 @@ func (b *RedisConn) SetExpireAt(key string, expiresAt int64) error {
 
 func (b *RedisConn) SetExpireIn(key string, expiresIn int64) error {
 	if expiresIn == 0 {
-		expiresIn = 3600
+		//expiresIn = 3600
+		expiresIn = viper.GetInt64("REDIS_EXPIRE")
 	}
 	conn := b.open()
 	defer conn.Close()

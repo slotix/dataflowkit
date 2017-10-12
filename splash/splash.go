@@ -73,6 +73,7 @@ func (s *splashConn) GenerateSplashURL(req Request) string {
 	} else {
 		LUAScript = baseLUA
 	}
+	LUAScript = baseLUA
 	splashURL := fmt.Sprintf(
 		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s",
 		s.host,
@@ -197,6 +198,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 		readCloser := ioutil.NopCloser(bytes.NewReader(decoded))
 		return readCloser, nil
 	}
+
 	readCloser := ioutil.NopCloser(strings.NewReader(r.HTML))
 	return readCloser, nil
 }
@@ -277,9 +279,10 @@ func Fetch(req Request) (io.ReadCloser, error) {
 	return nil, err
 }
 
-func (r Request) GetURL() string{
+func (r Request) GetURL() string {
 	return r.URL
 }
+
 func isRobotsTxt(url string) bool {
 	if strings.HasSuffix(url, "robots.txt") {
 		return true
