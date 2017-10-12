@@ -15,13 +15,16 @@ type robotstxtMiddleware struct {
 	Service
 }
 
-func (mw robotstxtMiddleware) Fetch(req splash.Request) (output interface{}, err error) {
-	robotsData, err := robotstxt.RobotsTxtData(req)
+func (mw robotstxtMiddleware) Fetch(req interface{}) (output interface{}, err error) {
+	//robotsData, err := robotstxt.RobotsTxtData(req)
+	url := mw.GetURL(req) 
+	robotsData, err := robotstxt.RobotsTxtData(url)
 	if err != nil {
 		return nil, err
 	}
-	if !robotstxt.Allowed(req.URL, robotsData) {
-		return nil, &splash.ErrorForbiddenByRobots{req.URL}
+	
+	if !robotstxt.Allowed(url, robotsData) {
+		return nil, &splash.ErrorForbiddenByRobots{url}
 	}
 	output, err = mw.Service.Fetch(req)
 	if err != nil {

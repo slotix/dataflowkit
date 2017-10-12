@@ -277,6 +277,9 @@ func Fetch(req Request) (io.ReadCloser, error) {
 	return nil, err
 }
 
+func (r Request) GetURL() string{
+	return r.URL
+}
 func isRobotsTxt(url string) bool {
 	if strings.HasSuffix(url, "robots.txt") {
 		return true
