@@ -15,6 +15,7 @@ import (
 
 //http://choly.ca/post/go-json-marshalling/
 //UnmarshalJSON convert headers to http.Header type
+//Unmarshal request as splash.Request
 func (p *Payload) UnmarshalJSON(data []byte) error {
 	type Alias Payload
 	aux := &struct {

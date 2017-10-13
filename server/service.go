@@ -19,7 +19,7 @@ import (
 // Define service interface
 type Service interface {
 	Fetch(req interface{}) (interface{}, error)
-	GetURL(req interface{}) string
+	getURL(req interface{}) string
 	ParseData(payload []byte) (io.ReadCloser, error)
 }
 
@@ -31,7 +31,7 @@ type ParseService struct {
 // this will be needed in main.go
 type ServiceMiddleware func(Service) Service
 
-func (ps ParseService) GetURL(req interface{}) string {
+func (ps ParseService) getURL(req interface{}) string {
 	var url string
 	switch req.(type) {
 	case splash.Request:
@@ -41,7 +41,6 @@ func (ps ParseService) GetURL(req interface{}) string {
 	}
 	return url
 }
-
 
 //Fetch returns splash.Request
 func (ps ParseService) Fetch(req interface{}) (interface{}, error) {
@@ -74,7 +73,7 @@ func (ps ParseService) ParseData(payload []byte) (io.ReadCloser, error) {
 	}
 
 	//req := splash.Request{URL: p.Request.(splash.Request).URL}
-	req := splash.Request{URL: ps.GetURL(p.Request)}
+	req := splash.Request{URL: ps.getURL(p.Request)}
 	//req := scrape.HttpClientFetcherRequest{URL: ps.GetURL(p.Request)}
 
 	//results, err := scraper.Scrape(req, config.Opts)
@@ -136,7 +135,7 @@ func (ps ParseService) ParseData(payload []byte) (io.ReadCloser, error) {
 }
 
 func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape.ScrapeResults, error) {
-	url := ps.GetURL(req)
+	url := ps.getURL(req)
 	if len(url) == 0 {
 		return nil, errors.New("no URL provided")
 	}

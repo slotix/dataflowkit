@@ -17,12 +17,12 @@ type robotstxtMiddleware struct {
 
 func (mw robotstxtMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 	//robotsData, err := robotstxt.RobotsTxtData(req)
-	url := mw.GetURL(req) 
+	url := mw.getURL(req) 
 	robotsData, err := robotstxt.RobotsTxtData(url)
 	if err != nil {
 		return nil, err
 	}
-	
+	logger.Println(robotsData)
 	if !robotstxt.Allowed(url, robotsData) {
 		return nil, &splash.ErrorForbiddenByRobots{url}
 	}

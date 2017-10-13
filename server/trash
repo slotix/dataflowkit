@@ -1,0 +1,32 @@
+func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	var request splash.Request
+	//var request scrape.HttpClientFetcherRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		logger.Printf("Type: %T\n", err)
+		return nil, &splash.ErrorBadRequest{err} //err
+	}
+	return request, nil
+}
+
+
+//Fetch returns splash.Request
+func (ps ParseService) Fetch(req interface{}) (interface{}, error) {
+
+	//req.URL normalization and validation
+	request := req.(splash.Request)
+	reqURL := strings.TrimSpace(request.URL)
+	if _, err := url.ParseRequestURI(reqURL); err != nil {
+		return nil, &splash.ErrorBadRequest{err}
+	}
+	request.URL = reqURL
+	//-----
+	fetcher, err := scrape.NewSplashFetcher()
+	if err != nil {
+		logger.Println(err)
+	}
+	res, err := fetcher.Fetch(request)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}

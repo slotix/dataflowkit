@@ -103,7 +103,7 @@ func (b *RedisConn) SetExpireAt(key string, expiresAt int64) error {
 
 func (b *RedisConn) SetExpireIn(key string, expiresIn int64) error {
 	if expiresIn == 0 {
-		//expiresIn = 3600
+		// expire results after 1 hour by default
 		expiresIn = viper.GetInt64("REDIS_EXPIRE")
 	}
 	conn := b.open()
