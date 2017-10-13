@@ -4,6 +4,7 @@ import (
 	"net/http"
 )
 
+
 type Request struct {
 	//URL is required to be passed to Fetch Endpoint
 	URL string `json:"url"`

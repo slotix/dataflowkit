@@ -26,7 +26,7 @@ func (mw loggingMiddleware) Fetch(req interface{}) (output interface{}, err erro
 	defer func(begin time.Time) {
 		mw.logger.Log(
 			"function", "fetch",
-			"url", mw.GetURL(req),
+			"url", mw.getURL(req),
 			//	"output", output,
 			"err", err,
 			"took", time.Since(begin),

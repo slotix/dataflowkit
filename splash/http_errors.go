@@ -13,6 +13,7 @@ type ErrorForbiddenByRobots struct {
 }
 func (e *ErrorForbiddenByRobots) Error() string { return e.URL + ": forbidden by robots.txt" }
 
+
 type ErrorForbidden struct {
 	URL string
 }
