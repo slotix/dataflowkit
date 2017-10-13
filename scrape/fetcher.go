@@ -97,14 +97,17 @@ func (sf *SplashFetcher) ValidateRequest(req *splash.Request) error {
 
 //Fetch retrieves document from the remote server. It returns splash.Response as it is not enough to get just page content but during scraping sessions auxiliary information like cookies should be avaialable.
 func (sf *SplashFetcher) Fetch(request interface{}) (interface{}, error) {
-
-	//r, err := splash.GetResponse(request.(splash.Request))
-	r, err := splash.GetResponse(request.(splash.Request))
-
+	req := request.(splash.Request)
+	err := sf.ValidateRequest(&req)
+	if err != nil {
+		logger.Println(err)
+		return nil, err
+	}
+	r, err := splash.GetResponse(req)
+	
 	if err != nil {
 		return nil, err
 	}
-
 	return r, nil
 
 }
@@ -143,11 +146,6 @@ type HttpClientFetcherRequest struct {
 }
 
 func (hf *HttpClientFetcher) Fetch(request interface{}) (interface{}, error) {
-	//	var r HttpClientFetcherRequest
-	//	err := json.Unmarshal(request, &r)
-	//	if err != nil {
-	//		return nil, err
-	//	}
 	r := request.(HttpClientFetcherRequest)
 	req, err := http.NewRequest(r.Method, r.URL, nil)
 	if err != nil {
