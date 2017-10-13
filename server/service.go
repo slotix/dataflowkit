@@ -45,25 +45,11 @@ func (ps ParseService) getURL(req interface{}) string {
 
 //Fetch returns splash.Request
 func (ps ParseService) Fetch(req interface{}) (interface{}, error) {
-
-	/* //req.URL normalization and validation
-	request := req.(splash.Request)
-	reqURL := strings.TrimSpace(request.URL)
-	if _, err := url.ParseRequestURI(reqURL); err != nil {
-		return nil, &errs.BadRequest{err}
-	}
-	request.URL = reqURL
-	//----- */
 	request := req.(splash.Request)
 	fetcher, err := scrape.NewSplashFetcher()
 	if err != nil {
 		logger.Println(err)
 	}
-	err = fetcher.ValidateRequest(&request)
-	if err != nil {
-		return nil, err
-	}
-
 	res, err := fetcher.Fetch(request)
 	if err != nil {
 		return nil, err
