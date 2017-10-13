@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
+	"github.com/slotix/dataflowkit/scrape"
 )
 
 // Make a new type and wrap into Service interface
@@ -37,7 +38,7 @@ func (mw loggingMiddleware) Fetch(req interface{}) (output interface{}, err erro
 }
 
 // Implement Service Interface for LoggingMiddleware
-func (mw loggingMiddleware) ParseData(payload []byte) (output io.ReadCloser, err error) {
+func (mw loggingMiddleware) ParseData(payload scrape.Payload) (output io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		mw.logger.Log(
 			"function", "parse",

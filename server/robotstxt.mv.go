@@ -1,8 +1,8 @@
 package server
 
 import (
+	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/robotstxt"
-	"github.com/slotix/dataflowkit/splash"
 )
 
 func RobotsTxtMiddleware() ServiceMiddleware {
@@ -17,14 +17,13 @@ type robotstxtMiddleware struct {
 
 func (mw robotstxtMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 	//robotsData, err := robotstxt.RobotsTxtData(req)
-	url := mw.getURL(req) 
+	url := mw.getURL(req)
 	robotsData, err := robotstxt.RobotsTxtData(url)
 	if err != nil {
 		return nil, err
 	}
-	logger.Println(robotsData)
 	if !robotstxt.Allowed(url, robotsData) {
-		return nil, &splash.ErrorForbiddenByRobots{url}
+		return nil, &errs.ForbiddenByRobots{url}
 	}
 	output, err = mw.Service.Fetch(req)
 	if err != nil {

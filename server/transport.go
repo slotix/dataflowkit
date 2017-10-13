@@ -6,8 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"strings"
 
 	"github.com/go-kit/kit/log"
 
@@ -15,29 +13,21 @@ import (
 
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
+	"github.com/slotix/dataflowkit/errs"
+	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
 )
 
 //decodeFetchRequest
 //if error is not nil, server should return
 //400 Bad Request
-
 func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var request splash.Request
 	//var request scrape.HttpClientFetcherRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		logger.Printf("Type: %T\n", err)
-		return nil, &splash.ErrorBadRequest{err} //err
+		return nil, &errs.BadRequest{err} //err
 	}
-	//request.URL normalization and validation
-	reqURL := strings.TrimSpace(request.URL)
-	if _, err := url.ParseRequestURI(reqURL); err != nil {
-		//logger.Printf("Type: %T\n", err)
-		//logger.Printf("Op: %s\n", err.(*url.Error).Op)
-		return nil, &splash.ErrorBadRequest{err}
-	}
-	request.URL = reqURL
-	logger.Println("transport request", request.URL)
 	return request, nil
 }
 
@@ -72,11 +62,12 @@ func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 
 //decodeParseRequest
 func decodeParseRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	request, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
+	var p scrape.Payload
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		logger.Printf("Type: %T\n", err)
+		return nil, &errs.BadRequest{err} //err
 	}
-	return request, nil
+	return p, nil
 }
 
 func encodeParseResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
@@ -112,19 +103,19 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	switch err.(type) {
 	default:
 		httpStatus = http.StatusInternalServerError
-	case *splash.ErrorBadRequest,
-		*splash.ErrorInvalidHost,
-		*splash.Error:
+	case *errs.BadRequest,
+		*errs.InvalidHost,
+		*errs.Error:
 		//return 400 Status
 		httpStatus = http.StatusBadRequest
-	case *splash.ErrorForbiddenByRobots,
-		*splash.ErrorForbidden:
+	case *errs.ForbiddenByRobots,
+		*errs.Forbidden:
 		//return 403 Status
 		httpStatus = http.StatusForbidden
-	case *splash.ErrorNotFound:
+	case *errs.NotFound:
 		//return 404 Status
 		httpStatus = http.StatusNotFound
-	case *splash.ErrorGatewayTimeout:
+	case *errs.GatewayTimeout:
 		//return 504 Status
 		httpStatus = http.StatusGatewayTimeout
 	}

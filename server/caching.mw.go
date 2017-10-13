@@ -78,21 +78,21 @@ func (mw cachingMiddleware) Fetch(req interface{}) (output interface{}, err erro
 	return
 }
 
-func (mw cachingMiddleware) ParseData(payload []byte) (output io.ReadCloser, err error) {
+func (mw cachingMiddleware) ParseData(p scrape.Payload) (output io.ReadCloser, err error) {
 	redisURL := viper.GetString("REDIS")
 	redisPassword := ""
 	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)
-	p, err := scrape.NewPayload(payload)
-	if err != nil {
-		return nil, err
-	}
+//	p, err := scrape.NewPayload(payload)
+//	if err != nil {
+//		return nil, err
+//	}
 	redisKey := fmt.Sprintf("%s-%s", p.Format, p.PayloadMD5)
 	redisValue, err := redisCon.GetValue(redisKey)
 	if err == nil {
 		readCloser := ioutil.NopCloser(bytes.NewReader(redisValue))
 		return readCloser, nil
 	}
-	parsed, err := mw.Service.ParseData(payload)
+	parsed, err := mw.Service.ParseData(p)
 	if err != nil {
 		return nil, err
 	}

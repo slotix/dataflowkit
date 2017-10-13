@@ -17,6 +17,7 @@ import (
 
 	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/spf13/viper"
+	"github.com/slotix/dataflowkit/errs"
 )
 
 var logger *log.Logger
@@ -73,7 +74,6 @@ func (s *splashConn) GenerateSplashURL(req Request) string {
 	} else {
 		LUAScript = baseLUA
 	}
-	LUAScript = baseLUA
 	splashURL := fmt.Sprintf(
 		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s",
 		s.host,
@@ -117,7 +117,7 @@ func GetResponse(req Request) (*Response, error) {
 	if statusCode != 200 {
 		switch statusCode {
 		case 504:
-			return nil, &ErrorGatewayTimeout{}
+			return nil, &errs.GatewayTimeout{}
 		default:
 			return nil, fmt.Errorf(string(res))
 		}
@@ -129,22 +129,22 @@ func GetResponse(req Request) (*Response, error) {
 		logger.Println("Json Unmarshall error", err)
 	}
 	//if response status code is not 200
-	logger.Println(sResponse.Error)
+
 	if sResponse.Error != "" {
 		switch sResponse.Error {
 		case "http404":
-			return nil, &ErrorNotFound{sResponse.URL}
+			return nil, &errs.NotFound{sResponse.URL}
 		case "http403":
-			return nil, &ErrorForbidden{sResponse.URL}
+			return nil, &errs.Forbidden{sResponse.URL}
 		case "network3":
-			return nil, &ErrorInvalidHost{sResponse.URL}
+			return nil, &errs.InvalidHost{sResponse.URL}
 		default:
-			return nil, &Error{sResponse.Error}
+			return nil, &errs.Error{sResponse.Error}
 		}
 		//return nil, fmt.Errorf("%s", sResponse.Error)
 	}
 	// Sometimes no response, request returned  by Splash.
-	// To solve this problem gc method should be called to clear WebKit caches and then
+	// gc (garbage collection) method should be called to clear WebKit caches and then
 	// GetResponse again. See more at https://github.com/scrapinghub/splash/issues/613
 
 	if sResponse.Response == nil || sResponse.Request == nil && sResponse.HTML != "" {
@@ -190,6 +190,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 	}
 
 	if isRobotsTxt(r.Request.URL) {
+
 		decoded, err := base64.StdEncoding.DecodeString(r.Response.Content.Text)
 		if err != nil {
 			logger.Println("decode error:", err)

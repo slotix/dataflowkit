@@ -20,7 +20,8 @@ import (
 type Service interface {
 	Fetch(req interface{}) (interface{}, error)
 	getURL(req interface{}) string
-	ParseData(payload []byte) (io.ReadCloser, error)
+	//ParseData(payload []byte) (io.ReadCloser, error)
+	ParseData(scrape.Payload) (io.ReadCloser, error)
 }
 
 // Implement service with empty struct
@@ -44,25 +45,33 @@ func (ps ParseService) getURL(req interface{}) string {
 
 //Fetch returns splash.Request
 func (ps ParseService) Fetch(req interface{}) (interface{}, error) {
-	logger.Println("service fetch", req)
+
+	/* //req.URL normalization and validation
+	request := req.(splash.Request)
+	reqURL := strings.TrimSpace(request.URL)
+	if _, err := url.ParseRequestURI(reqURL); err != nil {
+		return nil, &errs.BadRequest{err}
+	}
+	request.URL = reqURL
+	//----- */
+	request := req.(splash.Request)
 	fetcher, err := scrape.NewSplashFetcher()
-	//fetcher, err := scrape.NewHttpClientFetcher()
 	if err != nil {
 		logger.Println(err)
 	}
-	res, err := fetcher.Fetch(req)
+	err = fetcher.ValidateRequest(&request)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := fetcher.Fetch(request)
 	if err != nil {
 		return nil, err
 	}
 	return res, nil
 }
 
-func (ps ParseService) ParseData(payload []byte) (io.ReadCloser, error) {
-	p, err := scrape.NewPayload(payload)
-	if err != nil {
-		return nil, err
-	}
-	logger.Println(p.Request)
+func (ps ParseService) ParseData(p scrape.Payload) (io.ReadCloser, error) {
 	config, err := p.PayloadToScrapeConfig()
 	if err != nil {
 		return nil, err

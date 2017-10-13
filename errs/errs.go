@@ -1,45 +1,45 @@
-package splash
+package errs
 
 //400 Bad Request
 //The server cannot or will not process the request due to an apparent client error (e.g., malformed request syntax, size too large, invalid request message framing, or deceptive request routing).
-type ErrorBadRequest struct {
+type BadRequest struct {
 	Err error
 }
-func (e *ErrorBadRequest) Error() string { return e.Err.Error() }
+func (e *BadRequest) Error() string { return e.Err.Error() }
 
 //403 Forbidden
-type ErrorForbiddenByRobots struct {
+type ForbiddenByRobots struct {
 	URL string
 }
-func (e *ErrorForbiddenByRobots) Error() string { return e.URL + ": forbidden by robots.txt" }
+func (e *ForbiddenByRobots) Error() string { return e.URL + ": forbidden by robots.txt" }
 
 
-type ErrorForbidden struct {
+type Forbidden struct {
 	URL string
 }
-func (e *ErrorForbidden) Error() string { return e.URL + ": forbidden" }
+func (e *Forbidden) Error() string { return e.URL + ": forbidden" }
 
 
 //404 Not Found
-type ErrorNotFound struct {
+type NotFound struct {
 	URL    string
 }
-func (e *ErrorNotFound) Error() string {
+func (e *NotFound) Error() string {
 	return e.URL + ": resource not found" 	
 }
 
 //400 Invalid Host
-type ErrorInvalidHost struct {
+type InvalidHost struct {
 	URL    string
 }
-func (e *ErrorInvalidHost) Error() string {
+func (e *InvalidHost) Error() string {
 	return e.URL + ": Invalid Host" 	
 }
 
 //504 Gateway Time-out
-type ErrorGatewayTimeout struct {
+type GatewayTimeout struct {
 }
-func (e *ErrorGatewayTimeout) Error() string {
+func (e *GatewayTimeout) Error() string {
 	return "Timeout exceeded rendering page" 	
 }
 
