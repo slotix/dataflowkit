@@ -31,7 +31,7 @@ func RobotsTxtData(URL string) (robotsData *robotstxt.RobotsData, err error) {
 	}
 	//generate robotsURL from req.URL
 	robotsURL = fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
-
+	
 	//fetch robots.txt
 	r := splash.Request{URL: robotsURL}
 	fetcher, err := scrape.NewSplashFetcher()
@@ -42,6 +42,7 @@ func RobotsTxtData(URL string) (robotsData *robotstxt.RobotsData, err error) {
 		return nil, err
 	}
 	robots, err := fetcher.Fetch(r)
+	
 	if err != nil {
 		logger.Println(err)
 		//return nil, err
@@ -53,6 +54,7 @@ func RobotsTxtData(URL string) (robotsData *robotstxt.RobotsData, err error) {
 		if err != nil {
 			return nil, err
 		}
+		
 		data, err := ioutil.ReadAll(content)
 		if err != nil {
 			return nil, err

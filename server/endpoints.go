@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
+	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
 )
 
@@ -29,7 +30,7 @@ func MakeFetchEndpoint(svc Service) endpoint.Endpoint {
 // creating Parse Endpoint
 func MakeParseEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		v, err := svc.ParseData(request.([]byte))
+		v, err := svc.ParseData(request.(scrape.Payload))
 		if err != nil {
 			return nil, err
 		}

@@ -3,7 +3,10 @@ package scrape
 import (
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
+	"strings"
 
+	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/splash"
 
 	"golang.org/x/net/publicsuffix"
@@ -15,8 +18,6 @@ import (
 // Note: Fetchers may or may not be safe to use concurrently.  Please read the
 // documentation for each fetcher for more details.
 type Fetcher interface {
-	//Returns Fetcher type
-	//FType() string
 	// Prepare is called once at the beginning of the scrape.
 	Prepare() error
 
@@ -57,9 +58,18 @@ type HttpClientFetcher struct {
 // SplashClientFetcher is a Fetcher that uses Scrapinghub splash
 // to fetch URLs. Splash is a javascript rendering service
 type SplashFetcher struct {
-	PrepareSplash func() error
-}
+//	request *splash.Request
 
+	PrepareSplash func() error
+	// PrepareRequest prepares each request that will be sent, prior to sending.
+	// This is useful for, e.g. setting custom HTTP headers, changing the User-
+	// Agent, and so on.  If the function returns an error, then the scrape will
+	// be aborted.
+	//
+	// Note: this function does NOT apply to requests made during the
+	// PrepareClient function (above).
+	PrepareRequest func(*splash.Request) error
+}
 
 func NewSplashFetcher() (*SplashFetcher, error) {
 	sf := &SplashFetcher{}
@@ -73,12 +83,24 @@ func (sf *SplashFetcher) Prepare() error {
 	return nil
 }
 
+//ValidateRequest validates each request that will be sent, prior to sending.
+func (sf *SplashFetcher) ValidateRequest(req *splash.Request) error {
+	//req.URL normalization and validation
+	//	request := req.(splash.Request)
+	reqURL := strings.TrimSpace(req.URL)
+	if _, err := url.ParseRequestURI(reqURL); err != nil {
+		return &errs.BadRequest{err}
+	}
+	req.URL = reqURL
+	return nil
+}
+
 //Fetch retrieves document from the remote server. It returns splash.Response as it is not enough to get just page content but during scraping sessions auxiliary information like cookies should be avaialable.
 func (sf *SplashFetcher) Fetch(request interface{}) (interface{}, error) {
 
 	//r, err := splash.GetResponse(request.(splash.Request))
 	r, err := splash.GetResponse(request.(splash.Request))
-	
+
 	if err != nil {
 		return nil, err
 	}

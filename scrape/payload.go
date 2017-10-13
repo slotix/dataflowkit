@@ -14,8 +14,8 @@ import (
 )
 
 //http://choly.ca/post/go-json-marshalling/
-//UnmarshalJSON convert headers to http.Header type
-//Unmarshal request as splash.Request
+//UnmarshalJSON casts Request interface{} type to custom splash.Request{} type. It initializes other payload parameters with default values.
+
 func (p *Payload) UnmarshalJSON(data []byte) error {
 	type Alias Payload
 	aux := &struct {
@@ -29,24 +29,14 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	}
 	logger.Println(aux.Request)
 	splashRequest := splash.Request{}
-	//err := FillStruct(aux.Request.(map[string]interface{}), splashRequest)
 	err := FillStruct(aux.Request.(map[string]interface{}), &splashRequest)
 	if err != nil {
 		return err
 	}
 	p.Request = splashRequest
-	//logger.Println(splashRequest)
-	return nil
-}
-
-//NewParser initializes new Parser struct
-func NewPayload(payload []byte) (Payload, error) {
-	var p Payload
-	err := json.Unmarshal(payload, &p)
 	
-	if err != nil {
-		return p, err
-	}
+	//init other fields
+	p.PayloadMD5 = GenerateMD5(data)
 	if p.Format == "" {
 		p.Format = DefaultOptions.Format
 	}
@@ -62,10 +52,9 @@ func NewPayload(payload []byte) (Payload, error) {
 	if p.PaginateResults == nil {
 		p.PaginateResults = &DefaultOptions.PaginateResults
 	}
-
-	p.PayloadMD5 = GenerateMD5(payload)
-	return p, nil
+	return nil
 }
+
 
 func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 	fetcher, err := NewSplashFetcher()

@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/slotix/dataflowkit/cache"
+	"github.com/slotix/dataflowkit/scrape"
 	"github.com/spf13/viper"
 )
 
@@ -24,7 +25,7 @@ func (mw statsMiddleware) Fetch(req interface{}) (output interface{}, err error)
 	return
 }
 
-func (mw statsMiddleware) ParseData(payload []byte) (output io.ReadCloser, err error) {
+func (mw statsMiddleware) ParseData(payload scrape.Payload) (output io.ReadCloser, err error) {
 	mw.incrementCount()
 	output, err = mw.Service.ParseData(payload)
 	return
