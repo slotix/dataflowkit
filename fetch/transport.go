@@ -3,7 +3,7 @@ package fetch
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/go-kit/kit/endpoint"
@@ -24,7 +24,7 @@ func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error)
 	var request splash.Request
 	//var request scrape.HttpClientFetcherRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		logger.Printf("Type: %T\n", err)
+		//logger.Printf("Type: %T\n", err)
 		return nil, &errs.BadRequest{err} //err
 	}
 	return request, nil
@@ -47,12 +47,7 @@ func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 	if err != nil {
 		return err
 	}
-	data, err := ioutil.ReadAll(content)
-
-	if err != nil {
-		return err
-	}
-	_, err = w.Write(data)
+	_, err = io.Copy(w, content)
 	if err != nil {
 		return err
 	}
