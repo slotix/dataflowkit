@@ -1,4 +1,4 @@
-package server
+package fetch
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 
 	"context"
@@ -14,7 +15,6 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
 	"github.com/slotix/dataflowkit/errs"
-	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
 )
 
@@ -31,6 +31,34 @@ func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error)
 	return request, nil
 }
 
+// func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+// 	if e, ok := response.(errorer); ok && e.error() != nil {
+// 		// Not a Go kit transport error, but a business-logic error.
+// 		// Provide those as HTTP errors.
+// 		encodeError(ctx, e.error(), w)
+// 		return nil
+// 	}
+// 	sResponse := response.(*splash.Response)
+// 	if sResponse.Error != "" {
+// 		return errors.New(sResponse.Error)
+// 	}
+// 	content, err := sResponse.GetContent()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	data, err := ioutil.ReadAll(content)
+
+// 	if err != nil {
+// 		return err
+// 	}
+// 	_, err = w.Write(data)
+
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+
 func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	if e, ok := response.(errorer); ok && e.error() != nil {
 		// Not a Go kit transport error, but a business-logic error.
@@ -38,16 +66,15 @@ func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 		encodeError(ctx, e.error(), w)
 		return nil
 	}
-
-	sResponse := response.(*splash.Response)
-	if sResponse.Error != "" {
-		return errors.New(sResponse.Error)
-	}
-	content, err := sResponse.GetContent()
-	if err != nil {
-		return err
-	}
-	data, err := ioutil.ReadAll(content)
+	//sResponse := response.(*splash.Response)
+	//if sResponse.Error != "" {
+	//	return errors.New(sResponse.Error)
+	//}
+	//content, err := sResponse.GetContent()
+	//if err != nil {
+	//	return err
+	//}
+	data, err := ioutil.ReadAll(response.(io.ReadCloser))
 
 	if err != nil {
 		return err
@@ -60,21 +87,23 @@ func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 	return nil
 }
 
-//decodeParseRequest
-func decodeParseRequest(_ context.Context, r *http.Request) (interface{}, error) {
-	var p scrape.Payload
-	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		logger.Printf("Type: %T\n", err)
-		return nil, &errs.BadRequest{err} //err
+func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+	if e, ok := response.(errorer); ok && e.error() != nil {
+		// Not a Go kit transport error, but a business-logic error.
+		// Provide those as HTTP errors.
+		encodeError(ctx, e.error(), w)
+		return nil
 	}
-	return p, nil
-}
+	sResponse := response.(*splash.Response)
+	if sResponse.Error != "" {
+		return errors.New(sResponse.Error)
+	}
 
-func encodeParseResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	data, err := ioutil.ReadAll(response.(io.Reader))
+	data, err := json.Marshal(sResponse)
 	if err != nil {
 		return err
 	}
+
 	_, err = w.Write(data)
 
 	if err != nil {
@@ -136,6 +165,39 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	})
 }
 
+// endpoints wrapper
+type Endpoints struct {
+	FetchEndpoint    endpoint.Endpoint
+	ResponseEndpoint endpoint.Endpoint
+	//ParseEndpoint endpoint.Endpoint
+}
+
+// creating Fetch Endpoint
+func MakeFetchEndpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(splash.Request)
+		//req := request
+		v, err := svc.Fetch(req)
+		if err != nil {
+			return nil, err
+		}
+		return v, nil
+	}
+}
+
+// creating Response Endpoint
+func MakeResponseEndpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(splash.Request)
+		//req := request
+		v, err := svc.Response(req)
+		if err != nil {
+			return nil, err
+		}
+		return v, nil
+	}
+}
+
 // Make Http Handler
 func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger) http.Handler {
 	/*
@@ -163,10 +225,10 @@ func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger)
 		options...,
 	))
 
-	r.Methods("POST").Path("/parse").Handler(httptransport.NewServer(
-		endpoint.ParseEndpoint,
-		decodeParseRequest,
-		encodeParseResponse,
+	r.Methods("POST").Path("/response").Handler(httptransport.NewServer(
+		endpoint.ResponseEndpoint,
+		decodeFetchRequest,
+		encodeResponse,
 		options...,
 	))
 

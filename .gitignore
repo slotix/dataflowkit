@@ -6,7 +6,6 @@
 # Folders
 _obj
 _test
-webold
 web/
 
 .vscode/*
@@ -37,9 +36,8 @@ vendor/
 dataflowkit
 dataflowkit_linux
 webserver/webserver
-config/dfk-server.service
-machinery/machinery
-goscrape/goscrape
-server/server.d/server.d
+
+fetch/fetch.d/fetch.d
+parse/parse.d/parse.d
 
 deploy.sh

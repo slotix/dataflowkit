@@ -1,4 +1,4 @@
-package server
+package parse
 
 import (
 	"io"
@@ -20,21 +20,6 @@ func LoggingMiddleware(logger log.Logger) ServiceMiddleware {
 	return func(next Service) Service {
 		return loggingMiddleware{next, logger}
 	}
-}
-
-// Implement Service Interface for LoggingMiddleware
-func (mw loggingMiddleware) Fetch(req interface{}) (output interface{}, err error) {
-	defer func(begin time.Time) {
-		mw.logger.Log(
-			"function", "fetch",
-			"url", mw.getURL(req),
-			//	"output", output,
-			"err", err,
-			"took", time.Since(begin),
-		)
-	}(time.Now())
-	output, err = mw.Service.Fetch(req)
-	return
 }
 
 // Implement Service Interface for LoggingMiddleware

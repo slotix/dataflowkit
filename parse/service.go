@@ -1,16 +1,17 @@
-package server
+package parse
 
 import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/robotstxt"
 	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
@@ -18,10 +19,8 @@ import (
 
 // Define service interface
 type Service interface {
-	Fetch(req interface{}) (interface{}, error)
-	getURL(req interface{}) string
-	//ParseData(payload []byte) (io.ReadCloser, error)
 	ParseData(scrape.Payload) (io.ReadCloser, error)
+	//	getURL(req interface{}) string
 }
 
 // Implement service with empty struct
@@ -43,36 +42,20 @@ func (ps ParseService) getURL(req interface{}) string {
 	return url
 }
 
-//Fetch returns splash.Request
-func (ps ParseService) Fetch(req interface{}) (interface{}, error) {
-	request := req.(splash.Request)
-	fetcher, err := scrape.NewSplashFetcher()
-	if err != nil {
-		logger.Println(err)
-	}
-	res, err := fetcher.Fetch(request)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
 func (ps ParseService) ParseData(p scrape.Payload) (io.ReadCloser, error) {
 	config, err := p.PayloadToScrapeConfig()
 	if err != nil {
 		return nil, err
 	}
+	req := splash.Request{URL: ps.getURL(p.Request)}
+	//req := scrape.HttpClientFetcherRequest{URL: ps.GetURL(p.Request)}
+
 	scraper, err := scrape.New(config)
 	if err != nil {
 		return nil, err
 	}
 
-	//req := splash.Request{URL: p.Request.(splash.Request).URL}
-	req := splash.Request{URL: ps.getURL(p.Request)}
-	//req := scrape.HttpClientFetcherRequest{URL: ps.GetURL(p.Request)}
-
-	//results, err := scraper.Scrape(req, config.Opts)
-	results, err := ps.scrape(req, scraper) //, config.Opts)
+	results, err := ps.scrape(req, scraper)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +68,6 @@ func (ps ParseService) ParseData(p scrape.Payload) (io.ReadCloser, error) {
 			json.NewEncoder(&buf).Encode(results.AllBlocks())
 		}
 	case "csv":
-
 		/*
 			includeHeader := true
 			w := csv.NewWriter(&buf)
@@ -124,9 +106,43 @@ func (ps ParseService) ParseData(p scrape.Payload) (io.ReadCloser, error) {
 			return nil, err
 		}
 	}
-
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
+}
+
+//responseFromFetchService sends request to fetch service and returns *splash.Response
+func responseFromFetchService(req splash.Request) (*splash.Response, error) {
+
+	//fetch content
+	b, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	reader := bytes.NewReader(b)
+	request, err := http.NewRequest("POST", "http://127.0.0.1:8000/response", reader)
+	request.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	r, err := client.Do(request)
+	if r != nil {
+		defer r.Body.Close()
+	}
+	if err != nil {
+		panic(err)
+	}
+	resp, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	var sResponse *splash.Response
+	if err := json.Unmarshal(resp, &sResponse); err != nil {
+		logger.Println("Json Unmarshall error", err)
+	}
+	//	content, err := sResponse.GetContent()
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//return content, nil
+	return sResponse, nil
 }
 
 func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape.ScrapeResults, error) {
@@ -136,6 +152,7 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 	}
 	//get Robotstxt Data
 	robotsData, err := robotstxt.RobotsTxtData(url)
+
 	if err != nil {
 		return nil, err
 	}
@@ -148,68 +165,27 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 	for {
 		//check if scraping of current url is not forbidden
 		if !robotstxt.Allowed(url, robotsData) {
-			err = fmt.Errorf("%s: forbidden by robots.txt", url)
-			return nil, err
+			return nil, &errs.ForbiddenByRobots{url}
 		}
 		// Repeat until we don't have any more URLs, or until we hit our page limit.
 		if len(url) == 0 || (scraper.Config.Opts.MaxPages > 0 && numPages >= scraper.Config.Opts.MaxPages) {
 			break
 		}
-
-		r, err := ps.Fetch(req)
-		//	r, err := s.Config.Fetcher.Fetch(req)
+		sResponse, err := responseFromFetchService(req.(splash.Request))
 		if err != nil {
 			return nil, err
 		}
-
-		var resp io.ReadCloser
-		if sResponse, ok := r.(*splash.Response); ok {
-			resp, err = sResponse.GetContent()
-			if err != nil {
-				logger.Println(err)
-			}
+		content, err := sResponse.GetContent()
+		if err != nil {
+			return nil, err
 		}
-
-		/*
-			//fetch content
-			b, err := json.Marshal(req)
-			if err != nil {
-				return nil, err
-			}
-
-			reader := bytes.NewReader(b)
-			request, err := http.NewRequest("POST", "http://127.0.0.1:8000/app/response", reader)
-			request.Header.Set("Content-Type", "application/json")
-			client := &http.Client{}
-			r, err := client.Do(request)
-			if r != nil {
-				defer r.Body.Close()
-			}
-			if err != nil {
-				panic(err)
-			}
-			resp, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				return nil, err
-			}
-			var sResponse splash.Response
-			if err := json.Unmarshal(resp, &sResponse); err != nil {
-				logger.Println("Json Unmarshall error", err)
-			}
-			content, err := sResponse.GetContent()
-			if err != nil {
-				return nil, err
-			}
-		*/
-
 		// Create a goquery document.
-		doc, err := goquery.NewDocumentFromReader(resp)
-		//doc, err := goquery.NewDocumentFromReader(content)
-		//doc, err := goquery.NewDocumentFromResponse(r)
-		//resp.Close()
+		doc, err := goquery.NewDocumentFromReader(content)
+
 		if err != nil {
 			return nil, err
 		}
+
 		res.URLs = append(res.URLs, url)
 		results := []map[string]interface{}{}
 
@@ -259,13 +235,13 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 		//ps.fetcher.type
 		//every time when getting a response the next request will be filled with updated cookie information
 		sRequest := req.(splash.Request)
-		if sResponse, ok := r.(*splash.Response); ok {
-			//sRequest := req.(splash.Request)
-			err := sResponse.SetCookieToRequest(&sRequest)
-			if err != nil {
-				//return nil, err
-				logger.Println(err)
-			}
+		//	if response, ok := sResponse.(*splash.Response); ok {
+		//sRequest := req.(splash.Request)
+		err = sResponse.SetCookieToNextRequest(&sRequest)
+		if err != nil {
+			//return nil, err
+			logger.Println(err)
+			//		}
 
 		}
 		sRequest.URL = url

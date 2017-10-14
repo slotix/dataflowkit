@@ -17,7 +17,7 @@ import (
 //RobotsTxtData returns RobotsTxtData structure or an error otherwise
 //func RobotsTxtData(req interface{}) (robotsData *robotstxt.RobotsData, err error) {
 func RobotsTxtData(URL string) (robotsData *robotstxt.RobotsData, err error) {
-
+	
 	//url := strings.TrimSpace(req.(scrape.HttpClientFetcherRequest).URL)
 	url := strings.TrimSpace(URL)
 

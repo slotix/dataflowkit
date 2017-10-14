@@ -1,4 +1,4 @@
-package server
+package fetch
 
 import (
 	"github.com/slotix/dataflowkit/errs"

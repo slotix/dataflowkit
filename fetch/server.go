@@ -1,4 +1,4 @@
-package server
+package fetch
 
 import (
 	"context"
@@ -13,10 +13,6 @@ import (
 )
 
 func Start(port string) {
-	//var (
-	//	port = flag.String("listen", ":8000", "HTTP listen address")
-	//)
-	//flag.Parse()
 	ctx := context.Background()
 	errChan := make(chan error)
 
@@ -24,25 +20,20 @@ func Start(port string) {
 	var logger log.Logger
 	{
 		logger = log.NewLogfmtLogger(os.Stderr)
-		//logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 		logger = log.With(logger, "ts", time.Now().Format("Jan _2 15:04:05"))
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 
 	var svc Service
-	svc = ParseService{}
-	//svc = ProxyingMiddleware(ctx, "http://127.0.0.1:8000")(svc)
+	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
 	svc = CachingMiddleware()(svc)
-
-	//svc = ProxyingMiddleware(ctx, viper.GetString("proxy"))(svc)
-
 	svc = LoggingMiddleware(logger)(svc)
 	svc = RobotsTxtMiddleware()(svc)
 
 	endpoints := Endpoints{
 		FetchEndpoint: MakeFetchEndpoint(svc),
-		ParseEndpoint: MakeParseEndpoint(svc),
+		ResponseEndpoint: MakeResponseEndpoint(svc),
 	}
 
 	r := MakeHttpHandler(ctx, endpoints, logger)

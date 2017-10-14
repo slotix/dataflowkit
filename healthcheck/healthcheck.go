@@ -73,8 +73,6 @@ func CheckServices() (status map[string]string) {
 			network: viper.GetString("REDIS_NETWORK"),
 			host:    viper.GetString("REDIS")},
 		splashConn{
-			//conn: splash.Connection{
-				
 				Host: viper.GetString("SPLASH"),
 		},
 	}
