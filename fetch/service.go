@@ -32,35 +32,18 @@ func (fs FetchService) getURL(req interface{}) string {
 }
 
 //Fetch returns splash.Response
-//see transport.go encodeFetchResponse for more details about retured values. 
+//see transport.go encodeFetchResponse for more details about retured value.
 func (fs FetchService) Fetch(req interface{}) (interface{}, error) {
-	// request := req.(splash.Request)
-	// fetcher, err := scrape.NewSplashFetcher()
-	// if err != nil {
-	// 	logger.Println(err)
-	// }
-	// res, err := fetcher.Fetch(request)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	//return res, nil
-	
-	res, err := fs.Response(req)
-	content, err := res.(*splash.Response).GetContent()
-	if err != nil {
-		return nil, err
-	}
-	//data, err := ioutil.ReadAll(content)
+	 res, err := fs.Response(req)
+	 if err != nil {
+		 	return nil, err
+		 }
+	 return res, nil
 
-	//if err != nil {
-	//	return err
-	//}
-	//return res, nil
-	return content, nil
 }
 
 //Response returns splash.Response
-//see transport.go encodeResponse for more details about retured values. 
+//see transport.go encodeResponse for more details about retured value.
 func (fs FetchService) Response(req interface{}) (interface{}, error) {
 	request := req.(splash.Request)
 	fetcher, err := scrape.NewSplashFetcher()

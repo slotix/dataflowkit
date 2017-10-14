@@ -3,7 +3,6 @@ package fetch
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -31,33 +30,7 @@ func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error)
 	return request, nil
 }
 
-// func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-// 	if e, ok := response.(errorer); ok && e.error() != nil {
-// 		// Not a Go kit transport error, but a business-logic error.
-// 		// Provide those as HTTP errors.
-// 		encodeError(ctx, e.error(), w)
-// 		return nil
-// 	}
-// 	sResponse := response.(*splash.Response)
-// 	if sResponse.Error != "" {
-// 		return errors.New(sResponse.Error)
-// 	}
-// 	content, err := sResponse.GetContent()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	data, err := ioutil.ReadAll(content)
 
-// 	if err != nil {
-// 		return err
-// 	}
-// 	_, err = w.Write(data)
-
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
 
 func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	if e, ok := response.(errorer); ok && e.error() != nil {
@@ -66,21 +39,20 @@ func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 		encodeError(ctx, e.error(), w)
 		return nil
 	}
-	//sResponse := response.(*splash.Response)
-	//if sResponse.Error != "" {
-	//	return errors.New(sResponse.Error)
-	//}
-	//content, err := sResponse.GetContent()
-	//if err != nil {
-	//	return err
-	//}
-	data, err := ioutil.ReadAll(response.(io.ReadCloser))
+	sResponse := response.(*splash.Response)
+	if sResponse.Error != "" {
+		return errors.New(sResponse.Error)
+	}
+	content, err := sResponse.GetContent()
+	if err != nil {
+		return err
+	}
+	data, err := ioutil.ReadAll(content)
 
 	if err != nil {
 		return err
 	}
 	_, err = w.Write(data)
-
 	if err != nil {
 		return err
 	}
