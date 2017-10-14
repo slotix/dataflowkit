@@ -66,7 +66,7 @@ func (r *Response) GetSetCookie() (string, error) {
 	return setCookie, nil
 }
 
-func (r *Response) SetCookieToRequest(req *Request) error {
+func (r *Response) SetCookieToNextRequest(req *Request) error {
 	setCookie, err := r.GetSetCookie()
 	if err != nil {
 		return err
@@ -84,3 +84,6 @@ func (r *Response) SetCookieToRequest(req *Request) error {
 	req.Cookies = cookie
 	return nil
 }
+
+
+
