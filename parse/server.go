@@ -28,6 +28,7 @@ func Start(port string) {
 	var svc Service
 	svc = ParseService{}
 	//svc = StatsMiddleware("18")(svc)
+
 	svc = CachingMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
 

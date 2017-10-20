@@ -9,7 +9,7 @@ import (
 	"github.com/eawsy/aws-lambda-go-net/service/lambda/runtime/net"
 	"github.com/eawsy/aws-lambda-go-net/service/lambda/runtime/net/apigatewayproxy"
 	"github.com/go-kit/kit/log"
-	"github.com/slotix/dataflowkit/server"
+	"github.com/slotix/dataflowkit/fetch"
 )
 
 var Handler apigatewayproxy.Handler
@@ -39,20 +39,20 @@ func NewHandler() apigatewayproxy.Handler {
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 
-	var svc server.Service
-	svc = server.ParseService{}
+	var svc fetch.Service
+	svc = fetch.FetchService{}
 
 	//svc = StatsMiddleware("18")(svc)
 	//svc = CachingMiddleware()(svc)
-	svc = server.LoggingMiddleware(logger)(svc)
-	svc = server.RobotsTxtMiddleware()(svc)
+	svc = fetch.SQSMiddleware()(svc)
+	svc = fetch.LoggingMiddleware(logger)(svc)
+	svc = fetch.RobotsTxtMiddleware()(svc)
 
-	endpoints := server.Endpoints{
-		FetchEndpoint: server.MakeFetchEndpoint(svc),
-		ParseEndpoint: server.MakeParseEndpoint(svc),
+	endpoints := fetch.Endpoints{
+		FetchEndpoint: fetch.MakeFetchEndpoint(svc),
+	//	ParseEndpoint: server.MakeParseEndpoint(svc),
 	}
-	//r := server.MakeHttpHandler(ctx, endpoints, nil)
-	r := server.MakeHttpHandler(ctx, endpoints, logger)
+	r := fetch.MakeHttpHandler(ctx, endpoints, logger)
 	ln := net.Listen()
 	handle := apigatewayproxy.New(ln, nil).Handle
 	go http.Serve(ln, r)
