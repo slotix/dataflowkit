@@ -1,10 +1,10 @@
-service: fetch
+service: dfk
 package:
   artifact: package.zip
 provider:
   name: aws
   runtime: python2.7
-  timeout: 10,
+  timeout: 10
   stage: ${env:ENV}
   region: ${env:AWS_REGION}
 functions:
@@ -21,9 +21,5 @@ functions:
     events:
       - http:
           path: fetch
-          method: post
-          cors: true
-      - http:
-          path: parse
           method: post
           cors: true
