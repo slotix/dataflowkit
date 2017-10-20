@@ -41,6 +41,9 @@ var (
 	splashTimeout         int
 	splashResourceTimeout int
 	splashWait            float64
+	
+	sqsQueueURL string
+	sqsAWSRegion string
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -118,6 +121,11 @@ func init() {
 	RootCmd.Flags().IntVarP(&splashTimeout, "SPLASH_TIMEOUT", "", 20, "A timeout (in seconds) for the render.")
 	RootCmd.Flags().IntVarP(&splashResourceTimeout, "SPLASH_RESOURCE_TIMEOUT", "", 30, "A timeout (in seconds) for individual network requests.")
 	RootCmd.Flags().Float64VarP(&splashWait, "SPLASH_WAIT", "", 0.5, "Time in seconds to wait until js scripts loaded.")
+	
+	RootCmd.Flags().StringVarP(&sqsQueueURL, "SQS_QUEUE_URL", "", "https://sqs.us-east-1.amazonaws.com/060679207441/fetch", "SQS Queue URL")
+	RootCmd.Flags().StringVarP(&sqsAWSRegion, "SQS_AWS_REGION", "", "us-east-1", "SQS AWS Region")
+
+
 	viper.AutomaticEnv() // read in environment variables that match
 	viper.BindPFlag("PORT", RootCmd.Flags().Lookup("PORT"))
 	viper.BindPFlag("REDIS", RootCmd.Flags().Lookup("REDIS"))
@@ -127,4 +135,7 @@ func init() {
 	viper.BindPFlag("SPLASH_TIMEOUT", RootCmd.Flags().Lookup("SPLASH_TIMEOUT"))
 	viper.BindPFlag("SPLASH_RESOURCE_TIMEOUT", RootCmd.Flags().Lookup("SPLASH_RESOURCE_TIMEOUT"))
 	viper.BindPFlag("SPLASH_WAIT", RootCmd.Flags().Lookup("SPLASH_WAIT"))
+
+	viper.BindPFlag("SQS_QUEUE_URL", RootCmd.Flags().Lookup("SQS_QUEUE_URL"))
+	viper.BindPFlag("SQS_AWS_REGION", RootCmd.Flags().Lookup("SQS_AWS_REGION"))
 }
