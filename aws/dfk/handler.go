@@ -55,7 +55,7 @@ func NewHandler() apigatewayproxy.Handler {
 
 	//svc = StatsMiddleware("18")(svc)
 	//svc = CachingMiddleware()(svc)
-	fSvc = SQSMiddleware()(fSvc)
+	fSvc = fetch.SQSMiddleware()(fSvc)
 	fSvc = fetch.LoggingMiddleware(logger)(fSvc)
 	fSvc = fetch.RobotsTxtMiddleware()(fSvc)
 
