@@ -1,6 +1,8 @@
 package fetch
 
 import (
+	"bytes"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -30,7 +32,6 @@ func (mw sqsMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Println(viper.GetInt("SQS_MAX_RETRIES"))
 	sqsSvc := sqs.New(sess)
 
 	//fetch results if there is nothing in a cache
@@ -39,19 +40,34 @@ func (mw sqsMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 		return nil, err
 	}
 	if sResponse, ok := resp.(*splash.Response); ok {
-		if sResponse.Cacheable {
-
-			params := &sqs.SendMessageInput{
-				MessageBody:  aws.String(mw.getURL(req)),                   // Required
-				QueueUrl:     aws.String(viper.GetString("SQS_QUEUE_URL")), // Required
-				DelaySeconds: aws.Int64(0),                                 // (optional)  0 ~ 900s (15 minutes)
-			}
-			_, err := sqsSvc.SendMessage(params)
-			if err != nil {
-				return nil, err
-			}
-
+		//if sResponse.Cacheable {
+		content, err := sResponse.GetContent()
+		if err != nil {
+			return nil, err
 		}
+		buf := new(bytes.Buffer)
+		n, _ := buf.ReadFrom(content)
+		logger.Printf("URL: %s Size : %.2f kb\n",mw.getURL(req), float64(n)/float64(1024))
+		strContent := buf.String() 
+		
+
+		params := &sqs.SendMessageInput{
+			MessageAttributes: map[string]*sqs.MessageAttributeValue{
+				"URL": &sqs.MessageAttributeValue{
+					DataType:    aws.String("String"),
+					StringValue: aws.String(mw.getURL(req)),
+				},
+			},
+			MessageBody:  aws.String(strContent),                                          // Required
+			QueueUrl:     aws.String(viper.GetString("SQS_QUEUE_FETCH_URL_OUT")), // Required
+			DelaySeconds: aws.Int64(0),                                          // (optional)  0 ~ 900s (15 minutes)
+		}
+		_, err = sqsSvc.SendMessage(params)
+		if err != nil {
+			return nil, err
+		}
+
+		//	}
 		output = sResponse
 	}
 	//output, err = sResponse.GetContent()

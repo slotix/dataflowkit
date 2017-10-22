@@ -20,7 +20,7 @@ import (
 //decodeFetchRequest
 //if error is not nil, server should return
 //400 Bad Request
-func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func DecodeFetchRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var request splash.Request
 	//var request scrape.HttpClientFetcherRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -32,7 +32,7 @@ func decodeFetchRequest(_ context.Context, r *http.Request) (interface{}, error)
 
 
 
-func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+func EncodeFetchResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	if e, ok := response.(errorer); ok && e.error() != nil {
 		// Not a Go kit transport error, but a business-logic error.
 		// Provide those as HTTP errors.
@@ -54,7 +54,7 @@ func encodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 	return nil
 }
 
-func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+func EncodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	if e, ok := response.(errorer); ok && e.error() != nil {
 		// Not a Go kit transport error, but a business-logic error.
 		// Provide those as HTTP errors.
@@ -187,15 +187,15 @@ func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger)
 	//"/app/parse"
 	r.Methods("POST").Path("/fetch").Handler(httptransport.NewServer(
 		endpoint.FetchEndpoint,
-		decodeFetchRequest,
-		encodeFetchResponse,
+		DecodeFetchRequest,
+		EncodeFetchResponse,
 		options...,
 	))
 
 	r.Methods("POST").Path("/response").Handler(httptransport.NewServer(
 		endpoint.ResponseEndpoint,
-		decodeFetchRequest,
-		encodeResponse,
+		DecodeFetchRequest,
+		EncodeResponse,
 		options...,
 	))
 

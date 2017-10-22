@@ -11,11 +11,10 @@ var svc *sqs.SQS
 func init() {
 	svc = NewSvc(
 		AWSRegion,
-		CredPath,
-		CredProfile,
 		MaxRetries,
 	)
 }
+
 func TestListQueuses(t *testing.T) {
 
 	urls, err := ListQueuses(svc)
@@ -45,6 +44,9 @@ func TestSendMessage(t *testing.T) {
 	logger.Printf("[Send message] \n%v \n\n", output)
 }
 
+
+//func ExampleReceiveMessage(t *testing.T) {
+	
 func TestReceiveMessage(t *testing.T) {
 	output, err := ReceiveMessage(svc,
 		QueueUrl,

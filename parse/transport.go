@@ -18,7 +18,7 @@ import (
 )
 
 //decodeParseRequest
-func decodeParseRequest(_ context.Context, r *http.Request) (interface{}, error) {
+func DecodeParseRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var p scrape.Payload
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
 		logger.Printf("Type: %T\n", err)
@@ -27,7 +27,7 @@ func decodeParseRequest(_ context.Context, r *http.Request) (interface{}, error)
 	return p, nil
 }
 
-func encodeParseResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func EncodeParseResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	data, err := ioutil.ReadAll(response.(io.Reader))
 	if err != nil {
 		return err
@@ -130,8 +130,8 @@ func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger)
 
 	r.Methods("POST").Path("/parse").Handler(httptransport.NewServer(
 		endpoint.ParseEndpoint,
-		decodeParseRequest,
-		encodeParseResponse,
+		DecodeParseRequest,
+		EncodeParseResponse,
 		options...,
 	))
 
