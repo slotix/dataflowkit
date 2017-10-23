@@ -24,7 +24,6 @@ func CachingMiddleware() ServiceMiddleware {
 var redisCon cache.RedisConn
 
 func (mw cachingMiddleware) Fetch(req interface{}) (output interface{}, err error) {
-
 	redisURL := viper.GetString("REDIS")
 	redisPassword := ""
 	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)

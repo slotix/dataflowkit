@@ -29,7 +29,7 @@ func Start(port string) {
 	//svc = StatsMiddleware("18")(svc)
 	
 	svc = CachingMiddleware()(svc)
-	svc = SQSMiddleware()(svc)
+	//svc = SQSMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
 	svc = RobotsTxtMiddleware()(svc)
 
