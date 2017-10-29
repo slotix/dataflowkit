@@ -1,6 +1,8 @@
 package fetch
 
 import (
+	"strings"
+
 	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
 )
@@ -28,17 +30,20 @@ func (fs FetchService) getURL(req interface{}) string {
 	case scrape.HttpClientFetcherRequest:
 		url = req.(scrape.HttpClientFetcherRequest).URL
 	}
-	return url
+	//trim trailing slash if any. 
+	//aws s3 bucket item name cannot contain slash at the end. 
+ 	return strings.TrimRight(url, "/")
+	//return url
 }
 
 //Fetch returns splash.Response
 //see transport.go encodeFetchResponse for more details about retured value.
 func (fs FetchService) Fetch(req interface{}) (interface{}, error) {
-	 res, err := fs.Response(req)
-	 if err != nil {
-		 	return nil, err
-		 }
-	 return res, nil
+	res, err := fs.Response(req)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 
 }
 

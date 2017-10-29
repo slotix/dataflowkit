@@ -2,8 +2,8 @@ package splash
 
 import (
 	"net/http"
+	"time"
 )
-
 
 type Request struct {
 	//URL is required to be passed to Fetch Endpoint
@@ -14,7 +14,7 @@ type Request struct {
 	Cookies string `json:"cookie,omitempty"`
 	Func    string `json:"func,omitempty"`
 	//SplashWait - time in seconds to wait until js scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
-//	SplashWait float64 `json:"wait,omitempty"`
+	//	SplashWait float64 `json:"wait,omitempty"`
 }
 
 //Cookie - Custom Cookie struct is used to avoid problems with unmarshalling data with invalid Expires field which has time.Time type for original http.Cookie struct.
@@ -66,12 +66,12 @@ type Response struct {
 	URL  string `json:"url"`
 	HTML string `json:"html"`
 	//Error is returned in case of an error, f.e. "http404".
-	//If Error is not nil all other fields will be nil
-	Error               string     `json:"error,omitempty"`
-	Request             *SRequest  `json:"request"`
-	Response            *SResponse `json:"response"`
-	Cacheable      bool
-	CacheExpirationTime int64
+	//If Error is not nil all other fields are nil
+	Error     string     `json:"error,omitempty"`
+	Request   *SRequest  `json:"request"`
+	Response  *SResponse `json:"response"`
+	Cacheable bool
+	Expires   time.Time //how long object stay in a cache before Splash fetcher forwards another request to an origin.
 }
 
 //PingResponse returned by Splash _ping  endpoint

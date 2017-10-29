@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/pquerna/cachecontrol/cacheobject"
-	"github.com/spf13/viper"
 	"github.com/slotix/dataflowkit/errs"
+	"github.com/spf13/viper"
 )
 
 var logger *log.Logger
@@ -133,11 +133,11 @@ func GetResponse(req Request) (*Response, error) {
 	if sResponse.Error != "" {
 		switch sResponse.Error {
 		case "http404":
-			return nil, &errs.NotFound{sResponse.URL}
+			return nil, &errs.NotFound{req.URL}
 		case "http403":
-			return nil, &errs.Forbidden{sResponse.URL}
+			return nil, &errs.Forbidden{req.URL}
 		case "network3":
-			return nil, &errs.InvalidHost{sResponse.URL}
+			return nil, &errs.InvalidHost{req.URL}
 		default:
 			return nil, &errs.Error{sResponse.Error}
 		}
@@ -173,13 +173,8 @@ func GetResponse(req Request) (*Response, error) {
 		return nil, err
 	}
 	//if cacheable ?
-	rv := sResponse.cacheable()
-	//logger.Println(rv.OutReasons)
-	//logger.Println(rv.OutWarnings)
-	//logger.Println(rv.OutExpirationTime)
-	if len(rv.OutReasons) == 0 {
-		sResponse.Cacheable = true
-	}
+	sResponse.setCacheInfo()
+
 	return &sResponse, nil
 
 }
@@ -204,9 +199,9 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
-//cacheable check if resource is cacheable
-func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
-
+//setCacheInfo check if resource is cacheable
+//r.Cacheable and r.CacheExpirationTime are filled inside this func
+func (r *Response) setCacheInfo() {
 	respHeader := r.Response.Headers.(http.Header)
 	reqHeader := r.Request.Headers.(http.Header)
 	//	respHeader := r.Response.castHeaders()
@@ -239,16 +234,28 @@ func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
 		NowUTC:        time.Now().UTC(),
 	}
 
-	rv = cacheobject.ObjectResults{}
+	rv := cacheobject.ObjectResults{}
 	cacheobject.CachableObject(&obj, &rv)
 	cacheobject.ExpirationObject(&obj, &rv)
+
 	//Check if it is cacheable
 
-	expTime := rv.OutExpirationTime.Unix()
-	if rv.OutExpirationTime.IsZero() {
-		expTime = 0
+	if len(rv.OutReasons) == 0 {
+		r.Cacheable = true
+		if rv.OutExpirationTime.IsZero() {
+			//if time is zero than set it to current time plus 24 hours.
+			r.Expires = time.Now().UTC().Add(time.Hour * 24)
+		} else {
+			r.Expires = rv.OutExpirationTime
+		}
+		logger.Println("Current Time: ", time.Now().UTC())
+		logger.Println(r.Request.URL, r.Expires)
+	} else {
+		//if resource is not cacheable set expiration time to the current time.
+		//This way web page will be downloaded every time.
+		r.Expires = time.Now().UTC()
 	}
-	r.CacheExpirationTime = expTime
+
 	debug := false
 	if debug {
 		if rv.OutErr != nil {
@@ -262,7 +269,7 @@ func (r *Response) cacheable() (rv cacheobject.ObjectResults) {
 		}
 		logger.Println("Expiration: ", rv.OutExpirationTime.String())
 	}
-	return rv
+	//return rv
 }
 
 //Fetch content from url through Splash server https://github.com/scrapinghub/splash/
