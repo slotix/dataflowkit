@@ -39,7 +39,11 @@ func EncodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 		encodeError(ctx, e.error(), w)
 		return nil
 	}
-	sResponse := response.(*splash.Response)
+	sResponse, ok := response.(*splash.Response)
+	if !ok {
+		logger.Println(sResponse)
+		return errors.New("invalid Splash Response")
+	}
 	if sResponse.Error != "" {
 		return errors.New(sResponse.Error)
 	}

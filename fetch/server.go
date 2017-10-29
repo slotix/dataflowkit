@@ -28,10 +28,12 @@ func Start(port string) {
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
 	
-	svc = CachingMiddleware()(svc)
+	svc = S3Middleware()(svc)
+	svc = RobotsTxtMiddleware()(svc)
+//	svc = CachingMiddleware()(svc)
 	//svc = SQSMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
-	svc = RobotsTxtMiddleware()(svc)
+	
 
 	endpoints := Endpoints{
 		FetchEndpoint: MakeFetchEndpoint(svc),

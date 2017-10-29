@@ -16,9 +16,11 @@ var (
 	svc        *s3.S3
 	uploader   *s3manager.Uploader
 	downloader *s3manager.Downloader
+	bucket string
 )
 
 func init() {
+	bucket = "fetch-bucket"
 	// Initialize a session that the SDK will use to load configuration,
 	// credentials, and region from the shared config file. (~/.aws/config).
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
@@ -29,6 +31,7 @@ func init() {
 	svc = s3.New(sess)
 	uploader = s3manager.NewUploader(sess)
 	downloader = s3manager.NewDownloader(sess)
+	
 }
 
 func TestListBuckets(t *testing.T) {
@@ -48,7 +51,7 @@ func TestListBuckets(t *testing.T) {
 }
 
 func TestListBucketItems(t *testing.T) {
-	bucket := "dataflowkit.org"
+	
 	resp, err := svc.ListObjects(&s3.ListObjectsInput{Bucket: aws.String(bucket)})
 
 	if err != nil {
@@ -65,7 +68,7 @@ func TestListBucketItems(t *testing.T) {
 }
 
 func TestUpload(t *testing.T) {
-	bucket := "fetch-cache"
+	
 	buf := []byte("file content test\nanother line of test here")
 	r := bytes.NewReader(buf)
 	_, err := uploader.Upload(&s3manager.UploadInput{
@@ -75,12 +78,13 @@ func TestUpload(t *testing.T) {
 	})
 	if err != nil {
 		fmt.Println(err)
+		fmt.Printf("Type: %T\n",err)
 	}
 
 }
 
 func TestDownload(t *testing.T) {
-	bucket := "fetch-cache"
+	
 //	var buf []byte
 	buff := &aws.WriteAtBuffer{}
 
@@ -92,10 +96,29 @@ func TestDownload(t *testing.T) {
 		})
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println(err.(s3.RequestFailure))
+		fmt.Println(err.(s3.RequestFailure).Code())
+		fmt.Printf("Type: %T\n",err)
 	}
 
 	fmt.Printf("Content: %s\n", string(buff.Bytes()))
 	fmt.Println("Downloaded", numBytes, "bytes")
 
+}
+
+func TestDeleteItem(t *testing.T) {
+	_, err := svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String("urlll")})
+	
+	if err != nil {
+		fmt.Println(err)
+	}
+	
+		err = svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String("urlll"),
+		})
+		if err != nil {
+			fmt.Println(err)
+		}
+	
 }

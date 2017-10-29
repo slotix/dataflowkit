@@ -25,7 +25,7 @@ type NotFound struct {
 	URL    string
 }
 func (e *NotFound) Error() string {
-	return e.URL + ": resource not found" 	
+	return e.URL + ": Not found" 	
 }
 
 //400 Invalid Host
@@ -41,6 +41,12 @@ type GatewayTimeout struct {
 }
 func (e *GatewayTimeout) Error() string {
 	return "Timeout exceeded rendering page" 	
+}
+
+type ExpiredItemOrNotCacheable struct{
+}
+func (e *ExpiredItemOrNotCacheable) Error() string {
+	return "Cached item is expired or not cacheable" 	
 }
 
 //All the rest. Unspecified errors 

@@ -25,6 +25,7 @@ var redisCon cache.RedisConn
 
 func (mw cachingMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 	redisURL := viper.GetString("REDIS")
+	logger.Println(redisURL)
 	redisPassword := ""
 	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)
 	//if something in a cache return local copy
@@ -61,7 +62,10 @@ func (mw cachingMiddleware) Fetch(req interface{}) (output interface{}, err erro
 			if err != nil {
 				logger.Println(err.Error())
 			}
-			err = redisCon.SetExpireAt(mw.getURL(req), sResponse.CacheExpirationTime)
+			expTime := sResponse.Expires.Unix()
+			//err = redisCon.SetExpireAt(mw.getURL(req), sResponse.CacheExpirationTime)
+			err = redisCon.SetExpireAt(mw.getURL(req),expTime)
+			
 			if err != nil {
 				logger.Println(err.Error())
 			}
