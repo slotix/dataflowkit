@@ -69,7 +69,7 @@ func (s *splashConn) GenerateSplashURL(req Request) string {
 	//req.Params = `"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=asfwwe!444D&rememberMe=1"`
 
 	var LUAScript string
-	if isRobotsTxt(req.URL) {
+	if IsRobotsTxt(req.URL) {
 		LUAScript = robotsLUA
 	} else {
 		LUAScript = baseLUA
@@ -184,7 +184,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 		return nil, errors.New("empty response")
 	}
 
-	if isRobotsTxt(r.Request.URL) {
+	if IsRobotsTxt(r.Request.URL) {
 
 		decoded, err := base64.StdEncoding.DecodeString(r.Response.Content.Text)
 		if err != nil {
@@ -291,7 +291,7 @@ func (r Request) GetURL() string {
 	return r.URL
 }
 
-func isRobotsTxt(url string) bool {
+func IsRobotsTxt(url string) bool {
 	if strings.HasSuffix(url, "robots.txt") {
 		return true
 	}

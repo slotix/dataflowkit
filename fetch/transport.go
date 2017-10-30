@@ -39,9 +39,9 @@ func EncodeFetchResponse(ctx context.Context, w http.ResponseWriter, response in
 		encodeError(ctx, e.error(), w)
 		return nil
 	}
+	logger.Printf("%T", response)
 	sResponse, ok := response.(*splash.Response)
 	if !ok {
-		logger.Println(sResponse)
 		return errors.New("invalid Splash Response")
 	}
 	if sResponse.Error != "" {
@@ -139,6 +139,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 // endpoints wrapper
 type Endpoints struct {
 	FetchEndpoint    endpoint.Endpoint
+	Fetch1Endpoint    endpoint.Endpoint
 	ResponseEndpoint endpoint.Endpoint
 	//ParseEndpoint endpoint.Endpoint
 }
@@ -155,6 +156,21 @@ func MakeFetchEndpoint(svc Service) endpoint.Endpoint {
 		return v, nil
 	}
 }
+
+
+// creating Fetch Endpoint
+func MakeFetch1Endpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(splash.Request)
+		//req := request
+		v, err := svc.Fetch(req)
+		if err != nil {
+			return nil, err
+		}
+		return v, nil
+	}
+}
+
 
 // creating Response Endpoint
 func MakeResponseEndpoint(svc Service) endpoint.Endpoint {
@@ -196,12 +212,15 @@ func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger)
 		options...,
 	))
 
+	
 	r.Methods("POST").Path("/response").Handler(httptransport.NewServer(
 		endpoint.ResponseEndpoint,
 		DecodeFetchRequest,
 		EncodeResponse,
 		options...,
 	))
+
+	
 
 	return r
 }

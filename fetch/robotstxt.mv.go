@@ -1,15 +1,15 @@
 package fetch
 
 import (
-	"errors"
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	neturl "net/url"
-	"strings"
 	"time"
 
 	"github.com/slotix/dataflowkit/errs"
-	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/temoto/robotstxt"
 )
@@ -25,75 +25,63 @@ type robotstxtMiddleware struct {
 }
 
 func (mw robotstxtMiddleware) Fetch(req interface{}) (output interface{}, err error) {
-	//robotsData, err := robotstxt.RobotsTxtData(req)
 	url := mw.getURL(req)
-	robotsData, err := RobotsTxtData(url)
-	if err != nil {
-		return nil, err
-	}
-	if !Allowed(url, robotsData) {
-		return nil, &errs.ForbiddenByRobots{url}
-	}
-	output, err = mw.Service.Fetch(req)
-	if err != nil {
-		logger.Println(err)
-	}
-	return
-}
-
-//RobotsTxtData returns RobotsTxtData structure or an error otherwise
-//func RobotsTxtData(req interface{}) (robotsData *robotstxt.RobotsData, err error) {
-func RobotsTxtData(URL string) (robotsData *robotstxt.RobotsData, err error) {
-
-	//url := strings.TrimSpace(req.(scrape.HttpClientFetcherRequest).URL)
-	url := strings.TrimSpace(URL)
-
-	if url == "" {
-		return nil, errors.New("empty URL")
-	}
-	var robotsURL string
-	parsedURL, err := neturl.Parse(url)
-	if err != nil {
-		return nil, err
-	}
-	//generate robotsURL from req.URL
-	robotsURL = fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
-
-	//fetch robots.txt
-	r := splash.Request{URL: robotsURL}
-	fetcher, err := scrape.NewSplashFetcher()
-
-	//r := scrape.HttpClientFetcherRequest{URL: robotsURL}
-	//fetcher, err := scrape.NewHttpClientFetcher()
-	if err != nil {
-		return nil, err
-	}
-	robots, err := fetcher.Fetch(r)
-
-	if err != nil {
-		logger.Println(err)
-		//return nil, err
-	} else {
-		//	robotsData, err = robotstxt.FromResponse(robots.(*http.Response))
-
-		sResponse := robots.(*splash.Response)
-		content, err := sResponse.GetContent()
+	//to avoid recursion while retrieving robots.txt
+	if !splash.IsRobotsTxt(url) {
+		parsedURL, err := neturl.Parse(url)
 		if err != nil {
 			return nil, err
 		}
+		//generate robotsURL from req.URL
+		robotsURL := fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
+		r := splash.Request{URL: robotsURL}
 
-		data, err := ioutil.ReadAll(content)
+		content, err := contentFromFetchService(r)
+		logger.Println(err)
 		if err != nil {
 			return nil, err
 		}
-		robotsData, err = robotstxt.FromBytes(data)
+		robotsData, err := robotstxt.FromBytes(content)
 		if err != nil {
 			fmt.Println("Robots.txt error:", err)
 		}
-
+		if !Allowed(url, robotsData) {
+			return nil, &errs.ForbiddenByRobots{url}
+		}
 	}
-	//logger.Println(robotsData)
-	return robotsData, nil
+	output, err = mw.Service.Fetch(req)
+	if err != nil {
+		return nil, err
+	}
+	return output, err
+}
+
+//contentFromFetchService sends request to fetch service and returns robots.txt content
+func contentFromFetchService(req splash.Request) ([]byte, error) {
+	//fetch content
+	b, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	reader := bytes.NewReader(b)
+	request, err := http.NewRequest("POST", "http://127.0.0.1:8000/fetch", reader)
+	request.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	r, err := client.Do(request)
+	logger.Println(err)
+	if r != nil {
+		defer r.Body.Close()
+	}
+	logger.Println(err)
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(r.Body)
+	logger.Println(err)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 //Allowed checks if scraping of specified URL is allowed by robots.txt
