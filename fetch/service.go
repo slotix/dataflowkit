@@ -1,14 +1,10 @@
 package fetch
 
 import (
-	"fmt"
-	neturl "net/url"
 	"strings"
 
-	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
-	"github.com/temoto/robotstxt"
 )
 
 // Define service interface

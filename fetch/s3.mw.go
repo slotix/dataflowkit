@@ -48,7 +48,6 @@ func (mw s3Middleware) Fetch(req interface{}) (output interface{}, err error) {
 		})
 
 	if noSuchKeyErr == nil {
-		logger.Println(mw.getURL(req))
 		var sResponse *splash.Response
 		if err := json.Unmarshal(buf.Bytes(), &sResponse); err != nil {
 			logger.Println("Json Unmarshall error", err)
@@ -58,11 +57,11 @@ func (mw s3Middleware) Fetch(req interface{}) (output interface{}, err error) {
 			return nil, &errs.NotFound{URL: mw.getURL(req)}
 		}
 		//check if item is expired.
-		logger.Println(sResponse.Expires)
-		logger.Println(time.Now().UTC())
+	//	logger.Println(sResponse.Expires)
+	//	logger.Println(time.Now().UTC())
 
 		diff := sResponse.Expires.Sub(time.Now().UTC())
-		logger.Printf("Lifespan is %+v\n", diff)
+		logger.Printf("%s: cache lifespan is %+v\n", mw.getURL(req), diff)
 		//logger.Println(diff > 0)
 
 		if diff > 0 { //if cached value is valid return it
