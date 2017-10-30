@@ -1,7 +1,7 @@
 package fetch
 
 import (
-	"log"
+	 "log"
 	"os"
 )
 

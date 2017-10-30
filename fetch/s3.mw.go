@@ -48,6 +48,7 @@ func (mw s3Middleware) Fetch(req interface{}) (output interface{}, err error) {
 		})
 
 	if noSuchKeyErr == nil {
+		logger.Println(mw.getURL(req))
 		var sResponse *splash.Response
 		if err := json.Unmarshal(buf.Bytes(), &sResponse); err != nil {
 			logger.Println("Json Unmarshall error", err)

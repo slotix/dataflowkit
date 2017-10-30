@@ -23,20 +23,18 @@ func Start(port string) {
 		logger = log.With(logger, "ts", time.Now().Format("Jan _2 15:04:05"))
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
-
 	var svc Service
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
-	
+
 	svc = S3Middleware()(svc)
 	svc = RobotsTxtMiddleware()(svc)
-//	svc = CachingMiddleware()(svc)
+	//svc = CachingMiddleware()(svc)
 	//svc = SQSMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
-	
 
 	endpoints := Endpoints{
-		FetchEndpoint: MakeFetchEndpoint(svc),
+		FetchEndpoint:    MakeFetchEndpoint(svc),
 		ResponseEndpoint: MakeResponseEndpoint(svc),
 	}
 

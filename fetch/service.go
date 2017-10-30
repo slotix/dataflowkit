@@ -1,10 +1,14 @@
 package fetch
 
 import (
+	"fmt"
+	neturl "net/url"
 	"strings"
 
+	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
+	"github.com/temoto/robotstxt"
 )
 
 // Define service interface
@@ -30,21 +34,20 @@ func (fs FetchService) getURL(req interface{}) string {
 	case scrape.HttpClientFetcherRequest:
 		url = req.(scrape.HttpClientFetcherRequest).URL
 	}
-	//trim trailing slash if any. 
-	//aws s3 bucket item name cannot contain slash at the end. 
- 	return strings.TrimRight(url, "/")
-	//return url
+	//trim trailing slash if any.
+	//aws s3 bucket item name cannot contain slash at the end.
+	return strings.TrimSpace(strings.TrimRight(url, "/"))
 }
 
 //Fetch returns splash.Response
 //see transport.go encodeFetchResponse for more details about retured value.
+
 func (fs FetchService) Fetch(req interface{}) (interface{}, error) {
 	res, err := fs.Response(req)
 	if err != nil {
 		return nil, err
 	}
 	return res, nil
-
 }
 
 //Response returns splash.Response
