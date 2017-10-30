@@ -12,9 +12,9 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/slotix/dataflowkit/errs"
-	"github.com/slotix/dataflowkit/robotstxt"
 	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
+	"github.com/spf13/viper"
 )
 
 // Define service interface
@@ -119,7 +119,11 @@ func responseFromFetchService(req splash.Request) (*splash.Response, error) {
 		return nil, err
 	}
 	reader := bytes.NewReader(b)
-	request, err := http.NewRequest("POST", "http://127.0.0.1:8000/response", reader)
+	addr := "http://" + viper.GetString("API_GATEWAY_ADDRESS") + "/response"
+	request, err := http.NewRequest("POST", addr, reader)
+	if err != nil {
+		return nil, err
+	}
 	request.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	r, err := client.Do(request)
@@ -151,8 +155,7 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 		return nil, errors.New("no URL provided")
 	}
 	//get Robotstxt Data
-	robotsData, err := robotstxt.RobotsTxtData(url)
-
+	robotsData, err := splash.RobotstxtData(url)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +167,7 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 	//var retryTimes int
 	for {
 		//check if scraping of current url is not forbidden
-		if !robotstxt.Allowed(url, robotsData) {
+		if !splash.AllowedByRobots(url, robotsData) {
 			return nil, &errs.ForbiddenByRobots{url}
 		}
 		// Repeat until we don't have any more URLs, or until we hit our page limit.

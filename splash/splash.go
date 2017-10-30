@@ -291,12 +291,6 @@ func (r Request) GetURL() string {
 	return r.URL
 }
 
-func IsRobotsTxt(url string) bool {
-	if strings.HasSuffix(url, "robots.txt") {
-		return true
-	}
-	return false
-}
 
 //http://choly.ca/post/go-json-marshalling/
 //UnmarshalJSON convert headers to http.Header type

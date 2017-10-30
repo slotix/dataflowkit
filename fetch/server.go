@@ -12,7 +12,7 @@ import (
 	"github.com/go-kit/kit/log"
 )
 
-func Start(port string) {
+func Start(address string) {
 	ctx := context.Background()
 	errChan := make(chan error)
 
@@ -43,7 +43,7 @@ func Start(port string) {
 	// HTTP transport
 	go func() {
 		handler := r
-		errChan <- http.ListenAndServe(port, handler)
+		errChan <- http.ListenAndServe(address, handler)
 	}()
 
 	go func() {

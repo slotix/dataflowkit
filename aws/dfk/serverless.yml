@@ -11,14 +11,15 @@ functions:
   fetch:
     handler: handler.Handler
     environment:
+      API_GATEWAY_ADDRESS: ${env:API_GATEWAY_ADDRESS}
       SPLASH: ${env:SPLASH}
       SPLASH_TIMEOUT: ${env:SPLASH_TIMEOUT}
       SPLASH_RESOURCE_TIMEOUT: ${env:SPLASH_RESOURCE_TIMEOUT}
       SPLASH_WAIT: ${env:SPLASH_WAIT}
-      SQS_QUEUE_FETCH_URL_IN: ${env:SQS_QUEUE_FETCH_URL_IN}
-      SQS_QUEUE_FETCH_URL_OUT: ${env:SQS_QUEUE_FETCH_URL_OUT}
-      SQS_AWS_REGION: ${env:SQS_AWS_REGION}
-      SQS_MAX_RETRIES: 5
+      #SQS_QUEUE_FETCH_URL_IN: ${env:SQS_QUEUE_FETCH_URL_IN}
+      #SQS_QUEUE_FETCH_URL_OUT: ${env:SQS_QUEUE_FETCH_URL_OUT}
+      #SQS_AWS_REGION: ${env:SQS_AWS_REGION}
+      #SQS_MAX_RETRIES: 5
     events:
       - http:
           path: fetch
