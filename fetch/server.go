@@ -12,7 +12,7 @@ import (
 	"github.com/go-kit/kit/log"
 )
 
-func Start(address string) {
+func Start(DFKFetch string) {
 	ctx := context.Background()
 	errChan := make(chan error)
 
@@ -43,7 +43,7 @@ func Start(address string) {
 	// HTTP transport
 	go func() {
 		handler := r
-		errChan <- http.ListenAndServe(address, handler)
+		errChan <- http.ListenAndServe(DFKFetch, handler)
 	}()
 
 	go func() {

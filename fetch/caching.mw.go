@@ -29,7 +29,10 @@ func (mw cachingMiddleware) Fetch(req interface{}) (output interface{}, err erro
 	redisPassword := ""
 	redisCon = cache.NewRedisConn(redisURL, redisPassword, "", 0)
 	//if something in a cache return local copy
-	redisValue, err := redisCon.GetValue(mw.getURL(req))
+
+	sReq := req.(splash.Request)
+	url := sReq.GetURL()
+	redisValue, err := redisCon.GetValue(url)
 	if err == nil {
 		var sResponse *splash.Response
 		if err := json.Unmarshal(redisValue, &sResponse); err != nil {
@@ -37,7 +40,7 @@ func (mw cachingMiddleware) Fetch(req interface{}) (output interface{}, err erro
 		}
 		//Error responses: a 404 (Not Found) may be cached.
 		if sResponse.Response.Status == 404 {
-			return nil, &errs.NotFound{URL: mw.getURL(req)}
+			return nil, &errs.NotFound{URL: url}
 		}
 		//output, err = sResponse.GetContent()
 		output = sResponse
@@ -58,13 +61,12 @@ func (mw cachingMiddleware) Fetch(req interface{}) (output interface{}, err erro
 			if err != nil {
 				logger.Printf(err.Error())
 			}
-			err = redisCon.SetValue(mw.getURL(req), response)
+			err = redisCon.SetValue(url, response)
 			if err != nil {
 				logger.Println(err.Error())
 			}
 			expTime := sResponse.Expires.Unix()
-			//err = redisCon.SetExpireAt(mw.getURL(req), sResponse.CacheExpirationTime)
-			err = redisCon.SetExpireAt(mw.getURL(req),expTime)
+			err = redisCon.SetExpireAt(url, expTime)
 			
 			if err != nil {
 				logger.Println(err.Error())

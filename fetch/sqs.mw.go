@@ -39,6 +39,8 @@ func (mw sqsMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 	if err != nil {
 		return nil, err
 	}
+	sReq := req.(splash.Request)
+	url := sReq.GetURL()
 	if sResponse, ok := resp.(*splash.Response); ok {
 		//if sResponse.Cacheable {
 		content, err := sResponse.GetContent()
@@ -47,7 +49,7 @@ func (mw sqsMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 		}
 		buf := new(bytes.Buffer)
 		n, _ := buf.ReadFrom(content)
-		logger.Printf("URL: %s Size : %.2f kb\n",mw.getURL(req), float64(n)/float64(1024))
+		logger.Printf("URL: %s Size : %.2f kb\n", url, float64(n)/float64(1024))
 		strContent := buf.String() 
 		
 
@@ -55,7 +57,7 @@ func (mw sqsMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 			MessageAttributes: map[string]*sqs.MessageAttributeValue{
 				"URL": &sqs.MessageAttributeValue{
 					DataType:    aws.String("String"),
-					StringValue: aws.String(mw.getURL(req)),
+					StringValue: aws.String(url),
 				},
 			},
 			MessageBody:  aws.String(strContent),                                          // Required
