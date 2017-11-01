@@ -31,35 +31,41 @@ func (mw s3Middleware) Fetch(req interface{}) (output interface{}, err error) {
 	bucket := viper.GetString("FETCH_BUCKET")
 	// Initialize a session that the SDK will use to load configuration,
 	// credentials, and region from the shared config file. (~/.aws/config).
+	//sess, err := session.NewSessionWithOptions(session.Options{
+	//		SharedConfigState: session.SharedConfigEnable,
+	//	})
+	//if err!= nil{
+	//	return nil, err
+	//}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
 	uploader := s3manager.NewUploader(sess)
 	downloader := s3manager.NewDownloader(sess)
-	var expErr error
+	//var expErr error
 	sReq := req.(splash.Request)
 	url := sReq.GetURL()
 	//if the item (req.URL) is in AWS S3 storage return local copy
 	buf := &aws.WriteAtBuffer{}
-	_, noSuchKeyErr := downloader.Download(buf,
+	_, err = downloader.Download(buf,
 		&s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(url),
 		})
 
-	if noSuchKeyErr == nil {
+	if err == nil {
 		var sResponse *splash.Response
 		if err := json.Unmarshal(buf.Bytes(), &sResponse); err != nil {
 			logger.Println("Json Unmarshall error", err)
 		}
-		//Error responses: a 404 (Not Found) may be cached.  
+		//Error responses: a 404 (Not Found) may be cached.
 		if sResponse.Response.Status == 404 {
 			return nil, &errs.NotFound{URL: url}
 		}
 		//check if item is expired.
-	//	logger.Println(sResponse.Expires)
-	//	logger.Println(time.Now().UTC())
+		//	logger.Println(sResponse.Expires)
+		//	logger.Println(time.Now().UTC())
 
 		diff := sResponse.Expires.Sub(time.Now().UTC())
 		logger.Printf("%s: cache lifespan is %+v\n", url, diff)
@@ -70,16 +76,18 @@ func (mw s3Middleware) Fetch(req interface{}) (output interface{}, err error) {
 			return output, nil
 		}
 		//otherwise cached item is expired and should be refetched
-		expErr = &errs.ExpiredItemOrNotCacheable{}
+		err = &errs.ExpiredItemOrNotCacheable{}
 	}
 
-	
-	//fetch results if there is nothing in a cache
-	if noSuchKeyErr != nil {
-		logger.Println(noSuchKeyErr.(s3.RequestFailure).Message())
-	} else {
-		logger.Println(expErr)
+	switch err.(type) {
+	case *errs.ExpiredItemOrNotCacheable: //cached value is expired 
+		logger.Println(err)
+	case s3.RequestFailure:// f.e. No key found
+		logger.Println(err.(s3.RequestFailure).Message())
+	default: //general error like no valid aws configuration 	
+		return nil, err
 	}
+	
 	// if there is no cached copy of web page in S3 bucket, its content should be retrieved from the actual website. Current err value is not passed outside.
 	err = nil
 	resp, err := mw.Service.Fetch(req)
@@ -103,7 +111,7 @@ func (mw s3Middleware) Fetch(req interface{}) (output interface{}, err error) {
 		if err != nil {
 			logger.Println(err)
 		}
-		
+
 		output = sResponse
 	}
 	return

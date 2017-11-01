@@ -32,7 +32,7 @@ func ContentFromFetchService(req Request) ([]byte, error) {
 	reader := bytes.NewReader(b)
 
 	//https://gitlab.com/gitlab-org/gitlab-ce/issues/33534
-	addr := "http://" + viper.GetString("API_GATEWAY_ADDRESS") + "/fetch"
+	addr := "http://" + viper.GetString("DFK_FETCH") + "/fetch"
 	request, err := http.NewRequest("POST", addr, reader)
 	if err != nil {
 		return nil, err

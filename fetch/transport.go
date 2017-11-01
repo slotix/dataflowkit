@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
-
 	"context"
 
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -27,10 +26,9 @@ func DecodeFetchRequest(ctx context.Context, r *http.Request) (interface{}, erro
 		//logger.Printf("Type: %T\n", err)
 		return nil, &errs.BadRequest{err} //err
 	}
+	logger.Println(request.URL)
 	return request, nil
 }
-
-
 
 func EncodeFetchResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	if e, ok := response.(errorer); ok && e.error() != nil {
@@ -95,9 +93,8 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		panic("encodeError with nil error")
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	logger.Printf("Type: %T\n", err)
-	//logger.Println(err)
-	//t = err.(type)
+//	logger.Printf("Type: %T\n", err)
+
 	var httpStatus int
 	switch err.(type) {
 	default:
@@ -138,7 +135,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 // endpoints wrapper
 type Endpoints struct {
 	FetchEndpoint    endpoint.Endpoint
-	Fetch1Endpoint    endpoint.Endpoint
+	Fetch1Endpoint   endpoint.Endpoint
 	ResponseEndpoint endpoint.Endpoint
 	//ParseEndpoint endpoint.Endpoint
 }
@@ -156,7 +153,6 @@ func MakeFetchEndpoint(svc Service) endpoint.Endpoint {
 	}
 }
 
-
 // creating Fetch Endpoint
 func MakeFetch1Endpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
@@ -169,7 +165,6 @@ func MakeFetch1Endpoint(svc Service) endpoint.Endpoint {
 		return v, nil
 	}
 }
-
 
 // creating Response Endpoint
 func MakeResponseEndpoint(svc Service) endpoint.Endpoint {
@@ -211,15 +206,12 @@ func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger)
 		options...,
 	))
 
-	
 	r.Methods("POST").Path("/response").Handler(httptransport.NewServer(
 		endpoint.ResponseEndpoint,
 		DecodeFetchRequest,
 		EncodeResponse,
 		options...,
 	))
-
-	
 
 	return r
 }

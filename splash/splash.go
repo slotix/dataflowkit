@@ -91,6 +91,7 @@ func (s *splashConn) GenerateSplashURL(req Request) string {
 //GetResponse result is passed to caching middleware
 //to provide a RFC7234 compliant HTTP cache
 func GetResponse(req Request) (*Response, error) {
+	logger.Println(viper.GetString("SPLASH"))
 	sConn := NewSplashConn(
 		viper.GetString("SPLASH"),
 		viper.GetInt("SPLASH_TIMEOUT"),
