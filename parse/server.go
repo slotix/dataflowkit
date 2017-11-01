@@ -12,7 +12,7 @@ import (
 	"github.com/go-kit/kit/log"
 )
 
-func Start(port string) {
+func Start(DFKParse string) {
 	ctx := context.Background()
 	errChan := make(chan error)
 
@@ -29,7 +29,7 @@ func Start(port string) {
 	svc = ParseService{}
 	//svc = StatsMiddleware("18")(svc)
 
-	svc = CachingMiddleware()(svc)
+	//svc = CachingMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{
@@ -41,7 +41,7 @@ func Start(port string) {
 	// HTTP transport
 	go func() {
 		handler := r
-		errChan <- http.ListenAndServe(port, handler)
+		errChan <- http.ListenAndServe(DFKParse, handler)
 	}()
 
 	go func() {

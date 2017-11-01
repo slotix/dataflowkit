@@ -38,13 +38,14 @@ func (mw s3Middleware) Fetch(req interface{}) (output interface{}, err error) {
 	uploader := s3manager.NewUploader(sess)
 	downloader := s3manager.NewDownloader(sess)
 	var expErr error
-	
+	sReq := req.(splash.Request)
+	url := sReq.GetURL()
 	//if the item (req.URL) is in AWS S3 storage return local copy
 	buf := &aws.WriteAtBuffer{}
 	_, noSuchKeyErr := downloader.Download(buf,
 		&s3.GetObjectInput{
 			Bucket: aws.String(bucket),
-			Key:    aws.String(mw.getURL(req)),
+			Key:    aws.String(url),
 		})
 
 	if noSuchKeyErr == nil {
@@ -54,14 +55,14 @@ func (mw s3Middleware) Fetch(req interface{}) (output interface{}, err error) {
 		}
 		//Error responses: a 404 (Not Found) may be cached.  
 		if sResponse.Response.Status == 404 {
-			return nil, &errs.NotFound{URL: mw.getURL(req)}
+			return nil, &errs.NotFound{URL: url}
 		}
 		//check if item is expired.
 	//	logger.Println(sResponse.Expires)
 	//	logger.Println(time.Now().UTC())
 
 		diff := sResponse.Expires.Sub(time.Now().UTC())
-		logger.Printf("%s: cache lifespan is %+v\n", mw.getURL(req), diff)
+		logger.Printf("%s: cache lifespan is %+v\n", url, diff)
 		//logger.Println(diff > 0)
 
 		if diff > 0 { //if cached value is valid return it
@@ -94,7 +95,7 @@ func (mw s3Middleware) Fetch(req interface{}) (output interface{}, err error) {
 		r := bytes.NewReader(response)
 		_, err = uploader.Upload(&s3manager.UploadInput{
 			Bucket: aws.String(bucket),
-			Key:    aws.String(mw.getURL(req)),
+			Key:    aws.String(url),
 			Body:   r,
 			//Expires metadata is not used here as it duplicates splash.Response Expires value.
 			//Expires: &sResponse.Expires,

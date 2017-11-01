@@ -20,7 +20,6 @@ import (
 // Define service interface
 type Service interface {
 	ParseData(scrape.Payload) (io.ReadCloser, error)
-	//	getURL(req interface{}) string
 }
 
 // Implement service with empty struct
@@ -31,23 +30,15 @@ type ParseService struct {
 // this will be needed in main.go
 type ServiceMiddleware func(Service) Service
 
-func (ps ParseService) getURL(req interface{}) string {
-	var url string
-	switch req.(type) {
-	case splash.Request:
-		url = req.(splash.Request).URL
-	case scrape.HttpClientFetcherRequest:
-		url = req.(scrape.HttpClientFetcherRequest).URL
-	}
-	return url
-}
 
 func (ps ParseService) ParseData(p scrape.Payload) (io.ReadCloser, error) {
 	config, err := p.PayloadToScrapeConfig()
 	if err != nil {
 		return nil, err
 	}
-	req := splash.Request{URL: ps.getURL(p.Request)}
+	sReq := p.Request.(splash.Request)
+	url := sReq.GetURL()
+	req := splash.Request{URL: url}
 	//req := scrape.HttpClientFetcherRequest{URL: ps.GetURL(p.Request)}
 
 	scraper, err := scrape.New(config)
@@ -119,7 +110,7 @@ func responseFromFetchService(req splash.Request) (*splash.Response, error) {
 		return nil, err
 	}
 	reader := bytes.NewReader(b)
-	addr := "http://" + viper.GetString("API_GATEWAY_ADDRESS") + "/response"
+	addr := "http://" + viper.GetString("DFK_FETCH") + "/response"
 	request, err := http.NewRequest("POST", addr, reader)
 	if err != nil {
 		return nil, err
@@ -150,7 +141,8 @@ func responseFromFetchService(req splash.Request) (*splash.Response, error) {
 }
 
 func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape.ScrapeResults, error) {
-	url := ps.getURL(req)
+	sReq := req.(splash.Request)
+	url := sReq.GetURL()
 	if len(url) == 0 {
 		return nil, errors.New("no URL provided")
 	}

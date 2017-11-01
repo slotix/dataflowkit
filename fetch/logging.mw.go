@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
+	"github.com/slotix/dataflowkit/splash"
 )
 
 // Make a new type and wrap into Service interface
@@ -23,9 +24,11 @@ func LoggingMiddleware(logger log.Logger) ServiceMiddleware {
 // Implement Service Interface for LoggingMiddleware
 func (mw loggingMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 	defer func(begin time.Time) {
+		sReq := req.(splash.Request)
+		url := sReq.GetURL()
 		mw.logger.Log(
 			"function", "fetch",
-			"url", mw.getURL(req),
+			"url", url,
 			//	"output", output,
 			"err", err,
 			"took", time.Since(begin),
@@ -37,9 +40,11 @@ func (mw loggingMiddleware) Fetch(req interface{}) (output interface{}, err erro
 
 func (mw loggingMiddleware) Response(req interface{}) (output interface{}, err error) {
 	defer func(begin time.Time) {
+		sReq := req.(splash.Request)
+		url := sReq.GetURL()
 		mw.logger.Log(
 			"function", "response",
-			"url", mw.getURL(req),
+			"url", url,
 			//	"output", output,
 			"err", err,
 			"took", time.Since(begin),

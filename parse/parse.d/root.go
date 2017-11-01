@@ -31,11 +31,12 @@ import (
 
 var (
 	//VERSION               string // VERSION is set during build
-	port         string
+	DFKParse         string
+	DFKFetch     string
 	redisHost    string
 	redisExpire  int
 	redisNetwork string
-	DFKFetch     string
+	
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -85,8 +86,8 @@ var RootCmd = &cobra.Command{
 		// 	fmt.Printf("Starting Parse Serice %s\n", port)
 		// 	server.Start(port)
 		// }
-		fmt.Printf("Starting Parse Serice %s\n", port)
-		parse.Start(port)
+		fmt.Printf("Starting Parse Serice %s\n", DFKParse)
+		parse.Start(DFKParse)
 	},
 }
 
@@ -108,17 +109,19 @@ func init() {
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
 
-	RootCmd.Flags().StringVarP(&address, "API_GATEWAY_ADDRESS", "a", "127.0.0.1:8001", "HTTP listen address")
+	RootCmd.Flags().StringVarP(&DFKParse, "DFK_PARSE", "p", "127.0.0.1:8001", "HTTP listen address")
+	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
 	RootCmd.Flags().StringVarP(&redisHost, "REDIS", "r", "127.0.0.1:6379", "Redis host address")
 	RootCmd.Flags().IntVarP(&redisExpire, "REDIS_EXPIRE", "", 3600, "Default Redis expire value")
 	RootCmd.Flags().StringVarP(&redisNetwork, "REDIS_NETWORK", "", "tcp", "Redis Network")
-	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
+	
 
 	viper.AutomaticEnv() // read in environment variables that match
-	viper.BindPFlag("API_GATEWAY_ADDRESS", RootCmd.Flags().Lookup("API_GATEWAY_ADDRESS"))
+	viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
+	viper.BindPFlag("DFK_PARSE", RootCmd.Flags().Lookup("DFK_PARSE"))
 	viper.BindPFlag("REDIS", RootCmd.Flags().Lookup("REDIS"))
 	viper.BindPFlag("REDIS_EXPIRE", RootCmd.Flags().Lookup("REDIS_EXPIRE"))
 	viper.BindPFlag("REDIS_NETWORK", RootCmd.Flags().Lookup("REDIS_NETWORK"))
-	viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
+	
 
 }

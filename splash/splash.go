@@ -287,10 +287,13 @@ func Fetch(req Request) (io.ReadCloser, error) {
 	return nil, err
 }
 
-func (r Request) GetURL() string {
-	return r.URL
-}
 
+//GetURL returns URL from Request
+func (r *Request) GetURL() string {
+	//trim trailing slash if any.
+	//aws s3 bucket item name cannot contain slash at the end.
+	return strings.TrimSpace(strings.TrimRight(r.URL, "/"))
+}
 
 //http://choly.ca/post/go-json-marshalling/
 //UnmarshalJSON convert headers to http.Header type

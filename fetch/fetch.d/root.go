@@ -33,7 +33,7 @@ import (
 
 var (
 	//VERSION               string // VERSION is set during build
-	address               string //API_GATEWAY_ADDRESS
+	DFKFetch               string //API_GATEWAY_ADDRESS
 	redisHost             string
 	redisExpire           int
 	redisNetwork          string
@@ -93,8 +93,8 @@ var RootCmd = &cobra.Command{
 		}
 
 		if allAlive {
-			fmt.Printf("Starting Server %s\n", address)
-			fetch.Start(address)
+			fmt.Printf("Starting Server %s\n", DFKFetch)
+			fetch.Start(DFKFetch)
 		}
 	},
 }
@@ -116,7 +116,7 @@ func init() {
 	// Cobra supports Persistent Flags, which, if defined here,
 	// will be global for your application.
 
-	RootCmd.Flags().StringVarP(&address, "API_GATEWAY_ADDRESS", "a", "127.0.0.1:8000", "HTTP listen address")
+	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "a", "127.0.0.1:8000", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&redisHost, "REDIS", "r", "127.0.0.1:6379", "Redis host address")
 	RootCmd.Flags().IntVarP(&redisExpire, "REDIS_EXPIRE", "", 3600, "Default Redis expire value")
 	RootCmd.Flags().StringVarP(&redisNetwork, "REDIS_NETWORK", "", "tcp", "Redis Network")
@@ -132,7 +132,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&sqsAWSRegion, "SQS_AWS_REGION", "", "us-east-1", "SQS AWS Region")
 
 	viper.AutomaticEnv() // read in environment variables that match
-	viper.BindPFlag("API_GATEWAY_ADDRESS", RootCmd.Flags().Lookup("API_GATEWAY_ADDRESS"))
+	viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
 	viper.BindPFlag("REDIS", RootCmd.Flags().Lookup("REDIS"))
 	viper.BindPFlag("REDIS_EXPIRE", RootCmd.Flags().Lookup("REDIS_EXPIRE"))
 	viper.BindPFlag("REDIS_NETWORK", RootCmd.Flags().Lookup("REDIS_NETWORK"))

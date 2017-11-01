@@ -15,7 +15,8 @@ type robotstxtMiddleware struct {
 }
 
 func (mw robotstxtMiddleware) Fetch(req interface{}) (output interface{}, err error) {
-	url := mw.getURL(req)
+	sReq := req.(splash.Request)
+	url := sReq.GetURL()
 	//to avoid recursion while retrieving robots.txt
 	if !splash.IsRobotsTxt(url) {
 		_, err := splash.RobotstxtData(url)
