@@ -108,7 +108,6 @@ func (sf *SplashFetcher) Fetch(request interface{}) (interface{}, error) {
 		return nil, err
 	}
 	r, err := splash.GetResponse(req)
-
 	if err != nil {
 		return nil, err
 	}
