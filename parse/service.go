@@ -74,7 +74,8 @@ func (ps ParseService) ParseData(p scrape.Payload) (io.ReadCloser, error) {
 			w.Flush()
 		*/
 		w := csv.NewWriter(&buf)
-		err = encodeCSV(config.CSVHeader, true, results.AllBlocks(), ",", w)
+
+		err = encodeCSV(config.CSVHeader, results.AllBlocks(), ",", w)
 		w.Flush()
 	/*
 		case "xmlviajson":
