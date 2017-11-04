@@ -10,15 +10,14 @@ import (
 
 //encodeCSV writes data to w *csv.Writer.
 //header - headers for csv.
-//includeHeader include headers or not.
 //rows - csv records to be written.
-func encodeCSV(header []string, includeHeader bool, rows []map[string]interface{}, comma string, w *csv.Writer) error {
+func encodeCSV(header []string, rows []map[string]interface{}, comma string, w *csv.Writer) error {
 	if comma == "" {
 		comma = ","
 	}
 	w.Comma = rune(comma[0])
 	//Add Header string to csv or no
-	if includeHeader {
+	if len(header)>0 {
 		if err := w.Write(header); err != nil {
 			return err
 		}
