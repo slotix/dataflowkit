@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"github.com/spf13/viper"
 	slug "github.com/slotix/slugifyurl"
+	"github.com/spf13/viper"
 )
 
 type Store interface {
@@ -14,19 +14,19 @@ type Store interface {
 	Write(key string, value []byte, expTime int64) error
 }
 
-type Type int
+type Type string
 
 const (
-	S3 Type = 1 << iota
-	Diskv
-	Redis
+	S3    Type = "S3"
+	Diskv      = "Diskv"
+	Redis      = "Redis"
 )
 
 func NewStore(t Type) Store {
 	switch t {
 	case Diskv:
 		baseDir := viper.GetString("DISKV_BASE_DIR")
-		return newDiskvStorage(baseDir, 1024 * 1024)
+		return newDiskvStorage(baseDir, 1024*1024)
 	case S3:
 		bucket := viper.GetString("FETCH_BUCKET")
 		return newS3Storage(bucket)
@@ -85,7 +85,7 @@ func newDiskvStorage(baseDir string, CacheSizeMax uint64) Store {
 }
 
 func (d DiskvConn) Read(key string) (value []byte, err error) {
-	
+
 	//Slugify key/URL to a sanitized string before reading.
 	sKey := slug.Slugify(key, d.options)
 	value, err = d.diskv.Read(sKey)
@@ -96,7 +96,7 @@ func (d DiskvConn) Read(key string) (value []byte, err error) {
 }
 
 func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
-	
+
 	//Slugify key/URL to a sanitized string before writing.
 	sKey := slug.Slugify(key, d.options)
 	err := d.diskv.Write(sKey, value)

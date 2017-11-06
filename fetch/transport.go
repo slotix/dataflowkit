@@ -134,7 +134,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 // endpoints wrapper
 type Endpoints struct {
 	FetchEndpoint    endpoint.Endpoint
-	Fetch1Endpoint   endpoint.Endpoint
 	ResponseEndpoint endpoint.Endpoint
 	//ParseEndpoint endpoint.Endpoint
 }
@@ -152,18 +151,7 @@ func MakeFetchEndpoint(svc Service) endpoint.Endpoint {
 	}
 }
 
-// creating Fetch Endpoint
-func MakeFetch1Endpoint(svc Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(splash.Request)
-		//req := request
-		v, err := svc.Fetch(req)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
-	}
-}
+
 
 // creating Response Endpoint
 func MakeResponseEndpoint(svc Service) endpoint.Endpoint {
