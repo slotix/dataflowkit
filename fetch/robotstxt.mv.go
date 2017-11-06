@@ -33,6 +33,8 @@ func (mw robotstxtMiddleware) Fetch(req interface{}) (output interface{}, err er
 }
 */
 
+//Fetches response from req.URL, then pass response.URL to Robots.txt validator.
+//issue #1 https://github.com/slotix/dataflowkit/issues/1
 func (mw robotstxtMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 	
 	output, err = mw.Service.Fetch(req)
