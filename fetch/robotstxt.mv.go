@@ -14,6 +14,7 @@ type robotstxtMiddleware struct {
 	Service
 }
 
+/*
 func (mw robotstxtMiddleware) Fetch(req interface{}) (output interface{}, err error) {
 	sReq := req.(splash.Request)
 	url := sReq.GetURL()
@@ -27,6 +28,25 @@ func (mw robotstxtMiddleware) Fetch(req interface{}) (output interface{}, err er
 	output, err = mw.Service.Fetch(req)
 	if err != nil {
 		return nil, err
+	}
+	return output, err
+}
+*/
+
+func (mw robotstxtMiddleware) Fetch(req interface{}) (output interface{}, err error) {
+	
+	output, err = mw.Service.Fetch(req)
+	if err != nil {
+		return nil, err
+	}
+	sResponse := output.(*splash.Response)
+	url := sResponse.URL
+
+	if !splash.IsRobotsTxt(url) {
+		_, err := splash.RobotstxtData(url)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return output, err
 }
