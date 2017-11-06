@@ -1,6 +1,14 @@
 {
     "version": "0.2.0",
     "configurations": [
+
+        {
+            "name": "Launch debug function",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}/fetch/fetch.d"
+        },
         {
             "name": "Launch test function",
             "type": "go",

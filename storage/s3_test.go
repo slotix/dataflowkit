@@ -1,4 +1,4 @@
-package s3
+package storage
 
 //http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/s3-example-basic-bucket-operations.html
 import (

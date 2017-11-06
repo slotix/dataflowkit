@@ -10,7 +10,11 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
+	"github.com/slotix/dataflowkit/storage"
+	"github.com/spf13/viper"
 )
+
+var storageType storage.Type
 
 func Start(DFKFetch string) {
 	ctx := context.Background()
@@ -23,14 +27,23 @@ func Start(DFKFetch string) {
 		logger = log.With(logger, "ts", time.Now().Format("Jan _2 15:04:05"))
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
+	sType := viper.GetString("STORAGE_TYPE")
+	
+	switch sType{
+	case "S3":
+		storageType = storage.S3
+	case "Redis":
+		storageType = storage.Redis
+	case "Diskv":
+		storageType = storage.Diskv
+	default:
+		panic("Storage type value is invalid ")
+	}
 	var svc Service
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
-
-	svc = S3Middleware()(svc)
 	svc = RobotsTxtMiddleware()(svc)
-	//svc = CachingMiddleware()(svc)
-	//svc = SQSMiddleware()(svc)
+	svc = StorageMiddleware(storageType)(svc) //possible values are S3, Redis
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{
