@@ -1,8 +1,9 @@
 package fetch
 
 import (
-	"github.com/slotix/dataflowkit/cache"
-	"github.com/spf13/viper"
+	"strconv"
+
+	"github.com/slotix/dataflowkit/storage"
 )
 
 func StatsMiddleware(userID string) ServiceMiddleware {
@@ -22,30 +23,40 @@ func (mw statsMiddleware) Fetch(req interface{}) (output interface{}, err error)
 	return
 }
 
-
 func (mw statsMiddleware) Response(req interface{}) (output interface{}, err error) {
 	mw.incrementCount()
 	output, err = mw.Service.Response(req)
 	return
 }
 
-
 //writing to redis
 func (mw statsMiddleware) incrementCount() {
-	redisURL := viper.GetString("redis")
-	//logger.Println(redisURL)
-	redisPassword := ""
-	redis := cache.NewRedisConn(redisURL, redisPassword, "", 0)
-	count, err := redis.GetIntValue(mw.userID)
-	if count == 0 {
-		err = redis.SetValue(mw.userID, 1)
-		if err != nil {
-			logger.Println(err)
-		}
-		return
+	s := storage.NewStore(storageType)
+
+	buf, err := s.Read(mw.userID)
+	if err != nil {
+		logger.Println(err)
 	}
+	strCount := string(buf)
+	count, err := strconv.Atoi(strCount)
+	if err != nil {
+		logger.Println(err)
+	}
+	//redisURL := viper.GetString("redis")
+	//logger.Println(redisURL)
+	//redisPassword := ""
+	//redis := cache.NewRedisConn(redisURL, redisPassword, "", 0)
+	//count, err := redis.GetIntValue(mw.userID)
+	// bs := []byte(strconv.Itoa(count))
+	// if count == 0 {
+	// 	err = s.Write(mw.userID, []byte(strconv.Itoa(1)), 0)
+	// 	if err != nil {
+	// 		logger.Println(err)
+	// 	}
+	// 	return
+	// }
 	count++
-	err = redis.SetValue(mw.userID, count)
+	err = s.Write(mw.userID, []byte(strconv.Itoa(count)),0)
 	if err != nil {
 		logger.Println(err)
 	}

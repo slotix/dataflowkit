@@ -26,7 +26,6 @@ func DecodeFetchRequest(ctx context.Context, r *http.Request) (interface{}, erro
 		//logger.Printf("Type: %T\n", err)
 		return nil, &errs.BadRequest{err} //err
 	}
-	logger.Println(request.URL)
 	return request, nil
 }
 
