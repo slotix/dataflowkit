@@ -39,5 +39,6 @@ webserver/webserver
 
 fetch/fetch.d/fetch.d
 parse/parse.d/parse.d
+fetch/fetch.d/diskv
 
 deploy.sh

@@ -27,27 +27,55 @@ func init() {
 	logger = log.New(os.Stdout, "splash: ", log.Lshortfile)
 }
 
-type splashConn struct {
-	host string //splash server address
-	//password string
-	//Splash parameters:
+type Options struct {
+	host string //splash host address
+	//Splash connection parameters:
 	timeout         int
 	resourceTimeout int
 	wait            float64
 }
 
-//NewSplashConn creates new connection to Splash Server
-func NewSplashConn(host string, timeout, resourceTimeout int, wait float64) splashConn {
-	return splashConn{
-		host:            host,
-		timeout:         timeout,
-		resourceTimeout: resourceTimeout,
-		wait:            wait,
+type Option func(*Options)
+
+func host(h string) Option {
+	return func(args *Options) {
+		args.host = h
 	}
 }
 
-//GenerateSplashURL Generates Splash URL and return error
-func (s *splashConn) GenerateSplashURL(req Request) string {
+func timeout(t int) Option {
+	return func(args *Options) {
+		args.timeout = t
+	}
+}
+
+func resourceTimeout(t int) Option {
+	return func(args *Options) {
+		args.resourceTimeout = t
+	}
+}
+
+func wait(w float64) Option {
+	return func(args *Options) {
+		args.wait = w
+	}
+}
+
+
+//New creates new connection to Splash Server
+func New(req Request, setters ...Option) (splashURL string) {
+	//Default options
+	args := &Options{
+		host:            viper.GetString("SPLASH"),
+		timeout:         viper.GetInt("SPLASH_TIMEOUT"),
+		resourceTimeout: viper.GetInt("SPLASH_RESOURCE_TIMEOUT"),
+		wait:            viper.GetFloat64("SPLASH_WAIT"),
+	}
+	for _, setter := range setters {
+		setter(args)
+	}
+
+	//Generating Splash URL
 	/*
 	   	//"Set-Cookie" from response headers should be sent when accessing for the same domain second time
 	   	cookie := `PHPSESSID=ef75e2737a14b06a2749d0b73840354f; path=/; domain=.acer-a500.ru; HttpOnly
@@ -74,31 +102,25 @@ func (s *splashConn) GenerateSplashURL(req Request) string {
 	} else {
 		LUAScript = baseLUA
 	}
-	splashURL := fmt.Sprintf(
+	splashURL = fmt.Sprintf(
 		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s",
-		s.host,
+		args.host,
 		neturl.QueryEscape(req.URL),
-		s.timeout,
-		s.resourceTimeout,
-		s.wait,
+		args.timeout,
+		args.resourceTimeout,
+		args.wait,
 		neturl.QueryEscape(req.Cookies),
 		neturl.QueryEscape(paramsToLuaTable(req.Params)),
 		neturl.QueryEscape(LUAScript))
 
-	return splashURL
+
+	return 
 }
 
-//GetResponse result is passed to caching middleware
+//GetResponse result is passed to storage middleware
 //to provide a RFC7234 compliant HTTP cache
 func GetResponse(req Request) (*Response, error) {
-	logger.Println(viper.GetString("SPLASH"))
-	sConn := NewSplashConn(
-		viper.GetString("SPLASH"),
-		viper.GetInt("SPLASH_TIMEOUT"),
-		viper.GetInt("SPLASH_RESOURCE_TIMEOUT"),
-		viper.GetFloat64("SPLASH_WAIT"),
-	)
-	splashURL := sConn.GenerateSplashURL(req)
+	splashURL := New(req)
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
@@ -287,7 +309,6 @@ func Fetch(req Request) (io.ReadCloser, error) {
 	}
 	return nil, err
 }
-
 
 //GetURL returns URL from Request
 func (r *Request) GetURL() string {
