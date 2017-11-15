@@ -40,7 +40,7 @@ func NewStore(t Type) Store {
 }
 
 func newRedisStorage(redisHost, redisPassword string) Store {
-	redisCon := NewRedisConn(redisHost, redisPassword, "", 0)
+	redisCon := NewRedisConn()
 	return redisCon
 }
 

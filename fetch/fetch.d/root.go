@@ -46,6 +46,9 @@ var (
 	redisHost    string
 	redisExpire  int
 	redisNetwork string
+	redisPassword string
+	redisDB int
+	redisSocketPath string
 
 	//sqsQueueFetchURLIn  string
 	//sqsQueueFetchURLOut string
@@ -102,7 +105,7 @@ func init() {
 	RootCmd.Flags().Float64VarP(&splashWait, "SPLASH_WAIT", "", 0.5, "Time in seconds to wait until js scripts loaded.")
 
 	//set here default type of storage
-	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Redis, Diskv")
+	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Redis", "Storage backend for intermediary data passed to html parser. Types: S3, Redis, Diskv")
 
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
 	RootCmd.Flags().StringVarP(&fetchBucket, "FETCH_BUCKET", "", "fetch-bucket", "S3 bucket name for storing fetch results")
@@ -110,6 +113,10 @@ func init() {
 	RootCmd.Flags().StringVarP(&redisHost, "REDIS", "r", "127.0.0.1:6379", "Redis host address")
 	RootCmd.Flags().IntVarP(&redisExpire, "REDIS_EXPIRE", "", 3600, "Default Redis expire value")
 	RootCmd.Flags().StringVarP(&redisNetwork, "REDIS_NETWORK", "", "tcp", "Redis Network")
+	RootCmd.Flags().StringVarP(&redisPassword, "REDIS_PASSWORD", "", "", "Redis Password")
+	RootCmd.Flags().IntVarP(&redisDB, "REDIS_DB", "", 0, "Redis DB")
+	RootCmd.Flags().StringVarP(&redisSocketPath, "REDIS_SOCKET_PATH", "", "", "Redis Socket Path")
+	
 
 	//RootCmd.Flags().StringVarP(&sqsQueueFetchURLIn, "SQS_QUEUE_FETCH_URL_IN", "", "https://sqs.us-east-1.amazonaws.com/060679207441/fetch-in", "SQS Queue Fetch URL In")
 	//RootCmd.Flags().StringVarP(&sqsQueueFetchURLOut, "SQS_QUEUE_FETCH_URL_OUT", "", "https://sqs.us-east-1.amazonaws.com/060679207441/fetch-out", "SQS Queue Fetch URL Out")
@@ -130,6 +137,9 @@ func init() {
 	viper.BindPFlag("REDIS", RootCmd.Flags().Lookup("REDIS"))
 	viper.BindPFlag("REDIS_EXPIRE", RootCmd.Flags().Lookup("REDIS_EXPIRE"))
 	viper.BindPFlag("REDIS_NETWORK", RootCmd.Flags().Lookup("REDIS_NETWORK"))
+	viper.BindPFlag("REDIS_PASSWORD", RootCmd.Flags().Lookup("REDIS_PASSWORD"))
+	viper.BindPFlag("REDIS_DB", RootCmd.Flags().Lookup("REDIS_DB"))
+	viper.BindPFlag("REDIS_SOCKET_PATH", RootCmd.Flags().Lookup("REDIS_SOCKET_PATH"))
 
 	//	viper.BindPFlag("SQS_QUEUE_FETCH_URL_IN", RootCmd.Flags().Lookup("SQS_QUEUE_FETCH_URL_IN"))
 	//	viper.BindPFlag("SQS_QUEUE_FETCH_URL_OUT", RootCmd.Flags().Lookup("SQS_QUEUE_FETCH_URL_OUT"))
