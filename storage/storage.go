@@ -1,7 +1,8 @@
 package storage
 
 import (
-	slug "github.com/slotix/slugifyurl"
+	"encoding/base32"
+
 	"github.com/spf13/viper"
 )
 
@@ -40,7 +41,7 @@ func NewStore(t Type) Store {
 }
 
 func newRedisStorage(redisHost, redisPassword string) Store {
-	redisCon := NewRedisConn(redisHost, redisPassword, "", 0)
+	redisCon := NewRedisConn()
 	return redisCon
 }
 
@@ -86,8 +87,8 @@ func newDiskvStorage(baseDir string, CacheSizeMax uint64) Store {
 
 func (d DiskvConn) Read(key string) (value []byte, err error) {
 
-	//Slugify key/URL to a sanitized string before reading.
-	sKey := slug.Slugify(key, d.options)
+	//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
+	sKey := base32.StdEncoding.EncodeToString([]byte(key))
 	value, err = d.diskv.Read(sKey)
 	if err != nil {
 		return nil, err
@@ -96,9 +97,8 @@ func (d DiskvConn) Read(key string) (value []byte, err error) {
 }
 
 func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
-
-	//Slugify key/URL to a sanitized string before writing.
-	sKey := slug.Slugify(key, d.options)
+	//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
+	sKey := base32.StdEncoding.EncodeToString([]byte(key))
 	err := d.diskv.Write(sKey, value)
 	if err != nil {
 		return err

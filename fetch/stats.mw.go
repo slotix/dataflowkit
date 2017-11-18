@@ -42,19 +42,7 @@ func (mw statsMiddleware) incrementCount() {
 	if err != nil {
 		logger.Println(err)
 	}
-	//redisURL := viper.GetString("redis")
-	//logger.Println(redisURL)
-	//redisPassword := ""
-	//redis := cache.NewRedisConn(redisURL, redisPassword, "", 0)
-	//count, err := redis.GetIntValue(mw.userID)
-	// bs := []byte(strconv.Itoa(count))
-	// if count == 0 {
-	// 	err = s.Write(mw.userID, []byte(strconv.Itoa(1)), 0)
-	// 	if err != nil {
-	// 		logger.Println(err)
-	// 	}
-	// 	return
-	// }
+	
 	count++
 	err = s.Write(mw.userID, []byte(strconv.Itoa(count)),0)
 	if err != nil {

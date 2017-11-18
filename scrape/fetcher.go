@@ -103,6 +103,7 @@ func (sf *SplashFetcher) ValidateRequest(req *splash.Request) error {
 func (sf *SplashFetcher) Fetch(request interface{}) (interface{}, error) {
 	req := request.(splash.Request)
 	err := sf.ValidateRequest(&req)
+	logger.Println(req.URL)
 	if err != nil {
 		logger.Println(err)
 		return nil, err
