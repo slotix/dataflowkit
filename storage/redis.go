@@ -4,31 +4,85 @@ import (
 	"time"
 
 	"github.com/garyburd/redigo/redis"
-	"gopkg.in/redsync.v1"
 	"github.com/spf13/viper"
+	"gopkg.in/redsync.v1"
 )
+
+type Options struct {
+	host     string
+	network  string
+	password string
+	db       int
+	// If set, path to a socket file overrides hostname
+	socketPath string
+	expire     int64
+}
+
+type Option func(*Options)
+
+func host(h string) Option {
+	return func(args *Options) {
+		args.host = h
+	}
+}
+
+func network(n string) Option {
+	return func(args *Options) {
+		args.network = n
+	}
+}
+
+func password(p string) Option {
+	return func(args *Options) {
+		args.password = p
+	}
+}
+
+func db(d int) Option {
+	return func(args *Options) {
+		args.db = d
+	}
+}
+
+func socketPath(s string) Option {
+	return func(args *Options) {
+		args.socketPath = s
+	}
+}
+
+func expire(e int64) Option {
+	return func(args *Options) {
+		args.expire = e
+	}
+}
 
 // RedisConn represents a Redis Connection structure
 type RedisConn struct {
-	host     string
-	password string
-	db       int
-	pool     *redis.Pool
+	//host     string
+	//password string
+	//db       int
+	opts *Options
+	pool *redis.Pool
 	// If set, path to a socket file overrides hostname
-	socketPath string
-	redsync    *redsync.Redsync
+	//socketPath string
+	redsync *redsync.Redsync
 }
 
 // NewRedisConn creates RedisConn instance
 //func NewRedisConn(cnf *config.Config, host, password, socketPath string, db int) RedisConn {
-func NewRedisConn(host, password, socketPath string, db int) RedisConn {
+//func NewRedisConn(host, password, socketPath string, db int) RedisConn {
+func NewRedisConn(setters ...Option) RedisConn {
+	args := &Options{
+		host:       viper.GetString("REDIS"),
+		network:    viper.GetString("REDIS_NETWORK"),
+		password:   viper.GetString("REDIS_PASSWORD"),
+		db:         viper.GetInt("REDIS_DB"),
+		socketPath: viper.GetString("REDIS_SOCKET_PATH"),
+		expire:     viper.GetInt64("REDIS_EXPIRE"),
+	}
 
 	return RedisConn{
-		//	config:     cnf,
-		host:       host,
-		db:         db,
-		password:   password,
-		socketPath: socketPath,
+		opts: args,
 	}
 }
 
@@ -56,18 +110,18 @@ func (b *RedisConn) newPool() *redis.Pool {
 				opts = make([]redis.DialOption, 0)
 			)
 
-			if b.password != "" {
-				opts = append(opts, redis.DialPassword(b.password))
+			if b.opts.password != "" {
+				opts = append(opts, redis.DialPassword(b.opts.password))
 			}
 
-			if b.socketPath != "" {
-				c, err = redis.Dial("unix", b.socketPath, opts...)
+			if b.opts.socketPath != "" {
+				c, err = redis.Dial("unix", b.opts.socketPath, opts...)
 			} else {
-				c, err = redis.Dial("tcp", b.host, opts...)
+				c, err = redis.Dial(b.opts.network, b.opts.host, opts...)
 			}
 
-			if b.db != 0 {
-				_, err = c.Do("SELECT", b.db)
+			if b.opts.db != 0 {
+				_, err = c.Do("SELECT", b.opts.db)
 			}
 
 			if err != nil {
@@ -86,8 +140,8 @@ func (b *RedisConn) SetExpireAt(key string, expiresAt int64) error {
 	var expirationTimestamp int32
 	if expiresAt == 0 {
 		// expire results after 1 hour by default
-		expiresAt = viper.GetInt64("REDIS_EXPIRE")
-		expirationTimestamp = int32(time.Now().UTC().Unix()+ expiresAt)
+		expiresAt = b.opts.expire
+		expirationTimestamp = int32(time.Now().UTC().Unix() + expiresAt)
 	} else {
 		expirationTimestamp = int32(expiresAt)
 	}
@@ -104,7 +158,7 @@ func (b *RedisConn) SetExpireAt(key string, expiresAt int64) error {
 func (b *RedisConn) SetExpireIn(key string, expiresIn int64) error {
 	if expiresIn == 0 {
 		// expire results after 1 hour by default
-		expiresIn = viper.GetInt64("REDIS_EXPIRE")
+		expiresIn = b.opts.expire
 	}
 	conn := b.open()
 	defer conn.Close()
