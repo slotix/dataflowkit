@@ -37,13 +37,13 @@ func Start(DFKFetch string) {
 	case "Diskv":
 		storageType = storage.Diskv
 	default:
-		panic("Storage type value is invalid ")
+		panic("Storage type value is undefined")
 	}
 	var svc Service
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
 	svc = RobotsTxtMiddleware()(svc)
-	svc = StorageMiddleware(storageType)(svc) //possible values are S3, Redis
+	svc = StorageMiddleware(storageType)(svc) //possible values are Diskv, S3, Redis
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{

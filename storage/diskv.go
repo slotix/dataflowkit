@@ -1,13 +1,10 @@
 package storage
 import (
 	"github.com/peterbourgon/diskv"
-	slug "github.com/slotix/slugifyurl"
 )
 
 type DiskvConn struct {
 	diskv *diskv.Diskv
-	//fetched pages can't be saved as-is. Keys are filenames representing urls have to be Slugied to a sanitized string which can be used as a filename.
-	options slug.Options
 }
 
 func newDiskvConn(baseDir string, cacheSizeMax uint64) DiskvConn{
@@ -19,14 +16,8 @@ func newDiskvConn(baseDir string, cacheSizeMax uint64) DiskvConn{
 		Transform:    flatTransform,
 		CacheSizeMax: cacheSizeMax,
 	})
-	slugOptions := slug.Options{
-		SlashChar:    "-",
-		MaxLength:    50,
-		SkipScheme:   true,
-		SkipUserinfo: true,
-		UnixOnly:     false,
-	}
-	return DiskvConn{diskv: d, options: slugOptions}
+	
+	return DiskvConn{diskv: d}
 }
 
 func (d DiskvConn) Erase(key string) error {

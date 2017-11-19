@@ -10,7 +10,11 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
+	"github.com/slotix/dataflowkit/storage"
+	"github.com/spf13/viper"
 )
+
+var storageType storage.Type
 
 func Start(DFKParse string) {
 	ctx := context.Background()
@@ -25,11 +29,25 @@ func Start(DFKParse string) {
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 
+	sType := viper.GetString("STORAGE_TYPE")
+
+	switch sType {
+	case "S3":
+		storageType = storage.S3
+	case "Redis":
+		storageType = storage.Redis
+	case "Diskv":
+		storageType = storage.Diskv
+	default:
+		panic("Storage type value is undefined ")
+	}
+
 	var svc Service
 	svc = ParseService{}
 	//svc = StatsMiddleware("18")(svc)
 
 	//svc = CachingMiddleware()(svc)
+	svc = StorageMiddleware(storageType)(svc) //possible values are Diskv, S3, Redis
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{

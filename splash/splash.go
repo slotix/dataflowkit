@@ -61,7 +61,6 @@ func wait(w float64) Option {
 	}
 }
 
-
 //New creates new connection to Splash Server
 func New(req Request, setters ...Option) (splashURL string) {
 	//Default options
@@ -113,8 +112,7 @@ func New(req Request, setters ...Option) (splashURL string) {
 		neturl.QueryEscape(paramsToLuaTable(req.Params)),
 		neturl.QueryEscape(LUAScript))
 
-
-	return 
+	return
 }
 
 //GetResponse result is passed to storage middleware
@@ -203,10 +201,12 @@ func GetResponse(req Request) (*Response, error) {
 }
 
 func (r *Response) GetContent() (io.ReadCloser, error) {
-	if r == nil {
-		return nil, errors.New("empty response")
+	//if r == nil {
+	//	return nil, errors.New("empty response")
+	//}
+	if r.Error != "" {
+		return nil, errors.New(r.Error)
 	}
-
 	if IsRobotsTxt(r.Request.URL) {
 
 		decoded, err := base64.StdEncoding.DecodeString(r.Response.Content.Text)

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/base32"
+	"fmt"
 
 	"github.com/spf13/viper"
 )
@@ -13,6 +14,8 @@ type Store interface {
 	//expTime value sets TTL for Redis storage.
 	//expTime set Metadata Expires value for S3Storage
 	Write(key string, value []byte, expTime int64) error
+	//Is key expired ?
+	Expired(key string) bool
 }
 
 type Type string
@@ -46,7 +49,7 @@ func newRedisStorage(redisHost, redisPassword string) Store {
 }
 
 func (s RedisConn) Read(key string) (value []byte, err error) {
-	value, err = s.GetValue(key)
+	value, err = s.Value(key)
 	return
 }
 
@@ -55,11 +58,23 @@ func (s RedisConn) Write(key string, value []byte, expTime int64) error {
 	if err != nil {
 		return err
 	}
-	err = s.SetExpireAt(key, expTime)
+	err = s.ExpireAt(key, expTime)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (s RedisConn) Expired(key string) bool {
+	ttl, err := s.TTL(key)
+	if err != nil {
+		fmt.Println(err)
+	}
+	if ttl > 0 {
+		return false
+	}
+	return true
+
 }
 
 func newS3Storage(bucket string) Store {
@@ -72,12 +87,17 @@ func (s S3Conn) Read(key string) (value []byte, err error) {
 	return
 }
 
+//TODO: implement expiration functionality
 func (s S3Conn) Write(key string, value []byte, expTime int64) error {
 	err := s.Upload(key, value, expTime)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (s S3Conn) Expired(key string) bool {
+	return false
 }
 
 func newDiskvStorage(baseDir string, CacheSizeMax uint64) Store {
@@ -96,6 +116,7 @@ func (d DiskvConn) Read(key string) (value []byte, err error) {
 	return value, nil
 }
 
+//TODO: implement expiration functionality
 func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
 	//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
 	sKey := base32.StdEncoding.EncodeToString([]byte(key))
@@ -104,4 +125,8 @@ func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
 		return err
 	}
 	return nil
+}
+
+func (s DiskvConn) Expired(key string) bool {
+	return false
 }
