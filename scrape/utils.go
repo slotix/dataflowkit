@@ -3,10 +3,12 @@ package scrape
 import (
 	"bytes"
 	"crypto/md5"
+	"hash/crc32"
 	"io"
 	"io/ioutil"
 	"math/rand"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -41,6 +43,12 @@ func AddStringSliceToSlice(in []string, out []string) {
 			out = append(out, s)
 		}
 	}
+}
+
+func GenerateCRC32(b []byte) []byte {
+	crc32InUint32 := crc32.ChecksumIEEE(b)
+	crc32InString := strconv.FormatUint(uint64(crc32InUint32), 16)
+	return []byte(crc32InString)
 }
 
 //func generateMD5(s string) string {

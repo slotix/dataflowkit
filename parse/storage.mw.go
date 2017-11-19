@@ -2,7 +2,6 @@ package parse
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"time"
@@ -28,12 +27,13 @@ func StorageMiddleware(storageType storage.Type) ServiceMiddleware {
 func (mw storageMiddleware) ParseData(p scrape.Payload) (output io.ReadCloser, err error) {
 	s := storage.NewStore(mw.StorageType)
 	//if something in a cache return local copy
-	storageKey := fmt.Sprintf("%s-%s", p.Format, p.PayloadMD5)
+	//storageKey := fmt.Sprintf("%s-%s", p.Format, p.PayloadMD5)
+	storageKey := string(p.PayloadMD5)
 	value, err := s.Read(storageKey)
 	//check if item is expired.
-	if err == nil && !s.Expired(storageKey) {	
-			readCloser := ioutil.NopCloser(bytes.NewReader(value))
-			return readCloser, nil
+	if err == nil && !s.Expired(storageKey) {
+		readCloser := ioutil.NopCloser(bytes.NewReader(value))
+		return readCloser, nil
 	}
 	//Parse if there is nothing in a cache
 	parsed, err := mw.Service.ParseData(p)
