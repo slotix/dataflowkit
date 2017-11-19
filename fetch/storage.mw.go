@@ -43,7 +43,7 @@ func (mw storageMiddleware) Fetch(req interface{}) (output interface{}, err erro
 		diff := sResponse.Expires.Sub(time.Now().UTC())
 		logger.Printf("%s: cache lifespan is %+v\n", url, diff)
 
-		if diff > 0 { //if cached value is valid return it
+		if diff > 0 { //if cached value is not expired return it
 			output = sResponse
 			return output, nil
 		}

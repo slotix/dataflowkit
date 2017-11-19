@@ -2,10 +2,10 @@ package parse
 
 import (
 	"io"
+	"strconv"
 
-	"github.com/slotix/dataflowkit/cache"
 	"github.com/slotix/dataflowkit/scrape"
-	"github.com/spf13/viper"
+	"github.com/slotix/dataflowkit/storage"
 )
 
 func StatsMiddleware(userID string) ServiceMiddleware {
@@ -19,30 +19,28 @@ type statsMiddleware struct {
 	Service
 }
 
-
 func (mw statsMiddleware) ParseData(payload scrape.Payload) (output io.ReadCloser, err error) {
 	mw.incrementCount()
 	output, err = mw.Service.ParseData(payload)
 	return
 }
 
-
 //writing to redis
 func (mw statsMiddleware) incrementCount() {
-	redisURL := viper.GetString("redis")
-	//logger.Println(redisURL)
-	redisPassword := ""
-	redis := cache.NewRedisConn(redisURL, redisPassword, "", 0)
-	count, err := redis.GetIntValue(mw.userID)
-	if count == 0 {
-		err = redis.SetValue(mw.userID, 1)
-		if err != nil {
-			logger.Println(err)
-		}
-		return
+	s := storage.NewStore(storageType)
+
+	buf, err := s.Read(mw.userID)
+	if err != nil {
+		logger.Println(err)
 	}
+	strCount := string(buf)
+	count, err := strconv.Atoi(strCount)
+	if err != nil {
+		logger.Println(err)
+	}
+
 	count++
-	err = redis.SetValue(mw.userID, count)
+	err = s.Write(mw.userID, []byte(strconv.Itoa(count)), 0)
 	if err != nil {
 		logger.Println(err)
 	}

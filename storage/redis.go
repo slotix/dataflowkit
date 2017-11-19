@@ -15,7 +15,6 @@ type Options struct {
 	db       int
 	// If set, path to a socket file overrides hostname
 	socketPath string
-	expire     int64
 }
 
 type Option func(*Options)
@@ -50,11 +49,6 @@ func socketPath(s string) Option {
 	}
 }
 
-func expire(e int64) Option {
-	return func(args *Options) {
-		args.expire = e
-	}
-}
 
 // RedisConn represents a Redis Connection structure
 type RedisConn struct {
@@ -78,7 +72,6 @@ func NewRedisConn(setters ...Option) RedisConn {
 		password:   viper.GetString("REDIS_PASSWORD"),
 		db:         viper.GetInt("REDIS_DB"),
 		socketPath: viper.GetString("REDIS_SOCKET_PATH"),
-		expire:     viper.GetInt64("REDIS_EXPIRE"),
 	}
 
 	return RedisConn{
@@ -136,42 +129,8 @@ func (b *RedisConn) newPool() *redis.Pool {
 	}
 }
 
-func (b *RedisConn) SetExpireAt(key string, expiresAt int64) error {
-	var expirationTimestamp int32
-	if expiresAt == 0 {
-		// expire results after 1 hour by default
-		expiresAt = b.opts.expire
-		expirationTimestamp = int32(time.Now().UTC().Unix() + expiresAt)
-	} else {
-		expirationTimestamp = int32(expiresAt)
-	}
-	conn := b.open()
-	defer conn.Close()
-
-	_, err := conn.Do("EXPIREAT", key, expirationTimestamp)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (b *RedisConn) SetExpireIn(key string, expiresIn int64) error {
-	if expiresIn == 0 {
-		// expire results after 1 hour by default
-		expiresIn = b.opts.expire
-	}
-	conn := b.open()
-	defer conn.Close()
-
-	_, err := conn.Do("EXPIRE", key, expiresIn)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 //GetValue gets value from Redis
-func (b *RedisConn) GetValue(key string) ([]byte, error) {
+func (b *RedisConn) Value(key string) ([]byte, error) {
 	//Get a key
 	conn := b.open()
 	defer conn.Close()
@@ -183,7 +142,7 @@ func (b *RedisConn) GetValue(key string) ([]byte, error) {
 }
 
 //GetIntValue gets value from Redis
-func (b *RedisConn) GetIntValue(key string) (int64, error) {
+func (b *RedisConn) IntValue(key string) (int64, error) {
 	//Get a key
 	conn := b.open()
 	defer conn.Close()
@@ -207,4 +166,37 @@ func (b *RedisConn) SetValue(key string, value interface{}) error {
 	}
 	return err
 
+}
+
+//ExpireAt sets TTL value of the key to expiresAt time
+func (b *RedisConn) ExpireAt(key string, expiresAt int64) error {
+	conn := b.open()
+	defer conn.Close()
+	_, err := conn.Do("EXPIREAT", key, expiresAt)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//ExpireIn sets TTL value of the key to current Time + expireIn seconds
+func (b *RedisConn) ExpireIn(key string, expireIn int64) error {
+	conn := b.open()
+	defer conn.Close()
+
+	_, err := conn.Do("EXPIRE", key, expireIn)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *RedisConn) TTL(key string) (int64, error) {
+	conn := b.open()
+	defer conn.Close()
+	reply, err := conn.Do("TTL", key)
+	if err != nil {
+		return 0, err
+	}
+	return reply.(int64), nil
 }
