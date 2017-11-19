@@ -36,3 +36,7 @@ func TestRandInt(t *testing.T){
 	m := s * time.Duration(rand)/1000
 	fmt.Println(s, rand, m)
 }
+
+func TestGenerateCRC32(t *testing.T){
+	fmt.Println(string(GenerateCRC32([]byte("test test test"))))
+}
