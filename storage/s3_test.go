@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -16,7 +18,7 @@ var (
 	svc        *s3.S3
 	uploader   *s3manager.Uploader
 	downloader *s3manager.Downloader
-	bucket string
+	bucket     string
 )
 
 func init() {
@@ -31,7 +33,7 @@ func init() {
 	svc = s3.New(sess)
 	uploader = s3manager.NewUploader(sess)
 	downloader = s3manager.NewDownloader(sess)
-	
+
 }
 
 func TestListBuckets(t *testing.T) {
@@ -51,7 +53,7 @@ func TestListBuckets(t *testing.T) {
 }
 
 func TestListBucketItems(t *testing.T) {
-	
+
 	resp, err := svc.ListObjects(&s3.ListObjectsInput{Bucket: aws.String(bucket)})
 
 	if err != nil {
@@ -68,7 +70,7 @@ func TestListBucketItems(t *testing.T) {
 }
 
 func TestUpload(t *testing.T) {
-	
+
 	buf := []byte("file content test\nanother line of test here")
 	r := bytes.NewReader(buf)
 	_, err := uploader.Upload(&s3manager.UploadInput{
@@ -78,27 +80,27 @@ func TestUpload(t *testing.T) {
 	})
 	if err != nil {
 		fmt.Println(err)
-		fmt.Printf("Type: %T\n",err)
+		fmt.Printf("Type: %T\n", err)
 	}
 
 }
 
 func TestDownload(t *testing.T) {
-	
-//	var buf []byte
+
+	//	var buf []byte
 	buff := &aws.WriteAtBuffer{}
 
-//	numBytes, err := downloader.Download(aws.NewWriteAtBuffer(buf),
+	//	numBytes, err := downloader.Download(aws.NewWriteAtBuffer(buf),
 	numBytes, err := downloader.Download(buff,
-	&s3.GetObjectInput{
+		&s3.GetObjectInput{
 			Bucket: aws.String(bucket),
-			Key:    aws.String("urlll"),
+			Key:    aws.String("http://dbconvert.com"),
 		})
 
 	if err != nil {
 		fmt.Println(err.(s3.RequestFailure))
 		fmt.Println(err.(s3.RequestFailure).Code())
-		fmt.Printf("Type: %T\n",err)
+		fmt.Printf("Type: %T\n", err)
 	}
 
 	fmt.Printf("Content: %s\n", string(buff.Bytes()))
@@ -106,19 +108,47 @@ func TestDownload(t *testing.T) {
 
 }
 
+func TestGetObject(t *testing.T) {
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String("http://dbconvert.com"),
+	}
+
+	result, err := svc.GetObject(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case s3.ErrCodeNoSuchKey:
+				fmt.Println(s3.ErrCodeNoSuchKey, aerr.Error())
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+		return
+	}
+
+	fmt.Println(*result)
+	//expires, err := time.Parse("Mon, 2 Jan 2006 15:04:05 MST", *result.Expires)
+	//fmt.Println(expires.UTC())
+}
+
 func TestDeleteItem(t *testing.T) {
 	_, err := svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String("urlll")})
-	
+
 	if err != nil {
 		fmt.Println(err)
 	}
-	
-		err = svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("urlll"),
-		})
-		if err != nil {
-			fmt.Println(err)
-		}
-	
+
+	err = svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String("urlll"),
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+
 }

@@ -3,6 +3,9 @@ package storage
 import (
 	"encoding/base32"
 	"fmt"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -14,7 +17,8 @@ type Store interface {
 	//expTime value sets TTL for Redis storage.
 	//expTime set Metadata Expires value for S3Storage
 	Write(key string, value []byte, expTime int64) error
-	//Is key expired ?
+	//Is key expired ? It checks if parse results storage item is expired. Set up  Expiration fixed value as "STORAGE_EXPIRE" environment variable.
+	//html pages cache stores this info in sResponse.Expires . It is not used for fetch endpoint. 
 	Expired(key string) bool
 }
 
@@ -87,7 +91,7 @@ func (s S3Conn) Read(key string) (value []byte, err error) {
 	return
 }
 
-//TODO: implement expiration functionality
+
 func (s S3Conn) Write(key string, value []byte, expTime int64) error {
 	err := s.Upload(key, value, expTime)
 	if err != nil {
@@ -97,8 +101,24 @@ func (s S3Conn) Write(key string, value []byte, expTime int64) error {
 }
 
 func (s S3Conn) Expired(key string) bool {
-	return false
+	obj, err := s.GetObject(key)
+	if err != nil {
+		panic(err)
+	}
+	currentTime := time.Now().UTC()
+	lastModified := obj.LastModified
+	//calculate expiration time
+	exp := time.Duration(viper.GetInt64("STORAGE_EXPIRE")) * time.Second
+	expiry := lastModified.Add(exp)
+	diff := expiry.Sub(currentTime)
+	logger.Printf("cache lifespan is %+v\n", diff)
+	//Expired?
+	if diff > 0 { 
+		return false
+	}
+	return true
 }
+
 
 func newDiskvStorage(baseDir string, CacheSizeMax uint64) Store {
 	d := newDiskvConn(baseDir, CacheSizeMax)
@@ -116,7 +136,6 @@ func (d DiskvConn) Read(key string) (value []byte, err error) {
 	return value, nil
 }
 
-//TODO: implement expiration functionality
 func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
 	//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
 	sKey := base32.StdEncoding.EncodeToString([]byte(key))
@@ -128,5 +147,40 @@ func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
 }
 
 func (s DiskvConn) Expired(key string) bool {
-	return false
+	//pwd
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
+	//filename
+	sKey := base32.StdEncoding.EncodeToString([]byte(key))
+	fullPath := exPath+"/"+s.diskv.BasePath+"/"+sKey
+	//file last modification time
+	mTime, err := mTime(fullPath)
+	currentTime := time.Now().UTC()
+	//calculate expiration time
+	exp := time.Duration(viper.GetInt64("STORAGE_EXPIRE")) * time.Second
+	expiry := mTime.Add(exp)
+	//logger.Println(mTime)
+	//logger.Println(currentTime)
+	//logger.Println(expiry)
+	diff := expiry.Sub(currentTime)
+	logger.Printf("cache lifespan is %+v\n", diff)
+	//Expired?
+	if diff > 0 { 
+		return false
+	}
+	return true
+}
+
+//mTime returns File Modify Time
+//Last modification time shows time of the  last change to file's contents. It does not change with owner or permission changes, and is therefore used for tracking the actual changes to data of the file itself.
+func mTime(name string) (mtime time.Time, err error) {
+	fi, err := os.Stat(name)
+	if err != nil {
+		return
+	}
+	mtime = fi.ModTime().UTC()
+	return
 }

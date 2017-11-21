@@ -121,7 +121,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
 
 	//set here default type of storage
-	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Redis", "Storage backend for intermediary data passed to html parser. Types: S3, Redis, Diskv")
+	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "S3", "Storage backend for intermediary data passed to html parser. Types: S3, Redis, Diskv")
 	RootCmd.Flags().Int64VarP(&storageExpires, "STORAGE_EXPIRE", "", 3600, "Default Storage expire value in seconds")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
 	RootCmd.Flags().StringVarP(&fetchBucket, "FETCH_BUCKET", "", "fetch-bucket", "S3 bucket name for storing fetch results")

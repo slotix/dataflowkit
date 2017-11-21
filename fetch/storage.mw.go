@@ -3,6 +3,7 @@ package fetch
 import (
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/slotix/dataflowkit/errs"
 
@@ -31,7 +32,8 @@ func (mw storageMiddleware) Fetch(req interface{}) (output interface{}, err erro
 		url = sReq.GetURL()
 		value, err := s.Read(url)
 
-		if err == nil && !s.Expired(url) {
+		//if err == nil && !s.Expired(url) {
+		if err == nil {
 			var sResponse *splash.Response
 			if err := json.Unmarshal(value, &sResponse); err != nil {
 				logger.Println("Json Unmarshall error", err)
@@ -41,19 +43,19 @@ func (mw storageMiddleware) Fetch(req interface{}) (output interface{}, err erro
 			//	return nil, &errs.NotFound{URL: url}
 			//}
 			//check if item is expired.
-			//diff := sResponse.Expires.Sub(time.Now().UTC())
-			//logger.Printf("%s: cache lifespan is %+v\n", url, diff)
+			diff := sResponse.Expires.Sub(time.Now().UTC())
+			logger.Printf("%s: cache lifespan is %+v\n", url, diff)
 
-			//if diff > 0 { //if cached value is not expired return it
-
-			output = sResponse
-			return output, nil
-
+			if diff > 0 { //if cached value is not expired return it
+				output = sResponse
+				return output, nil
+			}
 			err = &errs.ExpiredItemOrNotCacheable{}
 		}
 	} else {
 		logger.Println("Bad request")
 		return nil, errors.New("Bad request")
+
 	}
 
 	logger.Println(err)
@@ -70,6 +72,7 @@ func (mw storageMiddleware) Fetch(req interface{}) (output interface{}, err erro
 		if err != nil {
 			logger.Printf(err.Error())
 		}
+		//calculate expiration time. This is actual for Redis only.
 		expTime := sResponse.Expires.Unix()
 		err = s.Write(url, response, expTime)
 		if err != nil {
