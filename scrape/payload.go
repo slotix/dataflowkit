@@ -27,7 +27,6 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
-	logger.Println(aux.Request)
 	splashRequest := splash.Request{}
 	err := FillStruct(aux.Request.(map[string]interface{}), &splashRequest)
 	if err != nil {

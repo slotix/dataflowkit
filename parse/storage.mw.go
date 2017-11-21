@@ -46,10 +46,10 @@ func (mw storageMiddleware) ParseData(p scrape.Payload) (output io.ReadCloser, e
 		logger.Println(err.Error())
 	}
 
-	//check if item is expired.
+	//calculate expiration time. It is actual for Redis storage.
 	exp := time.Duration(viper.GetInt64("STORAGE_EXPIRE")) * time.Second
 	expiry := time.Now().UTC().Add(exp)
-	logger.Printf("Cache lifespan is %+v\n", expiry)
+	logger.Printf("Cache lifespan is %+v\n",  expiry.Sub(time.Now().UTC()))
 
 	err = s.Write(storageKey, buf.Bytes(), expiry.Unix())
 	logger.Println(err)
