@@ -42,12 +42,12 @@ func (s S3Conn) Download(key string) (value []byte, err error) {
 	return buf.Bytes(), nil
 }
 
-func (s S3Conn) GetObject(key string) (object s3.GetObjectOutput, err error) {
+func (s S3Conn) GetObject(key string) (object *s3.GetObjectOutput, err error) {
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
 	}
-	result, err := s.svc.GetObject(input)
+	object, err = s.svc.GetObject(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {

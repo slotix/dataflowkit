@@ -1,6 +1,7 @@
 package fetch
 
 import (
+	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"time"
@@ -27,10 +28,12 @@ func (mw storageMiddleware) Fetch(req interface{}) (output interface{}, err erro
 	s := storage.NewStore(mw.StorageType)
 
 	//if something in a cache return local copy
-	var url string
+	var sKey string
 	if sReq, ok := req.(splash.Request); ok {
-		url = sReq.GetURL()
-		value, err := s.Read(url)
+		url := sReq.GetURL()
+		//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
+		sKey = base32.StdEncoding.EncodeToString([]byte(url))
+		value, err := s.Read(sKey)
 
 		//if err == nil && !s.Expired(url) {
 		if err == nil {
@@ -74,7 +77,7 @@ func (mw storageMiddleware) Fetch(req interface{}) (output interface{}, err erro
 		}
 		//calculate expiration time. This is actual for Redis only.
 		expTime := sResponse.Expires.Unix()
-		err = s.Write(url, response, expTime)
+		err = s.Write(sKey, response, expTime)
 		if err != nil {
 			logger.Println(err.Error())
 		}
