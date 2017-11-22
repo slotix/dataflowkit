@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"encoding/base32"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,7 +17,7 @@ type Store interface {
 	//expTime set Metadata Expires value for S3Storage
 	Write(key string, value []byte, expTime int64) error
 	//Is key expired ? It checks if parse results storage item is expired. Set up  Expiration fixed value as "STORAGE_EXPIRE" environment variable.
-	//html pages cache stores this info in sResponse.Expires . It is not used for fetch endpoint. 
+	//html pages cache stores this info in sResponse.Expires . It is not used for fetch endpoint.
 	Expired(key string) bool
 }
 
@@ -91,7 +90,6 @@ func (s S3Conn) Read(key string) (value []byte, err error) {
 	return
 }
 
-
 func (s S3Conn) Write(key string, value []byte, expTime int64) error {
 	err := s.Upload(key, value, expTime)
 	if err != nil {
@@ -113,12 +111,11 @@ func (s S3Conn) Expired(key string) bool {
 	diff := expiry.Sub(currentTime)
 	logger.Printf("cache lifespan is %+v\n", diff)
 	//Expired?
-	if diff > 0 { 
+	if diff > 0 {
 		return false
 	}
 	return true
 }
-
 
 func newDiskvStorage(baseDir string, CacheSizeMax uint64) Store {
 	d := newDiskvConn(baseDir, CacheSizeMax)
@@ -126,10 +123,7 @@ func newDiskvStorage(baseDir string, CacheSizeMax uint64) Store {
 }
 
 func (d DiskvConn) Read(key string) (value []byte, err error) {
-
-	//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
-	sKey := base32.StdEncoding.EncodeToString([]byte(key))
-	value, err = d.diskv.Read(sKey)
+	value, err = d.diskv.Read(key)
 	if err != nil {
 		return nil, err
 	}
@@ -137,9 +131,7 @@ func (d DiskvConn) Read(key string) (value []byte, err error) {
 }
 
 func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
-	//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
-	sKey := base32.StdEncoding.EncodeToString([]byte(key))
-	err := d.diskv.Write(sKey, value)
+	err := d.diskv.Write(key, value)
 	if err != nil {
 		return err
 	}
@@ -154,8 +146,7 @@ func (s DiskvConn) Expired(key string) bool {
 	}
 	exPath := filepath.Dir(ex)
 	//filename
-	sKey := base32.StdEncoding.EncodeToString([]byte(key))
-	fullPath := exPath+"/"+s.diskv.BasePath+"/"+sKey
+	fullPath := exPath + "/" + s.diskv.BasePath + "/" + key
 	//file last modification time
 	mTime, err := mTime(fullPath)
 	currentTime := time.Now().UTC()
@@ -168,7 +159,7 @@ func (s DiskvConn) Expired(key string) bool {
 	diff := expiry.Sub(currentTime)
 	logger.Printf("cache lifespan is %+v\n", diff)
 	//Expired?
-	if diff > 0 { 
+	if diff > 0 {
 		return false
 	}
 	return true
