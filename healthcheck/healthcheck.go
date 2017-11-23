@@ -65,7 +65,7 @@ func (p ParseConn) isAlive() error {
 		defer r.Body.Close()
 	}
 	if err != nil {
-		panic(err)
+		return err
 	}
 	resp, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -91,7 +91,7 @@ func (f FetchConn) isAlive() error {
 		defer r.Body.Close()
 	}
 	if err != nil {
-		panic(err)
+		return err
 	}
 	resp, err := ioutil.ReadAll(r.Body)
 	if err != nil {

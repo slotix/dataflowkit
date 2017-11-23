@@ -38,8 +38,10 @@ dataflowkit_linux
 webserver/webserver
 
 fetch/fetch.d/fetch.d
+fetch/fetch.d/debug
 fetch/fetch.d/diskv
 parse/parse.d/parse.d
+parse/parse.d/debug
 parse/parse.d/diskv
 
 deploy.sh

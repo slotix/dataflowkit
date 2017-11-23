@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
-	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -29,7 +28,6 @@ type ParseService struct {
 // create type that return function.
 // this will be needed in main.go
 type ServiceMiddleware func(Service) Service
-
 
 func (ps ParseService) ParseData(p scrape.Payload) (io.ReadCloser, error) {
 	config, err := p.PayloadToScrapeConfig()
@@ -144,9 +142,6 @@ func responseFromFetchService(req splash.Request) (*splash.Response, error) {
 func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape.ScrapeResults, error) {
 	sReq := req.(splash.Request)
 	url := sReq.GetURL()
-	if len(url) == 0 {
-		return nil, errors.New("no URL provided")
-	}
 	//get Robotstxt Data
 	robotsData, err := splash.RobotstxtData(url)
 	if err != nil {
