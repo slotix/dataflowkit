@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/slotix/dataflowkit/healthcheck"
 	"github.com/slotix/dataflowkit/parse"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -78,24 +79,31 @@ var RootCmd = &cobra.Command{
 	}
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// fmt.Println("Checking services ... ")
+		fmt.Println("Checking services ... ")
 
-		// status := healthcheck.CheckServices()
-		// allAlive := true
+		services := []healthcheck.Checker{
+			healthcheck.FetchConn{
+				Host: DFKFetch,
+			},
+		}
+		if storageType == "Redis" {
+			services = append(services, healthcheck.RedisConn{
+				Network: redisNetwork,
+				Host:    redisHost})
+		}
+		status := healthcheck.CheckServices(services...)
+		allAlive := true
 
-		// for k, v := range status {
-		// 	fmt.Printf("%s: %s\n", k, v)
-		// 	if v != "Ok" {
-		// 		allAlive = false
-		// 	}
-		// }
-
-		// if allAlive {
-		// 	fmt.Printf("Starting Parse Serice %s\n", port)
-		// 	server.Start(port)
-		// }
-		fmt.Printf("Starting Parse Serice %s\n", DFKParse)
-		parse.Start(DFKParse)
+		for k, v := range status {
+			fmt.Printf("%s: %s\n", k, v)
+			if v != "Ok" {
+				allAlive = false
+			}
+		}
+		if allAlive {
+			fmt.Printf("Starting Server %s\n", DFKParse)
+			parse.Start(DFKParse)
+		}
 	},
 }
 
@@ -111,11 +119,7 @@ func Execute(version string) {
 }
 
 func init() {
-	//cobra.OnInitialize(initConfig)
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
+	//flags and configuration settings. They are global for the application.
 
 	RootCmd.Flags().StringVarP(&DFKParse, "DFK_PARSE", "p", "127.0.0.1:8001", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
