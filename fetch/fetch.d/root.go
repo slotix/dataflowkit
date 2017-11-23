@@ -64,7 +64,18 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Checking services ... ")
 
-		status := healthcheck.CheckServices()
+		services := []healthcheck.Checker{
+
+			healthcheck.SplashConn{
+				Host: splashHost,
+			},
+		}
+		if storageType == "Redis" {
+			services = append(services, healthcheck.RedisConn{
+				Network: redisNetwork,
+				Host:    redisHost})
+		}
+		status := healthcheck.CheckServices(services...)
 		allAlive := true
 
 		for k, v := range status {
@@ -73,7 +84,6 @@ var RootCmd = &cobra.Command{
 				allAlive = false
 			}
 		}
-
 		if allAlive {
 			fmt.Printf("Starting Server %s\n", DFKFetch)
 			fetch.Start(DFKFetch)
@@ -94,9 +104,7 @@ func Execute(version string) {
 
 func init() {
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
+	//flags and configuration settings. They are global for the application.
 
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "a", "127.0.0.1:8000", "HTTP listen address")
 
@@ -106,7 +114,7 @@ func init() {
 	RootCmd.Flags().Float64VarP(&splashWait, "SPLASH_WAIT", "", 0.5, "Time in seconds to wait until js scripts loaded.")
 
 	//set here default type of storage
-	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "S3", "Storage backend for intermediary data passed to html parser. Types: S3, Redis, Diskv")
+	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Redis", "Storage backend for intermediary data passed to html parser. Types: S3, Redis, Diskv")
 	RootCmd.Flags().Int64VarP(&storageExpires, "STORAGE_EXPIRE", "", 3600, "Default Storage expire value in seconds")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
 	RootCmd.Flags().StringVarP(&fetchBucket, "FETCH_BUCKET", "", "fetch-bucket", "S3 bucket name for storing fetch results")

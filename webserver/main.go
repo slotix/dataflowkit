@@ -11,7 +11,7 @@ import (
 var (
 	port          = flag.String("p", ":8080", "HTTP listen address")
 	fetcherPort   = flag.String("f", ":8000", "Fetcher port")
-	dfkParserPort = flag.String("d", ":8000", "DFK Parser port")
+	dfkParserPort = flag.String("d", ":8001", "DFK Parser port")
 	baseDir       = flag.String("b", "web", "HTML files location.")
 )
 
@@ -46,8 +46,8 @@ func main() {
 			nil)
 	})
 
-	r.POST("/app/fetch", ReverseProxy(fetcherPort))
-	r.POST("/app/parse", ReverseProxy(dfkParserPort))
+	r.POST("/fetch", ReverseProxy(fetcherPort))
+	r.POST("/parse", ReverseProxy(dfkParserPort))
 	r.Run(*port)
 }
 

@@ -109,6 +109,12 @@ func MakeParseEndpoint(svc Service) endpoint.Endpoint {
 	}
 }
 
+func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
+    w.WriteHeader(http.StatusOK)
+    w.Header().Set("Content-Type", "application/json")
+    io.WriteString(w, `{"alive": true}`)
+}
+
 // Make Http Handler
 func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger) http.Handler {
 	/*
@@ -134,6 +140,7 @@ func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger)
 		EncodeParseResponse,
 		options...,
 	))
-
+	
+	r.Methods("GET").Path("/ping").HandlerFunc(HealthCheckHandler)
 	return r
 }

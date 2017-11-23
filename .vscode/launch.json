@@ -3,6 +3,26 @@
     "configurations": [
 
         {
+            "name": "Debug Fetcher",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}/fetch/fetch.d",
+            "env":{},
+            "args": [],
+            "showLog": true
+        },
+        {
+            "name": "Debug Parser",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}/parse/parse.d",
+            "env":{},
+            "args": [],
+            "showLog": true
+        },
+        {
             "name": "Launch test function",
             "type": "go",
             "request": "launch",
@@ -12,16 +32,6 @@
                 "-test.run",
                 "MyTestFunction"
             ]
-        },
-        {
-            "name": "Debug",
-            "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "program": "${workspaceRoot}/fetch/fetch.d",
-            "env":{},
-            "args": [],
-            "showLog": true
         },
         {
             "name": "Ravi Debugger",
