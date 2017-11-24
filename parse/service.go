@@ -18,8 +18,7 @@ import (
 
 // Define service interface
 type Service interface {
-	ParseData(scrape.Payload) (io.ReadCloser, error)
-	
+	ParseData(scrape.Payload) (io.ReadCloser, error)	
 }
 
 // Implement service with empty struct
