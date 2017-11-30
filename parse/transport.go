@@ -32,6 +32,7 @@ func EncodeParseResponse(_ context.Context, w http.ResponseWriter, response inte
 	if err != nil {
 		return err
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, err = w.Write(data)
 
 	if err != nil {

@@ -108,7 +108,7 @@ func EncodeSplashResponse(ctx context.Context, w http.ResponseWriter, response i
 	if err != nil {
 		return err
 	}
-
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, err = w.Write(data)
 
 	if err != nil {
@@ -133,7 +133,7 @@ func EncodeBaseResponse(ctx context.Context, w http.ResponseWriter, response int
 	if err != nil {
 		return err
 	}
-
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, err = w.Write(data)
 
 	if err != nil {
