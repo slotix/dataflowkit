@@ -60,6 +60,7 @@ func EncodeSplashFetchResponse(ctx context.Context, w http.ResponseWriter, respo
 	if err != nil {
 		return err
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, err = io.Copy(w, content)
 	if err != nil {
 		return err
@@ -83,7 +84,7 @@ func EncodeBaseFetchResponse(ctx context.Context, w http.ResponseWriter, respons
 	}
 	r := bytes.NewReader(fetcherResponse.HTML)
 	readCloser := ioutil.NopCloser(r)
-
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, err := io.Copy(w, readCloser)
 	if err != nil {
 		return err
@@ -108,7 +109,7 @@ func EncodeSplashResponse(ctx context.Context, w http.ResponseWriter, response i
 	if err != nil {
 		return err
 	}
-
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, err = w.Write(data)
 
 	if err != nil {
@@ -133,7 +134,7 @@ func EncodeBaseResponse(ctx context.Context, w http.ResponseWriter, response int
 	if err != nil {
 		return err
 	}
-
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, err = w.Write(data)
 
 	if err != nil {
@@ -177,7 +178,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		//return 504 Status
 		httpStatus = http.StatusGatewayTimeout
 	}
-
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(httpStatus)
 	//AWS error payload should looks like
 	//{
