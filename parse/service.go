@@ -11,6 +11,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/slotix/dataflowkit/errs"
+	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
@@ -18,7 +19,7 @@ import (
 
 // Define service interface
 type Service interface {
-	ParseData(scrape.Payload) (io.ReadCloser, error)	
+	ParseData(scrape.Payload) (io.ReadCloser, error)
 }
 
 // Implement service with empty struct
@@ -109,7 +110,7 @@ func responseFromFetchService(req splash.Request) (*splash.Response, error) {
 		return nil, err
 	}
 	reader := bytes.NewReader(b)
-	addr := "http://" + viper.GetString("DFK_FETCH") + "/response"
+	addr := "http://" + viper.GetString("DFK_FETCH") + "/response/splash"
 	request, err := http.NewRequest("POST", addr, reader)
 	if err != nil {
 		return nil, err
@@ -143,7 +144,7 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 	sReq := req.(splash.Request)
 	url := sReq.GetURL()
 	//get Robotstxt Data
-	robotsData, err := splash.RobotstxtData(url)
+	robotsData, err := fetch.RobotstxtData(url)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +156,7 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 	//var retryTimes int
 	for {
 		//check if scraping of current url is not forbidden
-		if !splash.AllowedByRobots(url, robotsData) {
+		if !fetch.AllowedByRobots(url, robotsData) {
 			return nil, &errs.ForbiddenByRobots{url}
 		}
 		// Repeat until we don't have any more URLs, or until we hit our page limit.

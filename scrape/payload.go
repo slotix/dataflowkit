@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/slotix/dataflowkit/extract"
+	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/splash"
 )
@@ -33,7 +34,7 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	p.Request = splashRequest
-	
+
 	//init other fields
 	p.PayloadMD5 = GenerateMD5(data)
 	if p.Format == "" {
@@ -54,11 +55,10 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
 func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
-	fetcher, err := NewSplashFetcher()
+	fetcher, err := fetch.NewSplashFetcher()
 	//fetcher, err := NewHttpClientFetcher()
-	
+
 	if err != nil {
 		logger.Println(err)
 	}
@@ -225,19 +225,19 @@ func SetField(obj interface{}, name string, value interface{}) error {
 		structValue.FieldByName(strings.Title(name)),
 		structValue.FieldByName(strings.ToUpper(name)),
 	}
-	
+
 	var structFieldValue reflect.Value
-	for _, structFieldValue = range fValues{
+	for _, structFieldValue = range fValues {
 		if structFieldValue.IsValid() {
 			break
 		}
 	}
-	
-//	if !structFieldValue.IsValid() {
-		//skip non-existent fields
-//		return nil
-		//return fmt.Errorf("No such field: %s in obj", name)
-//	}
+
+	//	if !structFieldValue.IsValid() {
+	//skip non-existent fields
+	//		return nil
+	//return fmt.Errorf("No such field: %s in obj", name)
+	//	}
 
 	if !structFieldValue.CanSet() {
 		return fmt.Errorf("Cannot set %s field value", name)

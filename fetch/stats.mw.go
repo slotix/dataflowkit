@@ -17,15 +17,15 @@ type statsMiddleware struct {
 	Service
 }
 
-func (mw statsMiddleware) Fetch(req interface{}) (output interface{}, err error) {
+func (mw statsMiddleware) Fetch(req FetchRequester) (response FetchResponser, err error) {
 	mw.incrementCount()
-	output, err = mw.Service.Fetch(req)
+	response, err = mw.Service.Fetch(req)
 	return
 }
 
-func (mw statsMiddleware) Response(req interface{}) (output interface{}, err error) {
+func (mw statsMiddleware) Response(req FetchRequester) (response FetchResponser, err error) {
 	mw.incrementCount()
-	output, err = mw.Service.Response(req)
+	response, err = mw.Service.Response(req)
 	return
 }
 
