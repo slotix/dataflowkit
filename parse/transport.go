@@ -32,6 +32,7 @@ func EncodeParseResponse(_ context.Context, w http.ResponseWriter, response inte
 	if err != nil {
 		return err
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, err = w.Write(data)
 
 	if err != nil {
@@ -76,7 +77,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		//return 504 Status
 		httpStatus = http.StatusGatewayTimeout
 	}
-
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(httpStatus)
 	//AWS error payload should looks like
 	//{
