@@ -43,5 +43,5 @@ fetch/fetch.d/diskv
 parse/parse.d/parse.d
 parse/parse.d/debug
 parse/parse.d/diskv
-
+diskv
 deploy.sh
