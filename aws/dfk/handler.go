@@ -55,7 +55,7 @@ func NewHandler() apigatewayproxy.Handler {
 
 	//svc = StatsMiddleware("18")(svc)
 	//svc = CachingMiddleware()(svc)
-	fSvc = fetch.SQSMiddleware()(fSvc)
+	//fSvc = fetch.SQSMiddleware()(fSvc)
 	fSvc = fetch.LoggingMiddleware(logger)(fSvc)
 	fSvc = fetch.RobotsTxtMiddleware()(fSvc)
 
@@ -64,7 +64,7 @@ func NewHandler() apigatewayproxy.Handler {
 	pSvc = parse.LoggingMiddleware(logger)(pSvc)
 
 	endpoints := Endpoints{
-		FetchEndpoint: fetch.MakeFetchEndpoint(fSvc),
+		FetchEndpoint: fetch.MakeSplashFetchEndpoint(fSvc),
 		ParseEndpoint: parse.MakeParseEndpoint(pSvc),
 	}
 	//endpoints := fetch.Endpoints{
@@ -90,8 +90,8 @@ func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger)
 	//"/app/parse"
 	r.Methods("POST").Path("/fetch").Handler(httptransport.NewServer(
 		endpoint.FetchEndpoint,
-		fetch.DecodeFetchRequest,
-		fetch.EncodeFetchResponse,
+		fetch.DecodeSplashFetchRequest,
+		fetch.EncodeSplashFetchResponse,
 		options...,
 	))
 

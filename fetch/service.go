@@ -1,14 +1,13 @@
 package fetch
 
 import (
-	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
 )
 
 // Define service interface
 type Service interface {
-	Fetch(req interface{}) (interface{}, error)
-	Response(req interface{}) (interface{}, error)
+	Fetch(req FetchRequester) (FetchResponser, error)
+	Response(req FetchRequester) (FetchResponser, error)
 }
 
 // Implement service with empty struct
@@ -19,11 +18,10 @@ type FetchService struct {
 // this will be needed in main.go
 type ServiceMiddleware func(Service) Service
 
-
 //Fetch returns splash.Response
 //see transport.go encodeFetchResponse for more details about retured value.
 
-func (fs FetchService) Fetch(req interface{}) (interface{}, error) {
+func (fs FetchService) Fetch(req FetchRequester) (FetchResponser, error) {
 	res, err := fs.Response(req)
 	if err != nil {
 		return nil, err
@@ -33,13 +31,23 @@ func (fs FetchService) Fetch(req interface{}) (interface{}, error) {
 
 //Response returns splash.Response
 //see transport.go encodeResponse for more details about retured value.
-func (fs FetchService) Response(req interface{}) (interface{}, error) {
-	request := req.(splash.Request)
-	fetcher, err := scrape.NewSplashFetcher()
+func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
+
+	var err error
+	var fetcher Fetcher
+	switch req.(type) {
+	case BaseFetcherRequest:
+		fetcher, err = NewFetcher(Base)
+	case splash.Request:
+		fetcher, err = NewFetcher(Splash)
+	default:
+		panic("invalid fetcher request")
+	}
+	
 	if err != nil {
 		logger.Println(err)
 	}
-	res, err := fetcher.Fetch(request)
+	res, err := fetcher.Fetch(req)
 	if err != nil {
 		return nil, err
 	}

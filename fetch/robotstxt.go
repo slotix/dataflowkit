@@ -1,4 +1,4 @@
-package splash
+package fetch
 
 import (
 	"bytes"
@@ -23,7 +23,7 @@ func IsRobotsTxt(url string) bool {
 }
 
 //contentFromFetchService sends request to fetch service and returns robots.txt content
-func ContentFromFetchService(req Request) ([]byte, error) {
+func ContentFromFetchService(req FetchRequester) ([]byte, error) {
 	//fetch content
 	b, err := json.Marshal(req)
 	if err != nil {
@@ -32,7 +32,7 @@ func ContentFromFetchService(req Request) ([]byte, error) {
 	reader := bytes.NewReader(b)
 
 	//https://gitlab.com/gitlab-org/gitlab-ce/issues/33534
-	addr := "http://" + viper.GetString("DFK_FETCH") + "/fetch"
+	addr := "http://" + viper.GetString("DFK_FETCH") + "/fetch/base"
 	request, err := http.NewRequest("POST", addr, reader)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
 	}
 	//generate robotsURL from req.URL
 	robotsURL := fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
-	r := Request{URL: robotsURL}
+	r := BaseFetcherRequest{URL: robotsURL}
 
 	content, err := ContentFromFetchService(r)
 	if err != nil {
