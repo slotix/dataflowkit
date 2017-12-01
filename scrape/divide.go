@@ -107,16 +107,61 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 	ret := func(doc *goquery.Selection) []*goquery.Selection {
 		sels := []*goquery.Selection{}
 		//doc.Find(sel).Each(func(i int, s *goquery.Selection) {
-		sel, err := findIntersection(doc, selectors)
+		sel, err := getCommonAncestor(doc, selectors)
+		//sel, err = findIntersection(doc, selectors)
 		if err != nil {
 			logger.Println(err)
+			return nil
 		}
+
 		sel.Each(func(i int, s *goquery.Selection) {
 			sels = append(sels, s)
-		//	logger.Println(attrOrDataValue(s))
+			//	logger.Println(attrOrDataValue(s))
 		})
-		
+
 		return sels
 	}
 	return ret
+}
+
+func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
+	if len(selectors) == 0 {
+		return nil, errors.New("An empty selectors list")
+	}
+	selectorAncestor := doc.Find(selectors[0]).First().Parent()
+	if len(selectors) > 1 {
+		bFound := false
+		selectorsSlice := selectors[1:]
+		for !bFound {
+			for _, f := range selectorsSlice {
+				sel := doc.Find(f).First()
+				sel = sel.ParentsUntilSelection(selectorAncestor).Last()
+				//check last node.. if it equal html its mean that first selector's parent
+				//not found
+				if goquery.NodeName(sel) == "html" {
+					selectorAncestor = doc.FindSelection(selectorAncestor.Parent().First())
+					bFound = false
+					break
+				}
+				bFound = true
+			}
+		}
+	}
+	if selectorAncestor.Length() == 0 {
+		return nil, errors.New("It seems current selectors has no common ancestor")
+	}
+	intersectionWithParent := fmt.Sprintf("%s>%s",
+		attrOrDataValue(selectorAncestor.Parent()),
+		attrOrDataValue(selectorAncestor))
+
+	items := doc.Find(intersectionWithParent)
+
+	/*var inter1 *goquery.Selection
+	if items.Length() == 1 {
+		inter1 = items.Children()
+	}
+	if items.Length() > 1 {
+		inter1 = items
+	}*/
+	return items, nil
 }
