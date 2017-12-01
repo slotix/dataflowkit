@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
+
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
 )
@@ -27,9 +28,9 @@ func Start(DFKFetch string) {
 		logger = log.With(logger, "ts", time.Now().Format("Jan _2 15:04:05"))
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
+	//creating storage for cache html content and parsed results
 	sType := viper.GetString("STORAGE_TYPE")
-	
-	switch sType{
+	switch sType {
 	case "S3":
 		storageType = storage.S3
 	case "Redis":
@@ -37,18 +38,21 @@ func Start(DFKFetch string) {
 	case "Diskv":
 		storageType = storage.Diskv
 	default:
-		panic("Storage type value is undefined")
+		panic("Storage type is undefined")
 	}
+	storage := storage.NewStore(storageType)
 	var svc Service
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
 	svc = RobotsTxtMiddleware()(svc)
-	svc = StorageMiddleware(storageType)(svc) //possible values are Diskv, S3, Redis
+	svc = StorageMiddleware(storage)(svc) //possible values are Diskv, S3, Redis
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{
-		FetchEndpoint:    MakeFetchEndpoint(svc),
-		ResponseEndpoint: MakeResponseEndpoint(svc),
+		SplashFetchEndpoint:    MakeSplashFetchEndpoint(svc),
+		SplashResponseEndpoint: MakeSplashResponseEndpoint(svc),
+		BaseFetchEndpoint:      MakeBaseFetchEndpoint(svc),
+		BaseResponseEndpoint:   MakeBaseResponseEndpoint(svc),
 	}
 
 	r := MakeHttpHandler(ctx, endpoints, logger)

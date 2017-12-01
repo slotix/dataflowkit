@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
-	"github.com/slotix/dataflowkit/splash"
 )
 
 // Make a new type and wrap into Service interface
@@ -22,10 +21,9 @@ func LoggingMiddleware(logger log.Logger) ServiceMiddleware {
 }
 
 // Implement Service Interface for LoggingMiddleware
-func (mw loggingMiddleware) Fetch(req interface{}) (output interface{}, err error) {
+func (mw loggingMiddleware) Fetch(req FetchRequester) (response FetchResponser, err error) {
 	defer func(begin time.Time) {
-		sReq := req.(splash.Request)
-		url := sReq.GetURL()
+		url := req.GetURL()
 		mw.logger.Log(
 			"function", "fetch",
 			"url", url,
@@ -34,14 +32,13 @@ func (mw loggingMiddleware) Fetch(req interface{}) (output interface{}, err erro
 			"took", time.Since(begin),
 		)
 	}(time.Now())
-	output, err = mw.Service.Fetch(req)
+	response, err = mw.Service.Fetch(req)
 	return
 }
 
-func (mw loggingMiddleware) Response(req interface{}) (output interface{}, err error) {
+func (mw loggingMiddleware) Response(req FetchRequester) (response FetchResponser, err error) {
 	defer func(begin time.Time) {
-		sReq := req.(splash.Request)
-		url := sReq.GetURL()
+		url := req.GetURL()
 		mw.logger.Log(
 			"function", "response",
 			"url", url,
@@ -50,6 +47,6 @@ func (mw loggingMiddleware) Response(req interface{}) (output interface{}, err e
 			"took", time.Since(begin),
 		)
 	}(time.Now())
-	output, err = mw.Service.Response(req)
+	response, err = mw.Service.Response(req)
 	return
 }
