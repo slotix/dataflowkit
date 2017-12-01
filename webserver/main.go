@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
-	"gopkg.in/gin-gonic/gin.v1"
+	"net/url"
+
+	"github.com/gin-gonic/gin"
 )
+
 
 var (
 	port          = flag.String("p", ":8080", "HTTP listen address")
@@ -14,7 +17,6 @@ var (
 	dfkParserPort = flag.String("d", ":8001", "DFK Parser port")
 	baseDir       = flag.String("b", "web", "HTML files location.")
 )
-
 
 func main() {
 	flag.Parse()
@@ -50,7 +52,22 @@ func main() {
 	r.POST("/parse", ReverseProxy(dfkParserPort))
 	r.Run(*port)
 }
+func ReverseProxy(p *string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		proxy := httputil.NewSingleHostReverseProxy(&url.URL{
+			Scheme: "http",
+			Host:   "localhost:8000",
+		})
+		proxy.ServeHTTP(c.Writer, c.Request)
+	}
+}
 
+//proxy := httputil.NewSingleHostReverseProxy(&url.URL{
+//	Scheme: "http",
+//	Host:   "localhost:8000",
+//})
+//http.ListenAndServe(":8080", proxy)
+/*
 func ReverseProxy(p *string) gin.HandlerFunc {
 
 	port := fmt.Sprintf("localhost%s", *p)
@@ -66,3 +83,4 @@ func ReverseProxy(p *string) gin.HandlerFunc {
 		proxy.ServeHTTP(c.Writer, c.Request)
 	}
 }
+*/

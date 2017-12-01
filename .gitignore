@@ -36,6 +36,8 @@ vendor/
 dataflowkit
 dataflowkit_linux
 webserver/webserver
+webserver/debug
+
 
 fetch/fetch.d/fetch.d
 fetch/fetch.d/debug
