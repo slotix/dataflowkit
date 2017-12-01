@@ -111,6 +111,7 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 		//sel, err = findIntersection(doc, selectors)
 		if err != nil {
 			logger.Println(err)
+			return nil
 		}
 
 		sel.Each(func(i int, s *goquery.Selection) {
@@ -124,17 +125,17 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 }
 
 func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
+	if len(selectors) == 0 {
+		return nil, errors.New("An empty selectors list")
+	}
+	selectorAncestor := doc.Find(selectors[0]).First().Parent()
 	if len(selectors) > 1 {
 		bFound := false
-		selectorAncestor := doc.Find(selectors[0]).First().Parent()
 		selectorsSlice := selectors[1:]
 		for !bFound {
-			logger.Println(goquery.NodeName(selectorAncestor))
 			for _, f := range selectorsSlice {
 				sel := doc.Find(f).First()
-				logger.Println(sel.Text())
 				sel = sel.ParentsUntilSelection(selectorAncestor).Last()
-				logger.Println(goquery.NodeName(sel))
 				//check last node.. if it equal html its mean that first selector's parent
 				//not found
 				if goquery.NodeName(sel) == "html" {
@@ -145,20 +146,22 @@ func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Sel
 				bFound = true
 			}
 		}
-		intersectionWithParent := fmt.Sprintf("%s>%s",
-			attrOrDataValue(selectorAncestor.Parent()),
-			attrOrDataValue(selectorAncestor))
-
-		items := doc.Find(intersectionWithParent)
-
-		var inter1 *goquery.Selection
-		if items.Length() == 1 {
-			inter1 = items.Children()
-		}
-		if items.Length() > 1 {
-			inter1 = items
-		}
-		return inter1, nil
 	}
-	return nil, errors.New("It seems current selectors has no common ancestor")
+	if selectorAncestor.Length() == 0 {
+		return nil, errors.New("It seems current selectors has no common ancestor")
+	}
+	intersectionWithParent := fmt.Sprintf("%s>%s",
+		attrOrDataValue(selectorAncestor.Parent()),
+		attrOrDataValue(selectorAncestor))
+
+	items := doc.Find(intersectionWithParent)
+
+	/*var inter1 *goquery.Selection
+	if items.Length() == 1 {
+		inter1 = items.Children()
+	}
+	if items.Length() > 1 {
+		inter1 = items
+	}*/
+	return items, nil
 }
