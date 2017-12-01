@@ -1,16 +1,36 @@
-package scrape
+package fetch
 
 import (
+	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
-	"net/url"
-	"strings"
+	"time"
 
-	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/splash"
 
 	"golang.org/x/net/publicsuffix"
 )
+
+type Type string
+
+const (
+	Base   Type = "Base"
+	Splash      = "Splash"
+)
+
+func NewFetcher(t Type) (fetcher Fetcher, err error) {
+	switch t {
+	case Base:
+		fetcher, err = NewBaseFetcher()
+		return
+	case Splash:
+		fetcher, err = NewSplashFetcher()
+		return
+	default:
+		return nil, errors.New("Can't create Fetcher")
+	}
+}
 
 // Fetcher is the interface that must be satisfied by things that can fetch
 // remote URLs and return their contents.
@@ -21,18 +41,17 @@ type Fetcher interface {
 	// Prepare is called once at the beginning of the scrape.
 	Prepare() error
 
-	// Fetch is called to retrieve each document from the remote server.
-	//Fetch(method, url string) (io.ReadCloser, error)
-	Fetch(request interface{}) (interface{}, error)
-	//	URL(request interface{}) string
+	// Fetch is called to retrieve a document from the remote server.
+	Fetch(request FetchRequester) (FetchResponser, error)
+
 	// Close is called when the scrape is finished, and can be used to clean up
 	// allocated resources or perform other cleanup actions.
 	Close()
 }
 
-// HttpClientFetcher is a Fetcher that uses the Go standard library's http
+// BaseFetcher is a Fetcher that uses the Go standard library's http
 // client to fetch URLs.
-type HttpClientFetcher struct {
+type BaseFetcher struct {
 	client *http.Client
 
 	// PrepareClient prepares this fetcher's http.Client for usage.  Use this
@@ -58,7 +77,6 @@ type HttpClientFetcher struct {
 // SplashClientFetcher is a Fetcher that uses Scrapinghub splash
 // to fetch URLs. Splash is a javascript rendering service
 type SplashFetcher struct {
-	//	request *splash.Request
 
 	PrepareSplash func() error
 	// PrepareRequest prepares each request that will be sent, prior to sending.
@@ -83,32 +101,11 @@ func (sf *SplashFetcher) Prepare() error {
 	return nil
 }
 
-//ValidateRequest validates each request that will be sent, prior to sending.
-func (sf *SplashFetcher) ValidateRequest(req *splash.Request) error {
-	//req.URL normalization and validation
-	//	request := req.(splash.Request)
-	reqURL := strings.TrimSpace(req.URL)
-	if _, err := url.ParseRequestURI(reqURL); err != nil {
-		return &errs.BadRequest{err}
-	}
-	req.URL = reqURL
-	return nil
-}
-
-//func (sf *SplashFetcher) URL(request interface{}) string {
-//	return request.(splash.Request).URL
-//}
 
 //Fetch retrieves document from the remote server. It returns splash.Response as it is not enough to get just page content but during scraping sessions auxiliary information like cookies should be avaialable.
-func (sf *SplashFetcher) Fetch(request interface{}) (interface{}, error) {
+func (sf *SplashFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 	req := request.(splash.Request)
-	err := sf.ValidateRequest(&req)
-	logger.Println(req.URL)
-	if err != nil {
-		logger.Println(err)
-		return nil, err
-	}
-	r, err := splash.GetResponse(req)
+	r, err := req.GetResponse()
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +119,7 @@ func (sf *SplashFetcher) Close() {
 	return
 }
 
-func NewHttpClientFetcher() (*HttpClientFetcher, error) {
+func NewBaseFetcher() (*BaseFetcher, error) {
 	// Set up the HTTP client
 	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
 	jar, err := cookiejar.New(jarOpts)
@@ -131,70 +128,75 @@ func NewHttpClientFetcher() (*HttpClientFetcher, error) {
 	}
 	client := &http.Client{Jar: jar}
 
-	ret := &HttpClientFetcher{
+	ret := &BaseFetcher{
 		client: client,
 	}
 	return ret, nil
 }
 
-func (hf *HttpClientFetcher) Prepare() error {
-	if hf.PrepareClient != nil {
-		return hf.PrepareClient(hf.client)
+func (bf *BaseFetcher) Prepare() error {
+	if bf.PrepareClient != nil {
+		return bf.PrepareClient(bf.client)
 	}
 	return nil
 }
 
-type HttpClientFetcherRequest struct {
-	URL    string
-	Method string
-}
-
-func (r *HttpClientFetcherRequest) getURL() string {
-	return strings.TrimSpace(strings.TrimRight(r.URL, "/"))
-}
-
-//func (hf *HttpClientFetcher) URL(request interface{}) string {
-//	return request.(splash.Request).URL
-//}
-
-func (hf *HttpClientFetcher) Fetch(request interface{}) (interface{}, error) {
-	r := request.(HttpClientFetcherRequest)
+func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {	
+	err := request.Validate()
+	if err != nil {
+		return nil, err
+	}
+	r := request.(BaseFetcherRequest)
+	r.Method = "POST"
 	req, err := http.NewRequest(r.Method, r.URL, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if hf.PrepareRequest != nil {
-		if err = hf.PrepareRequest(req); err != nil {
+	if bf.PrepareRequest != nil {
+		if err = bf.PrepareRequest(req); err != nil {
 			return nil, err
 		}
 	}
 
-	resp, err := hf.client.Do(req)
+	resp, err := bf.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	response := BaseFetcherResponse{Response: resp, HTML: body, StatusCode: resp.StatusCode, Status: resp.Status}
 
-	if hf.ProcessResponse != nil {
-		if err = hf.ProcessResponse(resp); err != nil {
+	//is resource cacheable ?
+	response.SetCacheInfo()
+
+	if bf.ProcessResponse != nil {
+		if err = bf.ProcessResponse(resp); err != nil {
 			return nil, err
 		}
 	}
 
 	//return resp.Body.(io.ReadCloser), nil
 	//return resp.Body, nil
-	return resp, nil
+	return &response, nil
 }
 
-func (hf *HttpClientFetcher) Close() {
+func (bf *BaseFetcher) Close() {
 	return
 }
 
-/*
-func (hf *HttpClientFetcher) GetURL(request interface{}) string {
-	logger.Println(request)
-	return request.(HttpClientFetcherRequest).URL
-}
-*/
 // Static type assertion
-var _ Fetcher = &HttpClientFetcher{}
+var _ Fetcher = &BaseFetcher{}
+
+type FetchResponser interface {
+	GetExpires() time.Time
+	GetCacheable() bool
+	SetCacheInfo()
+}
+
+type FetchRequester interface {
+	GetURL() string
+	Validate() error
+}

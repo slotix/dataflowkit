@@ -8,6 +8,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/slotix/dataflowkit/extract"
+	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/paginate"
 )
 
@@ -39,7 +40,7 @@ type Piece struct {
 	// Extractor contains the logic on how to extract some results from the
 	// selector that is provided to this Piece.
 	Extractor extract.PieceExtractor
-	Details *ScrapeConfig
+	Details   *ScrapeConfig
 }
 
 // The main configuration for a scrape.  Pass this to the New() function.
@@ -47,7 +48,7 @@ type ScrapeConfig struct {
 	// Fetcher is the underlying transport that is used to fetch documents.
 	// If this is not specified (i.e. left nil), then a default SplashFetcher
 	// will be created and used.
-	Fetcher Fetcher
+	Fetcher fetch.Fetcher
 
 	// Paginator is the Paginator to use for this current scrape.
 	//
@@ -80,8 +81,6 @@ type ScrapeConfig struct {
 
 	Opts ScrapeOptions
 }
-
-
 
 // ScrapeResults describes the results of a scrape.  It contains a list of all
 // pages (URLs) visited during the process, along with all results generated
@@ -164,7 +163,7 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 
 	if config.Fetcher == nil {
 		//config.Fetcher, err = NewHttpClientFetcher()
-		config.Fetcher, err = NewSplashFetcher()
+		config.Fetcher, err = fetch.NewSplashFetcher()
 		if err != nil {
 			return nil, err
 		}

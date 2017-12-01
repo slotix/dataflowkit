@@ -2,7 +2,6 @@ package splash
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	neturl "net/url"
 	"os"
 	"strings"
@@ -95,12 +95,13 @@ func New(req Request, setters ...Option) (splashURL string) {
 	*/
 	//req.Params = `"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=asfwwe!444D&rememberMe=1"`
 
-	var LUAScript string
-	if IsRobotsTxt(req.URL) {
-		LUAScript = robotsLUA
-	} else {
-		LUAScript = baseLUA
-	}
+	//var LUAScript string
+	//if IsRobotsTxt(req.URL) {
+	//	LUAScript = robotsLUA
+	//} else {
+	//	LUAScript = baseLUA
+	//}
+	LUAScript := baseLUA
 	splashURL = fmt.Sprintf(
 		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s",
 		args.host,
@@ -117,7 +118,11 @@ func New(req Request, setters ...Option) (splashURL string) {
 
 //GetResponse result is passed to storage middleware
 //to provide a RFC7234 compliant HTTP cache
-func GetResponse(req Request) (*Response, error) {
+func (req Request) GetResponse() (*Response, error) {
+	err := req.Validate()
+	if err != nil {
+		return nil, err
+	}
 	splashURL := New(req)
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", splashURL, nil)
@@ -173,7 +178,7 @@ func GetResponse(req Request) (*Response, error) {
 		var response *Response
 		gcResponse, err := gc(viper.GetString("SPLASH"))
 		if err == nil && gcResponse.Status == "ok" {
-			response, err = GetResponse(req)
+			response, err = req.GetResponse()
 			if err != nil {
 				return nil, err
 			}
@@ -193,8 +198,8 @@ func GetResponse(req Request) (*Response, error) {
 		}
 		return nil, err
 	}
-	//if cacheable ?
-	sResponse.setCacheInfo()
+	//is resource cacheable ?
+	sResponse.SetCacheInfo()
 
 	return &sResponse, nil
 
@@ -207,8 +212,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 	if r.Error != "" {
 		return nil, errors.New(r.Error)
 	}
-	if IsRobotsTxt(r.Request.URL) {
-
+	/* if IsRobotsTxt(r.Request.URL) {
 		decoded, err := base64.StdEncoding.DecodeString(r.Response.Content.Text)
 		if err != nil {
 			logger.Println("decode error:", err)
@@ -216,7 +220,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 		}
 		readCloser := ioutil.NopCloser(bytes.NewReader(decoded))
 		return readCloser, nil
-	}
+	} */
 
 	readCloser := ioutil.NopCloser(strings.NewReader(r.HTML))
 	return readCloser, nil
@@ -224,7 +228,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 
 //setCacheInfo check if resource is cacheable
 //r.Cacheable and r.CacheExpirationTime are filled inside this func
-func (r *Response) setCacheInfo() {
+func (r *Response) SetCacheInfo() {
 	respHeader := r.Response.Headers.(http.Header)
 	reqHeader := r.Request.Headers.(http.Header)
 	//	respHeader := r.Response.castHeaders()
@@ -298,7 +302,7 @@ func (r *Response) setCacheInfo() {
 //Fetch content from url through Splash server https://github.com/scrapinghub/splash/
 func Fetch(req Request) (io.ReadCloser, error) {
 	//logger.Println(splashURL)
-	response, err := GetResponse(req)
+	response, err := req.GetResponse()
 	if err != nil {
 		return nil, err
 	}
@@ -311,10 +315,20 @@ func Fetch(req Request) (io.ReadCloser, error) {
 }
 
 //GetURL returns URL from Request
-func (r *Request) GetURL() string {
+func (r Request) GetURL() string {
+
 	//trim trailing slash if any.
 	//aws s3 bucket item name cannot contain slash at the end.
 	return strings.TrimSpace(strings.TrimRight(r.URL, "/"))
+}
+
+//Validate validates each request that will be sent, prior to sending.
+func (r Request) Validate() error {
+	reqURL := strings.TrimSpace(r.URL)
+	if _, err := url.ParseRequestURI(reqURL); err != nil {
+		return &errs.BadRequest{err}
+	}
+	return nil
 }
 
 //http://choly.ca/post/go-json-marshalling/
@@ -417,4 +431,12 @@ func Ping(host string) (*PingResponse, error) {
 		return nil, err
 	}
 	return &p, nil
+}
+
+func (r Response) GetExpires() time.Time {
+	return r.Expires
+}
+
+func (r Response) GetCacheable() bool {
+	return r.Cacheable
 }

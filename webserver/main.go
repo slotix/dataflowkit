@@ -46,7 +46,7 @@ func main() {
 			nil)
 	})
 
-	r.POST("/fetch", ReverseProxy(fetcherPort))
+	r.POST("/fetch/splash", ReverseProxy(fetcherPort))
 	r.POST("/parse", ReverseProxy(dfkParserPort))
 	r.Run(*port)
 }
