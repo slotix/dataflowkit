@@ -15,6 +15,7 @@ import (
 	"github.com/temoto/robotstxt"
 )
 
+//IsRobotsTxt returns true if resource is robots.txt file
 func IsRobotsTxt(url string) bool {
 	if strings.HasSuffix(url, "robots.txt") {
 		return true
@@ -22,7 +23,7 @@ func IsRobotsTxt(url string) bool {
 	return false
 }
 
-//contentFromFetchService sends request to fetch service and returns robots.txt content
+//ContentFromFetchService sends request to fetch service and returns robots.txt content
 func ContentFromFetchService(req FetchRequester) ([]byte, error) {
 	//fetch content
 	b, err := json.Marshal(req)
@@ -53,7 +54,7 @@ func ContentFromFetchService(req FetchRequester) ([]byte, error) {
 	return data, nil
 }
 
-//RobotstxtData generates robots.txt url from input, retrieves its content through API fetch endoint.
+//RobotstxtData generates robots.txt url, retrieves its content through API fetch endpoint.
 func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
 	parsedURL, err := neturl.Parse(url)
 	if err != nil {

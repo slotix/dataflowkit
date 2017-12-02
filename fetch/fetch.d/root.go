@@ -33,8 +33,8 @@ import (
 
 var (
 	//VERSION               string // VERSION is set during build
-	DFKFetch string //API_GATEWAY_ADDRESS
-
+	DFKFetch string //Fetch service address
+	
 	splashHost            string
 	splashTimeout         int
 	splashResourceTimeout int
@@ -50,10 +50,6 @@ var (
 	redisPassword   string
 	redisDB         int
 	redisSocketPath string
-
-	//sqsQueueFetchURLIn  string
-	//sqsQueueFetchURLOut string
-	//sqsAWSRegion        string
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -63,9 +59,7 @@ var RootCmd = &cobra.Command{
 	Long:  `Dataflow Kit fetch service retrieves html pages from websites and passes content to DFK parser service.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Checking services ... ")
-
 		services := []healthcheck.Checker{
-
 			healthcheck.SplashConn{
 				Host: splashHost,
 			},
@@ -111,7 +105,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&splashHost, "SPLASH", "s", "127.0.0.1:8050", "Splash host address")
 	RootCmd.Flags().IntVarP(&splashTimeout, "SPLASH_TIMEOUT", "", 20, "A timeout (in seconds) for the render.")
 	RootCmd.Flags().IntVarP(&splashResourceTimeout, "SPLASH_RESOURCE_TIMEOUT", "", 30, "A timeout (in seconds) for individual network requests.")
-	RootCmd.Flags().Float64VarP(&splashWait, "SPLASH_WAIT", "", 0.5, "Time in seconds to wait until js scripts loaded.")
+	RootCmd.Flags().Float64VarP(&splashWait, "SPLASH_WAIT", "", 1, "Time in seconds to wait until js scripts loaded.")
 
 	//set here default type of storage
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Redis, Diskv")
@@ -125,10 +119,6 @@ func init() {
 	RootCmd.Flags().StringVarP(&redisPassword, "REDIS_PASSWORD", "", "", "Redis Password")
 	RootCmd.Flags().IntVarP(&redisDB, "REDIS_DB", "", 0, "Redis DB")
 	RootCmd.Flags().StringVarP(&redisSocketPath, "REDIS_SOCKET_PATH", "", "", "Redis Socket Path")
-
-	//RootCmd.Flags().StringVarP(&sqsQueueFetchURLIn, "SQS_QUEUE_FETCH_URL_IN", "", "https://sqs.us-east-1.amazonaws.com/060679207441/fetch-in", "SQS Queue Fetch URL In")
-	//RootCmd.Flags().StringVarP(&sqsQueueFetchURLOut, "SQS_QUEUE_FETCH_URL_OUT", "", "https://sqs.us-east-1.amazonaws.com/060679207441/fetch-out", "SQS Queue Fetch URL Out")
-	//RootCmd.Flags().StringVarP(&sqsAWSRegion, "SQS_AWS_REGION", "", "us-east-1", "SQS AWS Region")
 
 	viper.AutomaticEnv() // read in environment variables that match
 	viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
@@ -149,7 +139,4 @@ func init() {
 	viper.BindPFlag("REDIS_DB", RootCmd.Flags().Lookup("REDIS_DB"))
 	viper.BindPFlag("REDIS_SOCKET_PATH", RootCmd.Flags().Lookup("REDIS_SOCKET_PATH"))
 
-	//	viper.BindPFlag("SQS_QUEUE_FETCH_URL_IN", RootCmd.Flags().Lookup("SQS_QUEUE_FETCH_URL_IN"))
-	//	viper.BindPFlag("SQS_QUEUE_FETCH_URL_OUT", RootCmd.Flags().Lookup("SQS_QUEUE_FETCH_URL_OUT"))
-	//	viper.BindPFlag("SQS_AWS_REGION", RootCmd.Flags().Lookup("SQS_AWS_REGION"))
 }

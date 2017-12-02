@@ -12,21 +12,26 @@ import (
 	"github.com/slotix/dataflowkit/errs"
 )
 
+//BaseFetcherRequest struct collects requests information used by BaseFetcher
 type BaseFetcherRequest struct {
-	URL    string
-	Method string
+	URL    string //URL to be retrieved 
+	Method string //HTTP method : GET, POST
 }
 
+//BaseFetcherResponse struct groups Response data together after retrieving it by BaseFetcher
 type BaseFetcherResponse struct {
+	//Response is used for determining Cacheable and Expires values. It should be omited when marshaling to intermediary cache.
 	Response   *http.Response `json:"-"`
 	HTML       []byte         `json:"html"`
+	//Cacheable checks if html page is cacheable. If no then it will be downloaded every time it is requested.  
 	Cacheable  bool
-	Expires    time.Time //how long object stay in a cache before Splash fetcher forwards another request to an origin.
+	//Expires - How long object stay in a cache before Splash fetcher forwards another request to an origin.
+	Expires    time.Time 
 	StatusCode int
 	Status     string
 }
 
-//MarshalJSON customizes marshaling of http.Response.Body which has type io.ReadCloser. So it cannot be marshaled with standard Marshal method without modification.
+//MarshalJSON customizes marshaling of http.Response.Body which has type io.ReadCloser. It cannot be marshaled with standard Marshal method without casting to []byte.
 //http://choly.ca/post/go-json-marshalling/
 func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
 	type Alias BaseFetcherResponse
@@ -44,7 +49,7 @@ func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
 }
 
 //setCacheInfo check if resource is cacheable
-//r.Cacheable and r.CacheExpirationTime are filled inside this func
+//r.Cacheable and r.CacheExpirationTime fields are filled inside this func
 func (r *BaseFetcherResponse) SetCacheInfo() {
 	respHeader := r.Response.Header
 	reqHeader := r.Response.Request.Header
@@ -115,19 +120,22 @@ func (r *BaseFetcherResponse) SetCacheInfo() {
 	//return rv
 }
 
+//GetExpires returns Expires field of Response
 func (r BaseFetcherResponse) GetExpires() time.Time {
 	return r.Expires
 }
 
+//GetExpires returns Cacheable field of Response
 func (r BaseFetcherResponse) GetCacheable() bool {
 	return r.Cacheable
 }
 
+//GetExpires returns URL to be downloaded  
 func (r BaseFetcherRequest) GetURL() string {
 	return strings.TrimSpace(strings.TrimRight(r.URL, "/"))
 }
 
-//Validate validates each request that will be sent, prior to sending.
+//Validate validates request to be send, prior to sending.
 func (r BaseFetcherRequest) Validate() error {
 	reqURL := strings.TrimSpace(r.URL)
 	if _, err := url.ParseRequestURI(reqURL); err != nil {

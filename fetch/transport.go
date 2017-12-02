@@ -19,9 +19,8 @@ import (
 	"github.com/slotix/dataflowkit/splash"
 )
 
-//decodeFetchRequest
-//if error is not nil, server should return
-//400 Bad Request
+//DecodeSplashFetchRequest decodes request sent to remote Splash service 
+//if error is not nil, server returns 400 Bad Request
 func DecodeSplashFetchRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var request splash.Request
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -31,9 +30,8 @@ func DecodeSplashFetchRequest(ctx context.Context, r *http.Request) (interface{}
 	return request, nil
 }
 
-//decodeFetchRequest
-//if error is not nil, server should return
-//400 Bad Request
+//DecodeBaseFetchRequest decodes request sent to Base Fetcher
+//if error is not nil, server should return 400 Bad Request
 func DecodeBaseFetchRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var request BaseFetcherRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -41,6 +39,8 @@ func DecodeBaseFetchRequest(ctx context.Context, r *http.Request) (interface{}, 
 	}
 	return request, nil
 }
+
+
 
 func EncodeSplashFetchResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	if e, ok := response.(errorer); ok && e.error() != nil {
@@ -126,8 +126,8 @@ func EncodeBaseResponse(ctx context.Context, w http.ResponseWriter, response int
 		return nil
 	}
 	fetcherResponse := response.(*BaseFetcherResponse)
-	if fetcherResponse.Response.StatusCode != 200 {
-		return errors.New(fetcherResponse.Response.Status)
+	if fetcherResponse.StatusCode != 200 {
+		return errors.New(fetcherResponse.Status)
 	}
 	
 	data, err := json.Marshal(fetcherResponse)

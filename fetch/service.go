@@ -4,7 +4,7 @@ import (
 	"github.com/slotix/dataflowkit/splash"
 )
 
-// Define service interface
+// Define fetch service interface
 type Service interface {
 	Fetch(req FetchRequester) (FetchResponser, error)
 	Response(req FetchRequester) (FetchResponser, error)
@@ -14,13 +14,11 @@ type Service interface {
 type FetchService struct {
 }
 
-// create type that return function.
-// this will be needed in main.go
+
 type ServiceMiddleware func(Service) Service
 
 //Fetch returns splash.Response
-//see transport.go encodeFetchResponse for more details about retured value.
-
+//see transport.go encodeFetchResponse for more details about retured value.  
 func (fs FetchService) Fetch(req FetchRequester) (FetchResponser, error) {
 	res, err := fs.Response(req)
 	if err != nil {
