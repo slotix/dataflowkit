@@ -11,8 +11,9 @@ import (
 	"github.com/slotix/dataflowkit/storage"
 )
 
+//storageMiddleware is used as a cache of web pages to be parsed.
 type storageMiddleware struct {
-	//StorageType storage.Type
+	//a storage instanse for storing results of fetching web page
 	storage storage.Store
 	Service
 }
@@ -24,7 +25,7 @@ func StorageMiddleware(storage storage.Store) ServiceMiddleware {
 	}
 }
 
-
+//get fetched web page content from the cache
 func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err error) {
 	//s := storage.NewStore(mw.StorageType)
 	var fetchResponse FetchResponser
@@ -66,6 +67,7 @@ func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err er
 }
 
 
+//put fetched  web page content to the cache
 func (mw storageMiddleware) put(req FetchRequester, resp FetchResponser) error {
 	url := req.GetURL()
 	sKey := base32.StdEncoding.EncodeToString([]byte(url))
@@ -80,7 +82,6 @@ func (mw storageMiddleware) put(req FetchRequester, resp FetchResponser) error {
 		return err
 	}
 	//calculate expiration time. This is actual for Redis only.
-	//logger.Println(fetchResponse.Expires())
 	expTime := expired.Unix()
 	err = mw.storage.Write(sKey, r, expTime)
 	if err != nil {
