@@ -3,6 +3,8 @@ package splash
 import (
 	"net/http"
 	"time"
+
+	"github.com/pquerna/cachecontrol/cacheobject"
 )
 
 type Request struct {
@@ -67,11 +69,12 @@ type Response struct {
 	HTML string `json:"html"`
 	//Error is returned in case of an error, f.e. "http404".
 	//If Error is not nil all other fields are nil
-	Error     string     `json:"error,omitempty"`
-	Request   *SRequest  `json:"request"`
-	Response  *SResponse `json:"response"`
-	Cacheable bool
-	Expires   time.Time //how long object stay in a cache before Splash fetcher forwards another request to an origin.
+	Error             string     `json:"error,omitempty"`
+	Request           *SRequest  `json:"request"`
+	Response          *SResponse `json:"response"`
+	ReasonsNotToCache []cacheobject.Reason
+	//Cacheable bool
+	Expires time.Time //how long object stay in a cache before Splash fetcher forwards another request to an origin.
 }
 
 //PingResponse returned by Splash _ping  endpoint

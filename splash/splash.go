@@ -227,7 +227,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 }
 
 //setCacheInfo check if resource is cacheable
-//r.Cacheable and r.CacheExpirationTime are filled inside this func
+//ReasonsNotToCache and Expires values are filled inside this func
 func (r *Response) SetCacheInfo() {
 	respHeader := r.Response.Headers.(http.Header)
 	reqHeader := r.Request.Headers.(http.Header)
@@ -268,7 +268,7 @@ func (r *Response) SetCacheInfo() {
 	//Check if it is cacheable
 
 	if len(rv.OutReasons) == 0 {
-		r.Cacheable = true
+		//r.Cacheable = true
 		if rv.OutExpirationTime.IsZero() {
 			//if time is zero than set it to current time plus 24 hours.
 			r.Expires = time.Now().UTC().Add(time.Hour * 24)
@@ -281,22 +281,9 @@ func (r *Response) SetCacheInfo() {
 		//if resource is not cacheable set expiration time to the current time.
 		//This way web page will be downloaded every time.
 		r.Expires = time.Now().UTC()
+		r.ReasonsNotToCache = rv.OutReasons
 	}
 
-	debug := false
-	if debug {
-		if rv.OutErr != nil {
-			logger.Println("Errors: ", rv.OutErr)
-		}
-		if rv.OutReasons != nil {
-			logger.Println("Reasons to not cache: ", rv.OutReasons)
-		}
-		if rv.OutWarnings != nil {
-			logger.Println("Warning headers to add: ", rv.OutWarnings)
-		}
-		logger.Println("Expiration: ", rv.OutExpirationTime.String())
-	}
-	//return rv
 }
 
 //Fetch content from url through Splash server https://github.com/scrapinghub/splash/
@@ -433,10 +420,12 @@ func Ping(host string) (*PingResponse, error) {
 	return &p, nil
 }
 
+//GetExpires returns Response Expires value.
 func (r Response) GetExpires() time.Time {
 	return r.Expires
 }
 
-func (r Response) GetCacheable() bool {
-	return r.Cacheable
-}
+//GetReasonsNotToCache returns an array of reasons why a response should not be cached. 
+func (r Response) GetReasonsNotToCache() []cacheobject.Reason {
+	return r.ReasonsNotToCache
+} 

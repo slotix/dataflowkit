@@ -30,7 +30,7 @@ func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err er
 	//s := storage.NewStore(mw.StorageType)
 	var fetchResponse FetchResponser
 	url := req.GetURL()
-	
+
 	switch req.(type) {
 	case BaseFetcherRequest:
 		fetchResponse = &BaseFetcherResponse{}
@@ -66,15 +66,20 @@ func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err er
 	return nil, err
 }
 
-
 //put fetched  web page content to the cache
 func (mw storageMiddleware) put(req FetchRequester, resp FetchResponser) error {
 	url := req.GetURL()
 	sKey := base32.StdEncoding.EncodeToString([]byte(url))
-	logger.Println("Cachable? ", resp.GetCacheable())
+
+	reasons := resp.GetReasonsNotToCache()
+	if len(reasons) == 0 {
+		logger.Println(url, "is Cachable")
+	} else {
+		logger.Println(url, "is not Cachable.", "Reasons to not cache:", resp.GetReasonsNotToCache())
+	}
 	expired := resp.GetExpires()
 
-	logger.Println(expired)
+	logger.Println("Expires:", expired)
 
 	r, err := json.Marshal(resp)
 	if err != nil {
@@ -106,7 +111,7 @@ func (mw storageMiddleware) Fetch(req FetchRequester) (FetchResponser, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var fetchResponse FetchResponser
 	switch req.(type) {
 	case BaseFetcherRequest:
