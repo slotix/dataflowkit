@@ -15,21 +15,25 @@ import (
 
 //BaseFetcherRequest struct collects requests information used by BaseFetcher
 type BaseFetcherRequest struct {
-	URL    string //URL to be retrieved
-	Method string //HTTP method : GET, POST
+	//URL to be retrieved
+	URL    string 
+	//HTTP method : GET, POST
+	Method string 
 }
 
 //BaseFetcherResponse struct groups Response data together after retrieving it by BaseFetcher
 type BaseFetcherResponse struct {
 	//Response is used for determining Cacheable and Expires values. It should be omited when marshaling to intermediary cache.
 	Response          *http.Response `json:"-"`
+	//HTML Content of fetched page
 	HTML              []byte         `json:"html"`
+	//ReasonsNotToCache is an array of reasons why a response should not be cached. 
 	ReasonsNotToCache []cacheobject.Reason
-	//Cacheable checks if html page is cacheable. If no then it will be downloaded every time it is requested.
-	//Cacheable  bool
 	//Expires - How long object stay in a cache before Splash fetcher forwards another request to an origin.
 	Expires    time.Time
+	//Status code returned by fetcher
 	StatusCode int
+	//Status returned by fetcher
 	Status     string
 }
 
@@ -51,7 +55,7 @@ func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
 }
 
 //setCacheInfo check if resource is cacheable
-//r.Cacheable and r.CacheExpirationTime fields are filled inside this func
+//ReasonsNotToCache and Expires values are filled here
 func (r *BaseFetcherResponse) SetCacheInfo() {
 	reasons, expires, err := cachecontrol.CachableResponse(r.Response.Request, r.Response, cachecontrol.Options{})
 	if err != nil {
@@ -76,7 +80,7 @@ func (r BaseFetcherResponse) GetReasonsNotToCache() []cacheobject.Reason {
 	return r.ReasonsNotToCache
 }
 
-//GetExpires returns URL to be downloaded
+//GetExpires returns URL to be fetched
 func (r BaseFetcherRequest) GetURL() string {
 	return strings.TrimSpace(strings.TrimRight(r.URL, "/"))
 }

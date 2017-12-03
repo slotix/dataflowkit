@@ -62,7 +62,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	default:
 		httpStatus = http.StatusInternalServerError
 	case *errs.BadRequest,
-		*errs.InvalidHost,
 		*errs.Error:
 		//return 400 Status
 		httpStatus = http.StatusBadRequest

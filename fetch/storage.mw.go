@@ -3,9 +3,8 @@ package fetch
 import (
 	"encoding/base32"
 	"encoding/json"
+	"errors"
 	"time"
-
-	"github.com/slotix/dataflowkit/errs"
 
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/storage"
@@ -13,7 +12,7 @@ import (
 
 //storageMiddleware is used as a cache of web pages to be parsed.
 type storageMiddleware struct {
-	//a storage instanse for storing results of fetching web page
+	//storage instance puts fetching results to a cache
 	storage storage.Store
 	Service
 }
@@ -25,9 +24,8 @@ func StorageMiddleware(storage storage.Store) ServiceMiddleware {
 	}
 }
 
-//get fetched web page content from the cache
+//get fetches web page content from a storage
 func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err error) {
-	//s := storage.NewStore(mw.StorageType)
 	var fetchResponse FetchResponser
 	url := req.GetURL()
 
@@ -57,16 +55,15 @@ func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err er
 		logger.Printf("%s: cache lifespan is %+v\n", url, diff)
 
 		if diff > 0 { //if cached value is not expired return it
-			//output = fetchResponse
 			return fetchResponse, nil
 		}
 
-		err = &errs.ExpiredItemOrNotCacheable{}
+		err = errors.New("Cached item is expired or not cacheable")
 	}
 	return nil, err
 }
 
-//put fetched  web page content to the cache
+//put saves web page content to the storage
 func (mw storageMiddleware) put(req FetchRequester, resp FetchResponser) error {
 	url := req.GetURL()
 	sKey := base32.StdEncoding.EncodeToString([]byte(url))
@@ -96,17 +93,15 @@ func (mw storageMiddleware) put(req FetchRequester, resp FetchResponser) error {
 	return nil
 }
 
-//Fetch endpoint storage middleware is called from Fetch endoint
+//Fetch returns content either from storage or directly from web.
 func (mw storageMiddleware) Fetch(req FetchRequester) (FetchResponser, error) {
-
+	//loads content from a storage if any
 	fromStorage, err := mw.get(req)
 	if err == nil {
 		return fromStorage, nil
 	}
 	logger.Println(err)
-	//Current err value should be nilled.
-	err = nil
-	//fetch results if there is nothing in a cache
+	//fetch results directly from web if there is nothing in storage
 	resp, err := mw.Service.Fetch(req)
 	if err != nil {
 		return nil, err
@@ -121,36 +116,7 @@ func (mw storageMiddleware) Fetch(req FetchRequester) (FetchResponser, error) {
 	default:
 		panic("invalid fetcher request")
 	}
-	err = mw.put(req, fetchResponse)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-//Response endpoint storage middleware is called from Parse endoint
-func (mw storageMiddleware) Response(req FetchRequester) (FetchResponser, error) {
-	fromStorage, err := mw.get(req)
-	if err == nil {
-		return fromStorage, nil
-	}
-	logger.Println(err)
-	//Current err value should be nilled.
-	err = nil
-	//fetch results if there is nothing in a cache
-	resp, err := mw.Service.Response(req)
-	if err != nil {
-		return nil, err
-	}
-	var fetchResponse FetchResponser
-	switch req.(type) {
-	case BaseFetcherRequest:
-		fetchResponse = resp.(*BaseFetcherResponse)
-	case splash.Request:
-		fetchResponse = resp.(*splash.Response)
-	default:
-		panic("invalid fetcher request")
-	}
+	//save fetched content to storage
 	err = mw.put(req, fetchResponse)
 	if err != nil {
 		return nil, err

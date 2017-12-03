@@ -23,7 +23,7 @@ func IsRobotsTxt(url string) bool {
 	return false
 }
 
-//ContentFromFetchService sends request to fetch service and returns robots.txt content
+//ContentFromFetchService retrieves content of robots.txt with BaseFetcher.
 func ContentFromFetchService(req FetchRequester) ([]byte, error) {
 	//fetch content
 	b, err := json.Marshal(req)
@@ -33,6 +33,7 @@ func ContentFromFetchService(req FetchRequester) ([]byte, error) {
 	reader := bytes.NewReader(b)
 
 	//https://gitlab.com/gitlab-org/gitlab-ce/issues/33534
+	//Use BaseFetcher to get robots.txt content
 	addr := "http://" + viper.GetString("DFK_FETCH") + "/fetch/base"
 	request, err := http.NewRequest("POST", addr, reader)
 	if err != nil {

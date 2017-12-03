@@ -1,5 +1,6 @@
 package fetch
 
+//RobotsTxtMiddleware checks if scraping of specified resource is allowed by robots.txt
 func RobotsTxtMiddleware() ServiceMiddleware {
 	return func(next Service) Service {
 		return robotstxtMiddleware{next}
@@ -10,7 +11,7 @@ type robotstxtMiddleware struct {
 	Service
 }
 
-//Fetches response from req.URL, then pass response.URL to Robots.txt validator.
+//Fetch gets response from req.URL, then passes response.URL to Robots.txt validator.
 //issue #1 https://github.com/slotix/dataflowkit/issues/1
 func (mw robotstxtMiddleware) Fetch(req FetchRequester) (response FetchResponser, err error) {
 	url := req.GetURL()

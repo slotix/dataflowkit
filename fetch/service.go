@@ -17,8 +17,8 @@ type FetchService struct {
 
 type ServiceMiddleware func(Service) Service
 
-//Fetch returns splash.Response
-//see transport.go encodeFetchResponse for more details about retured value.  
+//Fetch downloads web page content and returns it 
+//See EncodeSplashFetcherContent and EncodeBaseFetcherContent methods implementation in transport.go for more details.  
 func (fs FetchService) Fetch(req FetchRequester) (FetchResponser, error) {
 	res, err := fs.Response(req)
 	if err != nil {
@@ -28,7 +28,7 @@ func (fs FetchService) Fetch(req FetchRequester) (FetchResponser, error) {
 }
 
 //Response returns splash.Response
-//see transport.go encodeResponse for more details about retured value.
+//See EncodeSplashFetcherResponse and EncodeBaseFetcherResponse methods implementation in transport.go for more details.  
 func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 
 	var err error

@@ -6,6 +6,13 @@ import (
 	"github.com/go-kit/kit/log"
 )
 
+// LoggingMiddleware logs Service endpoints
+func LoggingMiddleware(logger log.Logger) ServiceMiddleware {
+	return func(next Service) Service {
+		return loggingMiddleware{next, logger}
+	}
+}
+
 // Make a new type and wrap into Service interface
 // Add logger property to this type
 type loggingMiddleware struct {
@@ -13,14 +20,8 @@ type loggingMiddleware struct {
 	logger log.Logger
 }
 
-// implement function to return ServiceMiddleware
-func LoggingMiddleware(logger log.Logger) ServiceMiddleware {
-	return func(next Service) Service {
-		return loggingMiddleware{next, logger}
-	}
-}
 
-// Implement Service Interface for LoggingMiddleware
+// Logging Service Fetches
 func (mw loggingMiddleware) Fetch(req FetchRequester) (response FetchResponser, err error) {
 	defer func(begin time.Time) {
 		url := req.GetURL()
@@ -36,6 +37,7 @@ func (mw loggingMiddleware) Fetch(req FetchRequester) (response FetchResponser, 
 	return
 }
 
+// Logging Service Responses 
 func (mw loggingMiddleware) Response(req FetchRequester) (response FetchResponser, err error) {
 	defer func(begin time.Time) {
 		url := req.GetURL()

@@ -90,8 +90,8 @@ func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger)
 	//"/app/parse"
 	r.Methods("POST").Path("/fetch").Handler(httptransport.NewServer(
 		endpoint.FetchEndpoint,
-		fetch.DecodeSplashFetchRequest,
-		fetch.EncodeSplashFetchResponse,
+		fetch.DecodeSplashFetcherRequest,
+		fetch.EncodeSplashFetcherContent,
 		options...,
 	))
 
@@ -118,7 +118,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	default:
 		httpStatus = http.StatusInternalServerError
 	case *errs.BadRequest,
-		*errs.InvalidHost,
 		*errs.Error:
 		//return 400 Status
 		httpStatus = http.StatusBadRequest

@@ -65,15 +65,16 @@ type SRequest struct {
 //Response returned by Splash
 //It includes html body, response, request
 type Response struct {
-	URL  string `json:"url"`
+	//URL  string `json:"url"`
 	HTML string `json:"html"`
 	//Error is returned in case of an error, f.e. "http404".
 	//If Error is not nil all other fields are nil
 	Error             string     `json:"error,omitempty"`
 	Request           *SRequest  `json:"request"`
 	Response          *SResponse `json:"response"`
+	//ReasonsNotToCache is an array of reasons why a response should not be cached. 
 	ReasonsNotToCache []cacheobject.Reason
-	//Cacheable bool
+	//Expires - How long object stay in a cache before Splash fetcher forwards another request to an origin.
 	Expires time.Time //how long object stay in a cache before Splash fetcher forwards another request to an origin.
 }
 

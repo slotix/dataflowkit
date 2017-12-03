@@ -163,7 +163,7 @@ func (req Request) GetResponse() (*Response, error) {
 		case "http403":
 			return nil, &errs.Forbidden{req.URL}
 		case "network3":
-			return nil, &errs.InvalidHost{req.URL}
+			return nil, &errs.BadRequest{errors.New(sResponse.Error)}
 		default:
 			return nil, &errs.Error{sResponse.Error}
 		}
@@ -227,7 +227,7 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 }
 
 //setCacheInfo check if resource is cacheable
-//ReasonsNotToCache and Expires values are filled inside this func
+//ReasonsNotToCache and Expires values are filled here.
 func (r *Response) SetCacheInfo() {
 	respHeader := r.Response.Headers.(http.Header)
 	reqHeader := r.Request.Headers.(http.Header)
