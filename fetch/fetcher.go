@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/pquerna/cachecontrol/cacheobject"
+	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/splash"
 
 	"golang.org/x/net/publicsuffix"
@@ -23,7 +24,7 @@ const (
 	Splash = "Splash"
 )
 
-//NewFetcher creates an instanse of Fetcher which is used for downloading a web page.
+//NewFetcher creates an instanse of Fetcher for downloading a web page.
 func NewFetcher(t Type) (fetcher Fetcher, err error) {
 	switch t {
 	case Base:
@@ -111,7 +112,7 @@ func (sf *SplashFetcher) Prepare() error {
 	return nil
 }
 
-//Fetch retrieves document from the remote server. It returns not only web page content but other information like cache and expiration information.
+//Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (sf *SplashFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 	req := request.(splash.Request)
 	r, err := req.GetResponse()
@@ -131,7 +132,10 @@ func (sf *SplashFetcher) Close() {
 	return
 }
 
-// NewBaseFetcher creates an instanse of NewBaseFetcher{} to fetch a page content from regular websites as-is without running js scripts on the page. For example robots.txt
+// NewBaseFetcher creates an instanse of NewBaseFetcher{} to fetch a page content from regular websites as-is
+//without running js scripts on the page.
+
+//Robots.txt are retrieved with BaseFetcher
 func NewBaseFetcher() (*BaseFetcher, error) {
 	// Set up the HTTP client
 	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
@@ -155,7 +159,7 @@ func (bf *BaseFetcher) Prepare() error {
 	return nil
 }
 
-//Fetch retrieves document from the remote server. It returns not only web page content but other information like cache, expiration and status information.
+//Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 	err := request.Validate()
 	if err != nil {
@@ -176,15 +180,28 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 
 	resp, err := bf.client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, &errs.BadRequest{err}
 	}
+	if resp.StatusCode != 200 {
+		switch resp.StatusCode {
+		case 404:
+			return nil, &errs.NotFound{r.URL}
+		case 403:
+			return nil, &errs.Forbidden{r.URL}
+		case 400:
+			return nil, &errs.BadRequest{err}
+		default:
+			return nil, err
+		}
+	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 	response := BaseFetcherResponse{Response: resp, HTML: body, StatusCode: resp.StatusCode, Status: resp.Status}
 
-	//is resource cacheable ?
+	//set Cache control parameters
 	response.SetCacheInfo()
 
 	if bf.ProcessResponse != nil {
@@ -207,16 +224,20 @@ func (bf *BaseFetcher) Close() {
 // Static type assertion
 var _ Fetcher = &BaseFetcher{}
 
-//FetchResponser interface unifies fetcher Response methods
+//FetchResponser interface that must be satisfied the listed methods
 type FetchResponser interface {
+	//Returns expires value of response
 	GetExpires() time.Time
+	//Returns an array of reasons why a response should not be cached if any.
 	GetReasonsNotToCache() []cacheobject.Reason
-	//IsCacheable() bool
-	SetCacheInfo()	
+	//ReasonsNotToCache and Expires values are set here
+	SetCacheInfo()
 }
 
-//FetchRequester interface unifies various fetcher Request methods
+//FetchRequester interface interface that must be satisfied the listed methods
 type FetchRequester interface {
+	//returns URL from Request
 	GetURL() string
+	//Validates request before sending
 	Validate() error
 }

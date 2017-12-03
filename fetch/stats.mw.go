@@ -29,7 +29,7 @@ func (mw statsMiddleware) Response(req FetchRequester) (response FetchResponser,
 	return
 }
 
-//writing to redis
+
 func (mw statsMiddleware) incrementCount() {
 	s := storage.NewStore(storageType)
 

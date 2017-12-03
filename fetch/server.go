@@ -28,7 +28,7 @@ func Start(DFKFetch string) {
 		logger = log.With(logger, "ts", time.Now().Format("Jan _2 15:04:05"))
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
-	//creating storage for cache html content and parsed results
+	//creating storage for caching of html content and parsed results
 	sType := viper.GetString("STORAGE_TYPE")
 	switch sType {
 	case "S3":
@@ -45,7 +45,7 @@ func Start(DFKFetch string) {
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
 	svc = RobotsTxtMiddleware()(svc)
-	svc = StorageMiddleware(storage)(svc) //possible values are Diskv, S3, Redis
+	svc = StorageMiddleware(storage)(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{
