@@ -7,6 +7,7 @@ import (
 	"net/http/cookiejar"
 	"time"
 
+	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/slotix/dataflowkit/splash"
 
 	"golang.org/x/net/publicsuffix"
@@ -184,8 +185,8 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 	response := BaseFetcherResponse{Response: resp, HTML: body, StatusCode: resp.StatusCode, Status: resp.Status}
 
 	//is resource cacheable ?
-	//response.SetCacheInfo()
-	
+	response.SetCacheInfo()
+
 	if bf.ProcessResponse != nil {
 		if err = bf.ProcessResponse(resp); err != nil {
 			return nil, err
@@ -209,8 +210,9 @@ var _ Fetcher = &BaseFetcher{}
 //FetchResponser interface unifies fetcher Response methods
 type FetchResponser interface {
 	GetExpires() time.Time
-	GetCacheable() bool
-	SetCacheInfo()
+	GetReasonsNotToCache() []cacheobject.Reason
+	//IsCacheable() bool
+	SetCacheInfo()	
 }
 
 //FetchRequester interface unifies various fetcher Request methods
