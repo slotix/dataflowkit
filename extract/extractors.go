@@ -53,25 +53,6 @@ type Text struct {
 }
 
 func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
-	if sel.Text() == "" && !e.IncludeIfEmpty {
-		return nil, nil
-	}
-	return sel.Text(), nil
-}
-
-var _ PieceExtractor = Text{}
-
-// MultipleText is a PieceExtractor that extracts the text from each element
-// in the given selection and returns the texts as an array.
-type MultipleText struct {
-	// If there are no items in the selection, then return empty list from Extract,
-	// instead of the 'nil'.  This signals that the result of this Piece
-	// should be included to the results, as opposed to omitting the
-	// empty list.
-	IncludeIfEmpty bool
-}
-
-func (e MultipleText) Extract(sel *goquery.Selection) (interface{}, error) {
 	results := []string{}
 
 	sel.Each(func(i int, s *goquery.Selection) {
@@ -82,10 +63,14 @@ func (e MultipleText) Extract(sel *goquery.Selection) (interface{}, error) {
 		return nil, nil
 	}
 
+	if len(results) == 1 {
+		return results[0], nil
+	}
+
 	return results, nil
 }
 
-var _ PieceExtractor = MultipleText{}
+var _ PieceExtractor = Text{}
 
 // Html extracts and returns the HTML from inside each element of the
 // given selection, as a string.

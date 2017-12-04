@@ -151,8 +151,6 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 				e = &extract.Count{}
 			case "text":
 				e = &extract.Text{}
-			case "multipleText":
-				e = &extract.MultipleText{}
 			case "html":
 				e = &extract.Html{}
 			case "outerHtml":
