@@ -57,7 +57,7 @@ func generateCookie(setCookie string) (string, error) {
 	return fmt.Sprintf("[%s]", strings.Join(out, ",")), nil
 }
 
-func (r *Response) GetSetCookie() (string, error) {
+func (r *Response) getSetCookie() (string, error) {
 	headers := r.Response.Headers.(http.Header)
 	setCookie := headers.Get("Set-Cookie")
 	if setCookie == "" {
@@ -67,7 +67,7 @@ func (r *Response) GetSetCookie() (string, error) {
 }
 
 func (r *Response) SetCookieToNextRequest(req *Request) error {
-	setCookie, err := r.GetSetCookie()
+	setCookie, err := r.getSetCookie()
 	if err != nil {
 		return err
 	}

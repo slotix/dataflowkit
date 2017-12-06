@@ -40,7 +40,7 @@ end
 var baseLUA = `
 json = require("json")
 function main(splash)
-  cookies = splash.args.cookies
+  cookies = splash.args.cookies -- set to "" when running the script in browserl
   formdata = splash.args.formdata -- set to "" when running the script in browser
   http_method = splash.args.http_method
   decoded = nil

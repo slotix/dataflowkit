@@ -49,11 +49,11 @@ type SResponse struct {
 //SRequest returned by Splash as a part of Response
 //It is needed to be passed to caching middleware
 type SRequest struct {
+	URL         string      `json:"url"`
 	Method      string      `json:"method"`
 	Headers     interface{} `json:"headers"`
 	HeadersSize int         `json:"headersSize"`
 	Cookies     []Cookie    `json:"cookies"`
-	URL         string      `json:"url"`
 	HTTPVersion string      `json:"httpVersion"`
 	QueryString []struct {
 		Value string `json:"value"`

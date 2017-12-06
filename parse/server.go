@@ -28,7 +28,7 @@ func Start(DFKParse string) {
 		logger = log.With(logger, "ts", time.Now().Format("Jan _2 15:04:05"))
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
-
+	//creating storage for caching of parsed results
 	sType := viper.GetString("STORAGE_TYPE")
 
 	switch sType {
@@ -39,15 +39,13 @@ func Start(DFKParse string) {
 	case "Diskv":
 		storageType = storage.Diskv
 	default:
-		panic("Storage type value is undefined ")
+		panic("Storage type is undefined ")
 	}
-
+	storage := storage.NewStore(storageType)
 	var svc Service
 	svc = ParseService{}
 	//svc = StatsMiddleware("18")(svc)
-
-	//svc = CachingMiddleware()(svc)
-	svc = StorageMiddleware(storageType)(svc) //possible values are Diskv, S3, Redis
+	svc = StorageMiddleware(storage)(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{

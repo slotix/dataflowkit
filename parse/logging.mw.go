@@ -8,6 +8,13 @@ import (
 	"github.com/slotix/dataflowkit/scrape"
 )
 
+// LoggingMiddleware logs Parse Service endpoints
+func LoggingMiddleware(logger log.Logger) ServiceMiddleware {
+	return func(next Service) Service {
+		return loggingMiddleware{next, logger}
+	}
+}
+
 // Make a new type and wrap into Service interface
 // Add logger property to this type
 type loggingMiddleware struct {
@@ -15,15 +22,8 @@ type loggingMiddleware struct {
 	logger log.Logger
 }
 
-// implement function to return ServiceMiddleware
-func LoggingMiddleware(logger log.Logger) ServiceMiddleware {
-	return func(next Service) Service {
-		return loggingMiddleware{next, logger}
-	}
-}
-
-// Implement Service Interface for LoggingMiddleware
-func (mw loggingMiddleware) ParseData(payload scrape.Payload) (output io.ReadCloser, err error) {
+// Logging Parse Service
+func (mw loggingMiddleware) Parse(payload scrape.Payload) (output io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		mw.logger.Log(
 			"function", "parse",
@@ -33,6 +33,6 @@ func (mw loggingMiddleware) ParseData(payload scrape.Payload) (output io.ReadClo
 			"took", time.Since(begin),
 		)
 	}(time.Now())
-	output, err = mw.Service.ParseData(payload)
+	output, err = mw.Service.Parse(payload)
 	return
 }

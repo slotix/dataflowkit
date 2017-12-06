@@ -101,7 +101,7 @@ type Endpoints struct {
 // creating Parse Endpoint
 func MakeParseEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		v, err := svc.ParseData(request.(scrape.Payload))
+		v, err := svc.Parse(request.(scrape.Payload))
 		if err != nil {
 			return nil, err
 		}
@@ -110,9 +110,9 @@ func MakeParseEndpoint(svc Service) endpoint.Endpoint {
 }
 
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
-    w.WriteHeader(http.StatusOK)
-    w.Header().Set("Content-Type", "application/json")
-    io.WriteString(w, `{"alive": true}`)
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	io.WriteString(w, `{"alive": true}`)
 }
 
 // Make Http Handler
@@ -140,7 +140,7 @@ func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger)
 		EncodeParseResponse,
 		options...,
 	))
-	
+
 	r.Methods("GET").Path("/ping").HandlerFunc(HealthCheckHandler)
 	return r
 }
