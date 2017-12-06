@@ -85,6 +85,8 @@ type BaseFetcher struct {
 //
 //https://github.com/scrapinghub/splash
 type SplashFetcher struct {
+	//client *http.Client
+
 	// PrepareSplash is called once at the beginning of the scrape. It is not used currently
 	PrepareSplash func() error
 
@@ -100,6 +102,18 @@ type SplashFetcher struct {
 
 // NewSplashFetcher creates an instanse of SplashFetcher{} to fetch a page content from remote Scrapinghub splash service.
 func NewSplashFetcher() (*SplashFetcher, error) {
+	// Set up the HTTP client
+	// jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
+	// jar, err := cookiejar.New(jarOpts)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// client := &http.Client{Jar: jar}
+
+	// ret := &SplashFetcher{
+	// 	client: client,
+	// }
+	// return ret, nil
 	sf := &SplashFetcher{}
 	return sf, nil
 }
@@ -194,7 +208,6 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 			return nil, err
 		}
 	}
-
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err

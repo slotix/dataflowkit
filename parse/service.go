@@ -19,24 +19,25 @@ import (
 
 // Define service interface
 type Service interface {
-	ParseData(scrape.Payload) (io.ReadCloser, error)
+	Parse(scrape.Payload) (io.ReadCloser, error)
 }
 
 // Implement service with empty struct
 type ParseService struct {
 }
 
-// create type that return function.
-// this will be needed in main.go
+
 type ServiceMiddleware func(Service) Service
 
-func (ps ParseService) ParseData(p scrape.Payload) (io.ReadCloser, error) {
+
+//Parse calls Fetcher which downloads web page content for parsing
+func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
 	config, err := p.PayloadToScrapeConfig()
 	if err != nil {
 		return nil, err
 	}
-	sReq := p.Request.(splash.Request)
-	url := sReq.GetURL()
+
+	url := p.Request.(fetch.FetchRequester).GetURL()
 	req := splash.Request{URL: url}
 	//req := scrape.HttpClientFetcherRequest{URL: ps.GetURL(p.Request)}
 
@@ -141,8 +142,7 @@ func responseFromFetchService(req splash.Request) (*splash.Response, error) {
 }
 
 func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape.ScrapeResults, error) {
-	sReq := req.(splash.Request)
-	url := sReq.GetURL()
+	url := req.(fetch.FetchRequester).GetURL()
 	//get Robotstxt Data
 	robotsData, err := fetch.RobotstxtData(url)
 	if err != nil {

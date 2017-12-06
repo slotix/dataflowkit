@@ -13,34 +13,36 @@ import (
 	"github.com/slotix/dataflowkit/storage"
 )
 
+//storageMiddleware caches Parsed results in storage.
 type storageMiddleware struct {
-	StorageType storage.Type
+	//storage instance puts fetching results to a cache
+	storage storage.Store
 	Service
 }
 
 // implement function to return ServiceMiddleware
-func StorageMiddleware(storageType storage.Type) ServiceMiddleware {
+func StorageMiddleware(storage storage.Store) ServiceMiddleware {
 	return func(next Service) Service {
-		return storageMiddleware{storageType, next}
+		return storageMiddleware{storage, next}
 	}
 }
 
-func (mw storageMiddleware) ParseData(p scrape.Payload) (output io.ReadCloser, err error) {
-	s := storage.NewStore(mw.StorageType)
-	//if something in a cache return local copy
+//Parse returns parsed results either from storage or directly from scraped web pages.
+func (mw storageMiddleware) Parse(p scrape.Payload) (output io.ReadCloser, err error) {
+	//if parsed result is in storage return local copy
 	//storageKey := fmt.Sprintf("%s-%s", p.Format, p.PayloadMD5)
 	storageKey := string(p.PayloadMD5)
 	//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
 	sKey := base32.StdEncoding.EncodeToString([]byte(storageKey))
 
-	value, err := s.Read(sKey)
+	value, err := mw.storage.Read(sKey)
 	//check if item is expired.
-	if err == nil && !s.Expired(sKey) {
+	if err == nil && !mw.storage.Expired(sKey) {
 		readCloser := ioutil.NopCloser(bytes.NewReader(value))
 		return readCloser, nil
 	}
-	//Parse if there is nothing in a cache
-	parsed, err := mw.Service.ParseData(p)
+	//Parse if there is nothing in storage
+	parsed, err := mw.Service.Parse(p)
 	if err != nil {
 		return nil, err
 	}
@@ -50,12 +52,13 @@ func (mw storageMiddleware) ParseData(p scrape.Payload) (output io.ReadCloser, e
 		logger.Println(err.Error())
 	}
 
+	//save parsed results after scraping to storage
 	//calculate expiration time. It is actual for Redis storage.
 	exp := time.Duration(viper.GetInt64("STORAGE_EXPIRE")) * time.Second
 	expiry := time.Now().UTC().Add(exp)
 	logger.Printf("Cache lifespan is %+v\n", expiry.Sub(time.Now().UTC()))
 
-	err = s.Write(sKey, buf.Bytes(), expiry.Unix())
+	err = mw.storage.Write(sKey, buf.Bytes(), expiry.Unix())
 	if err != nil {
 		logger.Println(err.Error())
 	}
