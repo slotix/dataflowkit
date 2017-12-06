@@ -9,8 +9,9 @@ import (
 )
 
 //encodeCSV writes data to w *csv.Writer.
-//header - headers for csv.
-//rows - csv records to be written.
+//header represent an array of fields for csv.
+//rows store csv records to be written.
+//comma is a separator between record fields. Default value is ","  
 func encodeCSV(header []string, rows []map[string]interface{}, comma string, w *csv.Writer) error {
 	if comma == "" {
 		comma = ","
@@ -41,7 +42,7 @@ func encodeCSV(header []string, rows []map[string]interface{}, comma string, w *
 	return nil
 }
 
-//encodeXML writes data blocks to XML.
+//encodeXML writes data blocks to XML file.
 func encodeXML(blocks []map[string]interface{}, buf *bytes.Buffer) error {
 	mxj.XMLEscapeChars(true)
 	//write header to xml
