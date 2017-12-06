@@ -19,9 +19,9 @@ type statsMiddleware struct {
 	Service
 }
 
-func (mw statsMiddleware) ParseData(payload scrape.Payload) (output io.ReadCloser, err error) {
+func (mw statsMiddleware) Parse(payload scrape.Payload) (output io.ReadCloser, err error) {
 	mw.incrementCount()
-	output, err = mw.Service.ParseData(payload)
+	output, err = mw.Service.Parse(payload)
 	return
 }
 

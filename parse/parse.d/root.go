@@ -52,37 +52,14 @@ var (
 var RootCmd = &cobra.Command{
 	Use:   "dataflowkit",
 	Short: "DataFlow Kit html parser",
-	Long: `DataFlow Kit html parser serves for scraping data from websites according to chosen css selectors.
-	Here is an example of payload structure:
-	
-	{"format":"json",
-		"collections": [
-				{
-				"name": "collection1",
-				"url": "http://example1.com",
-				"fields": [
-					{
-						"field_name": "link",
-						"css_selector": ".link a"
-					},
-					{
-						"field_name": "Text",
-						"css_selector": ".text"
-					},
-					{
-						"field_name": "Image",
-						"css_selector": ".foto img"
-					}
-				]
-			}
-		]
-	}
-	`,
+	Long: `DataFlow Kit html parser scrapes html web pages folowing the chosen css selectors.
+	 Actual example of payload structure is available at https://github.com/slotix/dataflowkit/blob/master/docs/payload.md`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Checking services ... ")
 
 		services := []healthcheck.Checker{
 			healthcheck.FetchConn{
+				//Check if Splash Fetch service is alive 
 				Host: DFKFetch,
 			},
 		}
@@ -91,6 +68,7 @@ var RootCmd = &cobra.Command{
 				Network: redisNetwork,
 				Host:    redisHost})
 		}
+		
 		status := healthcheck.CheckServices(services...)
 		allAlive := true
 
