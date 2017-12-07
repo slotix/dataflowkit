@@ -39,10 +39,10 @@ end
 
 var baseLUA = `
 json = require("json")
-function main(splash)
-  cookies = splash.args.cookies -- set to "" when running the script in browserl
-  formdata = splash.args.formdata -- set to "" when running the script in browser
-  http_method = splash.args.http_method
+function main(splash, args)
+  cookies = args.cookies -- set to "" when running the script in browserl
+  formdata = args.formdata -- set to "" when running the script in browser
+  -- http_method = args.http_method
   decoded = nil
   http_method = "GET"
   if formdata ~= "" then
@@ -58,13 +58,13 @@ function main(splash)
   end
 
   local ok, reason = splash:go{
-    splash.args.url,
-    headers = splash.args.headers,
+    args.url,
+    headers = args.headers,
     http_method = http_method,
     formdata = decoded,
-    body = splash.args.body,
+    body = args.body,
     }
-  assert(splash:wait(splash.args.wait))
+  assert(splash:wait(args.wait))
 
   local entries = splash:history()
   local last_entry = entries[#entries]

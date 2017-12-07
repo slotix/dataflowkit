@@ -64,12 +64,18 @@ func wait(w float64) Option {
 //New creates new connection to Splash Server
 func New(req Request, setters ...Option) (splashURL string) {
 	//Default options
+	
 	args := &Options{
 		host:            viper.GetString("SPLASH"),
 		timeout:         viper.GetInt("SPLASH_TIMEOUT"),
 		resourceTimeout: viper.GetInt("SPLASH_RESOURCE_TIMEOUT"),
 		wait:            viper.GetFloat64("SPLASH_WAIT"),
 	}
+	/*args.host = "127.0.0.1:8050"
+	args.timeout = 20
+	args.resourceTimeout = 30
+	args.wait = 1.0
+	*/
 	for _, setter := range setters {
 		setter(args)
 	}
@@ -95,12 +101,7 @@ func New(req Request, setters ...Option) (splashURL string) {
 	*/
 	//req.Params = `"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=asfwwe!444D&rememberMe=1"`
 
-	//var LUAScript string
-	//if IsRobotsTxt(req.URL) {
-	//	LUAScript = robotsLUA
-	//} else {
-	//	LUAScript = baseLUA
-	//}
+	
 	LUAScript := baseLUA
 	splashURL = fmt.Sprintf(
 		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s",

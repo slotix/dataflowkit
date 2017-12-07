@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/slotix/dataflowkit/extract"
-	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/splash"
 )
@@ -56,22 +55,6 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 }
 
 func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
-	//var err error
-	// var fetcher fetch.Fetcher
-	// switch p.Request.(type) {
-	// case BaseFetcherRequest:
-	// 	fetcher, err = NewFetcher(Base)
-	// case splash.Request:
-	// 	fetcher, err = NewFetcher(Splash)
-	// default:
-	// 	panic("invalid fetcher request")
-	// }
-	fetcher, err := fetch.NewSplashFetcher()
-	//fetcher, err := NewHttpClientFetcher()
-
-	if err != nil {
-		logger.Println(err)
-	}
 	pieces := []Piece{}
 	selectors := []string{}
 	names := []string{}
@@ -192,7 +175,6 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 
 	paginator := p.Paginator
 	config = &ScrapeConfig{
-		Fetcher: fetcher,
 		//DividePage: scrape.DividePageBySelector(".p"),
 		DividePage: DividePageByIntersection(selectors),
 		Pieces:     pieces,
