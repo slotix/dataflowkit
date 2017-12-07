@@ -8,7 +8,6 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/slotix/dataflowkit/extract"
-	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/paginate"
 )
 
@@ -45,11 +44,6 @@ type Piece struct {
 
 // The main configuration for a scrape.  Pass this to the New() function.
 type ScrapeConfig struct {
-	// Fetcher is the underlying transport that is used to fetch documents.
-	// If this is not specified (i.e. left nil), then a default SplashFetcher
-	// will be created and used.
-	Fetcher fetch.Fetcher
-
 	// Paginator is the Paginator to use for this current scrape.
 	//
 	// If Paginator is nil, then no pagination is performed and it is assumed that
@@ -94,7 +88,6 @@ type ScrapeResults struct {
 	// is for each page, the second-level array is for each block in a page, and
 	// the final map[string]interface{} is the mapping of Piece.Name to results.
 	Results [][]map[string]interface{}
-	//Header  []string
 }
 
 // First returns the first set of results - i.e. the results from the first
@@ -129,7 +122,6 @@ type Scraper struct {
 
 // Create a new scraper with the provided configuration.
 func New(c *ScrapeConfig) (*Scraper, error) {
-	var err error
 
 	// Validate config
 	if len(c.Pieces) == 0 {
@@ -151,27 +143,17 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 		}
 	}
 
-	// Clone the configuration and fill in the defaults.
-	config := c //.clone()
-	if config.Paginator == nil {
-		config.Paginator = dummyPaginator{}
+	if c.Paginator == nil {
+		c.Paginator = dummyPaginator{}
 	}
-	if config.DividePage == nil {
-		config.DividePage = DividePageBySelector("body")
+	if c.DividePage == nil {
+		c.DividePage = DividePageBySelector("body")
 
 	}
-
-	if config.Fetcher == nil {
-		//config.Fetcher, err = NewHttpClientFetcher()
-		config.Fetcher, err = fetch.NewSplashFetcher()
-		if err != nil {
-			return nil, err
-		}
-	}
-
+	
 	// All set!
 	ret := &Scraper{
-		Config: config,
+		Config: c,
 	}
 	return ret, nil
 }

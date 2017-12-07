@@ -26,9 +26,7 @@ type Service interface {
 type ParseService struct {
 }
 
-
 type ServiceMiddleware func(Service) Service
-
 
 //Parse calls Fetcher which downloads web page content for parsing
 func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
@@ -163,7 +161,10 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 		if len(url) == 0 || (scraper.Config.Opts.MaxPages > 0 && numPages >= scraper.Config.Opts.MaxPages) {
 			break
 		}
+		//call remote fetcher to download web page 
 		sResponse, err := responseFromFetchService(req.(splash.Request))
+		//sResponse, err := req.(splash.Request).GetResponse()
+		
 		if err != nil {
 			return nil, err
 		}
@@ -187,14 +188,12 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 
 			// Process each piece of this block
 			for _, piece := range scraper.Config.Pieces {
-				//logger.Println(piece)
 				sel := block
 				if piece.Selector != "." {
 					sel = sel.Find(piece.Selector)
 				}
 
 				pieceResults, err := piece.Extractor.Extract(sel)
-				//logger.Println(attrOrDataValue(sel))
 				if err != nil {
 					return nil, err
 				}
@@ -224,7 +223,6 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 			return nil, err
 		}
 
-		//ps.fetcher.type
 		//every time when getting a response the next request will be filled with updated cookie information
 		sRequest := req.(splash.Request)
 		//	if response, ok := sResponse.(*splash.Response); ok {
@@ -233,8 +231,6 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 		if err != nil {
 			//return nil, err
 			logger.Println(err)
-			//		}
-
 		}
 		sRequest.URL = url
 		req = sRequest
@@ -251,159 +247,8 @@ func (ps ParseService) scrape(req interface{}, scraper *scrape.Scraper) (*scrape
 		}
 
 	}
+
 	// All good!
 	return res, nil
+
 }
-
-/*
-//Original
-func (ps ParseService) scrape(req splash.Request, s *scrape.Scraper) (*scrape.ScrapeResults, error) {
-	url := req.URL
-	if len(url) == 0 {
-		return nil, errors.New("no URL provided")
-	}
-	//get Robotstxt Data
-	robotsData, err := robotstxt.RobotsTxtData(req)
-	//err := scrape.AllowedByRobots(req)
-	if err != nil {
-		return nil, err
-	}
-	res := &scrape.ScrapeResults{
-		URLs:    []string{},
-		Results: [][]map[string]interface{}{},
-	}
-	var numPages int
-	//var retryTimes int
-	for {
-		if !robotstxt.Allowed(url, robotsData) {
-			err = fmt.Errorf("%s: forbidden by robots.txt", url)
-			return nil, err
-		}
-		// Repeat until we don't have any more URLs, or until we hit our page limit.
-		if len(url) == 0 || (s.Config.Opts.MaxPages > 0 && numPages >= s.Config.Opts.MaxPages) {
-			break
-		}
-		r, err := s.Config.Fetcher.Fetch(req)
-		if err != nil {
-			return nil, err
-		}
-
-		var resp io.ReadCloser
-		if sResponse, ok := r.(*splash.Response); ok {
-			resp, err = sResponse.GetContent()
-			if err != nil {
-				logger.Println(err)
-			}
-		}
-
-		/*
-			//fetch content
-			b, err := json.Marshal(req)
-			if err != nil {
-				return nil, err
-			}
-
-			reader := bytes.NewReader(b)
-			request, err := http.NewRequest("POST", "http://127.0.0.1:8000/app/response", reader)
-			request.Header.Set("Content-Type", "application/json")
-			client := &http.Client{}
-			r, err := client.Do(request)
-			if r != nil {
-				defer r.Body.Close()
-			}
-			if err != nil {
-				panic(err)
-			}
-			resp, err := ioutil.ReadAll(r.Body)
-			if err != nil {
-				return nil, err
-			}
-			var sResponse splash.Response
-			if err := json.Unmarshal(resp, &sResponse); err != nil {
-				logger.Println("Json Unmarshall error", err)
-			}
-			content, err := sResponse.GetContent()
-			if err != nil {
-				return nil, err
-			}
-*/
-/*
-		// Create a goquery document.
-		doc, err := goquery.NewDocumentFromReader(resp)
-		//doc, err := goquery.NewDocumentFromReader(content)
-		//doc, err := goquery.NewDocumentFromResponse(r)
-		//resp.Close()
-		if err != nil {
-			return nil, err
-		}
-		res.URLs = append(res.URLs, url)
-		results := []map[string]interface{}{}
-
-		// Divide this page into blocks
-		for _, block := range s.Config.DividePage(doc.Selection) {
-			blockResults := map[string]interface{}{}
-
-			// Process each piece of this block
-			for _, piece := range s.Config.Pieces {
-				//logger.Println(piece)
-				sel := block
-				if piece.Selector != "." {
-					sel = sel.Find(piece.Selector)
-				}
-
-				pieceResults, err := piece.Extractor.Extract(sel)
-				//logger.Println(attrOrDataValue(sel))
-				if err != nil {
-					return nil, err
-				}
-
-				// A nil response from an extractor means that we don't even include it in
-				// the results.
-				if pieceResults == nil {
-					continue
-				}
-
-				blockResults[piece.Name] = pieceResults
-			}
-			if len(blockResults) > 0 {
-				// Append the results from this block.
-				results = append(results, blockResults)
-			}
-		}
-
-		// Append the results from this page.
-		res.Results = append(res.Results, results)
-
-		numPages++
-
-		// Get the next page.
-		url, err = s.Config.Paginator.NextPage(url, doc.Selection)
-		if err != nil {
-			return nil, err
-		}
-
-		//every time when getting a response the next request will be filled with updated cookie information
-
-		if sResponse, ok := r.(*splash.Response); ok {
-			err := sResponse.SetCookieToRequest(&req)
-			if err != nil {
-				//return nil, err
-				logger.Println(err)
-			}
-		}
-		req.URL = url
-		if s.Config.Opts.RandomizeFetchDelay {
-			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-			rand := scrape.Random(500, 1500)
-			delay := s.Config.Opts.FetchDelay * time.Duration(rand) / 1000
-			logger.Println(delay)
-			time.Sleep(delay)
-		} else {
-			time.Sleep(s.Config.Opts.FetchDelay)
-		}
-
-	}
-	// All good!
-	return res, nil
-}
-*/
