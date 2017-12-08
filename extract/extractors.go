@@ -306,15 +306,77 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 
 var _ PieceExtractor = Count{}
 
-/*
+
 // Link is a PieceExtractor that returns the combined text contents and  Attr{Attr: "href"} of
 // the given selection
 type Link struct {
+	// If no elements with this attribute are found, then return the empty list from
+	// Extract, instead of  'nil'.  This signals that the result of this
 	// Piece should be included to the results, as opposed to omitting
 	// the empty list.
-	//IncludeIfEmpty bool
+	IncludeIfEmpty bool
+	// By default, if there is only a single attribute extracted, AttrExtractor
+	// will return the match itself (as opposed to an array containing the single
+	// match). Set AlwaysReturnList to true to disable this behaviour, ensuring
+	// that the Extract function always returns an array.
+	AlwaysReturnList bool
+	Text
+	Href Attr
 }
 
+
+//Extract returns maps of links including text and href attributes.
+//It is not used as we need these values separated. Own Extract methods for Text and Attr are used instead.  
+func (e Link) Extract(sel *goquery.Selection) (interface{}, error) {
+	//we need to keep an order of links. 
+	//map structure doesn't guarantee an order of items when iterating through map
+	links := []map[string]string{}
+	sel.Each(func(i int, s *goquery.Selection) {
+		if val, found := s.Attr("href"); found {
+			link := map[string]string{}
+			link[s.Text()] = val
+			links = append(links, link)
+		}
+
+	})
+
+	if len(links) == 0 && !e.IncludeIfEmpty {
+		return nil, nil
+	}
+
+	if len(links) == 1 {
+		return links[0], nil
+	}
+
+	if len(links) == 1 && !e.AlwaysReturnList {
+		return links[0], nil
+	}
+
+	return links, nil
+}
+
+
+var _ PieceExtractor = Link{}
+
+
+// Link is a PieceExtractor that returns the combined text contents and  Attr{Attr: "href"} of
+// the given selection
+type Image struct {
+	// If no elements with this attribute are found, then return the empty list from
+	// Extract, instead of  'nil'.  This signals that the result of this
+	// Piece should be included to the results, as opposed to omitting
+	// the empty list.
+	IncludeIfEmpty bool
+	// By default, if there is only a single attribute extracted, AttrExtractor
+	// will return the match itself (as opposed to an array containing the single
+	// match). Set AlwaysReturnList to true to disable this behaviour, ensuring
+	// that the Extract function always returns an array.
+	AlwaysReturnList bool
+	Src Attr
+	Alt Attr
+}
+
+/*
 type LinkResult struct {
 	text string
 	href string

@@ -65,74 +65,52 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 			params = f.Extractor.Params.(map[string]interface{})
 		}
 		switch eType := f.Extractor.Type; eType {
+		
 		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
 		case "link":
-			t := &extract.Text{}
+			l := &extract.Link{Href: extract.Attr{Attr: "href"}}
 			if params != nil {
-				err := FillStruct(params, t)
+				err := FillStruct(params, l)
 				if err != nil {
 					logger.Println(err)
 				}
 			}
-			fName := fmt.Sprintf("%s_text", f.Name)
 			pieces = append(pieces, Piece{
-				Name:      fName,
+				Name:      f.Name + "_text",
 				Selector:  f.Selector,
-				Extractor: t,
-			})
-			names = append(names, fName)
-
-			a := &extract.Attr{Attr: "href"}
-			if params != nil {
-				err := FillStruct(params, a)
-				if err != nil {
-					logger.Println(err)
-				}
-			}
-			fName = fmt.Sprintf("%s_link", f.Name)
-			pieces = append(pieces, Piece{
-				Name:      fName,
+				Extractor: l.Text,
+			}, Piece{
+				Name:      f.Name + "_link",
 				Selector:  f.Selector,
-				Extractor: a,
+				Extractor: l.Href,
 			})
-			names = append(names, fName)
+			names = append(names, f.Name+"_text", f.Name+"_link")
 			//Add selector just one time for link type
 			selectors = append(selectors, f.Selector)
 
 		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
 		case "image":
-			a := &extract.Attr{Attr: "src"}
+			i := &extract.Image{Src: extract.Attr{Attr: "src"},
+				Alt: extract.Attr{Attr: "alt"}}
 			if params != nil {
-				err := FillStruct(params, a)
+				err := FillStruct(params, i)
 				if err != nil {
 					logger.Println(err)
 				}
 			}
-			fName := fmt.Sprintf("%s_src", f.Name)
 			pieces = append(pieces, Piece{
-				Name:      fName,
+				Name:      f.Name + "_src",
 				Selector:  f.Selector,
-				Extractor: a,
-			})
-			names = append(names, fName)
-
-			a = &extract.Attr{Attr: "alt"}
-			if params != nil {
-				err := FillStruct(params, a)
-				if err != nil {
-					logger.Println(err)
-				}
-			}
-			fName = fmt.Sprintf("%s_alt", f.Name)
-			pieces = append(pieces, Piece{
-				Name:      fName,
+				Extractor: i.Src,
+			}, Piece{
+				Name:      f.Name + "_alt",
 				Selector:  f.Selector,
-				Extractor: a,
+				Extractor: i.Alt,
 			})
-			names = append(names, fName)
+			names = append(names, f.Name+"_src", f.Name+"_alt")
 			//Add selector just one time for image type
 			selectors = append(selectors, f.Selector)
-
+		
 		default:
 			var e extract.PieceExtractor
 			switch eType {
