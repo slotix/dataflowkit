@@ -5,11 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strings"
 
-	"github.com/slotix/dataflowkit/extract"
-	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/splash"
 )
 
@@ -54,10 +51,10 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+/*
 func (p Payload) PayloadToScrapeConfig() (config *Config, err error) {
 	parts := []Part{}
 	selectors := []string{}
-	//	names := []string{}
 	for _, f := range p.Fields {
 
 		params := make(map[string]interface{})
@@ -170,6 +167,7 @@ func (p Payload) PayloadToScrapeConfig() (config *Config, err error) {
 	}
 	return
 }
+*/
 
 //FillStruct fills s Structure with values from m map
 func FillStruct(m map[string]interface{}, s interface{}) error {
