@@ -18,19 +18,19 @@ func init() {
 	logger = log.New(os.Stdout, "extractor: ", log.Lshortfile)
 }
 
-// The PieceExtractor interface represents something that can extract data from
+// The Extractor interface represents something that can extract data from
 // a selection.
-type PieceExtractor interface {
+type Extractor interface {
 	// Extract some data from the given Selection and return it.  The returned
 	// data should be encodable - i.e. passing it to json.Marshal should succeed.
-	// If the returned data is nil, then the output from this piece will not be
+	// If the returned data is nil, then the output from this part will not be
 	// included.
 	//
 	// If this function returns an error, then the scrape is aborted.
 	Extract(*goquery.Selection) (interface{}, error)
 }
 
-// Const is a PieceExtractor that returns a constant value.
+// Const is a PartExtractor that returns a constant value.
 type Const struct {
 	// The value to return when the Extract() function is called.
 	Val interface{}
@@ -40,13 +40,13 @@ func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
 	return e.Val, nil
 }
 
-var _ PieceExtractor = Const{}
+var _ Extractor = Const{}
 
-// Text is a PieceExtractor that returns the combined text contents of
+// Text is a PartExtractor that returns the combined text contents of
 // the given selection.
 type Text struct {
 	// If text is empty in the selection, then return the empty string from Extract,
-	// instead of 'nil'.  This signals that the result of this Piece
+	// instead of 'nil'.  This signals that the result of this Part
 	// should be included to the results, as opposed to omitting the
 	// empty string.
 	IncludeIfEmpty bool
@@ -70,9 +70,9 @@ func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
-var _ PieceExtractor = Text{}
+var _ Extractor = Text{}
 
-// Html extracts and returns the HTML from inside each element of the
+// Html extracts and returns the HTML from inside each part of the
 // given selection, as a string.
 //
 // Note that this results in what is effectively the innerHTML of the element -
@@ -102,9 +102,9 @@ func (e Html) Extract(sel *goquery.Selection) (interface{}, error) {
 	return ret, nil
 }
 
-var _ PieceExtractor = Html{}
+var _ Extractor = Html{}
 
-// OuterHtml extracts and returns the HTML of each element of the
+// OuterHtml extracts and returns the HTML of each part of the
 // given selection, as a string.
 //
 // To illustrate, if our selection consists of
@@ -125,9 +125,9 @@ func (e OuterHtml) Extract(sel *goquery.Selection) (interface{}, error) {
 	return output.String(), nil
 }
 
-var _ PieceExtractor = OuterHtml{}
+var _ Extractor = OuterHtml{}
 
-// Regex runs the given regex over the contents of each element in the
+// Regex runs the given regex over the contents of each part in the
 // given selection, and, for each match, extracts the given subexpression.
 // The return type of the extractor is a list of string matches (i.e. []string).
 type Regex struct {
@@ -140,7 +140,7 @@ type Regex struct {
 	Subexpression int
 
 	// When OnlyText is true, only run the given regex over the text contents of
-	// each element in the selection, as opposed to the HTML contents.
+	// each part in the selection, as opposed to the HTML contents.
 	OnlyText bool
 
 	// By default, if there is only a single match, Regex will return
@@ -151,7 +151,7 @@ type Regex struct {
 
 	// If no matches of the provided regex could be extracted, then return the empty list
 	// from Extract, instead of 'nil'.  This signals that the result of
-	// this Piece should be included to the results, as opposed to
+	// this Part should be included to the results, as opposed to
 	// omitting the empty list.
 	IncludeIfEmpty bool
 }
@@ -181,7 +181,7 @@ func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	results := []string{}
 
-	// For each element in the selector...
+	// For each part in the selector...
 	var err error
 	sel.EachWithBreak(func(i int, s *goquery.Selection) bool {
 		var contents string
@@ -239,13 +239,13 @@ func (e Regex) FillParams(m map[string]interface{}) error {
 	return nil
 }
 */
-var _ PieceExtractor = Regex{}
+var _ Extractor = Regex{}
 
-// Attr extracts the value of a given HTML attribute from each element
+// Attr extracts the value of a given HTML attribute from each part
 // in the selection, and returns them as a list.
 // The return type of the extractor is a list of attribute values (i.e. []string).
 type Attr struct {
-	// The HTML attribute to extract from each element.
+	// The HTML attribute to extract from each part.
 	Attr string
 
 	// By default, if there is only a single attribute extracted, AttrExtractor
@@ -254,9 +254,9 @@ type Attr struct {
 	// that the Extract function always returns an array.
 	AlwaysReturnList bool
 
-	// If no elements with this attribute are found, then return the empty list from
+	// If no parts with this attribute are found, then return the empty list from
 	// Extract, instead of  'nil'.  This signals that the result of this
-	// Piece should be included to the results, as opposed to omitting
+	// Part should be included to the results, as opposed to omitting
 	// the empty list.
 	IncludeIfEmpty bool
 }
@@ -284,13 +284,13 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
-var _ PieceExtractor = Attr{}
+var _ Extractor = Attr{}
 
-// Count extracts the count of elements that are matched and returns it.
+// Count extracts the count of parts that are matched and returns it.
 type Count struct {
-	// If no elements with this attribute are found, then return a number from
+	// If no parts with this attribute are found, then return a number from
 	// Extract, instead of 'nil'.  This signals that the result of this
-	// Piece should be included to the results, as opposed to omitting
+	// Part should be included to the results, as opposed to omitting
 	// the empty list.
 	IncludeIfEmpty bool
 }
@@ -304,15 +304,14 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 	return l, nil
 }
 
-var _ PieceExtractor = Count{}
+var _ Extractor = Count{}
 
-
-// Link is a PieceExtractor that returns the combined text contents and  Attr{Attr: "href"} of
+// Link is a PartExtractor that returns the combined text contents and  Attr{Attr: "href"} of
 // the given selection
 type Link struct {
-	// If no elements with this attribute are found, then return the empty list from
+	// If no parts with this attribute are found, then return the empty list from
 	// Extract, instead of  'nil'.  This signals that the result of this
-	// Piece should be included to the results, as opposed to omitting
+	// Part should be included to the results, as opposed to omitting
 	// the empty list.
 	IncludeIfEmpty bool
 	// By default, if there is only a single attribute extracted, AttrExtractor
@@ -324,11 +323,10 @@ type Link struct {
 	Href Attr
 }
 
-
 //Extract returns maps of links including text and href attributes.
-//It is not used as we need these values separated. Own Extract methods for Text and Attr are used instead.  
+//It is not used as we need these values separated as a result. Own Extract methods for Text and Attr are used instead.
 func (e Link) Extract(sel *goquery.Selection) (interface{}, error) {
-	//we need to keep an order of links. 
+	//we need to keep an order of links.
 	//map structure doesn't guarantee an order of items when iterating through map
 	links := []map[string]string{}
 	sel.Each(func(i int, s *goquery.Selection) {
@@ -355,16 +353,14 @@ func (e Link) Extract(sel *goquery.Selection) (interface{}, error) {
 	return links, nil
 }
 
+var _ Extractor = Link{}
 
-var _ PieceExtractor = Link{}
-
-
-// Link is a PieceExtractor that returns the combined text contents and  Attr{Attr: "href"} of
+// Link is a PartExtractor that returns the combined text contents and  Attr{Attr: "href"} of
 // the given selection
 type Image struct {
-	// If no elements with this attribute are found, then return the empty list from
+	// If no parts with this attribute are found, then return the empty list from
 	// Extract, instead of  'nil'.  This signals that the result of this
-	// Piece should be included to the results, as opposed to omitting
+	// Part should be included to the results, as opposed to omitting
 	// the empty list.
 	IncludeIfEmpty bool
 	// By default, if there is only a single attribute extracted, AttrExtractor
@@ -372,8 +368,8 @@ type Image struct {
 	// match). Set AlwaysReturnList to true to disable this behaviour, ensuring
 	// that the Extract function always returns an array.
 	AlwaysReturnList bool
-	Src Attr
-	Alt Attr
+	Src              Attr
+	Alt              Attr
 }
 
 /*

@@ -8,21 +8,20 @@ text returns the combined text contents of the given selection.
 
 #### includeIfEmpty
 
- If text is empty in the selection, then return the empty string, instead of 'nil'.  This signals that the result of this Piece should be included to the results, as opposed to omiting the empty string.
-
+ If text is empty in the selection, then return the empty string, instead of 'nil'.  This signals that the result of this Part should be included to the results, as opposed to omiting the empty string.
 ## multipleText
 
-multipleText extracts the text from each element in the given selection and returns the texts as an array.  
+multipleText extracts the text from each part in the given selection and returns the texts as an array.  
 
 *params*
 
 #### includeIfEmpty
 
-If there are no items in the selection, then return empty list, instead of the 'nil'.  This signals that the result of this Piece should be included to the results, as opposed to omiting the empty list.
+If there are no items in the selection, then return empty list, instead of the 'nil'.  This signals that the result of this Part should be included to the results, as opposed to omiting the empty list.
 
 ## html
 
-html extracts and returns the HTML from inside each element of the given selection, as a string.  
+html extracts and returns the HTML from inside each part of the given selection, as a string.  
 i.e. if our selection consists of 
 
 ```
@@ -40,7 +39,7 @@ The return type is a string of all the inner HTML joined together.
 
 ## outerHtml
 
-outerHtml extracts and returns the HTML of each element of the given selection, as a string.  
+outerHtml extracts and returns the HTML of each part of the given selection, as a string.  
 If our selection consists of 
 
 ```
@@ -58,14 +57,14 @@ The return type is a string of all the outer HTML joined together.
 
 ## attr
 
-attr extracts the value of a given HTML attribute from each element in the selection, and returns them as a list.  
+attr extracts the value of a given HTML attribute from each part in the selection, and returns them as a list.  
 The return type of the extractor is a list of attribute values (i.e. ```[]string```).  
 
 *params*
 
 #### **attr**
 
-The HTML attribute to extract from each element.
+The HTML attribute to extract from each part.
 
 #### **alwaysReturnList**
 
@@ -74,7 +73,7 @@ Set alwaysReturnList to true to disable this behaviour, ensuring that the Extrac
 
 #### **includeIfEmpty**
 
-If no elements with this attribute are found, then return the empty list instead of  'nil'. This signals that the result of this Piece should be included to the results, as opposed to omiting the empty list.
+If no parts with this attribute are found, then return the empty list instead of  'nil'. This signals that the result of this Part should be included to the results, as opposed to omiting the empty list.
 
 ## link
 
@@ -86,7 +85,7 @@ image extracts ```attr="src"``` and ```attr="alt"``` from specified field.
 
 ## regex
 
-regex runs the given regex over the contents of each element in the given selection, and, for each match, extracts the given subexpression.  
+regex runs the given regex over the contents of each part in the given selection, and, for each match, extracts the given subexpression.  
 The return type of the extractor is a list of string matches (i.e. ```[]string```).  
 
 *params*
@@ -101,7 +100,7 @@ The subexpression of the regex to match.  If this value is not set, and if the g
 
 #### onlyText
 
-When onlyText is true, only run the given regex over the text contents of each element in the selection, as opposed to the HTML contents.
+When onlyText is true, only run the given regex over the text contents of each part in the selection, as opposed to the HTML contents.
 
 #### alwaysReturnList
 
@@ -111,7 +110,7 @@ Set alwaysReturnList to true to disable this behaviour, ensuring that the Extrac
 
 #### includeIfEmpty
 
-If no matches of the provided regex could be extracted, then return the empty list, instead of 'nil'.  This signals that the result of this Piece should be included to the results, as opposed to omiting the empty list.
+If no matches of the provided regex could be extracted, then return the empty list, instead of 'nil'.  This signals that the result of this Part should be included to the results, as opposed to omiting the empty list.
 
 ## const
 
@@ -125,4 +124,4 @@ The value to return.
 
 ## count
 
-count extracts the count of elements that are matched and returns it.
+count extracts the count of parts that are matched and returns it.

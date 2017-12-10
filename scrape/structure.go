@@ -27,7 +27,8 @@ type Payload struct {
 	Name string `json:"name" validate:"required"`
 	//Request             splash.Request `json:"request"`
 	Request             interface{}   `json:"request"`
-	Fields              []field       `json:"fields" validate:"gt=0"`
+	Fields              []field       `json:"fields"`
+	//PayloadMD5 encodes payload content to MD5. It is used for generating file name to be stored.
 	PayloadMD5          []byte        `json:"payloadMD5"`
 	Format              string        `json:"format"`
 	Paginator           paginator     `json:"paginator"`
