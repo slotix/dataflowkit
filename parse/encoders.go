@@ -48,8 +48,8 @@ func encodeXML(blocks []map[string]interface{}, buf *bytes.Buffer) error {
 	//write header to xml
 	buf.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>`))
 	buf.Write([]byte("<items>"))
-	for _, piece := range blocks {
-		m := mxj.Map(piece)
+	for _, elem := range blocks {
+		m := mxj.Map(elem)
 		//err := m.XmlIndentWriter(&buf, "", "  ", "object")
 		err := m.XmlWriter(buf, "item")
 		if err != nil {

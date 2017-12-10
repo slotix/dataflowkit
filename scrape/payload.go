@@ -54,18 +54,18 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
-	pieces := []Piece{}
+func (p Payload) PayloadToScrapeConfig() (config *Config, err error) {
+	parts := []Part{}
 	selectors := []string{}
-	names := []string{}
+	//	names := []string{}
 	for _, f := range p.Fields {
-		//var extractor scrape.PieceExtractor
+
 		params := make(map[string]interface{})
 		if f.Extractor.Params != nil {
 			params = f.Extractor.Params.(map[string]interface{})
 		}
 		switch eType := f.Extractor.Type; eType {
-		
+
 		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
 		case "link":
 			l := &extract.Link{Href: extract.Attr{Attr: "href"}}
@@ -75,16 +75,16 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 					logger.Println(err)
 				}
 			}
-			pieces = append(pieces, Piece{
+			parts = append(parts, Part{
 				Name:      f.Name + "_text",
 				Selector:  f.Selector,
 				Extractor: l.Text,
-			}, Piece{
+			}, Part{
 				Name:      f.Name + "_link",
 				Selector:  f.Selector,
 				Extractor: l.Href,
 			})
-			names = append(names, f.Name+"_text", f.Name+"_link")
+			//names = append(names, f.Name+"_text", f.Name+"_link")
 			//Add selector just one time for link type
 			selectors = append(selectors, f.Selector)
 
@@ -98,21 +98,21 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 					logger.Println(err)
 				}
 			}
-			pieces = append(pieces, Piece{
+			parts = append(parts, Part{
 				Name:      f.Name + "_src",
 				Selector:  f.Selector,
 				Extractor: i.Src,
-			}, Piece{
+			}, Part{
 				Name:      f.Name + "_alt",
 				Selector:  f.Selector,
 				Extractor: i.Alt,
 			})
-			names = append(names, f.Name+"_src", f.Name+"_alt")
+			//	names = append(names, f.Name+"_src", f.Name+"_alt")
 			//Add selector just one time for image type
 			selectors = append(selectors, f.Selector)
-		
+
 		default:
-			var e extract.PieceExtractor
+			var e extract.Extractor
 			switch eType {
 			case "const":
 				//	c := &extract.Const{Val: params["value"]}
@@ -141,23 +141,23 @@ func (p Payload) PayloadToScrapeConfig() (config *ScrapeConfig, err error) {
 					logger.Println(err)
 				}
 			}
-			pieces = append(pieces, Piece{
+			parts = append(parts, Part{
 				Name:      f.Name,
 				Selector:  f.Selector,
 				Extractor: e,
 			})
 			selectors = append(selectors, f.Selector)
-			names = append(names, f.Name)
+			//	names = append(names, f.Name)
 		}
 	}
 
 	paginator := p.Paginator
-	config = &ScrapeConfig{
+	config = &Config{
 		//DividePage: scrape.DividePageBySelector(".p"),
 		DividePage: DividePageByIntersection(selectors),
-		Pieces:     pieces,
+		Parts:      parts,
 		//Paginator: paginate.BySelector(".next", "href"),
-		CSVHeader: names,
+		//Header:    names,
 		Paginator: paginate.BySelector(paginator.Selector, paginator.Attribute),
 		Opts: ScrapeOptions{
 			MaxPages:            paginator.MaxPages,

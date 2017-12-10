@@ -23,8 +23,8 @@ func IsRobotsTxt(url string) bool {
 	return false
 }
 
-//ContentFromFetchService retrieves content of robots.txt with BaseFetcher.
-func ContentFromFetchService(req FetchRequester) ([]byte, error) {
+//fetchRobots retrieves content of robots.txt with BaseFetcher.
+func fetchRobots(req FetchRequester) ([]byte, error) {
 	//fetch content
 	b, err := json.Marshal(req)
 	if err != nil {
@@ -65,7 +65,7 @@ func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
 	robotsURL := fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
 	r := BaseFetcherRequest{URL: robotsURL}
 
-	content, err := ContentFromFetchService(r)
+	content, err := fetchRobots(r)
 	if err != nil {
 		return nil, err
 	}

@@ -7,7 +7,7 @@ import (
 )
 
 func TestResultsFirst(t *testing.T) {
-	r := &ScrapeResults{
+	r := &Results{
 		Results: [][]map[string]interface{}{
 			{{"foo": 1, "bar": 2}},
 		},
@@ -18,14 +18,14 @@ func TestResultsFirst(t *testing.T) {
 		"bar": 2,
 	})
 
-	r = &ScrapeResults{
+	r = &Results{
 		Results: [][]map[string]interface{}{{}},
 	}
 	assert.Nil(t, r.First())
 }
 
 func TestResultsAllBlocks(t *testing.T) {
-	r := &ScrapeResults{
+	r := &Results{
 		Results: [][]map[string]interface{}{
 			{{"foo": 1, "bar": 2}},
 			{{"baz": 3, "asdf": 4}},

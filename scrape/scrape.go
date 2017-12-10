@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/segmentio/ksuid"
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/paginate"
+	"github.com/temoto/robotstxt"
 )
 
 var logger *log.Logger
@@ -18,17 +21,17 @@ func init() {
 }
 
 var (
-	ErrNoPieces = errors.New("no pieces in the config")
+	ErrNoParts = errors.New("no pieces in the config")
 )
 
 // The DividePageFunc type is used to extract a page's blocks during a scrape.
 // For more information, please see the documentation on the ScrapeConfig type.
 type DividePageFunc func(*goquery.Selection) []*goquery.Selection
 
-// A Piece represents a given chunk of data that is to be extracted from every
+// A Part represents a given chunk of data that is to be extracted from every
 // block in each page of a scrape.
-type Piece struct {
-	// The name of this piece.  Required, and will be used to aggregate results.
+type Part struct {
+	// The name of this part.  Required, and will be used to aggregate results.
 	Name string
 
 	// A sub-selector within the given block to process.  Pass in "." to use
@@ -38,12 +41,12 @@ type Piece struct {
 
 	// Extractor contains the logic on how to extract some results from the
 	// selector that is provided to this Piece.
-	Extractor extract.PieceExtractor
-	Details   *ScrapeConfig
+	Extractor extract.Extractor
+	Details   *Config
 }
 
 // The main configuration for a scrape.  Pass this to the New() function.
-type ScrapeConfig struct {
+type Config struct {
 	// Paginator is the Paginator to use for this current scrape.
 	//
 	// If Paginator is nil, then no pagination is performed and it is assumed that
@@ -56,37 +59,34 @@ type ScrapeConfig struct {
 	//
 	// If the DividePage function is nil, then no division is performed and the
 	// page is assumed to contain a single block containing the entire <body>
-	// element.
+	// tag.
 	DividePage DividePageFunc
 
-	// Pieces contains the list of data that is extracted for each block.  For
+	// Parts contains the list of data that is extracted for each block.  For
 	// every block that is the result of the DividePage function (above), all of
-	// the Pieces entries receives the selector representing the block, and can
-	// return a result.  If the returned result is nil, then the Piece is
+	// the Parts entries receives the selector representing the block, and can
+	// return a result.  If the returned result is nil, then the Part is
 	// considered not to exist in this block, and is not included.
 	//
-	// Note: if a Piece's Extractor returns an error, it results in the scrape
-	// being aborted - this can be useful if you need to ensure that a given Piece
+	// Note: if a Part's Extractor returns an error, it results in the scrape
+	// being aborted - this can be useful if you need to ensure that a given Part
 	// is required, for example.
-	Pieces []Piece
-
-	//CSVHeader store column names for CSV data. They are generated after payload fields parsing according their types
-	CSVHeader []string
+	Parts []Part
 
 	Opts ScrapeOptions
 }
 
-// ScrapeResults describes the results of a scrape.  It contains a list of all
+// Results describes the results of a scrape.  It contains a list of all
 // pages (URLs) visited during the process, along with all results generated
-// from each Piece in each page.
-type ScrapeResults struct {
-	// All URLs visited during this scrape, in order.  Always contains at least
+// from each Part in each page.
+type Results struct {
+	// All Visited visited during this scrape, in order.  Always contains at least
 	// one element - the initial URL.
-	URLs []string
+	Visited map[string]error
 
-	// The results from each Piece of each page.  Essentially, the top-level array
+	// The results from each Part of each page.  Essentially, the top-level array
 	// is for each page, the second-level array is for each block in a page, and
-	// the final map[string]interface{} is the mapping of Piece.Name to results.
+	// the final map[string]interface{} is the mapping of Part.Name to results.
 	Results [][]map[string]interface{}
 }
 
@@ -94,7 +94,7 @@ type ScrapeResults struct {
 // block on the first page.
 // This function can return nil if there were no blocks found on the first page
 // of the scrape.
-func (r *ScrapeResults) First() map[string]interface{} {
+func (r *Results) First() map[string]interface{} {
 	if len(r.Results[0]) == 0 {
 		return nil
 	}
@@ -104,7 +104,7 @@ func (r *ScrapeResults) First() map[string]interface{} {
 
 // AllBlocks returns a single list of results from every block on all pages.
 // This function will always return a list, even if no blocks were found.
-func (r *ScrapeResults) AllBlocks() []map[string]interface{} {
+func (r *Results) AllBlocks() []map[string]interface{} {
 	ret := []map[string]interface{}{}
 
 	for _, page := range r.Results {
@@ -116,30 +116,74 @@ func (r *ScrapeResults) AllBlocks() []map[string]interface{} {
 	return ret
 }
 
+type Session struct {
+	Robots  *robotstxt.RobotsData
+	Cookies string
+}
+type Task struct {
+	ID      string
+	Scraper *Scraper
+	Session
+	//	Err     []error
+	Status string
+	Results
+}
+
 type Scraper struct {
-	Config *ScrapeConfig
+	Config *Config
+	//Task   Task
+	//Result string //filename
+}
+
+func NewTask(p Payload) (task *Task, err error) {
+	config, err := p.PayloadToScrapeConfig()
+	if err != nil {
+		return nil, err
+	}
+	scraper, err := NewScraper(config)
+	if err != nil {
+		return nil, err
+	}
+	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
+	id := ksuid.New()
+	
+	task = &Task{
+		ID:      id.String(),
+		Scraper: scraper,
+	}
+	return task, nil
+}
+
+//KSUID stores the timestamp portion in ID. So we can retrieve it from Task object as a Time object
+func (t Task) StartTime() (*time.Time, error) {
+	id, err := ksuid.Parse(t.ID)
+	if err != nil {
+		return nil, err
+	}
+	idTime := id.Time()
+	return &idTime, nil
 }
 
 // Create a new scraper with the provided configuration.
-func New(c *ScrapeConfig) (*Scraper, error) {
+func NewScraper(c *Config) (*Scraper, error) {
 
 	// Validate config
-	if len(c.Pieces) == 0 {
-		return nil, ErrNoPieces
+	if len(c.Parts) == 0 {
+		return nil, ErrNoParts
 	}
 
 	seenNames := map[string]struct{}{}
-	for i, piece := range c.Pieces {
-		if len(piece.Name) == 0 {
-			return nil, fmt.Errorf("no name provided for piece %d", i)
+	for i, part := range c.Parts {
+		if len(part.Name) == 0 {
+			return nil, fmt.Errorf("no name provided for part %d", i)
 		}
-		if _, seen := seenNames[piece.Name]; seen {
-			return nil, fmt.Errorf("piece %s has a duplicate name", i)
+		if _, seen := seenNames[part.Name]; seen {
+			return nil, fmt.Errorf("part %s has a duplicate name", i)
 		}
-		seenNames[piece.Name] = struct{}{}
+		seenNames[part.Name] = struct{}{}
 
-		if len(piece.Selector) == 0 {
-			return nil, fmt.Errorf("no selector provided for piece %d", i)
+		if len(part.Selector) == 0 {
+			return nil, fmt.Errorf("no selector provided for part %d", i)
 		}
 	}
 
@@ -150,12 +194,20 @@ func New(c *ScrapeConfig) (*Scraper, error) {
 		c.DividePage = DividePageBySelector("body")
 
 	}
-	
+
 	// All set!
 	ret := &Scraper{
 		Config: c,
 	}
 	return ret, nil
+}
+
+func (c Config) PartNames() []string {
+	names := []string{}
+	for _, part := range c.Parts {
+		names = append(names, part.Name)
+	}
+	return names
 }
 
 /*
