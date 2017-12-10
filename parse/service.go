@@ -49,10 +49,10 @@ func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
 		return nil, err
 	}
 	var buf bytes.Buffer
-	config := task.Scraper.Config
-	switch config.Opts.Format {
+	opts := task.Scraper.Opts
+	switch opts.Format {
 	case "json":
-		if config.Opts.PaginateResults {
+		if opts.PaginateResults {
 			json.NewEncoder(&buf).Encode(results)
 		} else {
 			json.NewEncoder(&buf).Encode(results.AllBlocks())
@@ -74,7 +74,7 @@ func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
 		*/
 		w := csv.NewWriter(&buf)
 
-		err = encodeCSV(config.PartNames(), results.AllBlocks(), ",", w)
+		err = encodeCSV(task.Scraper.PartNames(), results.AllBlocks(), ",", w)
 		w.Flush()
 	/*
 		case "xmlviajson":
@@ -148,7 +148,7 @@ func (ps ParseService) scrape(req interface{}, task scrape.Task) (*scrape.Result
 	// 	Results: [][]map[string]interface{}{},
 	// }
 	var numPages int
-	config := task.Scraper.Config
+	opts := task.Scraper.Opts
 	task.Results.Visited = make(map[string]error)
 	for {
 		//check if scraping of current url is not forbidden
@@ -158,7 +158,7 @@ func (ps ParseService) scrape(req interface{}, task scrape.Task) (*scrape.Result
 		}
 		// Repeat until we don't have any more URLs, or until we hit our page limit.
 		if len(url) == 0 ||
-			(config.Opts.MaxPages > 0 && numPages >= config.Opts.MaxPages) {
+			(opts.MaxPages > 0 && numPages >= opts.MaxPages) {
 			break
 		}
 		//call remote fetcher to download web page
@@ -181,11 +181,11 @@ func (ps ParseService) scrape(req interface{}, task scrape.Task) (*scrape.Result
 		results := []map[string]interface{}{}
 
 		// Divide this page into blocks
-		for _, block := range config.DividePage(doc.Selection) {
+		for _, block := range task.Scraper.DividePage(doc.Selection) {
 			blockResults := map[string]interface{}{}
 
 			// Process each part of this block
-			for _, part := range config.Parts {
+			for _, part := range task.Scraper.Parts {
 				sel := block
 				if part.Selector != "." {
 					sel = sel.Find(part.Selector)
@@ -217,7 +217,7 @@ func (ps ParseService) scrape(req interface{}, task scrape.Task) (*scrape.Result
 		numPages++
 
 		// Get the next page.
-		url, err = config.Paginator.NextPage(url, doc.Selection)
+		url, err = task.Scraper.Paginator.NextPage(url, doc.Selection)
 		if err != nil {
 			return nil, err
 		}
@@ -235,14 +235,14 @@ func (ps ParseService) scrape(req interface{}, task scrape.Task) (*scrape.Result
 		req = sRequest
 		//req.URL = url
 
-		if config.Opts.RandomizeFetchDelay {
+		if opts.RandomizeFetchDelay {
 			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 			rand := scrape.Random(500, 1500)
-			delay := config.Opts.FetchDelay * time.Duration(rand) / 1000
+			delay := opts.FetchDelay * time.Duration(rand) / 1000
 			logger.Println(delay)
 			time.Sleep(delay)
 		} else {
-			time.Sleep(config.Opts.FetchDelay)
+			time.Sleep(opts.FetchDelay)
 		}
 
 	}

@@ -31,7 +31,7 @@ type Payload struct {
 	//PayloadMD5 encodes payload content to MD5. It is used for generating file name to be stored.
 	PayloadMD5          []byte        `json:"payloadMD5"`
 	Format              string        `json:"format"`
-	Paginator           paginator     `json:"paginator"`
+	Paginator           *paginator     `json:"paginator"`
 	PaginateResults     *bool         `json:"paginateResults"`
 	FetchDelay          time.Duration `json:"fetchDelay"`
 	RandomizeFetchDelay *bool         `json:"randomizeFetchDelay"`

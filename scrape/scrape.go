@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -42,11 +43,11 @@ type Part struct {
 	// Extractor contains the logic on how to extract some results from the
 	// selector that is provided to this Piece.
 	Extractor extract.Extractor
-	Details   *Config
+	Details   *Scraper
 }
 
-// The main configuration for a scrape.  Pass this to the New() function.
-type Config struct {
+//Scraper struct consolidates settings for scraping task.
+type Scraper struct {
 	// Paginator is the Paginator to use for this current scrape.
 	//
 	// If Paginator is nil, then no pagination is performed and it is assumed that
@@ -72,7 +73,8 @@ type Config struct {
 	// being aborted - this can be useful if you need to ensure that a given Part
 	// is required, for example.
 	Parts []Part
-
+	//Opts contains options that are used during the progress of a
+	// scrape.
 	Opts ScrapeOptions
 }
 
@@ -80,8 +82,8 @@ type Config struct {
 // pages (URLs) visited during the process, along with all results generated
 // from each Part in each page.
 type Results struct {
-	// All Visited visited during this scrape, in order.  Always contains at least
-	// one element - the initial URL.
+	// All Visited contain a map[url]error if any during this scrape.
+	//  Always contains at least one element - the initial URL.
 	Visited map[string]error
 
 	// The results from each Part of each page.  Essentially, the top-level array
@@ -129,24 +131,18 @@ type Task struct {
 	Results
 }
 
-type Scraper struct {
-	Config *Config
-	//Task   Task
-	//Result string //filename
-}
-
 func NewTask(p Payload) (task *Task, err error) {
-	config, err := p.PayloadToScrapeConfig()
-	if err != nil {
-		return nil, err
-	}
-	scraper, err := NewScraper(config)
+	//config, err := p.PayloadToScrapeConfig()
+	//if err != nil {
+	//	return nil, err
+	//}
+	scraper, err := NewScraper(p)
 	if err != nil {
 		return nil, err
 	}
 	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
 	id := ksuid.New()
-	
+
 	task = &Task{
 		ID:      id.String(),
 		Scraper: scraper,
@@ -165,15 +161,106 @@ func (t Task) StartTime() (*time.Time, error) {
 }
 
 // Create a new scraper with the provided configuration.
-func NewScraper(c *Config) (*Scraper, error) {
+func NewScraper(p Payload) (*Scraper, error) {
+	parts := []Part{}
+	selectors := []string{}
+	for _, f := range p.Fields {
+		params := make(map[string]interface{})
+		if f.Extractor.Params != nil {
+			params = f.Extractor.Params.(map[string]interface{})
+		}
+		switch eType := f.Extractor.Type; eType {
+
+		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
+		case "link":
+			l := &extract.Link{Href: extract.Attr{Attr: "href"}}
+			if params != nil {
+				err := FillStruct(params, l)
+				if err != nil {
+					logger.Println(err)
+				}
+			}
+			parts = append(parts, Part{
+				Name:      f.Name + "_text",
+				Selector:  f.Selector,
+				Extractor: l.Text,
+			}, Part{
+				Name:      f.Name + "_link",
+				Selector:  f.Selector,
+				Extractor: l.Href,
+			})
+			//Add selector just one time for link type
+			selectors = append(selectors, f.Selector)
+
+		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
+		case "image":
+			i := &extract.Image{Src: extract.Attr{Attr: "src"},
+				Alt: extract.Attr{Attr: "alt"}}
+			if params != nil {
+				err := FillStruct(params, i)
+				if err != nil {
+					logger.Println(err)
+				}
+			}
+			parts = append(parts, Part{
+				Name:      f.Name + "_src",
+				Selector:  f.Selector,
+				Extractor: i.Src,
+			}, Part{
+				Name:      f.Name + "_alt",
+				Selector:  f.Selector,
+				Extractor: i.Alt,
+			})
+			//Add selector just one time for image type
+			selectors = append(selectors, f.Selector)
+
+		default:
+			var e extract.Extractor
+			switch eType {
+			case "const":
+				//	c := &extract.Const{Val: params["value"]}
+				//	e = c
+				e = &extract.Const{}
+			case "count":
+				e = &extract.Count{}
+			case "text":
+				e = &extract.Text{}
+			case "html":
+				e = &extract.Html{}
+			case "outerHtml":
+				e = &extract.OuterHtml{}
+			case "attr":
+				e = &extract.Attr{}
+			case "regex":
+				r := &extract.Regex{}
+				regExp := params["regexp"]
+				r.Regex = regexp.MustCompile(regExp.(string))
+				e = r
+			}
+
+			if params != nil {
+				err := FillStruct(params, e)
+				if err != nil {
+					logger.Println(err)
+				}
+			}
+			parts = append(parts, Part{
+				Name:      f.Name,
+				Selector:  f.Selector,
+				Extractor: e,
+			})
+			selectors = append(selectors, f.Selector)
+			//	names = append(names, f.Name)
+		}
+	}
 
 	// Validate config
-	if len(c.Parts) == 0 {
+	if len(parts) == 0 {
 		return nil, ErrNoParts
 	}
 
 	seenNames := map[string]struct{}{}
-	for i, part := range c.Parts {
+	for i, part := range parts {
 		if len(part.Name) == 0 {
 			return nil, fmt.Errorf("no name provided for part %d", i)
 		}
@@ -187,24 +274,45 @@ func NewScraper(c *Config) (*Scraper, error) {
 		}
 	}
 
-	if c.Paginator == nil {
-		c.Paginator = dummyPaginator{}
+	var paginator paginate.Paginator
+	if p.Paginator == nil {
+		paginator = &dummyPaginator{}
+	} else {
+		paginator = paginate.BySelector(p.Paginator.Selector, p.Paginator.Attribute)
 	}
-	if c.DividePage == nil {
-		c.DividePage = DividePageBySelector("body")
 
+	//TODO: need to test the case when there are no selectors found in payload.
+	var dividePageFunc DividePageFunc
+	if len(selectors) == 0 {
+		dividePageFunc = DividePageBySelector("body")
+	} else {
+		dividePageFunc = DividePageByIntersection(selectors)
+	}
+
+	scraper := &Scraper{
+		DividePage: dividePageFunc,
+		Parts:      parts,
+		Paginator:  paginator,
+		Opts: ScrapeOptions{
+			MaxPages:            p.Paginator.MaxPages,
+			Format:              p.Format,
+			PaginateResults:     *p.PaginateResults,
+			FetchDelay:          p.FetchDelay,
+			RandomizeFetchDelay: *p.RandomizeFetchDelay,
+			RetryTimes:          p.RetryTimes,
+		},
 	}
 
 	// All set!
-	ret := &Scraper{
-		Config: c,
-	}
-	return ret, nil
+	//ret := &Scraper{
+	//	Config: c,
+	//}
+	return scraper, nil
 }
 
-func (c Config) PartNames() []string {
+func (s Scraper) PartNames() []string {
 	names := []string{}
-	for _, part := range c.Parts {
+	for _, part := range s.Parts {
 		names = append(names, part.Name)
 	}
 	return names
