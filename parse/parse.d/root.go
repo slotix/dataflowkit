@@ -22,7 +22,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"os/user"
 
 	"github.com/slotix/dataflowkit/healthcheck"
 	"github.com/slotix/dataflowkit/parse"
@@ -38,7 +40,10 @@ var (
 	storageType    string
 	storageExpires int64 //how long in seconds object stay in a cache before expiration.
 	diskvBaseDir   string
-	fetchBucket    string
+
+	spacesConfig   string //Digital Ocean spaces configuration file
+	spacesEndpoint string //Digital Ocean spaces endpoint address
+	DFKBucket      string
 
 	redisHost       string
 	redisExpire     int
@@ -59,7 +64,7 @@ var RootCmd = &cobra.Command{
 
 		services := []healthcheck.Checker{
 			healthcheck.FetchConn{
-				//Check if Splash Fetch service is alive 
+				//Check if Splash Fetch service is alive
 				Host: DFKFetch,
 			},
 		}
@@ -68,7 +73,7 @@ var RootCmd = &cobra.Command{
 				Network: redisNetwork,
 				Host:    redisHost})
 		}
-		
+
 		status := healthcheck.CheckServices(services...)
 		allAlive := true
 
@@ -103,10 +108,12 @@ func init() {
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
 
 	//set here default type of storage
-	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Redis, Diskv")
+	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
 	RootCmd.Flags().Int64VarP(&storageExpires, "STORAGE_EXPIRE", "", 3600, "Default Storage expire value in seconds")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
-	RootCmd.Flags().StringVarP(&fetchBucket, "FETCH_BUCKET", "", "fetch-bucket", "S3 bucket name for storing fetch results")
+	RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", homeDir()+".spaces/credentials", "Digital Ocean Spaces Configuration file")
+	RootCmd.Flags().StringVarP(&spacesEndpoint, "SPACES_ENDPOINT", "", "https://ams3.digitaloceanspaces.com", "Digital Ocean Spaces Endpoint Address")
+	RootCmd.Flags().StringVarP(&DFKBucket, "DFK_BUCKET", "", "dfk-storage", "AWS S3 or Digital Ocean Spaces bucket name for storing parsed results")
 
 	RootCmd.Flags().StringVarP(&redisHost, "REDIS", "r", "127.0.0.1:6379", "Redis host address")
 	RootCmd.Flags().IntVarP(&redisExpire, "REDIS_EXPIRE", "", 3600, "Default Redis expire value in seconds")
@@ -121,12 +128,23 @@ func init() {
 
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
 	viper.BindPFlag("STORAGE_EXPIRE", RootCmd.Flags().Lookup("STORAGE_EXPIRE"))
+	viper.BindPFlag("SPACES_CONFIG", RootCmd.Flags().Lookup("SPACES_CONFIG"))
+	viper.BindPFlag("SPACES_ENDPOINT", RootCmd.Flags().Lookup("SPACES_ENDPOINT"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
-	viper.BindPFlag("FETCH_BUCKET", RootCmd.Flags().Lookup("FETCH_BUCKET"))
+	viper.BindPFlag("DFK_BUCKET", RootCmd.Flags().Lookup("DFK_BUCKET"))
 	viper.BindPFlag("REDIS", RootCmd.Flags().Lookup("REDIS"))
 	viper.BindPFlag("REDIS_EXPIRE", RootCmd.Flags().Lookup("REDIS_EXPIRE"))
 	viper.BindPFlag("REDIS_NETWORK", RootCmd.Flags().Lookup("REDIS_NETWORK"))
 	viper.BindPFlag("REDIS_PASSWORD", RootCmd.Flags().Lookup("REDIS_PASSWORD"))
 	viper.BindPFlag("REDIS_DB", RootCmd.Flags().Lookup("REDIS_DB"))
 	viper.BindPFlag("REDIS_SOCKET_PATH", RootCmd.Flags().Lookup("REDIS_SOCKET_PATH"))
+}
+
+//homeDir returns user's $HOME directory
+func homeDir() string {
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return usr.HomeDir + "/"
 }

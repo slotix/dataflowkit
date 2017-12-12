@@ -33,6 +33,8 @@ func Start(DFKFetch string) {
 	switch sType {
 	case "S3":
 		storageType = storage.S3
+	case "Spaces":
+		storageType = storage.Spaces
 	case "Redis":
 		storageType = storage.Redis
 	case "Diskv":

@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/spf13/viper"
 )
 
@@ -24,9 +26,14 @@ type Store interface {
 type Type string
 
 const (
-	S3    Type = "S3"
-	Diskv      = "Diskv"
-	Redis      = "Redis"
+	//Amazon S3 storage
+	S3 Type = "S3"
+	//Digital Ocean Spaces
+	Spaces = "Spaces"
+	//diskv key/value storage "github.com/peterbourgon/diskv"
+	Diskv = "Diskv"
+	//Redis
+	Redis = "Redis"
 )
 
 func NewStore(t Type) Store {
@@ -34,9 +41,22 @@ func NewStore(t Type) Store {
 	case Diskv:
 		baseDir := viper.GetString("DISKV_BASE_DIR")
 		return newDiskvStorage(baseDir, 1024*1024)
-	case S3:
-		bucket := viper.GetString("FETCH_BUCKET")
-		return newS3Storage(bucket)
+	case S3: //AWS S3
+		bucket := viper.GetString("DFK_BUCKET")
+		config := &aws.Config{
+			Region: aws.String("us-east-1"),
+		}
+		return newS3Storage(config, bucket)
+
+	case Spaces: //Digital Ocean Spaces
+		bucket := viper.GetString("DFK_BUCKET")
+		config := &aws.Config{
+			Credentials: credentials.NewSharedCredentials(viper.GetString("SPACES_CONFIG"), ""), //Load credentials from specified file
+			Endpoint:    aws.String(viper.GetString("SPACES_ENDPOINT")), //Endpoint is obligatory for DO Spaces 
+			Region:      aws.String("ams333"), //Actually for Digital Ocean spaces region parameter may have any value. But it can't be omited.
+		}
+		return newS3Storage(config, bucket)
+
 	case Redis:
 		redisHost := viper.GetString("REDIS")
 		redisPassword := ""
@@ -80,18 +100,18 @@ func (s RedisConn) Expired(key string) bool {
 
 }
 
-func newS3Storage(bucket string) Store {
-	s3Conn := newS3Conn(bucket)
+func newS3Storage(config *aws.Config, bucket string) Store {
+	s3Conn := newS3Conn(config, bucket)
 	return s3Conn
 }
 
 func (s S3Conn) Read(key string) (value []byte, err error) {
-	value, err = s.Download(key)
+	value, err = s.download(key)
 	return
 }
 
 func (s S3Conn) Write(key string, value []byte, expTime int64) error {
-	err := s.Upload(key, value, expTime)
+	err := s.upload(key, value, expTime)
 	if err != nil {
 		return err
 	}
@@ -99,7 +119,7 @@ func (s S3Conn) Write(key string, value []byte, expTime int64) error {
 }
 
 func (s S3Conn) Expired(key string) bool {
-	obj, err := s.GetObject(key)
+	obj, err := s.getObject(key)
 	if err != nil {
 		panic(err)
 	}
@@ -116,6 +136,8 @@ func (s S3Conn) Expired(key string) bool {
 	}
 	return true
 }
+
+
 
 func newDiskvStorage(baseDir string, CacheSizeMax uint64) Store {
 	d := newDiskvConn(baseDir, CacheSizeMax)
