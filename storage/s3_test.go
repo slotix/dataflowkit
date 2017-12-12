@@ -4,25 +4,32 @@ package storage
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"os/user"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/spf13/viper"
 )
 
 var (
-	svc        *s3.S3
-	uploader   *s3manager.Uploader
-	downloader *s3manager.Downloader
-	bucket     string
+	//svc        *s3.S3
+	//uploader   *s3manager.Uploader
+	//downloader *s3manager.Downloader
+	bucket string
+	conn   S3Conn
 )
 
 func init() {
+	viper.Set("SPACES_CONFIG", homeDir()+".spaces/credentials")
+	viper.Set("SPACES_ENDPOINT", "https://ams3.digitaloceanspaces.com")
+	//bucket = "dfk-storage"
 	bucket = "fetch-bucket"
+	conn = newS3Conn(bucket)
+	/* bucket = "fetch-bucket"
 	// Initialize a session that the SDK will use to load configuration,
 	// credentials, and region from the shared config file. (~/.aws/config).
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
@@ -32,12 +39,12 @@ func init() {
 	// Create S3 service client
 	svc = s3.New(sess)
 	uploader = s3manager.NewUploader(sess)
-	downloader = s3manager.NewDownloader(sess)
+	downloader = s3manager.NewDownloader(sess) */
 
 }
 
 func TestListBuckets(t *testing.T) {
-	result, err := svc.ListBuckets(nil)
+	result, err := conn.svc.ListBuckets(nil)
 
 	if err != nil {
 		fmt.Println(err)
@@ -54,7 +61,7 @@ func TestListBuckets(t *testing.T) {
 
 func TestListBucketItems(t *testing.T) {
 
-	resp, err := svc.ListObjects(&s3.ListObjectsInput{Bucket: aws.String(bucket)})
+	resp, err := conn.svc.ListObjects(&s3.ListObjectsInput{Bucket: aws.String(bucket)})
 
 	if err != nil {
 		fmt.Println(err)
@@ -73,7 +80,7 @@ func TestUpload(t *testing.T) {
 
 	buf := []byte("file content test\nanother line of test here")
 	r := bytes.NewReader(buf)
-	_, err := uploader.Upload(&s3manager.UploadInput{
+	_, err := conn.uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String("urlll"),
 		Body:   r,
@@ -91,7 +98,7 @@ func TestDownload(t *testing.T) {
 	buff := &aws.WriteAtBuffer{}
 
 	//	numBytes, err := downloader.Download(aws.NewWriteAtBuffer(buf),
-	numBytes, err := downloader.Download(buff,
+	numBytes, err := conn.downloader.Download(buff,
 		&s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String("http://dbconvert.com"),
@@ -111,10 +118,10 @@ func TestDownload(t *testing.T) {
 func TestGetObject(t *testing.T) {
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
-		Key:    aws.String("http://dbconvert.com"),
+		Key:    aws.String("test"),
 	}
 
-	result, err := svc.GetObject(input)
+	result, err := conn.svc.GetObject(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
@@ -137,13 +144,13 @@ func TestGetObject(t *testing.T) {
 }
 
 func TestDeleteItem(t *testing.T) {
-	_, err := svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String("urlll")})
+	_, err := conn.svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String("urlll")})
 
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	err = svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
+	err = conn.svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String("urlll"),
 	})
@@ -151,4 +158,13 @@ func TestDeleteItem(t *testing.T) {
 		fmt.Println(err)
 	}
 
+}
+
+//homeDir returns user's $HOME directory
+func homeDir() string {
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return usr.HomeDir + "/"
 }

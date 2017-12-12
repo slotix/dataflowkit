@@ -12,14 +12,17 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
+// S3Conn represents a AWS S3 Connection structure
 type S3Conn struct {
+	//bucket name
 	bucket     string
 	svc        *s3.S3
 	uploader   *s3manager.Uploader
 	downloader *s3manager.Downloader
 }
 
-func newS3Conn(bucket string) S3Conn {
+
+/* func newS3Conn(bucket string) S3Conn {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
@@ -27,9 +30,29 @@ func newS3Conn(bucket string) S3Conn {
 	uploader := s3manager.NewUploader(sess)
 	downloader := s3manager.NewDownloader(sess)
 	return S3Conn{bucket, svc, uploader, downloader}
+} */
+
+
+// newS3Conn initializes new AWS S3 / Digital Ocean Spaces Connection with specified bucket
+//load credentials from shared file
+//credentials have the following format:
+//[default]
+//aws_access_key_id = some_access_key_id
+//aws_secret_access_key = some_secret_access_key
+//--------
+//Spaces access keys are generated in DO Control panel at
+//https://cloud.digitalocean.com/settings/api/tokens?i=2c1aad
+func newS3Conn(config *aws.Config, bucket string) S3Conn {
+	sess := session.New(config)
+	svc := s3.New(sess)
+
+	uploader := s3manager.NewUploader(sess)
+	downloader := s3manager.NewDownloader(sess)
+	return S3Conn{bucket, svc, uploader, downloader}
 }
 
-func (s S3Conn) Download(key string) (value []byte, err error) {
+//download returns a value of specified key from AWS S3
+func (s S3Conn) download(key string) (value []byte, err error) {
 	buf := &aws.WriteAtBuffer{}
 	_, err = s.downloader.Download(buf,
 		&s3.GetObjectInput{
@@ -42,7 +65,24 @@ func (s S3Conn) Download(key string) (value []byte, err error) {
 	return buf.Bytes(), nil
 }
 
-func (s S3Conn) GetObject(key string) (object *s3.GetObjectOutput, err error) {
+//upload sends key/value pair to AWS S3 Storage
+func (s S3Conn) upload(key string, value []byte, expTime int64) error {
+	r := bytes.NewReader(value)
+	t := time.Unix(expTime, 0)
+	_, err := s.uploader.Upload(&s3manager.UploadInput{
+		Bucket:  aws.String(s.bucket),
+		Key:     aws.String(key),
+		Body:    r,
+		Expires: &t,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//getObject returns an object from AWS S3. This may be used to get meta information about an object.
+func (s S3Conn) getObject(key string) (object *s3.GetObjectOutput, err error) {
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
@@ -61,30 +101,7 @@ func (s S3Conn) GetObject(key string) (object *s3.GetObjectOutput, err error) {
 			// Message from an error.
 			fmt.Println(err.Error())
 		}
-		return 
+		return
 	}
 	return
-	//expires, err = time.Parse("Mon, 2 Jan 2006 15:04:05 MST", *result.Expires)
-	//if err != nil {
-	//	return time.Time{}, err
-	//}
-	//return expires.UTC(), nil
-
-}
-
-
-
-func (s S3Conn) Upload(key string, value []byte, expTime int64) error {
-	r := bytes.NewReader(value)
-	t := time.Unix(expTime, 0)
-	_, err := s.uploader.Upload(&s3manager.UploadInput{
-		Bucket:  aws.String(s.bucket),
-		Key:     aws.String(key),
-		Body:    r,
-		Expires: &t,
-	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
