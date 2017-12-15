@@ -6,15 +6,10 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
-	"net/http"
-	"time"
 
-	"github.com/PuerkitoBio/goquery"
-	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/scrape"
 	"github.com/slotix/dataflowkit/splash"
-	"github.com/spf13/viper"
 )
 
 // Define service interface
@@ -44,7 +39,8 @@ func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
 	}
 	task.Session.Robots = robots
 
-	results, err := ps.scrape(req, *task)
+	//scrape request and return results.
+	err = scrape.Scrape(req, task)
 	if err != nil {
 		return nil, err
 	}
@@ -53,9 +49,9 @@ func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
 	switch opts.Format {
 	case "json":
 		if opts.PaginateResults {
-			json.NewEncoder(&buf).Encode(results)
+			json.NewEncoder(&buf).Encode(task.Results)
 		} else {
-			json.NewEncoder(&buf).Encode(results.AllBlocks())
+			json.NewEncoder(&buf).Encode(task.Results.AllBlocks())
 		}
 	case "csv":
 		/*
@@ -74,7 +70,7 @@ func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
 		*/
 		w := csv.NewWriter(&buf)
 
-		err = encodeCSV(task.Scraper.PartNames(), results.AllBlocks(), ",", w)
+		err = encodeCSV(task.Scraper.PartNames(), task.Results.AllBlocks(), ",", w)
 		w.Flush()
 	/*
 		case "xmlviajson":
@@ -92,163 +88,11 @@ func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
 			}
 	*/
 	case "xml":
-		err = encodeXML(results.AllBlocks(), &buf)
+		err = encodeXML(task.Results.AllBlocks(), &buf)
 		if err != nil {
 			return nil, err
 		}
 	}
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
-}
-
-//responseFromFetchService sends request to fetch service and returns *splash.Response
-func responseFromFetchService(req splash.Request) (*splash.Response, error) {
-
-	//fetch content
-	b, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-	reader := bytes.NewReader(b)
-	addr := "http://" + viper.GetString("DFK_FETCH") + "/response/splash"
-	request, err := http.NewRequest("POST", addr, reader)
-	if err != nil {
-		return nil, err
-	}
-	request.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	r, err := client.Do(request)
-	if r != nil {
-		defer r.Body.Close()
-	}
-	if err != nil {
-		panic(err)
-	}
-	resp, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	var sResponse *splash.Response
-	if err := json.Unmarshal(resp, &sResponse); err != nil {
-		logger.Println("Json Unmarshall error", err)
-	}
-	//	content, err := sResponse.GetContent()
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//return content, nil
-	return sResponse, nil
-}
-
-func (ps ParseService) scrape(req interface{}, task scrape.Task) (*scrape.Results, error) {
-	url := req.(splash.Request).GetURL()
-
-	// res := &scrape.Results{
-	// 	URLs:    []string{},
-	// 	Results: [][]map[string]interface{}{},
-	// }
-	var numPages int
-	opts := task.Scraper.Opts
-	task.Results.Visited = make(map[string]error)
-	for {
-		//check if scraping of current url is not forbidden
-		if !fetch.AllowedByRobots(url, task.Robots) {
-			//return nil, &errs.ForbiddenByRobots{url}
-			task.Results.Visited[url] = &errs.ForbiddenByRobots{url}
-		}
-		// Repeat until we don't have any more URLs, or until we hit our page limit.
-		if len(url) == 0 ||
-			(opts.MaxPages > 0 && numPages >= opts.MaxPages) {
-			break
-		}
-		//call remote fetcher to download web page
-		sResponse, err := responseFromFetchService(req.(splash.Request))
-		//sResponse, err := req.(splash.Request).GetResponse()
-		if err != nil {
-			return nil, err
-		}
-		content, err := sResponse.GetContent()
-		if err != nil {
-			return nil, err
-		}
-		// Create a goquery document.
-		doc, err := goquery.NewDocumentFromReader(content)
-		if err != nil {
-			return nil, err
-		}
-
-		task.Results.Visited[url] = nil
-		results := []map[string]interface{}{}
-
-		// Divide this page into blocks
-		for _, block := range task.Scraper.DividePage(doc.Selection) {
-			blockResults := map[string]interface{}{}
-
-			// Process each part of this block
-			for _, part := range task.Scraper.Parts {
-				sel := block
-				if part.Selector != "." {
-					sel = sel.Find(part.Selector)
-				}
-
-				partResults, err := part.Extractor.Extract(sel)
-				if err != nil {
-					return nil, err
-				}
-
-				// A nil response from an extractor means that we don't even include it in
-				// the results.
-				if partResults == nil {
-					continue
-				}
-
-				blockResults[part.Name] = partResults
-			}
-			if len(blockResults) > 0 {
-				// Append the results from this block.
-				results = append(results, blockResults)
-			}
-		}
-
-		// Append the results from this page.
-		//res.Results = append(res.Results, results)
-		task.Results.Results = append(task.Results.Results, results)
-
-		numPages++
-
-		// Get the next page.
-		url, err = task.Scraper.Paginator.NextPage(url, doc.Selection)
-		if err != nil {
-			return nil, err
-		}
-
-		//every time when getting a response the next request will be filled with updated cookie information
-		sRequest := req.(splash.Request)
-		//	if response, ok := sResponse.(*splash.Response); ok {
-		//sRequest := req.(splash.Request)
-		err = sResponse.SetCookieToNextRequest(&sRequest)
-		if err != nil {
-			//return nil, err
-			logger.Println(err)
-		}
-		sRequest.URL = url
-		req = sRequest
-		//req.URL = url
-
-		if opts.RandomizeFetchDelay {
-			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-			rand := scrape.Random(500, 1500)
-			delay := opts.FetchDelay * time.Duration(rand) / 1000
-			logger.Println(delay)
-			time.Sleep(delay)
-		} else {
-			time.Sleep(opts.FetchDelay)
-		}
-
-	}
-	logger.Println(task.Visited)
-	// All good!
-	//return res, nil
-	return &task.Results, nil
-
 }
