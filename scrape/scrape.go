@@ -29,7 +29,8 @@ func init() {
 }
 
 var (
-	ErrNoParts = errors.New("no pieces in the config")
+	ErrNoParts     = errors.New("no pieces in payload")
+	ErrNoSelectors = errors.New("no selectors in payload")
 )
 
 // First returns the first set of results - i.e. the results from the first
@@ -59,10 +60,6 @@ func (r *Results) AllBlocks() []map[string]interface{} {
 }
 
 func NewTask(p Payload) (task *Task, err error) {
-	//config, err := p.PayloadToScrapeConfig()
-	//if err != nil {
-	//	return nil, err
-	//}
 	scraper, err := NewScraper(p)
 	if err != nil {
 		return nil, err
@@ -87,15 +84,28 @@ func (t Task) StartTime() (*time.Time, error) {
 	return &idTime, nil
 }
 
-// Create a new scraper with the provided configuration.
-func NewScraper(p Payload) (*Scraper, error) {
-	parts := []Part{}
+//selectors returns selectors from payload
+func (p Payload) selectors() ([]string, error) {
 	selectors := []string{}
 	for _, f := range p.Fields {
+		selectors = append(selectors, f.Selector)
+	}
+	if len(selectors) == 0 {
+		return nil, errNoSelectors
+	}
+	return selectors, nil
+}
+
+//fields2parts converts payload []field to []scrape.Part
+func fields2parts(fields []field) ([]Part, error) {
+	parts := []Part{}
+	//Payload fields
+	for _, f := range fields {
 		params := make(map[string]interface{})
 		if f.Extractor.Params != nil {
 			params = f.Extractor.Params.(map[string]interface{})
 		}
+		var err error
 		switch eType := f.Extractor.Type; eType {
 
 		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
@@ -107,6 +117,14 @@ func NewScraper(p Payload) (*Scraper, error) {
 					logger.Println(err)
 				}
 			}
+			//******* details
+			detailsParts := []Part{}
+			if f.Details != nil {
+				detailsParts, err = fields2parts(f.Details.Fields)
+				if err != nil {
+					return nil, err
+				}
+			}
 			parts = append(parts, Part{
 				Name:      f.Name + "_text",
 				Selector:  f.Selector,
@@ -115,9 +133,8 @@ func NewScraper(p Payload) (*Scraper, error) {
 				Name:      f.Name + "_link",
 				Selector:  f.Selector,
 				Extractor: l.Href,
+				Details:   &detailsParts,
 			})
-			//Add selector just one time for link type
-			selectors = append(selectors, f.Selector)
 
 		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
 		case "image":
@@ -138,8 +155,6 @@ func NewScraper(p Payload) (*Scraper, error) {
 				Selector:  f.Selector,
 				Extractor: i.Alt,
 			})
-			//Add selector just one time for image type
-			selectors = append(selectors, f.Selector)
 
 		default:
 			var e extract.Extractor
@@ -176,16 +191,12 @@ func NewScraper(p Payload) (*Scraper, error) {
 				Selector:  f.Selector,
 				Extractor: e,
 			})
-			selectors = append(selectors, f.Selector)
-			//	names = append(names, f.Name)
 		}
 	}
-
-	// Validate config
+	// Validate payload fields
 	if len(parts) == 0 {
 		return nil, ErrNoParts
 	}
-
 	seenNames := map[string]struct{}{}
 	for i, part := range parts {
 		if len(part.Name) == 0 {
@@ -200,7 +211,15 @@ func NewScraper(p Payload) (*Scraper, error) {
 			return nil, fmt.Errorf("no selector provided for part %d", i)
 		}
 	}
+	return parts, nil
+}
 
+// Create a new scraper with the provided configuration.
+func NewScraper(p Payload) (*Scraper, error) {
+	parts, err := fields2parts(p.Fields)
+	if err != nil {
+		return nil, err
+	}
 	var paginator paginate.Paginator
 	if p.Paginator == nil {
 		paginator = &dummyPaginator{}
@@ -208,6 +227,10 @@ func NewScraper(p Payload) (*Scraper, error) {
 		paginator = paginate.BySelector(p.Paginator.Selector, p.Paginator.Attribute)
 	}
 
+	selectors, err := p.selectors()
+	if err != nil {
+		return nil, err
+	}
 	//TODO: need to test the case when there are no selectors found in payload.
 	var dividePageFunc DividePageFunc
 	if len(selectors) == 0 {
@@ -215,8 +238,10 @@ func NewScraper(p Payload) (*Scraper, error) {
 	} else {
 		dividePageFunc = DividePageByIntersection(selectors)
 	}
+	
 
 	scraper := &Scraper{
+		Request: p.Request.(splash.Request),
 		DividePage: dividePageFunc,
 		Parts:      parts,
 		Paginator:  paginator,
@@ -228,25 +253,31 @@ func NewScraper(p Payload) (*Scraper, error) {
 			RandomizeFetchDelay: *p.RandomizeFetchDelay,
 			RetryTimes:          p.RetryTimes,
 		},
+	
 	}
 
 	// All set!
-	//ret := &Scraper{
-	//	Config: c,
-	//}
 	return scraper, nil
 }
 
-func Scrape(req splash.Request, task *Task) error {
-
+func Scrape(task *Task) error {
+	req := task.Scraper.Request
 	url := req.GetURL()
-
+	
 	var numPages int
 	opts := task.Scraper.Opts
 	task.Results.Visited = make(map[string]error)
+	
+	//get Robotstxt Data
+	robots, err := fetch.RobotstxtData(url)
+	if err != nil {
+		return err
+	}
+	task.Scraper.Robots = robots
+
 	for {
 		//check if scraping of current url is not forbidden
-		if !fetch.AllowedByRobots(url, task.Robots) {
+		if !fetch.AllowedByRobots(url, task.Scraper.Robots) {
 			task.Results.Visited[url] = &errs.ForbiddenByRobots{url}
 		}
 		// Repeat until we don't have any more URLs, or until we hit our page limit.
@@ -296,6 +327,11 @@ func Scrape(req splash.Request, task *Task) error {
 				}
 
 				blockResults[part.Name] = partResults
+
+				//********* details
+				if part.Details != nil {
+					logger.Println(blockResults[part.Name], part.Details)
+				}
 			}
 			if len(blockResults) > 0 {
 				// Append the results from this block.
@@ -320,7 +356,6 @@ func Scrape(req splash.Request, task *Task) error {
 			logger.Println(err)
 		}
 		req.URL = url
-
 
 		if opts.RandomizeFetchDelay {
 			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
@@ -378,6 +413,7 @@ func responseFromFetchService(req splash.Request) (*splash.Response, error) {
 	return sResponse, nil
 }
 
+//PartNames returns Part Names which are used as a header of output CSV
 func (s Scraper) PartNames() []string {
 	names := []string{}
 	for _, part := range s.Parts {

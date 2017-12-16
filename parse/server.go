@@ -43,11 +43,11 @@ func Start(DFKParse string) {
 	default:
 		panic("Storage type is undefined ")
 	}
-	storage := storage.NewStore(storageType)
+//	storage := storage.NewStore(storageType)
 	var svc Service
 	svc = ParseService{}
 	//svc = StatsMiddleware("18")(svc)
-	svc = StorageMiddleware(storage)(svc)
+	//svc = StorageMiddleware(storage)(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{
