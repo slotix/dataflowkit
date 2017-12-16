@@ -15,8 +15,8 @@ type Extractor struct {
 }
 
 type field struct {
-	Name     string `json:"name" validate:"required"`
-	Selector string `json:"selector" validate:"required"`
+	Name     string `json:"name"`
+	Selector string `json:"selector"`
 	//Count     int       `json:"count"`
 	Extractor Extractor `json:"extractor"`
 	Details   *Payload  `json:"details"`
@@ -29,7 +29,7 @@ type paginator struct {
 }
 
 type Payload struct {
-	Name string `json:"name" validate:"required"`
+	Name string `json:"name"`
 	//Request             splash.Request `json:"request"`
 	Request interface{} `json:"request"`
 	Fields  []field     `json:"fields"`
@@ -118,7 +118,6 @@ type Task struct {
 	ID      string
 	Scraper *Scraper
 	Session
-	//	Err     []error
 	Status string
 	Results
 }
