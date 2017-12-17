@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/slotix/dataflowkit/crypto"
 	"github.com/slotix/dataflowkit/splash"
 )
 
@@ -32,7 +33,7 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	p.Request = splashRequest
 
 	//init other fields
-	p.PayloadMD5 = GenerateMD5(data)
+	p.PayloadMD5 = crypto.GenerateMD5(data)
 	if p.Format == "" {
 		p.Format = DefaultOptions.Format
 	}
@@ -50,8 +51,6 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
-
-
 
 //FillStruct fills s Structure with values from m map
 func FillStruct(m map[string]interface{}, s interface{}) error {

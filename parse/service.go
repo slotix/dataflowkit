@@ -7,9 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/scrape"
-	"github.com/slotix/dataflowkit/splash"
 )
 
 // Define service interface
@@ -25,22 +23,12 @@ type ServiceMiddleware func(Service) Service
 
 //Parse calls Fetcher which downloads web page content for parsing
 func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
-	pReq := p.Request.(splash.Request)
-	req := splash.Request{URL: pReq.URL,
-		Params: pReq.Params}
 	task, err := scrape.NewTask(p)
 	if err != nil {
 		return nil, err
 	}
-	//get Robotstxt Data
-	robots, err := fetch.RobotstxtData(req.URL)
-	if err != nil {
-		return nil, err
-	}
-	task.Session.Robots = robots
-
 	//scrape request and return results.
-	err = scrape.Scrape(req, task)
+	err = scrape.Scrape(task)
 	if err != nil {
 		return nil, err
 	}
