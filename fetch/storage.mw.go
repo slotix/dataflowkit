@@ -37,8 +37,11 @@ func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err er
 	default:
 		panic("invalid fetcher request")
 	}
+
+	//URL Conversion MD5 Reduces file name length to avoid the error like file name too long.
+	storageKey := req.URL2MD5()
 	//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
-	sKey := base32.StdEncoding.EncodeToString([]byte(url))
+	sKey := base32.StdEncoding.EncodeToString([]byte(storageKey))
 	value, err := mw.storage.Read(sKey)
 	if err == nil {
 		if err := json.Unmarshal(value, &fetchResponse); err != nil {
@@ -66,7 +69,9 @@ func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err er
 //put saves web page content to the storage
 func (mw storageMiddleware) put(req FetchRequester, resp FetchResponser) error {
 	url := req.GetURL()
-	sKey := base32.StdEncoding.EncodeToString([]byte(url))
+	//URL Conversion MD5 Reduces file name length to avoid the error like file name too long.
+	storageKey := req.URL2MD5()
+	sKey := base32.StdEncoding.EncodeToString([]byte(storageKey))
 
 	reasons := resp.GetReasonsNotToCache()
 	if len(reasons) == 0 {
@@ -125,7 +130,7 @@ func (mw storageMiddleware) Fetch(req FetchRequester) (FetchResponser, error) {
 }
 
 //Response returns Fetch Response either from storage or directly from web.
-//This middleware method is used by Parse service. 
+//This middleware method is used by Parse service.
 func (mw storageMiddleware) Response(req FetchRequester) (FetchResponser, error) {
 	//loads content from a storage if any
 	fromStorage, err := mw.get(req)

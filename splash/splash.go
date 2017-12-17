@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/pquerna/cachecontrol/cacheobject"
+	"github.com/slotix/dataflowkit/crypto"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/spf13/viper"
 )
@@ -64,7 +65,7 @@ func wait(w float64) Option {
 //New creates new connection to Splash Server
 func New(req Request, setters ...Option) (splashURL string) {
 	//Default options
-	
+
 	args := &Options{
 		host:            viper.GetString("SPLASH"),
 		timeout:         viper.GetInt("SPLASH_TIMEOUT"),
@@ -101,7 +102,6 @@ func New(req Request, setters ...Option) (splashURL string) {
 	*/
 	//req.Params = `"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=asfwwe!444D&rememberMe=1"`
 
-	
 	LUAScript := baseLUA
 	splashURL = fmt.Sprintf(
 		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s",
@@ -319,6 +319,11 @@ func (r Request) Validate() error {
 	return nil
 }
 
+func (r Request) URL2MD5() string {
+	url := r.GetURL()
+	return string(crypto.GenerateMD5([]byte(url)))
+}
+
 //http://choly.ca/post/go-json-marshalling/
 //UnmarshalJSON convert headers to http.Header type
 func (r *Response) UnmarshalJSON(data []byte) error {
@@ -426,7 +431,7 @@ func (r Response) GetExpires() time.Time {
 	return r.Expires
 }
 
-//GetReasonsNotToCache returns an array of reasons why a response should not be cached. 
+//GetReasonsNotToCache returns an array of reasons why a response should not be cached.
 func (r Response) GetReasonsNotToCache() []cacheobject.Reason {
 	return r.ReasonsNotToCache
-} 
+}

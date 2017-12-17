@@ -1,6 +1,7 @@
 package scrape
 
 import (
+	"github.com/slotix/dataflowkit/splash"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -19,7 +20,11 @@ type field struct {
 	Selector string `json:"selector"`
 	//Count     int       `json:"count"`
 	Extractor Extractor `json:"extractor"`
-	Details   *Payload  `json:"details"`
+	Details   *details  `json:"details"`
+}
+
+type details struct {
+	Fields []field `json:"fields"`
 }
 
 type paginator struct {
@@ -43,6 +48,8 @@ type Payload struct {
 	RetryTimes          int           `json:"retryTimes"`
 }
 
+
+
 // The DividePageFunc type is used to extract a page's blocks during a scrape.
 // For more information, please see the documentation on the ScrapeConfig type.
 type DividePageFunc func(*goquery.Selection) []*goquery.Selection
@@ -56,16 +63,17 @@ type Part struct {
 	// A sub-selector within the given block to process.  Pass in "." to use
 	// the root block's selector with no modification.
 	Selector string
-	// TODO(andrew-d): Consider making this an interface too.
 
 	// Extractor contains the logic on how to extract some results from the
 	// selector that is provided to this Piece.
 	Extractor extract.Extractor
-	Details   *Scraper
+
+	Details *Task
 }
 
 //Scraper struct consolidates settings for scraping task.
 type Scraper struct {
+	Request splash.Request
 	// Paginator is the Paginator to use for this current scrape.
 	//
 	// If Paginator is nil, then no pagination is performed and it is assumed that
@@ -94,6 +102,7 @@ type Scraper struct {
 	//Opts contains options that are used during the progress of a
 	// scrape.
 	Opts ScrapeOptions
+	Robots *robotstxt.RobotsData
 }
 
 // Results describes the results of a scrape.  It contains a list of all
@@ -110,14 +119,14 @@ type Results struct {
 	Output [][]map[string]interface{}
 }
 
-type Session struct {
-	Robots  *robotstxt.RobotsData
+//type Session struct {
+	//Robots *robotstxt.RobotsData
 	//Cookies string
-}
+//}
 type Task struct {
 	ID      string
 	Scraper *Scraper
-	Session
+	//Session
 	Status string
 	Results
 }

@@ -10,31 +10,32 @@ import (
 
 	"github.com/pquerna/cachecontrol"
 	"github.com/pquerna/cachecontrol/cacheobject"
+	"github.com/slotix/dataflowkit/crypto"
 	"github.com/slotix/dataflowkit/errs"
 )
 
 //BaseFetcherRequest struct collects requests information used by BaseFetcher
 type BaseFetcherRequest struct {
 	//URL to be retrieved
-	URL    string 
+	URL string
 	//HTTP method : GET, POST
-	Method string 
+	Method string
 }
 
 //BaseFetcherResponse struct groups Response data together after retrieving it by BaseFetcher
 type BaseFetcherResponse struct {
 	//Response is used for determining Cacheable and Expires values. It should be omited when marshaling to intermediary cache.
-	Response          *http.Response `json:"-"`
+	Response *http.Response `json:"-"`
 	//HTML Content of fetched page
-	HTML              []byte         `json:"html"`
-	//ReasonsNotToCache is an array of reasons why a response should not be cached. 
+	HTML []byte `json:"html"`
+	//ReasonsNotToCache is an array of reasons why a response should not be cached.
 	ReasonsNotToCache []cacheobject.Reason
 	//Expires - How long object stay in a cache before Splash fetcher forwards another request to an origin.
-	Expires    time.Time
+	Expires time.Time
 	//Status code returned by fetcher
 	StatusCode int
 	//Status returned by fetcher
-	Status     string
+	Status string
 }
 
 //MarshalJSON customizes marshaling of http.Response.Body which has type io.ReadCloser. It cannot be marshaled with standard Marshal method without casting to []byte.
@@ -92,4 +93,9 @@ func (r BaseFetcherRequest) Validate() error {
 		return &errs.BadRequest{err}
 	}
 	return nil
+}
+
+func (r BaseFetcherRequest) URL2MD5() string {
+	url := r.GetURL()
+	return string(crypto.GenerateMD5([]byte(url)))
 }
