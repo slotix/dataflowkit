@@ -59,20 +59,7 @@ func (r *Results) AllBlocks() []map[string]interface{} {
 	return ret
 }
 
-func NewTask(p Payload) (task *Task, err error) {
-	scraper, err := NewScraper(p)
-	if err != nil {
-		return nil, err
-	}
-	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
-	id := ksuid.New()
 
-	task = &Task{
-		ID:      id.String(),
-		Scraper: scraper,
-	}
-	return task, nil
-}
 
 //KSUID stores the timestamp portion in ID. So we can retrieve it from Task object as a Time object
 func (t Task) StartTime() (*time.Time, error) {
@@ -96,11 +83,29 @@ func (p Payload) selectors() ([]string, error) {
 	return selectors, nil
 }
 
+func NewTask(p Payload) (task *Task, err error) {
+	scraper := &Scraper{}
+	//if p.Request != nil {
+		scraper, err = NewScraper(p)
+		if err != nil {
+			return nil, err
+		}
+//	}
+	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
+	id := ksuid.New()
+
+	task = &Task{
+		ID:      id.String(),
+		Scraper: scraper,
+	}
+	return task, nil
+}
+
 //fields2parts converts payload []field to []scrape.Part
-func fields2parts(fields []field) ([]Part, error) {
+func (p Payload) fields2parts() ([]Part, error) {
 	parts := []Part{}
 	//Payload fields
-	for _, f := range fields {
+	for _, f := range p.Fields {
 		params := make(map[string]interface{})
 		if f.Extractor.Params != nil {
 			params = f.Extractor.Params.(map[string]interface{})
@@ -118,9 +123,13 @@ func fields2parts(fields []field) ([]Part, error) {
 				}
 			}
 			//******* details
-			detailsParts := []Part{}
+			task := &Task{}
 			if f.Details != nil {
-				detailsParts, err = fields2parts(f.Details.Fields)
+				detailsPayload := p
+				detailsPayload.Name = f.Name + "Details"
+				detailsPayload.Fields = f.Details.Fields
+				//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
+				task, err = NewTask(detailsPayload)
 				if err != nil {
 					return nil, err
 				}
@@ -133,7 +142,7 @@ func fields2parts(fields []field) ([]Part, error) {
 				Name:      f.Name + "_link",
 				Selector:  f.Selector,
 				Extractor: l.Href,
-				Details:   &detailsParts,
+				Details:   task,
 			})
 
 		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
@@ -216,7 +225,7 @@ func fields2parts(fields []field) ([]Part, error) {
 
 // Create a new scraper with the provided configuration.
 func NewScraper(p Payload) (*Scraper, error) {
-	parts, err := fields2parts(p.Fields)
+	parts, err := p.fields2parts()
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +247,6 @@ func NewScraper(p Payload) (*Scraper, error) {
 	} else {
 		dividePageFunc = DividePageByIntersection(selectors)
 	}
-	
 
 	scraper := &Scraper{
 		Request: p.Request.(splash.Request),
@@ -253,27 +261,28 @@ func NewScraper(p Payload) (*Scraper, error) {
 			RandomizeFetchDelay: *p.RandomizeFetchDelay,
 			RetryTimes:          p.RetryTimes,
 		},
-	
 	}
 
 	// All set!
 	return scraper, nil
 }
 
-func Scrape(task *Task) error {
+func  Scrape(task *Task) error {
 	req := task.Scraper.Request
 	url := req.GetURL()
-	
+
 	var numPages int
 	opts := task.Scraper.Opts
 	task.Results.Visited = make(map[string]error)
-	
+
 	//get Robotstxt Data
-	robots, err := fetch.RobotstxtData(url)
-	if err != nil {
-		return err
-	}
-	task.Scraper.Robots = robots
+	 robots, err := fetch.RobotstxtData(url)
+	 if err != nil {
+		task.Results.Visited[url] = err
+		logger.Println(err)
+		//return err
+	 }
+	 task.Scraper.Robots = robots
 
 	for {
 		//check if scraping of current url is not forbidden
@@ -330,7 +339,16 @@ func Scrape(task *Task) error {
 
 				//********* details
 				if part.Details != nil {
-					logger.Println(blockResults[part.Name], part.Details)
+					//fmt.Printf("%T\n", partResults)
+					part.Details.Scraper.Request = splash.Request{URL: partResults.(string)}
+					err = Scrape(part.Details)
+					if err != nil {
+						return err
+					}
+					//logger.Println(part.Details.Visited)
+					//logger.Println(part.Details.Results)
+					//part.Details.Results = append(part.Details.Results, )
+				//	logger.Println(blockResults[part.Name], part.Details)
 				}
 			}
 			if len(blockResults) > 0 {

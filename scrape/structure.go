@@ -68,7 +68,7 @@ type Part struct {
 	// selector that is provided to this Piece.
 	Extractor extract.Extractor
 
-	Details *[]Part
+	Details *Task
 }
 
 //Scraper struct consolidates settings for scraping task.
