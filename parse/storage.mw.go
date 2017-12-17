@@ -30,7 +30,6 @@ func StorageMiddleware(storage storage.Store) ServiceMiddleware {
 //Parse returns parsed results either from storage or directly from scraped web pages.
 func (mw storageMiddleware) Parse(p scrape.Payload) (output io.ReadCloser, err error) {
 	//if parsed result is in storage return local copy
-	//storageKey := fmt.Sprintf("%s-%s", p.Format, p.PayloadMD5)
 	storageKey := string(p.PayloadMD5)
 	//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
 	sKey := base32.StdEncoding.EncodeToString([]byte(storageKey))

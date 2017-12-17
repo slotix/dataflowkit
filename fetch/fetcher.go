@@ -253,4 +253,5 @@ type FetchRequester interface {
 	GetURL() string
 	//Validates request before sending
 	Validate() error
+	URL2MD5() string
 }
