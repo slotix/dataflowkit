@@ -173,6 +173,7 @@ func (bf *BaseFetcher) Prepare() error {
 	return nil
 }
 
+
 //Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 	err := request.Validate()
@@ -180,7 +181,6 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 		return nil, err
 	}
 	r := request.(BaseFetcherRequest)
-	r.Method = "GET"
 	req, err := http.NewRequest(r.Method, r.URL, nil)
 	if err != nil {
 		return nil, err
@@ -196,6 +196,8 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 	if err != nil {
 		return nil, &errs.BadRequest{err}
 	}
+	logger.Println()
+
 	if resp.StatusCode != 200 {
 		switch resp.StatusCode {
 		case 404:
@@ -212,7 +214,13 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 	if err != nil {
 		return nil, err
 	}
-	response := BaseFetcherResponse{Response: resp, HTML: body, StatusCode: resp.StatusCode, Status: resp.Status}
+	response := BaseFetcherResponse{
+		Response: resp, 
+		URL: resp.Request.URL.String(),
+		HTML: body, 
+		StatusCode: resp.StatusCode, 
+		Status: resp.Status,
+	}
 
 	//set Cache control parameters
 	response.SetCacheInfo()
@@ -222,9 +230,6 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 			return nil, err
 		}
 	}
-
-	//return resp.Body.(io.ReadCloser), nil
-	//return resp.Body, nil
 	return &response, nil
 }
 
@@ -245,11 +250,14 @@ type FetchResponser interface {
 	GetReasonsNotToCache() []cacheobject.Reason
 	//ReasonsNotToCache and Expires values are set here
 	SetCacheInfo()
+	//GetURL returns final URL after all redirects
+	GetURL() string
+
 }
 
 //FetchRequester interface interface that must be satisfied the listed methods
 type FetchRequester interface {
-	//returns URL from Request
+	//GetURL returns initial URL from Request
 	GetURL() string
 	//Validates request before sending
 	Validate() error

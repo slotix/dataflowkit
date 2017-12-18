@@ -435,3 +435,9 @@ func (r Response) GetExpires() time.Time {
 func (r Response) GetReasonsNotToCache() []cacheobject.Reason {
 	return r.ReasonsNotToCache
 }
+
+//TODO: test it 
+//GetURL returns URL after all redirects
+func (r Response) GetURL() string{
+	return r.Response.URL
+}
