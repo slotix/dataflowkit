@@ -122,9 +122,15 @@ func (p Payload) fields2parts() ([]Part, error) {
 					logger.Println(err)
 				}
 			}
+			parts = append(parts, Part{
+				Name:      f.Name + "_text",
+				Selector:  f.Selector,
+				Extractor: l.Text,
+			})
 			//******* details
-			task := &Task{}
+			
 			if f.Details != nil {
+				task := &Task{}
 				detailsPayload := p
 				detailsPayload.Name = f.Name + "Details"
 				detailsPayload.Fields = f.Details.Fields
@@ -133,17 +139,21 @@ func (p Payload) fields2parts() ([]Part, error) {
 				if err != nil {
 					return nil, err
 				}
-			}
-			parts = append(parts, Part{
-				Name:      f.Name + "_text",
-				Selector:  f.Selector,
-				Extractor: l.Text,
-			}, Part{
+				parts = append(parts,  Part{
+					Name:      f.Name + "_link",
+					Selector:  f.Selector,
+					Extractor: l.Href,
+					Details:   task,
+				})
+			} 
+			parts = append(parts,  Part{
 				Name:      f.Name + "_link",
 				Selector:  f.Selector,
 				Extractor: l.Href,
-				Details:   task,
+				Details:   nil,
 			})
+
+			
 
 		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
 		case "image":
@@ -230,10 +240,12 @@ func NewScraper(p Payload) (*Scraper, error) {
 		return nil, err
 	}
 	var paginator paginate.Paginator
+	maxPages := 1 
 	if p.Paginator == nil {
 		paginator = &dummyPaginator{}
 	} else {
 		paginator = paginate.BySelector(p.Paginator.Selector, p.Paginator.Attribute)
+		maxPages = p.Paginator.MaxPages
 	}
 
 	selectors, err := p.selectors()
@@ -254,7 +266,7 @@ func NewScraper(p Payload) (*Scraper, error) {
 		Parts:      parts,
 		Paginator:  paginator,
 		Opts: ScrapeOptions{
-			MaxPages:            p.Paginator.MaxPages,
+			MaxPages:            maxPages,
 			Format:              p.Format,
 			PaginateResults:     *p.PaginateResults,
 			FetchDelay:          p.FetchDelay,
