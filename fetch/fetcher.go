@@ -196,7 +196,6 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 	if err != nil {
 		return nil, &errs.BadRequest{err}
 	}
-	logger.Println()
 
 	if resp.StatusCode != 200 {
 		switch resp.StatusCode {

@@ -59,8 +59,6 @@ func (r *Results) AllBlocks() []map[string]interface{} {
 	return ret
 }
 
-
-
 //KSUID stores the timestamp portion in ID. So we can retrieve it from Task object as a Time object
 func (t Task) StartTime() (*time.Time, error) {
 	id, err := ksuid.Parse(t.ID)
@@ -86,11 +84,11 @@ func (p Payload) selectors() ([]string, error) {
 func NewTask(p Payload) (task *Task, err error) {
 	scraper := &Scraper{}
 	//if p.Request != nil {
-		scraper, err = NewScraper(p)
-		if err != nil {
-			return nil, err
-		}
-//	}
+	scraper, err = NewScraper(p)
+	if err != nil {
+		return nil, err
+	}
+	//	}
 	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
 	id := ksuid.New()
 
@@ -122,15 +120,9 @@ func (p Payload) fields2parts() ([]Part, error) {
 					logger.Println(err)
 				}
 			}
-			parts = append(parts, Part{
-				Name:      f.Name + "_text",
-				Selector:  f.Selector,
-				Extractor: l.Text,
-			})
 			//******* details
-			
+			task := &Task{}
 			if f.Details != nil {
-				task := &Task{}
 				detailsPayload := p
 				detailsPayload.Name = f.Name + "Details"
 				detailsPayload.Fields = f.Details.Fields
@@ -139,21 +131,22 @@ func (p Payload) fields2parts() ([]Part, error) {
 				if err != nil {
 					return nil, err
 				}
-				parts = append(parts,  Part{
+			} else {
+				task = nil
+			}
+			
+			parts = append(parts,
+				Part{
+					Name:      f.Name + "_text",
+					Selector:  f.Selector,
+					Extractor: l.Text,
+				},
+				Part{
 					Name:      f.Name + "_link",
 					Selector:  f.Selector,
 					Extractor: l.Href,
 					Details:   task,
 				})
-			} 
-			parts = append(parts,  Part{
-				Name:      f.Name + "_link",
-				Selector:  f.Selector,
-				Extractor: l.Href,
-				Details:   nil,
-			})
-
-			
 
 		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
 		case "image":
@@ -222,7 +215,8 @@ func (p Payload) fields2parts() ([]Part, error) {
 			return nil, fmt.Errorf("no name provided for part %d", i)
 		}
 		if _, seen := seenNames[part.Name]; seen {
-			return nil, fmt.Errorf("part %s has a duplicate name", i)
+			logger.Println(part.Name)
+			return nil, fmt.Errorf("part %s has a duplicate name", part.Name)
 		}
 		seenNames[part.Name] = struct{}{}
 
@@ -240,10 +234,10 @@ func NewScraper(p Payload) (*Scraper, error) {
 		return nil, err
 	}
 	var paginator paginate.Paginator
-	maxPages := 1 
+	maxPages := 1
 	if p.Paginator == nil {
 		paginator = &dummyPaginator{}
-		
+
 	} else {
 		paginator = paginate.BySelector(p.Paginator.Selector, p.Paginator.Attribute)
 		maxPages = p.Paginator.MaxPages
@@ -262,7 +256,7 @@ func NewScraper(p Payload) (*Scraper, error) {
 	}
 
 	scraper := &Scraper{
-		Request: p.Request.(splash.Request),
+		Request:    p.Request.(splash.Request),
 		DividePage: dividePageFunc,
 		Parts:      parts,
 		Paginator:  paginator,
@@ -280,7 +274,7 @@ func NewScraper(p Payload) (*Scraper, error) {
 	return scraper, nil
 }
 
-func  Scrape(task *Task) error {
+func Scrape(task *Task) error {
 	req := task.Scraper.Request
 	url := req.GetURL()
 
@@ -289,13 +283,13 @@ func  Scrape(task *Task) error {
 	task.Results.Visited = make(map[string]error)
 
 	//get Robotstxt Data
-	 robots, err := fetch.RobotstxtData(url)
-	 if err != nil {
+	robots, err := fetch.RobotstxtData(url)
+	if err != nil {
 		task.Results.Visited[url] = err
 		logger.Println(err)
 		//return err
-	 }
-	 task.Scraper.Robots = robots
+	}
+	task.Scraper.Robots = robots
 
 	for {
 		//check if scraping of current url is not forbidden
@@ -357,7 +351,7 @@ func  Scrape(task *Task) error {
 					//go func() {
 					//	err = Scrape(part.Details)
 					//	if err != nil {
-					//		logger.Println(err) 
+					//		logger.Println(err)
 					//	}
 					//}()
 					err = Scrape(part.Details)
@@ -367,7 +361,7 @@ func  Scrape(task *Task) error {
 					//logger.Println(part.Details.Visited)
 					//logger.Println(part.Details.Results)
 					//part.Details.Results = append(part.Details.Results, )
-				//	logger.Println(blockResults[part.Name], part.Details)
+					//	logger.Println(blockResults[part.Name], part.Details)
 				}
 			}
 			if len(blockResults) > 0 {

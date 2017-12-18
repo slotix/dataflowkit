@@ -1,7 +1,7 @@
 {
     "name": "drones_collection",
     "request": {
-        "url": "https://drony.heureka.sk"
+        "url": "https://televizor.heureka.sk"
     },
     "fields": [
         {
@@ -53,7 +53,7 @@
     "paginator": {
         "selector": ".next",
         "attr": "href",
-        "maxPages": 3
+        "maxPages": 1
     },
     "format": "json",
     "paginatedResults": false
