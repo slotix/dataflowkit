@@ -53,7 +53,7 @@
     "paginator": {
         "selector": ".next",
         "attr": "href",
-        "maxPages": 1
+        "maxPages": 3
     },
     "format": "json",
     "paginatedResults": false
