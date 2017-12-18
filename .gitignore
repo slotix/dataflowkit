@@ -47,3 +47,5 @@ parse/parse.d/debug
 parse/parse.d/diskv
 diskv
 deploy.sh
+socket-server/debug
+socket-server/socket-server
