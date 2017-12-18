@@ -240,21 +240,13 @@ func NewScraper(p Payload) (*Scraper, error) {
 		return nil, err
 	}
 	var paginator paginate.Paginator
-<<<<<<< Updated upstream
 	maxPages := 1 
-=======
-	maxpages := 1
->>>>>>> Stashed changes
 	if p.Paginator == nil {
 		paginator = &dummyPaginator{}
 		
 	} else {
 		paginator = paginate.BySelector(p.Paginator.Selector, p.Paginator.Attribute)
-<<<<<<< Updated upstream
 		maxPages = p.Paginator.MaxPages
-=======
-		maxpages = p.Paginator.MaxPages
->>>>>>> Stashed changes
 	}
 
 	selectors, err := p.selectors()
@@ -275,11 +267,7 @@ func NewScraper(p Payload) (*Scraper, error) {
 		Parts:      parts,
 		Paginator:  paginator,
 		Opts: ScrapeOptions{
-<<<<<<< Updated upstream
 			MaxPages:            maxPages,
-=======
-			MaxPages:            maxpages,
->>>>>>> Stashed changes
 			Format:              p.Format,
 			PaginateResults:     *p.PaginateResults,
 			FetchDelay:          p.FetchDelay,
