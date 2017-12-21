@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -99,132 +100,25 @@ func NewTask(p Payload) (task *Task, err error) {
 	return task, nil
 }
 
-//fields2parts converts payload []field to []scrape.Part
-func (p Payload) fields2parts() ([]Part, error) {
-	parts := []Part{}
-	//Payload fields
-	for _, f := range p.Fields {
-		params := make(map[string]interface{})
-		if f.Extractor.Params != nil {
-			params = f.Extractor.Params.(map[string]interface{})
-		}
-		var err error
-		switch eType := f.Extractor.Type; eType {
-
-		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
-		case "link":
-			l := &extract.Link{Href: extract.Attr{Attr: "href"}}
-			if params != nil {
-				err := FillStruct(params, l)
-				if err != nil {
-					logger.Println(err)
-				}
-			}
-			//******* details
-			task := &Task{}
-			if f.Details != nil {
-				detailsPayload := p
-				detailsPayload.Name = f.Name + "Details"
-				detailsPayload.Fields = f.Details.Fields
-				//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
-				task, err = NewTask(detailsPayload)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				task = nil
-			}
-			
-			parts = append(parts,
-				Part{
-					Name:      f.Name + "_text",
-					Selector:  f.Selector,
-					Extractor: l.Text,
-				},
-				Part{
-					Name:      f.Name + "_link",
-					Selector:  f.Selector,
-					Extractor: l.Href,
-					Details:   task,
-				})
-
-		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
-		case "image":
-			i := &extract.Image{Src: extract.Attr{Attr: "src"},
-				Alt: extract.Attr{Attr: "alt"}}
-			if params != nil {
-				err := FillStruct(params, i)
-				if err != nil {
-					logger.Println(err)
-				}
-			}
-			parts = append(parts, Part{
-				Name:      f.Name + "_src",
-				Selector:  f.Selector,
-				Extractor: i.Src,
-			}, Part{
-				Name:      f.Name + "_alt",
-				Selector:  f.Selector,
-				Extractor: i.Alt,
-			})
-
-		default:
-			var e extract.Extractor
-			switch eType {
-			case "const":
-				//	c := &extract.Const{Val: params["value"]}
-				//	e = c
-				e = &extract.Const{}
-			case "count":
-				e = &extract.Count{}
-			case "text":
-				e = &extract.Text{}
-			case "html":
-				e = &extract.Html{}
-			case "outerHtml":
-				e = &extract.OuterHtml{}
-			case "attr":
-				e = &extract.Attr{}
-			case "regex":
-				r := &extract.Regex{}
-				regExp := params["regexp"]
-				r.Regex = regexp.MustCompile(regExp.(string))
-				e = r
-			}
-
-			if params != nil {
-				err := FillStruct(params, e)
-				if err != nil {
-					logger.Println(err)
-				}
-			}
-			parts = append(parts, Part{
-				Name:      f.Name,
-				Selector:  f.Selector,
-				Extractor: e,
-			})
-		}
+func Parse(p Payload) (io.ReadCloser, error) {
+	task, err := NewTask(p)
+	if err != nil {
+		return nil, err
 	}
-	// Validate payload fields
-	if len(parts) == 0 {
-		return nil, ErrNoParts
+	//scrape request and return results.
+	err = Scrape(task)
+	if err != nil {
+		return nil, err
 	}
-	seenNames := map[string]struct{}{}
-	for i, part := range parts {
-		if len(part.Name) == 0 {
-			return nil, fmt.Errorf("no name provided for part %d", i)
-		}
-		if _, seen := seenNames[part.Name]; seen {
-			logger.Println(part.Name)
-			return nil, fmt.Errorf("part %s has a duplicate name", part.Name)
-		}
-		seenNames[part.Name] = struct{}{}
-
-		if len(part.Selector) == 0 {
-			return nil, fmt.Errorf("no selector provided for part %d", i)
-		}
+	e := NewEncoder(*task)
+	if e == nil {
+		return nil, errors.New("invalid output format specified")
 	}
-	return parts, nil
+	r, err := e.Encode()
+	if err != nil {
+		return nil, err
+	}
+	return r, err
 }
 
 // Create a new scraper with the provided configuration.
@@ -444,8 +338,136 @@ func responseFromFetchService(req splash.Request) (*splash.Response, error) {
 	return sResponse, nil
 }
 
-//PartNames returns Part Names which are used as a header of output CSV
-func (s Scraper) PartNames() []string {
+//fields2parts converts payload []field to []scrape.Part
+func (p Payload) fields2parts() ([]Part, error) {
+	parts := []Part{}
+	//Payload fields
+	for _, f := range p.Fields {
+		params := make(map[string]interface{})
+		if f.Extractor.Params != nil {
+			params = f.Extractor.Params.(map[string]interface{})
+		}
+		var err error
+		switch eType := f.Extractor.Type; eType {
+
+		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
+		case "link":
+			l := &extract.Link{Href: extract.Attr{Attr: "href"}}
+			if params != nil {
+				err := FillStruct(params, l)
+				if err != nil {
+					logger.Println(err)
+				}
+			}
+			//******* details
+			task := &Task{}
+			if f.Details != nil {
+				detailsPayload := p
+				detailsPayload.Name = f.Name + "Details"
+				detailsPayload.Fields = f.Details.Fields
+				//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
+				task, err = NewTask(detailsPayload)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				task = nil
+			}
+
+			parts = append(parts,
+				Part{
+					Name:      f.Name + "_text",
+					Selector:  f.Selector,
+					Extractor: l.Text,
+				},
+				Part{
+					Name:      f.Name + "_link",
+					Selector:  f.Selector,
+					Extractor: l.Href,
+					Details:   task,
+				})
+
+		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
+		case "image":
+			i := &extract.Image{Src: extract.Attr{Attr: "src"},
+				Alt: extract.Attr{Attr: "alt"}}
+			if params != nil {
+				err := FillStruct(params, i)
+				if err != nil {
+					logger.Println(err)
+				}
+			}
+			parts = append(parts, Part{
+				Name:      f.Name + "_src",
+				Selector:  f.Selector,
+				Extractor: i.Src,
+			}, Part{
+				Name:      f.Name + "_alt",
+				Selector:  f.Selector,
+				Extractor: i.Alt,
+			})
+
+		default:
+			var e extract.Extractor
+			switch eType {
+			case "const":
+				//	c := &extract.Const{Val: params["value"]}
+				//	e = c
+				e = &extract.Const{}
+			case "count":
+				e = &extract.Count{}
+			case "text":
+				e = &extract.Text{}
+			case "html":
+				e = &extract.Html{}
+			case "outerHtml":
+				e = &extract.OuterHtml{}
+			case "attr":
+				e = &extract.Attr{}
+			case "regex":
+				r := &extract.Regex{}
+				regExp := params["regexp"]
+				r.Regex = regexp.MustCompile(regExp.(string))
+				e = r
+			}
+
+			if params != nil {
+				err := FillStruct(params, e)
+				if err != nil {
+					logger.Println(err)
+				}
+			}
+			parts = append(parts, Part{
+				Name:      f.Name,
+				Selector:  f.Selector,
+				Extractor: e,
+			})
+		}
+	}
+	// Validate payload fields
+	if len(parts) == 0 {
+		return nil, ErrNoParts
+	}
+	seenNames := map[string]struct{}{}
+	for i, part := range parts {
+		if len(part.Name) == 0 {
+			return nil, fmt.Errorf("no name provided for part %d", i)
+		}
+		if _, seen := seenNames[part.Name]; seen {
+			logger.Println(part.Name)
+			return nil, fmt.Errorf("part %s has a duplicate name", part.Name)
+		}
+		seenNames[part.Name] = struct{}{}
+
+		if len(part.Selector) == 0 {
+			return nil, fmt.Errorf("no selector provided for part %d", i)
+		}
+	}
+	return parts, nil
+}
+
+//partNames returns Part Names which are used as a header of output CSV
+func (s Scraper) partNames() []string {
 	names := []string{}
 	for _, part := range s.Parts {
 		names = append(names, part.Name)
