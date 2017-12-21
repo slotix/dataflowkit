@@ -16,10 +16,7 @@ import (
 
 //IsRobotsTxt returns true if resource is robots.txt file
 func IsRobotsTxt(url string) bool {
-	if strings.HasSuffix(url, "robots.txt") {
-		return true
-	}
-	return false
+	return strings.HasSuffix(url, "/robots.txt")
 }
 
 //fetchRobots retrieves content of robots.txt with BaseFetcher.
