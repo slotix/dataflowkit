@@ -310,6 +310,14 @@ func (r Request) GetURL() string {
 	return strings.TrimSpace(strings.TrimRight(r.URL, "/"))
 }
 
+func (r Request) Host() (string, error) {
+	u, err := url.Parse(r.GetURL())
+	if err != nil {
+		return "", err
+	}
+	return u.Host, nil
+}
+
 //Validate validates each request that will be sent, prior to sending.
 func (r Request) Validate() error {
 	reqURL := strings.TrimSpace(r.URL)
