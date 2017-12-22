@@ -102,7 +102,7 @@ type Scraper struct {
 	//Opts contains options that are used during the progress of a
 	// scrape.
 	Opts ScrapeOptions
-	Robots *robotstxt.RobotsData
+	
 }
 
 // Results describes the results of a scrape.  It contains a list of all
@@ -119,16 +119,19 @@ type Results struct {
 	// is for each page, the second-level array is for each block in a page, and
 	// the final map[string]interface{} is the mapping of Part.Name to results.
 	Output [][]map[string]interface{}
+	
 }
 
-//type Session struct {
-	//Robots *robotstxt.RobotsData
+type Session struct {
+	Tasks []*Task
+	Robots map[string]*robotstxt.RobotsData
+	Results
 	//Cookies string
-//}
+}
 type Task struct {
 	ID      string
 	Scraper *Scraper
 	//Session
 	Status string
-	Results
+	//Results
 }
