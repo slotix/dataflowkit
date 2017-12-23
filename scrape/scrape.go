@@ -102,8 +102,6 @@ func NewTask(p Payload) (task *Task, err error) {
 }
 
 func Parse(p Payload) (io.ReadCloser, error) {
-	//visited :=
-	//results :=
 	sess := Session{
 		Results: Results{
 			Visited: make(map[string]error),
@@ -200,7 +198,7 @@ func NewScraper(p Payload) (*Scraper, error) {
 	return scraper, nil
 }
 
-func (s Session) scrape(task *Task) error {
+func (s *Session) scrape(task *Task) error {
 	req := task.Scraper.Request
 	url := req.GetURL()
 
