@@ -42,12 +42,12 @@ func Start(DFKFetch string) {
 	default:
 		panic("Storage type is undefined")
 	}
-	storage := storage.NewStore(storageType)
+//	storage := storage.NewStore(storageType)
 	var svc Service
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
 	svc = RobotsTxtMiddleware()(svc)
-	svc = StorageMiddleware(storage)(svc)
+//	svc = StorageMiddleware(storage)(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{

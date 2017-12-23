@@ -10,12 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 var (
 	port          = flag.String("p", ":8080", "HTTP listen address")
 	fetcherPort   = flag.String("f", ":8000", "Fetcher port")
 	dfkParserPort = flag.String("d", ":8001", "DFK Parser port")
-	baseDir       = flag.String("b", "web", "HTML files location.")
+	baseDir       = flag.String("b", "../web", "HTML files location.")
 )
 
 func main() {
@@ -49,38 +48,38 @@ func main() {
 	})
 
 	r.POST("/fetch/splash", ReverseProxy(fetcherPort))
+	r.POST("/fetch/base", ReverseProxy(fetcherPort))
 	r.POST("/parse", ReverseProxy(dfkParserPort))
 	r.Run(*port)
 }
+
 func ReverseProxy(p *string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		host := fmt.Sprintf("localhost%s", *p)
 		proxy := httputil.NewSingleHostReverseProxy(&url.URL{
 			Scheme: "http",
-			Host:   "localhost:8000",
+			//Host:   "localhost:8000",
+			Host: host,
 		})
 		proxy.ServeHTTP(c.Writer, c.Request)
 	}
 }
 
-//proxy := httputil.NewSingleHostReverseProxy(&url.URL{
-//	Scheme: "http",
-//	Host:   "localhost:8000",
-//})
-//http.ListenAndServe(":8080", proxy)
-/*
-func ReverseProxy(p *string) gin.HandlerFunc {
 
-	port := fmt.Sprintf("localhost%s", *p)
+
+/* func ReverseProxy(p *string) gin.HandlerFunc {
+
+	host := fmt.Sprintf("localhost%s", *p)
 
 	return func(c *gin.Context) {
 		director := func(req *http.Request) {
 			r := c.Request
 			req = r
 			req.URL.Scheme = "http"
-			req.URL.Host = port
+			req.URL.Host = host
+
 		}
 		proxy := &httputil.ReverseProxy{Director: director}
 		proxy.ServeHTTP(c.Writer, c.Request)
 	}
-}
-*/
+} */

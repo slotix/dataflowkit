@@ -93,10 +93,11 @@ func (s RedisConn) Expired(key string) bool {
 	if err != nil {
 		fmt.Println(err)
 	}
-	if ttl > 0 {
-		return false
-	}
-	return true
+	return ttl > 0 
+	//if ttl > 0 {
+	//	return false
+	//}
+	//return true
 
 }
 
@@ -131,10 +132,11 @@ func (s S3Conn) Expired(key string) bool {
 	diff := expiry.Sub(currentTime)
 	logger.Printf("cache lifespan is %+v\n", diff)
 	//Expired?
-	if diff > 0 {
-		return false
-	}
-	return true
+	return diff > 0
+	//if diff > 0 {
+	//	return false
+	//}
+	//return true
 }
 
 
@@ -181,10 +183,11 @@ func (s DiskvConn) Expired(key string) bool {
 	diff := expiry.Sub(currentTime)
 	logger.Printf("cache lifespan is %+v\n", diff)
 	//Expired?
-	if diff > 0 {
-		return false
-	}
-	return true
+	return diff > 0
+	// if diff > 0 {
+	// 	return false
+	// }
+	// return true
 }
 
 //mTime returns File Modify Time

@@ -26,6 +26,8 @@ type BaseFetcherRequest struct {
 type BaseFetcherResponse struct {
 	//Response is used for determining Cacheable and Expires values. It should be omited when marshaling to intermediary cache.
 	Response *http.Response `json:"-"`
+	//URL represents the final URL after all redirects. Response.Request.URL.String()
+	URL string
 	//HTML Content of fetched page
 	HTML []byte `json:"html"`
 	//ReasonsNotToCache is an array of reasons why a response should not be cached.
@@ -69,6 +71,11 @@ func (r *BaseFetcherResponse) SetCacheInfo() {
 		r.Expires = expires
 	}
 	r.ReasonsNotToCache = reasons
+}
+
+//GetURL returns URL after all redirects
+func (r BaseFetcherResponse) GetURL() string{
+	return r.URL
 }
 
 //GetExpires returns Response Expires value.

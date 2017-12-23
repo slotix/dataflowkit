@@ -35,7 +35,7 @@ vendor/
 
 dataflowkit
 dataflowkit_linux
-webserver/webserver
+webserver
 webserver/debug
 
 
@@ -46,10 +46,10 @@ parse/parse.d/parse.d
 parse/parse.d/debug
 parse/parse.d/diskv
 diskv
+.deploy
 deploy.sh
 socket-server/debug
 socket-server/socket-server
-
-
 parseNATS/debug
 parseNATS/parseNATS
+webserver/webserver

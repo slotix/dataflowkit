@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -59,8 +60,6 @@ func (r *Results) AllBlocks() []map[string]interface{} {
 	return ret
 }
 
-
-
 //KSUID stores the timestamp portion in ID. So we can retrieve it from Task object as a Time object
 func (t Task) StartTime() (*time.Time, error) {
 	id, err := ksuid.Parse(t.ID)
@@ -86,11 +85,11 @@ func (p Payload) selectors() ([]string, error) {
 func NewTask(p Payload) (task *Task, err error) {
 	scraper := &Scraper{}
 	//if p.Request != nil {
-		scraper, err = NewScraper(p)
-		if err != nil {
-			return nil, err
-		}
-//	}
+	scraper, err = NewScraper(p)
+	if err != nil {
+		return nil, err
+	}
+	//	}
 	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
 	id := ksuid.New()
 
@@ -101,136 +100,25 @@ func NewTask(p Payload) (task *Task, err error) {
 	return task, nil
 }
 
-//fields2parts converts payload []field to []scrape.Part
-func (p Payload) fields2parts() ([]Part, error) {
-	parts := []Part{}
-	//Payload fields
-	for _, f := range p.Fields {
-		params := make(map[string]interface{})
-		if f.Extractor.Params != nil {
-			params = f.Extractor.Params.(map[string]interface{})
-		}
-		var err error
-		switch eType := f.Extractor.Type; eType {
-
-		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
-		case "link":
-			l := &extract.Link{Href: extract.Attr{Attr: "href"}}
-			if params != nil {
-				err := FillStruct(params, l)
-				if err != nil {
-					logger.Println(err)
-				}
-			}
-			parts = append(parts, Part{
-				Name:      f.Name + "_text",
-				Selector:  f.Selector,
-				Extractor: l.Text,
-			})
-			//******* details
-			
-			if f.Details != nil {
-				task := &Task{}
-				detailsPayload := p
-				detailsPayload.Name = f.Name + "Details"
-				detailsPayload.Fields = f.Details.Fields
-				//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
-				task, err = NewTask(detailsPayload)
-				if err != nil {
-					return nil, err
-				}
-				parts = append(parts,  Part{
-					Name:      f.Name + "_link",
-					Selector:  f.Selector,
-					Extractor: l.Href,
-					Details:   task,
-				})
-			} 
-			parts = append(parts,  Part{
-				Name:      f.Name + "_link",
-				Selector:  f.Selector,
-				Extractor: l.Href,
-				Details:   nil,
-			})
-
-			
-
-		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
-		case "image":
-			i := &extract.Image{Src: extract.Attr{Attr: "src"},
-				Alt: extract.Attr{Attr: "alt"}}
-			if params != nil {
-				err := FillStruct(params, i)
-				if err != nil {
-					logger.Println(err)
-				}
-			}
-			parts = append(parts, Part{
-				Name:      f.Name + "_src",
-				Selector:  f.Selector,
-				Extractor: i.Src,
-			}, Part{
-				Name:      f.Name + "_alt",
-				Selector:  f.Selector,
-				Extractor: i.Alt,
-			})
-
-		default:
-			var e extract.Extractor
-			switch eType {
-			case "const":
-				//	c := &extract.Const{Val: params["value"]}
-				//	e = c
-				e = &extract.Const{}
-			case "count":
-				e = &extract.Count{}
-			case "text":
-				e = &extract.Text{}
-			case "html":
-				e = &extract.Html{}
-			case "outerHtml":
-				e = &extract.OuterHtml{}
-			case "attr":
-				e = &extract.Attr{}
-			case "regex":
-				r := &extract.Regex{}
-				regExp := params["regexp"]
-				r.Regex = regexp.MustCompile(regExp.(string))
-				e = r
-			}
-
-			if params != nil {
-				err := FillStruct(params, e)
-				if err != nil {
-					logger.Println(err)
-				}
-			}
-			parts = append(parts, Part{
-				Name:      f.Name,
-				Selector:  f.Selector,
-				Extractor: e,
-			})
-		}
+func Parse(p Payload) (io.ReadCloser, error) {
+	task, err := NewTask(p)
+	if err != nil {
+		return nil, err
 	}
-	// Validate payload fields
-	if len(parts) == 0 {
-		return nil, ErrNoParts
+	//scrape request and return results.
+	err = Scrape(task)
+	if err != nil {
+		return nil, err
 	}
-	seenNames := map[string]struct{}{}
-	for i, part := range parts {
-		if len(part.Name) == 0 {
-			return nil, fmt.Errorf("no name provided for part %d", i)
-		}
-		if _, seen := seenNames[part.Name]; seen {
-			return nil, fmt.Errorf("part %s has a duplicate name", i)
-		}
-		seenNames[part.Name] = struct{}{}
-
-		if len(part.Selector) == 0 {
-			return nil, fmt.Errorf("no selector provided for part %d", i)
-		}
+	e := NewEncoder(*task)
+	if e == nil {
+		return nil, errors.New("invalid output format specified")
 	}
-	return parts, nil
+	r, err := e.Encode()
+	if err != nil {
+		return nil, err
+	}
+	return r, err
 }
 
 // Create a new scraper with the provided configuration.
@@ -240,9 +128,10 @@ func NewScraper(p Payload) (*Scraper, error) {
 		return nil, err
 	}
 	var paginator paginate.Paginator
-	maxPages := 1 
+	maxPages := 1
 	if p.Paginator == nil {
 		paginator = &dummyPaginator{}
+
 	} else {
 		paginator = paginate.BySelector(p.Paginator.Selector, p.Paginator.Attribute)
 		maxPages = p.Paginator.MaxPages
@@ -261,7 +150,7 @@ func NewScraper(p Payload) (*Scraper, error) {
 	}
 
 	scraper := &Scraper{
-		Request: p.Request.(splash.Request),
+		Request:    p.Request.(splash.Request),
 		DividePage: dividePageFunc,
 		Parts:      parts,
 		Paginator:  paginator,
@@ -279,7 +168,7 @@ func NewScraper(p Payload) (*Scraper, error) {
 	return scraper, nil
 }
 
-func  Scrape(task *Task) error {
+func Scrape(task *Task) error {
 	req := task.Scraper.Request
 	url := req.GetURL()
 
@@ -288,13 +177,13 @@ func  Scrape(task *Task) error {
 	task.Results.Visited = make(map[string]error)
 
 	//get Robotstxt Data
-	 robots, err := fetch.RobotstxtData(url)
-	 if err != nil {
+	robots, err := fetch.RobotstxtData(url)
+	if err != nil {
 		task.Results.Visited[url] = err
 		logger.Println(err)
 		//return err
-	 }
-	 task.Scraper.Robots = robots
+	}
+	task.Scraper.Robots = robots
 
 	for {
 		//check if scraping of current url is not forbidden
@@ -353,6 +242,12 @@ func  Scrape(task *Task) error {
 				if part.Details != nil {
 					//fmt.Printf("%T\n", partResults)
 					part.Details.Scraper.Request = splash.Request{URL: partResults.(string)}
+					//go func() {
+					//	err = Scrape(part.Details)
+					//	if err != nil {
+					//		logger.Println(err)
+					//	}
+					//}()
 					err = Scrape(part.Details)
 					if err != nil {
 						return err
@@ -360,7 +255,7 @@ func  Scrape(task *Task) error {
 					//logger.Println(part.Details.Visited)
 					//logger.Println(part.Details.Results)
 					//part.Details.Results = append(part.Details.Results, )
-				//	logger.Println(blockResults[part.Name], part.Details)
+					//	logger.Println(blockResults[part.Name], part.Details)
 				}
 			}
 			if len(blockResults) > 0 {
@@ -443,8 +338,136 @@ func responseFromFetchService(req splash.Request) (*splash.Response, error) {
 	return sResponse, nil
 }
 
-//PartNames returns Part Names which are used as a header of output CSV
-func (s Scraper) PartNames() []string {
+//fields2parts converts payload []field to []scrape.Part
+func (p Payload) fields2parts() ([]Part, error) {
+	parts := []Part{}
+	//Payload fields
+	for _, f := range p.Fields {
+		params := make(map[string]interface{})
+		if f.Extractor.Params != nil {
+			params = f.Extractor.Params.(map[string]interface{})
+		}
+		var err error
+		switch eType := f.Extractor.Type; eType {
+
+		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
+		case "link":
+			l := &extract.Link{Href: extract.Attr{Attr: "href"}}
+			if params != nil {
+				err := FillStruct(params, l)
+				if err != nil {
+					logger.Println(err)
+				}
+			}
+			//******* details
+			task := &Task{}
+			if f.Details != nil {
+				detailsPayload := p
+				detailsPayload.Name = f.Name + "Details"
+				detailsPayload.Fields = f.Details.Fields
+				//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
+				task, err = NewTask(detailsPayload)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				task = nil
+			}
+
+			parts = append(parts,
+				Part{
+					Name:      f.Name + "_text",
+					Selector:  f.Selector,
+					Extractor: l.Text,
+				},
+				Part{
+					Name:      f.Name + "_link",
+					Selector:  f.Selector,
+					Extractor: l.Href,
+					Details:   task,
+				})
+
+		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
+		case "image":
+			i := &extract.Image{Src: extract.Attr{Attr: "src"},
+				Alt: extract.Attr{Attr: "alt"}}
+			if params != nil {
+				err := FillStruct(params, i)
+				if err != nil {
+					logger.Println(err)
+				}
+			}
+			parts = append(parts, Part{
+				Name:      f.Name + "_src",
+				Selector:  f.Selector,
+				Extractor: i.Src,
+			}, Part{
+				Name:      f.Name + "_alt",
+				Selector:  f.Selector,
+				Extractor: i.Alt,
+			})
+
+		default:
+			var e extract.Extractor
+			switch eType {
+			case "const":
+				//	c := &extract.Const{Val: params["value"]}
+				//	e = c
+				e = &extract.Const{}
+			case "count":
+				e = &extract.Count{}
+			case "text":
+				e = &extract.Text{}
+			case "html":
+				e = &extract.Html{}
+			case "outerHtml":
+				e = &extract.OuterHtml{}
+			case "attr":
+				e = &extract.Attr{}
+			case "regex":
+				r := &extract.Regex{}
+				regExp := params["regexp"]
+				r.Regex = regexp.MustCompile(regExp.(string))
+				e = r
+			}
+
+			if params != nil {
+				err := FillStruct(params, e)
+				if err != nil {
+					logger.Println(err)
+				}
+			}
+			parts = append(parts, Part{
+				Name:      f.Name,
+				Selector:  f.Selector,
+				Extractor: e,
+			})
+		}
+	}
+	// Validate payload fields
+	if len(parts) == 0 {
+		return nil, ErrNoParts
+	}
+	seenNames := map[string]struct{}{}
+	for i, part := range parts {
+		if len(part.Name) == 0 {
+			return nil, fmt.Errorf("no name provided for part %d", i)
+		}
+		if _, seen := seenNames[part.Name]; seen {
+			logger.Println(part.Name)
+			return nil, fmt.Errorf("part %s has a duplicate name", part.Name)
+		}
+		seenNames[part.Name] = struct{}{}
+
+		if len(part.Selector) == 0 {
+			return nil, fmt.Errorf("no selector provided for part %d", i)
+		}
+	}
+	return parts, nil
+}
+
+//partNames returns Part Names which are used as a header of output CSV
+func (s Scraper) partNames() []string {
 	names := []string{}
 	for _, part := range s.Parts {
 		names = append(names, part.Name)
