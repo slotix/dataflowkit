@@ -10,17 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/slotix/dataflowkit/errs"
 	"github.com/spf13/viper"
 	"github.com/temoto/robotstxt"
 )
 
 //IsRobotsTxt returns true if resource is robots.txt file
 func IsRobotsTxt(url string) bool {
-	if strings.HasSuffix(url, "robots.txt") {
-		return true
-	}
-	return false
+	return strings.HasSuffix(url, "/robots.txt")
 }
 
 //fetchRobots retrieves content of robots.txt with BaseFetcher.
@@ -39,7 +35,7 @@ func fetchRobots(req FetchRequester) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Set("Content-Type", "application/json")
+	//request.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	r, err := client.Do(request)
 	if r != nil {
@@ -55,17 +51,57 @@ func fetchRobots(req FetchRequester) ([]byte, error) {
 	return data, nil
 }
 
+//Response is used for getting HEAD response to check if a request is redirected.
+func Response(req FetchRequester) (*BaseFetcherResponse, error) {
+	//fetch content
+	b, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	reader := bytes.NewReader(b)
+
+	//https://gitlab.com/gitlab-org/gitlab-ce/issues/33534
+	//Use BaseFetcher to get robots.txt content
+	addr := "http://" + viper.GetString("DFK_FETCH") + "/response/base"
+	request, err := http.NewRequest("POST", addr, reader)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	r, err := client.Do(request)
+	if r != nil {
+		defer r.Body.Close()
+	}
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	bfResponse := &BaseFetcherResponse{}
+
+	if err := json.Unmarshal(data, &bfResponse); err != nil {
+		return nil, err
+	}
+	return bfResponse, nil
+}
+
 //RobotstxtData generates robots.txt url, retrieves its content through API fetch endpoint.
 func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
+
 	parsedURL, err := neturl.Parse(url)
 	if err != nil {
 		return nil, err
 	}
 	//generate robotsURL from req.URL
 	robotsURL := fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
-	r := BaseFetcherRequest{URL: robotsURL}
+	r := BaseFetcherRequest{URL: robotsURL, Method: "GET"}
 
 	content, err := fetchRobots(r)
+	//content, err := Response(r)
+
 	if err != nil {
 		return nil, err
 	}
@@ -73,9 +109,14 @@ func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
 	if err != nil {
 		fmt.Println("Robots.txt error:", err)
 	}
-	if !AllowedByRobots(url, robotsData) {
-		return nil, &errs.ForbiddenByRobots{url}
-	}
+
+	//
+	// r = BaseFetcherRequest{URL: url, Method: "HEAD"}
+	// d, err := head(r)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// logger.Println(string(d))
 	return
 
 }

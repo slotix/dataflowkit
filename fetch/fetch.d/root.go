@@ -111,7 +111,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&splashHost, "SPLASH", "s", "127.0.0.1:8050", "Splash host address")
 	RootCmd.Flags().IntVarP(&splashTimeout, "SPLASH_TIMEOUT", "", 20, "A timeout (in seconds) for the render.")
 	RootCmd.Flags().IntVarP(&splashResourceTimeout, "SPLASH_RESOURCE_TIMEOUT", "", 30, "A timeout (in seconds) for individual network requests.")
-	RootCmd.Flags().Float64VarP(&splashWait, "SPLASH_WAIT", "", 1.0, "Time in seconds to wait until js scripts loaded.")
+	RootCmd.Flags().Float64VarP(&splashWait, "SPLASH_WAIT", "", 0.5 , "Time in seconds to wait until js scripts loaded.")
 
 	//set here default type of storage
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
