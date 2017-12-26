@@ -37,6 +37,6 @@ func TestRandInt(t *testing.T){
 	fmt.Println(s, rand, m)
 }
 
-func TestGenerateCRC32(t *testing.T){
-	fmt.Println(string(GenerateCRC32([]byte("test test test"))))
-}
+// func TestGenerateCRC32(t *testing.T){
+// 	fmt.Println(string(GenerateCRC32([]byte("test test test"))))
+// }

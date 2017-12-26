@@ -11,18 +11,18 @@ import (
 	"github.com/clbanning/mxj"
 )
 
-func NewEncoder(s Session) (encoder Encoder) {
-	switch strings.ToLower(s.Tasks[0].Scraper.Opts.Format) {
+func NewEncoder(s Task) (encoder Encoder) {
+	switch strings.ToLower(s.Scrapers[0].Opts.Format) {
 	case "csv":
 		encoder = CSVEncoder{
-			comma: ",",
-			partNames: s.Tasks[0].Scraper.partNames(),
+			comma:     ",",
+			partNames: s.Scrapers[0].partNames(),
 			results:   &s.Results,
 		}
 		return
 	case "json":
 		encoder = JSONEncoder{
-			paginateResults: s.Tasks[0].Scraper.Opts.PaginateResults,
+			paginateResults: s.Scrapers[0].Opts.PaginateResults,
 			results:         &s.Results,
 		}
 		return
