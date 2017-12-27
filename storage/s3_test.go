@@ -111,8 +111,8 @@ func TestDownload(t *testing.T) {
 		})
 
 	if err != nil {
-		fmt.Println(err.(s3.RequestFailure))
-		fmt.Println(err.(s3.RequestFailure).Code())
+		//fmt.Println(err.(s3.RequestFailure))
+		//fmt.Println(err.(s3.RequestFailure).Code())
 		fmt.Printf("Type: %T\n", err)
 	}
 
