@@ -48,8 +48,6 @@ type Payload struct {
 	RetryTimes          int           `json:"retryTimes"`
 }
 
-
-
 // The DividePageFunc type is used to extract a page's blocks during a scrape.
 // For more information, please see the documentation on the ScrapeConfig type.
 type DividePageFunc func(*goquery.Selection) []*goquery.Selection
@@ -68,7 +66,7 @@ type Part struct {
 	// selector that is provided to this Piece.
 	Extractor extract.Extractor
 
-	Details *Task
+	Details *Scraper
 }
 
 //Scraper struct consolidates settings for scraping task.
@@ -102,7 +100,6 @@ type Scraper struct {
 	//Opts contains options that are used during the progress of a
 	// scrape.
 	Opts ScrapeOptions
-	
 }
 
 // Results describes the results of a scrape.  It contains a list of all
@@ -111,7 +108,7 @@ type Scraper struct {
 type Results struct {
 	// Visited contain a map[url]error during this scrape.
 	// Always contains at least one element - the initial URL.
-	//Failed pages should be rescheduled for download at the end if during a scrape one of the following statuses returned [500, 502, 503, 504, 408] 
+	//Failed pages should be rescheduled for download at the end if during a scrape one of the following statuses returned [500, 502, 503, 504, 408]
 	//once the spider has finished crawling all other (non failed) pages.
 	Visited map[string]error
 
@@ -119,19 +116,14 @@ type Results struct {
 	// is for each page, the second-level array is for each block in a page, and
 	// the final map[string]interface{} is the mapping of Part.Name to results.
 	Output [][]map[string]interface{}
-	
 }
 
-type Session struct {
-	Tasks []*Task
+type Task struct {
+	ID       string
+	Payload  Payload
+	Scrapers []*Scraper
+	//Tasks []*Task
 	Robots map[string]*robotstxt.RobotsData
 	Results
 	//Cookies string
-}
-type Task struct {
-	ID      string
-	Scraper *Scraper
-	//Session
-	Status string
-	//Results
 }
