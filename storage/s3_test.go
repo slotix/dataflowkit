@@ -150,19 +150,19 @@ func TestGetObject(t *testing.T) {
 }
 
 func TestDeleteItem(t *testing.T) {
-	_, err := conn.svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String("urlll")})
+	// _, err := conn.svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String("urlll")})
 
-	if err != nil {
-		fmt.Println(err)
-	}
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
 
-	err = conn.svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String("urlll"),
-	})
-	if err != nil {
-		fmt.Println(err)
-	}
+	// err = conn.svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
+	// 	Bucket: aws.String(bucket),
+	// 	Key:    aws.String("urlll"),
+	// })
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
 
 }
 
