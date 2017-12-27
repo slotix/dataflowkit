@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/spf13/viper"
@@ -26,9 +27,14 @@ var (
 func init() {
 	viper.Set("SPACES_CONFIG", homeDir()+".spaces/credentials")
 	viper.Set("SPACES_ENDPOINT", "https://ams3.digitaloceanspaces.com")
-	//bucket = "dfk-storage"
-	bucket = "fetch-bucket"
-	conn = newS3Conn(bucket)
+	bucket = viper.GetString("DFK_BUCKET")
+	config := &aws.Config{
+		Credentials: credentials.NewSharedCredentials(viper.GetString("SPACES_CONFIG"), ""), //Load credentials from specified file
+		Endpoint:    aws.String(viper.GetString("SPACES_ENDPOINT")),                         //Endpoint is obligatory for DO Spaces
+		Region:      aws.String("ams333"),                                                   //Actually for Digital Ocean spaces region parameter may have any value. But it can't be omited.
+	}
+
+	conn = newS3Conn(config, bucket)
 	/* bucket = "fetch-bucket"
 	// Initialize a session that the SDK will use to load configuration,
 	// credentials, and region from the shared config file. (~/.aws/config).
