@@ -2,6 +2,7 @@
 
 ![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/dfk-logo/logo-mini.png)
 
+[![Build Status](https://travis-ci.org/slotix/dataflowkit.svg?branch=master)](https://travis-ci.org/slotix/dataflowkit)
 [![GoDoc](https://godoc.org/github.com/slotix/dataflowkit?status.svg)](https://godoc.org/github.com/slotix/dataflowkit)
 
 
