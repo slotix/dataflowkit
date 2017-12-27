@@ -1,7 +1,7 @@
 {
     "name": "drones_collection",
     "request": {
-        "url": "https://televizor.heureka.sk"
+        "url": "https://drony.heureka.sk"
     },
     "fields": [
         {
@@ -16,8 +16,8 @@
             "details": {
                 "fields": [
                     {
-                        "name": "Description",
-                        "selector": "#product-short-description",
+                        "name": "Title",
+                        "selector": "h1",
                         "extractor": {
                             "type": "text"
                         }

@@ -35,108 +35,29 @@ var (
 	ErrNoSelectors = errors.New("no selectors in payload")
 )
 
-// First returns the first set of results - i.e. the results from the first
-// block on the first page.
-// This function can return nil if there were no blocks found on the first page
-// of the scrape.
-func (r *Results) First() map[string]interface{} {
-	if len(r.Output[0]) == 0 {
-		return nil
-	}
-
-	return r.Output[0][0]
-}
-
-// AllBlocks returns a single list of results from every block on all pages.
-// This function will always return a list, even if no blocks were found.
-func (r *Results) AllBlocks() []map[string]interface{} {
-	ret := []map[string]interface{}{}
-
-	for _, page := range r.Output {
-		for _, block := range page {
-			ret = append(ret, block)
-		}
-	}
-
-	return ret
-}
-
-//KSUID stores the timestamp portion in ID. So we can retrieve it from Task object as a Time object
-func (t Task) StartTime() (*time.Time, error) {
-	id, err := ksuid.Parse(t.ID)
-	if err != nil {
-		return nil, err
-	}
-	idTime := id.Time()
-	return &idTime, nil
-}
-
-//selectors returns selectors from payload
-func (p Payload) selectors() ([]string, error) {
-	selectors := []string{}
-	for _, f := range p.Fields {
-		selectors = append(selectors, f.Selector)
-	}
-	if len(selectors) == 0 {
-		return nil, errNoSelectors
-	}
-	return selectors, nil
-}
-
-func NewTask(p Payload) (task *Task, err error) {
-	scraper := &Scraper{}
-	//if p.Request != nil {
-	scraper, err = NewScraper(p)
-	if err != nil {
-		return nil, err
-	}
-	//	}
+func NewTask(p Payload) *Task {
 	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
 	id := ksuid.New()
-
-	task = &Task{
+	return &Task{
 		ID:      id.String(),
-		Scraper: scraper,
-	}
-	return task, nil
-}
-
-func Parse(p Payload) (io.ReadCloser, error) {
-	sess := Session{
+		Payload: p,
 		Results: Results{
 			Visited: make(map[string]error),
 		},
 		Robots: make(map[string]*robotstxt.RobotsData),
 	}
-	task, err := NewTask(p)
-	if err != nil {
-		return nil, err
-	}
-	sess.Tasks = append(sess.Tasks, task)
 
-	//scrape request and return results.
-	err = sess.scrape(task)
-	if err != nil {
-		return nil, err
-	}
-	e := NewEncoder(sess)
-	if e == nil {
-		return nil, errors.New("invalid output format specified")
-	}
-	r, err := e.Encode()
-	if err != nil {
-		return nil, err
-	}
-	return r, err
 }
 
-/* func Parse(p Payload) (io.ReadCloser, error) {
-	task, err := NewTask(p)
+func (task *Task) Parse() (io.ReadCloser, error) {
+	scraper, err := task.Payload.newScraper()
 	if err != nil {
 		return nil, err
 	}
+	task.Scrapers = append(task.Scrapers, scraper)
+
 	//scrape request and return results.
-	err = scrape(task)
+	err = task.scrape(scraper)
 	if err != nil {
 		return nil, err
 	}
@@ -149,10 +70,160 @@ func Parse(p Payload) (io.ReadCloser, error) {
 		return nil, err
 	}
 	return r, err
-} */
+}
+
+//KSUID stores the timestamp portion in ID. So we can retrieve it from Task object as a Time object
+func (t Task) startTime() (*time.Time, error) {
+	id, err := ksuid.Parse(t.ID)
+	if err != nil {
+		return nil, err
+	}
+	idTime := id.Time()
+	return &idTime, nil
+}
+
+func (t *Task) scrape(scraper *Scraper) error {
+	results := []map[string]interface{}{}
+	req := scraper.Request
+	url := req.GetURL()
+
+	var numPages int
+	opts := scraper.Opts
+	//get Robotstxt Data
+	host, err := req.Host()
+	if err != nil {
+		t.Visited[url] = err
+		logger.Println(err)
+		//return err
+	}
+	if _, ok := t.Robots[host]; !ok {
+		robots, err := fetch.RobotstxtData(url)
+		if err != nil {
+			t.Visited[url] = err
+			logger.Println(err)
+			//return err
+		}
+		t.Robots[host] = robots
+	}
+
+	for {
+		//check if scraping of current url is not forbidden
+		if !fetch.AllowedByRobots(url, t.Robots[host]) {
+			t.Visited[url] = &errs.ForbiddenByRobots{url}
+		}
+		// Repeat until we don't have any more URLs, or until we hit our page limit.
+		if len(url) == 0 ||
+			(opts.MaxPages > 0 && numPages >= opts.MaxPages) {
+			break
+		}
+		//call remote fetcher to download web page
+		sResponse, err := responseFromFetchService(req)
+		//sResponse, err := req.(splash.Request).GetResponse()
+		if err != nil {
+			return err
+		}
+		content, err := sResponse.GetContent()
+		if err != nil {
+			return err
+		}
+		// Create a goquery document.
+		doc, err := goquery.NewDocumentFromReader(content)
+		if err != nil {
+			return err
+		}
+
+		t.Visited[url] = nil //???????
+		//results := []map[string]interface{}{}
+
+		// Divide this page into blocks
+		for _, block := range scraper.DividePage(doc.Selection) {
+			blockResults := map[string]interface{}{}
+
+			// Process each part of this block
+			for _, part := range scraper.Parts {
+				sel := block
+				if part.Selector != "." {
+					sel = sel.Find(part.Selector)
+				}
+
+				partResults, err := part.Extractor.Extract(sel)
+				if err != nil {
+					return err
+				}
+
+				// A nil response from an extractor means that we don't even include it in
+				// the results.
+				if partResults == nil {
+					continue
+				}
+
+				blockResults[part.Name] = partResults
+
+				//********* details
+				//part.Details = nil
+				if part.Details != nil {
+					part.Details.Request = splash.Request{
+						URL: partResults.(string),
+					}
+					t.Scrapers = append(t.Scrapers, part.Details)
+					err := t.scrape(part.Details)
+					if err != nil {
+						return err
+					}
+					//	logger.Println(s.Visited)
+					//logger.Println(t.Results)
+
+					//blockResults[part.Name] = s.
+
+					//logger.Println(part.Details.Results)
+					//part.Details.Results = append(part.Details.Results, )
+					//	logger.Println(blockResults[part.Name], part.Details)
+				}
+			}
+			if len(blockResults) > 0 {
+				// Append the results from this block.
+				results = append(results, blockResults)
+			}
+		}
+
+		// Append the results from this page.
+		t.Output = append(t.Output, results)
+
+		numPages++
+
+		// Get the next page.
+		url, err = scraper.Paginator.NextPage(url, doc.Selection)
+		if err != nil {
+			return err
+		}
+
+		//every time when getting a response the next request will be filled with updated cookie information
+		err = sResponse.SetCookieToNextRequest(&req)
+		if err != nil {
+			logger.Println(err)
+		}
+		req.URL = url
+
+		if opts.RandomizeFetchDelay {
+			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
+			rand := Random(500, 1500)
+			delay := opts.FetchDelay * time.Duration(rand) / 1000
+			logger.Println(delay)
+			time.Sleep(delay)
+		} else {
+			time.Sleep(opts.FetchDelay)
+		}
+
+	}
+	//logger.Println(task.Visited)
+	// All good!
+	//return &s.Results, nil
+	return nil
+
+}
 
 // Create a new scraper with the provided configuration.
-func NewScraper(p Payload) (*Scraper, error) {
+func (p Payload) newScraper() (*Scraper, error) {
 	parts, err := p.fields2parts()
 	if err != nil {
 		return nil, err
@@ -198,306 +269,6 @@ func NewScraper(p Payload) (*Scraper, error) {
 	return scraper, nil
 }
 
-func (s *Session) scrape(task *Task) error {
-	req := task.Scraper.Request
-	url := req.GetURL()
-
-	var numPages int
-	opts := task.Scraper.Opts
-	//task.Results.Visited = make(map[string]error)
-	//get Robotstxt Data
-	host, err := req.Host()
-	if err != nil {
-		s.Visited[url] = err
-		logger.Println(err)
-		//return err
-	}
-	if _, ok := s.Robots[host]; !ok {
-		robots, err := fetch.RobotstxtData(url)
-		if err != nil {
-			s.Visited[url] = err
-			logger.Println(err)
-			//return err
-		}
-		s.Robots[host] = robots
-	}
-
-	for {
-		//check if scraping of current url is not forbidden
-		if !fetch.AllowedByRobots(url, s.Robots[host]) {
-			s.Visited[url] = &errs.ForbiddenByRobots{url}
-		}
-		// Repeat until we don't have any more URLs, or until we hit our page limit.
-		if len(url) == 0 ||
-			(opts.MaxPages > 0 && numPages >= opts.MaxPages) {
-			break
-		}
-		//call remote fetcher to download web page
-		sResponse, err := responseFromFetchService(req)
-		//sResponse, err := req.(splash.Request).GetResponse()
-		if err != nil {
-			return err
-		}
-		content, err := sResponse.GetContent()
-		if err != nil {
-			return err
-		}
-		// Create a goquery document.
-		doc, err := goquery.NewDocumentFromReader(content)
-		if err != nil {
-			return err
-		}
-
-		s.Visited[url] = nil //???????
-		results := []map[string]interface{}{}
-
-		// Divide this page into blocks
-		for _, block := range task.Scraper.DividePage(doc.Selection) {
-			blockResults := map[string]interface{}{}
-
-			// Process each part of this block
-			for _, part := range task.Scraper.Parts {
-				sel := block
-				if part.Selector != "." {
-					sel = sel.Find(part.Selector)
-				}
-
-				partResults, err := part.Extractor.Extract(sel)
-				if err != nil {
-					return err
-				}
-
-				// A nil response from an extractor means that we don't even include it in
-				// the results.
-				if partResults == nil {
-					continue
-				}
-
-				blockResults[part.Name] = partResults
-
-				//********* details
-				part.Details = nil
-				if part.Details != nil {
-					part.Details.Scraper.Request = splash.Request{
-						URL: partResults.(string),
-					}
-					s.Tasks = append(s.Tasks, part.Details)
-					err = s.scrape(part.Details)
-					if err != nil {
-						return err
-					}
-					logger.Println(s.Visited)
-					//logger.Println(part.Details.Results)
-					//part.Details.Results = append(part.Details.Results, )
-					//	logger.Println(blockResults[part.Name], part.Details)
-				}
-			}
-			if len(blockResults) > 0 {
-				// Append the results from this block.
-				results1 := []map[string]interface{}{}
-				results1 = append(results1, blockResults)
-				results = append(results, blockResults)
-			}
-		}
-		
-		// Append the results from this page.
-		s.Output = append(s.Output, results)
-
-		numPages++
-
-		// Get the next page.
-		url, err = task.Scraper.Paginator.NextPage(url, doc.Selection)
-		if err != nil {
-			return err
-		}
-
-		//every time when getting a response the next request will be filled with updated cookie information
-		err = sResponse.SetCookieToNextRequest(&req)
-		if err != nil {
-			logger.Println(err)
-		}
-		req.URL = url
-
-		if opts.RandomizeFetchDelay {
-			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-			rand := Random(500, 1500)
-			delay := opts.FetchDelay * time.Duration(rand) / 1000
-			logger.Println(delay)
-			time.Sleep(delay)
-		} else {
-			time.Sleep(opts.FetchDelay)
-		}
-
-	}
-	//logger.Println(task.Visited)
-	// All good!
-	return nil
-
-}
-
-/* func scrape(task *Task) error {
-	req := task.Scraper.Request
-	url := req.GetURL()
-
-	var numPages int
-	opts := task.Scraper.Opts
-	task.Results.Visited = make(map[string]error)
-
-	//get Robotstxt Data
-	robots, err := fetch.RobotstxtData(url)
-	if err != nil {
-		task.Results.Visited[url] = err
-		logger.Println(err)
-		//return err
-	}
-	task.Scraper.Robots = robots
-
-	for {
-		//check if scraping of current url is not forbidden
-		if !fetch.AllowedByRobots(url, task.Scraper.Robots) {
-			task.Results.Visited[url] = &errs.ForbiddenByRobots{url}
-		}
-		// Repeat until we don't have any more URLs, or until we hit our page limit.
-		if len(url) == 0 ||
-			(opts.MaxPages > 0 && numPages >= opts.MaxPages) {
-			break
-		}
-		//call remote fetcher to download web page
-		sResponse, err := responseFromFetchService(req)
-		//sResponse, err := req.(splash.Request).GetResponse()
-		if err != nil {
-			return err
-		}
-		content, err := sResponse.GetContent()
-		if err != nil {
-			return err
-		}
-		// Create a goquery document.
-		doc, err := goquery.NewDocumentFromReader(content)
-		if err != nil {
-			return err
-		}
-
-		task.Results.Visited[url] = nil
-		results := []map[string]interface{}{}
-
-		// Divide this page into blocks
-		for _, block := range task.Scraper.DividePage(doc.Selection) {
-			blockResults := map[string]interface{}{}
-
-			// Process each part of this block
-			for _, part := range task.Scraper.Parts {
-				sel := block
-				if part.Selector != "." {
-					sel = sel.Find(part.Selector)
-				}
-
-				partResults, err := part.Extractor.Extract(sel)
-				if err != nil {
-					return err
-				}
-
-				// A nil response from an extractor means that we don't even include it in
-				// the results.
-				if partResults == nil {
-					continue
-				}
-
-				blockResults[part.Name] = partResults
-
-				//********* details
-				if part.Details != nil {
-					part.Details.Scraper.Request = splash.Request{URL: partResults.(string)}
-					err = scrape(part.Details)
-					if err != nil {
-						return err
-					}
-					logger.Println(part.Details.Visited)
-					//logger.Println(part.Details.Results)
-					//part.Details.Results = append(part.Details.Results, )
-					//	logger.Println(blockResults[part.Name], part.Details)
-				}
-			}
-			if len(blockResults) > 0 {
-				// Append the results from this block.
-				results = append(results, blockResults)
-			}
-		}
-
-		// Append the results from this page.
-		task.Results.Output = append(task.Results.Output, results)
-
-		numPages++
-
-		// Get the next page.
-		url, err = task.Scraper.Paginator.NextPage(url, doc.Selection)
-		if err != nil {
-			return err
-		}
-
-		//every time when getting a response the next request will be filled with updated cookie information
-		err = sResponse.SetCookieToNextRequest(&req)
-		if err != nil {
-			logger.Println(err)
-		}
-		req.URL = url
-
-		if opts.RandomizeFetchDelay {
-			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-			rand := Random(500, 1500)
-			delay := opts.FetchDelay * time.Duration(rand) / 1000
-			logger.Println(delay)
-			time.Sleep(delay)
-		} else {
-			time.Sleep(opts.FetchDelay)
-		}
-
-	}
-	logger.Println(task.Visited)
-	// All good!
-	return nil
-
-} */
-
-//responseFromFetchService sends request to fetch service and returns *splash.Response
-func responseFromFetchService(req splash.Request) (*splash.Response, error) {
-
-	//fetch content
-	b, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-	reader := bytes.NewReader(b)
-	addr := "http://" + viper.GetString("DFK_FETCH") + "/response/splash"
-	request, err := http.NewRequest("POST", addr, reader)
-	if err != nil {
-		return nil, err
-	}
-	request.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	r, err := client.Do(request)
-	if r != nil {
-		defer r.Body.Close()
-	}
-	if err != nil {
-		panic(err)
-	}
-	resp, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	var sResponse *splash.Response
-	if err := json.Unmarshal(resp, &sResponse); err != nil {
-		logger.Println("Json Unmarshall error", err)
-	}
-	//	content, err := sResponse.GetContent()
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//return content, nil
-	return sResponse, nil
-}
-
 //fields2parts converts payload []field to []scrape.Part
 func (p Payload) fields2parts() ([]Part, error) {
 	parts := []Part{}
@@ -520,18 +291,18 @@ func (p Payload) fields2parts() ([]Part, error) {
 				}
 			}
 			//******* details
-			task := &Task{}
+			scraper := &Scraper{}
 			if f.Details != nil {
 				detailsPayload := p
 				detailsPayload.Name = f.Name + "Details"
 				detailsPayload.Fields = f.Details.Fields
 				//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
-				task, err = NewTask(detailsPayload)
+				scraper, err = detailsPayload.newScraper()
 				if err != nil {
 					return nil, err
 				}
 			} else {
-				task = nil
+				scraper = nil
 			}
 
 			parts = append(parts,
@@ -544,7 +315,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 					Name:      f.Name + "_link",
 					Selector:  f.Selector,
 					Extractor: l.Href,
-					Details:   task,
+					Details:   scraper,
 				})
 
 		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
@@ -626,6 +397,52 @@ func (p Payload) fields2parts() ([]Part, error) {
 	return parts, nil
 }
 
+//selectors returns selectors from payload
+func (p Payload) selectors() ([]string, error) {
+	selectors := []string{}
+	for _, f := range p.Fields {
+		selectors = append(selectors, f.Selector)
+	}
+	if len(selectors) == 0 {
+		return nil, errNoSelectors
+	}
+	return selectors, nil
+}
+
+//responseFromFetchService sends request to fetch service and returns *splash.Response
+func responseFromFetchService(req splash.Request) (*splash.Response, error) {
+
+	//fetch content
+	b, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	reader := bytes.NewReader(b)
+	addr := "http://" + viper.GetString("DFK_FETCH") + "/response/splash"
+	request, err := http.NewRequest("POST", addr, reader)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	r, err := client.Do(request)
+	if r != nil {
+		defer r.Body.Close()
+	}
+	if err != nil {
+		panic(err)
+	}
+	resp, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	var sResponse *splash.Response
+	if err := json.Unmarshal(resp, &sResponse); err != nil {
+		logger.Println("Json Unmarshall error", err)
+	}
+	return sResponse, nil
+}
+
 //partNames returns Part Names which are used as a header of output CSV
 func (s Scraper) partNames() []string {
 	names := []string{}
@@ -633,4 +450,30 @@ func (s Scraper) partNames() []string {
 		names = append(names, part.Name)
 	}
 	return names
+}
+
+// First returns the first set of results - i.e. the results from the first
+// block on the first page.
+// This function can return nil if there were no blocks found on the first page
+// of the scrape.
+func (r *Results) First() map[string]interface{} {
+	if len(r.Output[0]) == 0 {
+		return nil
+	}
+
+	return r.Output[0][0]
+}
+
+// AllBlocks returns a single list of results from every block on all pages.
+// This function will always return a list, even if no blocks were found.
+func (r *Results) AllBlocks() []map[string]interface{} {
+	ret := []map[string]interface{}{}
+
+	for _, page := range r.Output {
+		for _, block := range page {
+			ret = append(ret, block)
+		}
+	}
+
+	return ret
 }

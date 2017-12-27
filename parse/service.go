@@ -19,7 +19,8 @@ type ServiceMiddleware func(Service) Service
 
 //Parse calls Fetcher to download web page for parsing
 func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
-	r, err := scrape.Parse(p)
+	task := scrape.NewTask(p)
+	r, err := task.Parse()
 	if err != nil {
 		return nil, err
 	}
