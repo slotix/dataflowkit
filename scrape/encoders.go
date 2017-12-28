@@ -78,7 +78,7 @@ func (e CSVEncoder) Encode() (io.ReadCloser, error) {
 			}
 			err = encodeCSV(names, includeHeader, page, ",", w)
 			if err != nil {
-				logger.Println(err)
+				logger.Error(err)
 			}
 		}
 		w.Flush()
@@ -107,7 +107,7 @@ func (e XMLEncoder) Encode() (io.ReadCloser, error) {
 			m, err := mxj.NewMapJson(jbuf.Bytes())
 			err = m.XmlIndentWriter(&buf, "", "  ")
 			if err != nil {
-				logger.Println(err)
+				logger.Error(err)
 			}
 	*/
 	var buf bytes.Buffer

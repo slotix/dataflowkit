@@ -45,7 +45,7 @@ func AddStringSliceToSlice(in []string, out []string) {
 func ReadLinesOfFile(filename string) []string {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		logger.Println(err.Error())
+		logger.Error(err.Error())
 	}
 	lines := strings.Split(string(content), "\n")
 	return lines

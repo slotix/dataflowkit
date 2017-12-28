@@ -35,17 +35,17 @@ func (mw statsMiddleware) incrementCount() {
 
 	buf, err := s.Read(mw.userID)
 	if err != nil {
-		logger.Println(err)
+		logger.Error(err)
 	}
 	strCount := string(buf)
 	count, err := strconv.Atoi(strCount)
 	if err != nil {
-		logger.Println(err)
+		logger.Error(err)
 	}
 	
 	count++
 	err = s.Write(mw.userID, []byte(strconv.Itoa(count)),0)
 	if err != nil {
-		logger.Println(err)
+		logger.Error(err)
 	}
 }

@@ -62,7 +62,7 @@ func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
 func (r *BaseFetcherResponse) SetCacheInfo() {
 	reasons, expires, err := cachecontrol.CachableResponse(r.Response.Request, r.Response, cachecontrol.Options{})
 	if err != nil {
-		logger.Println(err)
+		logger.Errorln(err)
 	}
 	if expires.IsZero() {
 		//if time is zero than set it to current time plus 24 hours.

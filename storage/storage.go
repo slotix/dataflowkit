@@ -8,8 +8,16 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/sirupsen/logrus"
+	"github.com/slotix/dataflowkit/log"
 	"github.com/spf13/viper"
 )
+
+var logger *logrus.Logger
+
+func init() {
+	logger = log.NewLogger()
+}
 
 type Store interface {
 	//Reads value from storage by specified key
@@ -52,8 +60,8 @@ func NewStore(t Type) Store {
 		bucket := viper.GetString("DFK_BUCKET")
 		config := &aws.Config{
 			Credentials: credentials.NewSharedCredentials(viper.GetString("SPACES_CONFIG"), ""), //Load credentials from specified file
-			Endpoint:    aws.String(viper.GetString("SPACES_ENDPOINT")), //Endpoint is obligatory for DO Spaces 
-			Region:      aws.String("ams333"), //Actually for Digital Ocean spaces region parameter may have any value. But it can't be omited.
+			Endpoint:    aws.String(viper.GetString("SPACES_ENDPOINT")),                         //Endpoint is obligatory for DO Spaces
+			Region:      aws.String("ams333"),                                                   //Actually for Digital Ocean spaces region parameter may have any value. But it can't be omited.
 		}
 		return newS3Storage(config, bucket)
 
@@ -93,7 +101,7 @@ func (s RedisConn) Expired(key string) bool {
 	if err != nil {
 		fmt.Println(err)
 	}
-	return ttl > 0 
+	return ttl > 0
 	//if ttl > 0 {
 	//	return false
 	//}
@@ -130,7 +138,7 @@ func (s S3Conn) Expired(key string) bool {
 	exp := time.Duration(viper.GetInt64("STORAGE_EXPIRE")) * time.Second
 	expiry := lastModified.Add(exp)
 	diff := expiry.Sub(currentTime)
-	logger.Printf("cache lifespan is %+v\n", diff)
+	logger.Info("cache lifespan is %+v\n", diff)
 	//Expired?
 	return diff > 0
 	//if diff > 0 {
@@ -138,8 +146,6 @@ func (s S3Conn) Expired(key string) bool {
 	//}
 	//return true
 }
-
-
 
 func newDiskvStorage(baseDir string, CacheSizeMax uint64) Store {
 	d := newDiskvConn(baseDir, CacheSizeMax)
@@ -177,11 +183,8 @@ func (s DiskvConn) Expired(key string) bool {
 	//calculate expiration time
 	exp := time.Duration(viper.GetInt64("STORAGE_EXPIRE")) * time.Second
 	expiry := mTime.Add(exp)
-	//logger.Println(mTime)
-	//logger.Println(currentTime)
-	//logger.Println(expiry)
 	diff := expiry.Sub(currentTime)
-	logger.Printf("cache lifespan is %+v\n", diff)
+	logger.Info("cache lifespan is %+v\n", diff)
 	//Expired?
 	return diff > 0
 	// if diff > 0 {

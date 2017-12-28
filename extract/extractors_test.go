@@ -199,8 +199,8 @@ func TestLink(t *testing.T) {
 		fmt.Println("They're unequal.")
 	}
 	//assert.Equal(t, ret)
-	logger.Println(m)
-	logger.Println(ret)
+	logger.Info(m)
+	logger.Info(ret)
 }
 func TestCount(t *testing.T) {
 	sel := selFrom(`

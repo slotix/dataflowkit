@@ -21,7 +21,7 @@ import (
 func DecodeParseRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var p scrape.Payload
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		logger.Printf("Type: %T\n", err)
+		logger.Error("Type: %T\n", err)
 		return nil, &errs.BadRequest{err}
 	}
 	return p, nil
@@ -54,7 +54,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		panic("encodeError with nil error")
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	logger.Printf("Type: %T\n", err)
+	logger.Error("Type: %T\n", err)
 	//logger.Println(err)
 	//t = err.(type)
 	var httpStatus int

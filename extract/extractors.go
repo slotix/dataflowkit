@@ -4,18 +4,19 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
-	"os"
 	"regexp"
 
+	"github.com/slotix/dataflowkit/log"
+
 	"github.com/PuerkitoBio/goquery"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 )
 
-var logger *log.Logger
+var logger *logrus.Logger
 
 func init() {
-	logger = log.New(os.Stdout, "extractor: ", log.Lshortfile)
+	logger = log.NewLogger()
 }
 
 // The Extractor interface represents something that can extract data from
@@ -371,52 +372,3 @@ type Image struct {
 	Src              Attr
 	Alt              Attr
 }
-
-/*
-type LinkResult struct {
-	text string
-	href string
-}
-
-func (e Link) Extract(sel *goquery.Selection) (interface{}, error) {
-	t, err := Text{}.Extract(sel)
-	if err != nil {
-		logger.Println(err)
-	}
-	a, err := Attr{Attr: "href"}.Extract(sel)
-	if err != nil {
-		logger.Println(err)
-	}
-	return LinkResult{t.(string), a.(string)}, nil
-}
-
-var _ PieceExtractor = Link{}
-*/
-/*
-func FillParams(t string, m map[string]interface{}) (scrape.PieceExtractor, error) {
-	//var err error
-
-	logger.Println(t)
-	var e scrape.PieceExtractor
-	switch t {
-	case "text":
-		e = &Text{}
-	case "attr":
-		e = &Attr{}
-	case "regex":
-		//e = &Regex{}
-		r := &Regex{}
-		regExp := m["regexp"]
-		r.Regex = regexp.MustCompile(regExp.(string))
-		e = r
-	}
-	if m != nil {
-		err := FillStruct(m, e)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return e, nil
-
-}
-*/

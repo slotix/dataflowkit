@@ -26,7 +26,7 @@ func Start(DFKParse string) {
 		logger = log.NewLogfmtLogger(os.Stderr)
 		//logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 		logger = log.With(logger, "ts", time.Now().Format("Jan _2 15:04:05"))
-		logger = log.With(logger, "caller", log.DefaultCaller)
+		//logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 	//creating storage for caching of parsed results
 	sType := viper.GetString("STORAGE_TYPE")

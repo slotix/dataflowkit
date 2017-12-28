@@ -55,7 +55,7 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 //FillStruct fills s Structure with values from m map
 func FillStruct(m map[string]interface{}, s interface{}) error {
 	for k, v := range m {
-		//	logger.Println(k,v)
+		//	logger.Info(k,v)
 		err := SetField(s, k, v)
 		if err != nil {
 			return err
@@ -65,7 +65,7 @@ func FillStruct(m map[string]interface{}, s interface{}) error {
 }
 
 func SetField(obj interface{}, name string, value interface{}) error {
-	//logger.Printf("%T, %t", obj, obj)
+	//logger.Info("%T, %t", obj, obj)
 	structValue := reflect.ValueOf(obj).Elem()
 	//Value which come from json usually is in lowercase but outgoing structs may contain fields in Title Case or in UPPERCASE - f.e. URL. So we should check if there are fields in Title case or upper case before skipping non-existent fields.
 	//It is unlikely there is a situation when there are several fields like url, Url, URL in the same structure.

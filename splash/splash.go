@@ -7,25 +7,25 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	neturl "net/url"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/pquerna/cachecontrol/cacheobject"
+	"github.com/sirupsen/logrus"
 	"github.com/slotix/dataflowkit/crypto"
 	"github.com/slotix/dataflowkit/errs"
+	"github.com/slotix/dataflowkit/log"
 	"github.com/spf13/viper"
 )
 
-var logger *log.Logger
+var logger *logrus.Logger
 
 func init() {
 	viper.AutomaticEnv() // read in environment variables that match
-	logger = log.New(os.Stdout, "splash: ", log.Lshortfile)
+	logger = log.NewLogger()
 }
 
 type Options struct {
@@ -153,7 +153,7 @@ func (req Request) GetResponse() (*Response, error) {
 	var sResponse Response
 
 	if err := json.Unmarshal(res, &sResponse); err != nil {
-		logger.Println("Json Unmarshall error", err)
+		logger.Error("Json Unmarshall error", err)
 	}
 	//if response status code is not 200
 
@@ -237,11 +237,11 @@ func (r *Response) SetCacheInfo() {
 
 	reqDir, err := cacheobject.ParseRequestCacheControl(reqHeader.Get("Cache-Control"))
 	if err != nil {
-		logger.Printf(err.Error())
+		logger.Error(err.Error())
 	}
 	resDir, err := cacheobject.ParseResponseCacheControl(respHeader.Get("Cache-Control"))
 	if err != nil {
-		logger.Printf(err.Error())
+		logger.Error(err.Error())
 	}
 	//logger.Println(respHeader)
 	expiresHeader, _ := http.ParseTime(respHeader.Get("Expires"))
@@ -276,8 +276,8 @@ func (r *Response) SetCacheInfo() {
 		} else {
 			r.Expires = rv.OutExpirationTime
 		}
-		logger.Println("Current Time: ", time.Now().UTC())
-		logger.Println(r.Request.URL, r.Expires)
+		logger.Info("Current Time: ", time.Now().UTC())
+		logger.Info(r.Request.URL, r.Expires)
 	} else {
 		//if resource is not cacheable set expiration time to the current time.
 		//This way web page will be downloaded every time.
@@ -289,12 +289,10 @@ func (r *Response) SetCacheInfo() {
 
 //Fetch content from url through Splash server https://github.com/scrapinghub/splash/
 func Fetch(req Request) (io.ReadCloser, error) {
-	//logger.Println(splashURL)
 	response, err := req.GetResponse()
 	if err != nil {
 		return nil, err
 	}
-	logger.Println(err)
 	content, err := response.GetContent()
 	if err == nil {
 		return content, nil
@@ -444,8 +442,8 @@ func (r Response) GetReasonsNotToCache() []cacheobject.Reason {
 	return r.ReasonsNotToCache
 }
 
-//TODO: test it 
+//TODO: test it
 //GetURL returns URL after all redirects
-func (r Response) GetURL() string{
+func (r Response) GetURL() string {
 	return r.Response.URL
 }

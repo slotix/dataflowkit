@@ -22,14 +22,11 @@ func generateCookie(setCookie string) (string, error) {
 				cf := strings.Split(g, "=")
 				cookie.Name = cf[0]
 				cookie.Value = cf[1]
-				//	logger.Println(groups)
 			}
 			cf := strings.Split(g, "=")
-			//	logger.Println(cf[0])
 			switch strings.ToLower(strings.Trim(cf[0], " ")) {
 			case "expires":
 				cookie.Expires = cf[1]
-				//logger.Println(cookie)
 			//case "Max-Age":
 			//cookie.MaxAge = cf[1]
 			case "path":
@@ -79,7 +76,7 @@ func (r *Response) SetCookieToNextRequest(req *Request) error {
 	//cookieLUA := `"session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"`
 	cookie, err := generateCookie(setCookie)
 	if err != nil {
-		logger.Println(err)
+		logger.Error(err)
 	}
 	req.Cookies = cookie
 	return nil
