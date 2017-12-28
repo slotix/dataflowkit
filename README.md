@@ -6,7 +6,7 @@
 [![GoDoc](https://godoc.org/github.com/slotix/dataflowkit?status.svg)](https://godoc.org/github.com/slotix/dataflowkit)
 
 
-Dataflow kit fetches web pages and extracts structured data from them, according to specified extractors. Parsed data can be stored and manipulated as desired.
+Dataflow kit extracts structured data from web pages, according to specified extractors. Parsed data can be stored and manipulated as desired.
 
 It can be used in many ways for data mining or information processing.
 
