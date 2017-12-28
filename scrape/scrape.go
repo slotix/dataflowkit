@@ -7,27 +7,28 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/segmentio/ksuid"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/fetch"
+	"github.com/slotix/dataflowkit/log"
 	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 	"github.com/temoto/robotstxt"
 )
 
-var logger *log.Logger
+var logger *logrus.Logger
 
 func init() {
-	logger = log.New(os.Stdout, "scrape: ", log.Lshortfile)
+	logger = log.NewLogger()
 }
 
 var (
@@ -93,14 +94,14 @@ func (t *Task) scrape(scraper *Scraper) error {
 	host, err := req.Host()
 	if err != nil {
 		t.Visited[url] = err
-		logger.Println(err)
+		logger.Error(err)
 		//return err
 	}
 	if _, ok := t.Robots[host]; !ok {
 		robots, err := fetch.RobotstxtData(url)
 		if err != nil {
 			t.Visited[url] = err
-			logger.Println(err)
+			logger.Error(err)
 			//return err
 		}
 		t.Robots[host] = robots
@@ -170,12 +171,8 @@ func (t *Task) scrape(scraper *Scraper) error {
 					if err != nil {
 						return err
 					}
-					//	logger.Println(s.Visited)
-					//logger.Println(t.Results)
 
-					//blockResults[part.Name] = s.
-
-					//logger.Println(part.Details.Results)
+					//blockResults[part.Name]
 					//part.Details.Results = append(part.Details.Results, )
 					//	logger.Println(blockResults[part.Name], part.Details)
 				}
@@ -200,7 +197,7 @@ func (t *Task) scrape(scraper *Scraper) error {
 		//every time when getting a response the next request will be filled with updated cookie information
 		err = sResponse.SetCookieToNextRequest(&req)
 		if err != nil {
-			logger.Println(err)
+			logger.Error(err)
 		}
 		req.URL = url
 
@@ -208,14 +205,15 @@ func (t *Task) scrape(scraper *Scraper) error {
 			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 			rand := Random(500, 1500)
 			delay := opts.FetchDelay * time.Duration(rand) / 1000
-			logger.Println(delay)
+			logger.Info(delay)
+
 			time.Sleep(delay)
 		} else {
 			time.Sleep(opts.FetchDelay)
 		}
 
 	}
-	//logger.Println(task.Visited)
+	//logger.Info(task.Visited)
 	// All good!
 	//return &s.Results, nil
 	return nil
@@ -287,7 +285,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 			if params != nil {
 				err := FillStruct(params, l)
 				if err != nil {
-					logger.Println(err)
+					logger.Error(err)
 				}
 			}
 			//******* details
@@ -325,7 +323,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 			if params != nil {
 				err := FillStruct(params, i)
 				if err != nil {
-					logger.Println(err)
+					logger.Error(err)
 				}
 			}
 			parts = append(parts, Part{
@@ -365,7 +363,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 			if params != nil {
 				err := FillStruct(params, e)
 				if err != nil {
-					logger.Println(err)
+					logger.Error(err)
 				}
 			}
 			parts = append(parts, Part{
@@ -385,7 +383,6 @@ func (p Payload) fields2parts() ([]Part, error) {
 			return nil, fmt.Errorf("no name provided for part %d", i)
 		}
 		if _, seen := seenNames[part.Name]; seen {
-			logger.Println(part.Name)
 			return nil, fmt.Errorf("part %s has a duplicate name", part.Name)
 		}
 		seenNames[part.Name] = struct{}{}
@@ -438,7 +435,7 @@ func responseFromFetchService(req splash.Request) (*splash.Response, error) {
 	}
 	var sResponse *splash.Response
 	if err := json.Unmarshal(resp, &sResponse); err != nil {
-		logger.Println("Json Unmarshall error", err)
+		logger.Error("Json Unmarshall error", err)
 	}
 	return sResponse, nil
 }

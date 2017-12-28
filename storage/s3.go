@@ -2,7 +2,6 @@ package storage
 
 import (
 	"bytes"
-	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -21,7 +20,6 @@ type S3Conn struct {
 	downloader *s3manager.Downloader
 }
 
-
 /* func newS3Conn(bucket string) S3Conn {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
@@ -31,7 +29,6 @@ type S3Conn struct {
 	downloader := s3manager.NewDownloader(sess)
 	return S3Conn{bucket, svc, uploader, downloader}
 } */
-
 
 // newS3Conn initializes new AWS S3 / Digital Ocean Spaces Connection with specified bucket
 //load credentials from shared file
@@ -92,14 +89,14 @@ func (s S3Conn) getObject(key string) (object *s3.GetObjectOutput, err error) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchKey:
-				fmt.Println(s3.ErrCodeNoSuchKey, aerr.Error())
+				logger.Error(s3.ErrCodeNoSuchKey, aerr.Error())
 			default:
-				fmt.Println(aerr.Error())
+				logger.Error(aerr.Error())
 			}
 		} else {
 			// Print the error, cast err to awserr.Error to get the Code and
 			// Message from an error.
-			fmt.Println(err.Error())
+			logger.Error(err.Error())
 		}
 		return
 	}

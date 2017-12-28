@@ -26,7 +26,7 @@ func (mw loggingMiddleware) Fetch(req FetchRequester) (response FetchResponser, 
 	defer func(begin time.Time) {
 		url := req.GetURL()
 		mw.logger.Log(
-			"function", "fetch",
+		//	"function", "fetch",
 			"url", url,
 			//	"output", output,
 			"err", err,
@@ -42,7 +42,7 @@ func (mw loggingMiddleware) Response(req FetchRequester) (response FetchResponse
 	defer func(begin time.Time) {
 		url := req.GetURL()
 		mw.logger.Log(
-			"function", "response",
+			//"function", "response",
 			"url", url,
 			//	"output", output,
 			"err", err,

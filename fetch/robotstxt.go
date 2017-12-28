@@ -128,7 +128,7 @@ func AllowedByRobots(url string, robotsData *robotstxt.RobotsData) bool {
 	}
 	parsedURL, err := neturl.Parse(url)
 	if err != nil {
-		logger.Println("err")
+		logger.Error("err")
 	}
 	return robotsData.TestAgent(parsedURL.Path, "DataflowKitBot")
 }

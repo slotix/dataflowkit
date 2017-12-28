@@ -45,7 +45,7 @@ func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err er
 	value, err := mw.storage.Read(sKey)
 	if err == nil {
 		if err := json.Unmarshal(value, &fetchResponse); err != nil {
-			logger.Println(err)
+			logger.Error(err)
 		}
 		//Error responses: a 404 (Not Found) may be cached.
 		//if sResponse.Response.Status == 404 {
@@ -53,9 +53,9 @@ func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err er
 		//}
 		//check if item is expired.
 		expired := fetchResponse.GetExpires()
-		logger.Println(expired)
+		logger.Info(expired)
 		diff := expired.Sub(time.Now().UTC())
-		logger.Printf("%s: cache lifespan is %+v\n", url, diff)
+		logger.Infof("%s: cache lifespan is %+v\n", url, diff)
 
 		if diff > 0 { //if cached value is not expired return it
 			return fetchResponse, nil
@@ -75,24 +75,24 @@ func (mw storageMiddleware) put(req FetchRequester, resp FetchResponser) error {
 
 	reasons := resp.GetReasonsNotToCache()
 	if len(reasons) == 0 {
-		logger.Println(url, "is Cachable")
+		logger.Info(url, "is Cachable")
 	} else {
-		logger.Println(url, "is not Cachable.", "Reasons to not cache:", resp.GetReasonsNotToCache())
+		logger.Info(url, "is not Cachable.", "Reasons to not cache:", resp.GetReasonsNotToCache())
 	}
 	expired := resp.GetExpires()
 
-	logger.Println("Expires:", expired)
+	logger.Info("Expires:", expired)
 
 	r, err := json.Marshal(resp)
 	if err != nil {
-		logger.Printf(err.Error())
+		logger.Error(err.Error())
 		return err
 	}
 	//calculate expiration time. This is actual for Redis only.
 	expTime := expired.Unix()
 	err = mw.storage.Write(sKey, r, expTime)
 	if err != nil {
-		logger.Println(err.Error())
+		logger.Error(err.Error())
 		return err
 	}
 	return nil
@@ -105,7 +105,7 @@ func (mw storageMiddleware) Fetch(req FetchRequester) (FetchResponser, error) {
 	if err == nil {
 		return fromStorage, nil
 	}
-	logger.Println(err)
+	logger.Error(err)
 	//fetch results directly from web if there is nothing in storage
 	resp, err := mw.Service.Fetch(req)
 	if err != nil {
@@ -137,7 +137,7 @@ func (mw storageMiddleware) Response(req FetchRequester) (FetchResponser, error)
 	if err == nil {
 		return fromStorage, nil
 	}
-	logger.Println(err)
+	logger.Error(err)
 	//Get fetch response directly from web if there is nothing in storage
 	resp, err := mw.Service.Response(req)
 	if err != nil {

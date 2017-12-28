@@ -65,7 +65,7 @@ func findIntersection(doc *goquery.Selection, selectors []string) (*goquery.Sele
 		//	return nil, err
 		//}
 		sel := doc.Find(f)
-		//logger.Println(f, sel.Length())
+		//logger.Info(f, sel.Length())
 		//col.genAttrFieldName(f.Name, sel)
 		if sel.Length() > 0 { //don't add selectors to intersection if length is 0. Otherwise the whole intersection returns No selectors error
 			if i == 0 {
@@ -75,17 +75,17 @@ func findIntersection(doc *goquery.Selection, selectors []string) (*goquery.Sele
 			}
 		}
 	}
-	//logger.Println(attrOrDataValue(intersection))
+	//logger.Info(attrOrDataValue(intersection))
 	if intersection == nil || intersection.Length() == 0 {
 		return nil, errNoSelectors
 	}
 	intersectionWithParent := fmt.Sprintf("%s>%s",
 		attrOrDataValue(intersection.Parent()),
 		attrOrDataValue(intersection))
-	//logger.Println(intersectionWithParent)
+	//logger.Info(intersectionWithParent)
 	items := doc.Find(intersectionWithParent)
 	//return intersectionWithParent, nil
-	//logger.Println(items.Length())
+	//logger.Info(items.Length())
 
 	var inter1 *goquery.Selection
 	if items.Length() == 1 {
@@ -110,7 +110,7 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 		sel, err := getCommonAncestor(doc, selectors)
 		//sel, err = findIntersection(doc, selectors)
 		if err != nil {
-			logger.Println(err)
+			logger.Error(err)
 			return nil
 		}
 

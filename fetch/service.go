@@ -43,7 +43,7 @@ func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 	}
 	
 	if err != nil {
-		logger.Println(err)
+		logger.Error(err)
 	}
 	res, err := fetcher.Fetch(req)
 	if err != nil {
