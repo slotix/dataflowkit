@@ -77,12 +77,13 @@ func (c dummyReadCloser) Read(b []byte) (int, error) {
 	return c.r.Read(b)
 }
 
-func (s dummyReadCloser) Close() error {
+func (dummyReadCloser) Close() error {
 	return nil
 }
 
 var _ io.ReadCloser = &dummyReadCloser{}
 
+//Random generates random int64 value
 func Random(min, max int64) int64 {
 	rand.Seed(time.Now().Unix())
 	return rand.Int63n(max-min) + min

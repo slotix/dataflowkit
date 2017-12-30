@@ -363,8 +363,7 @@ func (e Link) Extract(sel *goquery.Selection) (interface{}, error) {
 
 var _ Extractor = Link{}
 
-// Link is a PartExtractor that returns the combined text contents and  Attr{Attr: "href"} of
-// the given selection
+// Image is a PartExtractor that returns the combined Src and Alt attributes of the given Image
 type Image struct {
 	// If no parts with this attribute are found, then return the empty list from
 	// Extract, instead of  'nil'.  This signals that the result of this

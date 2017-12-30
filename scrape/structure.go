@@ -1,8 +1,9 @@
 package scrape
 
 import (
-	"github.com/slotix/dataflowkit/splash"
 	"time"
+
+	"github.com/slotix/dataflowkit/splash"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/slotix/dataflowkit/extract"
@@ -38,7 +39,8 @@ type paginator struct {
 	MaxPages  int    `json:"maxPages"`
 }
 
-// Find more actual information in docs/payload.md
+// Payload structure contain information and rules to be passed to a scraper
+// Find the most actual information in docs/payload.md
 type Payload struct {
 	// Name - Collection name.
 	Name string `json:"name"`
