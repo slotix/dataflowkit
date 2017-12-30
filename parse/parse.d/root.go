@@ -34,7 +34,7 @@ import (
 
 var (
 	DFKParse string //DFKParse service address.
-	DFKFetch string //DFKFetch service address. 
+	DFKFetch string //DFKFetch service address.
 
 	storageType    string
 	storageExpires int64 //how long in seconds object stay in a cache before expiration.

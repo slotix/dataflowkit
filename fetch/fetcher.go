@@ -146,7 +146,7 @@ func (sf *SplashFetcher) Close() {
 	return
 }
 
-// NewBaseFetcher creates an instanse of NewBaseFetcher{} to fetch 
+// NewBaseFetcher creates an instanse of NewBaseFetcher{} to fetch
 // a page content from regular websites as-is
 // without running js scripts on the page.
 // f.e. robots.txt are retrieved with BaseFetcher
@@ -172,7 +172,6 @@ func (bf *BaseFetcher) Prepare() error {
 	}
 	return nil
 }
-
 
 //Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
@@ -214,11 +213,11 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 		return nil, err
 	}
 	response := BaseFetcherResponse{
-		Response: resp, 
-		URL: resp.Request.URL.String(),
-		HTML: body, 
-		StatusCode: resp.StatusCode, 
-		Status: resp.Status,
+		Response:   resp,
+		URL:        resp.Request.URL.String(),
+		HTML:       body,
+		StatusCode: resp.StatusCode,
+		Status:     resp.Status,
 	}
 
 	//set Cache control parameters
@@ -251,7 +250,6 @@ type FetchResponser interface {
 	SetCacheInfo()
 	//GetURL returns final URL after all redirects
 	GetURL() string
-
 }
 
 //FetchRequester interface interface that must be satisfied the listed methods

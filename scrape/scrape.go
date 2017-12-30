@@ -36,7 +36,6 @@ var (
 	errNoSelectors = errors.New("no selectors found")
 )
 
-
 // NewTask creates new task to parse fetched page following the rules from Payload.
 func NewTask(p Payload) *Task {
 	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
@@ -51,7 +50,6 @@ func NewTask(p Payload) *Task {
 	}
 
 }
-
 
 // Parse processes specified task which parses fetched page.
 func (task *Task) Parse() (io.ReadCloser, error) {

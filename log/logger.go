@@ -10,7 +10,7 @@ import (
 
 type ContextHook struct{}
 
-//Levels return Levels of ContextHook 
+//Levels return Levels of ContextHook
 func (hook ContextHook) Levels() []logrus.Level {
 	return logrus.AllLevels
 }

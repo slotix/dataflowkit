@@ -12,28 +12,28 @@ type ScrapeOptions struct {
 	// returns no further URLs.  Set this value to 0 to indicate an unlimited
 	// number of pages can be scraped.
 	MaxPages int
-	//Output format 
+	//Output format
 	Format string
-	//FetchDelay should be used for a scraper to throttle the crawling speed to avoid hitting the web servers too frequently. 
+	//FetchDelay should be used for a scraper to throttle the crawling speed to avoid hitting the web servers too frequently.
 	FetchDelay time.Duration
-	
+
 	//Some sites track  statistically significant similarities in the time between requests to them. RandomizeCrawlDelay setting decreases the chance of a crawler being blocked by such sites. This way a random delay ranging from 0.5 * CrawlDelay to 1.5 * CrawlDelay seconds is used between consecutive requests to the same domain. If CrawlDelay is zero (default) this option has no effect.
 	RandomizeFetchDelay bool
-	//paginated results are returned. Single list of combined results from every block on all pages is returned by default. Paginated results is actual for JSON and XML formats. Combined list of results is always returned for CSV format.  
+	//paginated results are returned. Single list of combined results from every block on all pages is returned by default. Paginated results is actual for JSON and XML formats. Combined list of results is always returned for CSV format.
 	PaginateResults bool
 	//Maximum number of times to retry, in addition to the first download.
 	//RETRY_HTTP_CODES
 	//Default: [500, 502, 503, 504, 408]
 	//Failed pages should be rescheduled for download at the end. once the spider has finished crawling all other (non failed) pages.
 	RetryTimes int
-}	
+}
 
 // DefaultOptions represent default options for Scraper.
 var DefaultOptions = ScrapeOptions{
-	MaxPages: 1,
-	Format: "json",
-	PaginateResults: false,
-	FetchDelay: 500 * time.Millisecond,
+	MaxPages:            1,
+	Format:              "json",
+	PaginateResults:     false,
+	FetchDelay:          500 * time.Millisecond,
 	RandomizeFetchDelay: true,
-	RetryTimes:2,
+	RetryTimes:          2,
 }

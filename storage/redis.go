@@ -8,7 +8,7 @@ import (
 	"gopkg.in/redsync.v1"
 )
 
-// Options struct inclued parameters for Redis Connection 
+// Options struct inclued parameters for Redis Connection
 type Options struct {
 	host     string
 	network  string
@@ -18,7 +18,7 @@ type Options struct {
 	socketPath string
 }
 
-// Option represent parameters used for connection to Redis server 
+// Option represent parameters used for connection to Redis server
 type Option func(*Options)
 
 func host(h string) Option {
@@ -50,7 +50,6 @@ func socketPath(s string) Option {
 		args.socketPath = s
 	}
 }
-
 
 // RedisConn represents a Redis Connection structure
 type RedisConn struct {
@@ -141,7 +140,7 @@ func (b *RedisConn) Value(key string) ([]byte, error) {
 	return nil, err
 }
 
-//IntValue returns int64 value of specified key 
+//IntValue returns int64 value of specified key
 func (b *RedisConn) IntValue(key string) (int64, error) {
 	//Get a key
 	conn := b.open()
@@ -191,7 +190,7 @@ func (b *RedisConn) ExpireIn(key string, expireIn int64) error {
 	return nil
 }
 
-//TTL returns Time to live value in seconds for the specified key 
+//TTL returns Time to live value in seconds for the specified key
 func (b *RedisConn) TTL(key string) (int64, error) {
 	conn := b.open()
 	defer conn.Close()
