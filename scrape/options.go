@@ -28,7 +28,7 @@ type ScrapeOptions struct {
 	RetryTimes int
 }	
 
-// The default options during a scrape.
+// DefaultOptions represent default options for Scraper.
 var DefaultOptions = ScrapeOptions{
 	MaxPages: 1,
 	Format: "json",

@@ -28,6 +28,7 @@ func init() {
 	logger = log.NewLogger()
 }
 
+// Options struct inclued parameters for Splash Connection
 type Options struct {
 	host string //splash host address
 	//Splash connection parameters:
@@ -36,6 +37,7 @@ type Options struct {
 	wait            float64
 }
 
+// Option represent parameters used for connection to Splash server
 type Option func(*Options)
 
 func host(h string) Option {
@@ -206,6 +208,7 @@ func (req Request) GetResponse() (*Response, error) {
 
 }
 
+// GetContent returns HTML content from Splash Response
 func (r *Response) GetContent() (io.ReadCloser, error) {
 	//if r == nil {
 	//	return nil, errors.New("empty response")
@@ -227,8 +230,9 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
-//setCacheInfo check if resource is cacheable
-//ReasonsNotToCache and Expires values are filled here.
+// SetCacheInfo checks if resource is cacheable.
+// Respource is cachable if length of ReasonsNotToCache is zero.
+// ReasonsNotToCache and Expires values are filled here.
 func (r *Response) SetCacheInfo() {
 	respHeader := r.Response.Headers.(http.Header)
 	reqHeader := r.Request.Headers.(http.Header)
@@ -287,7 +291,7 @@ func (r *Response) SetCacheInfo() {
 
 }
 
-//Fetch content from url through Splash server https://github.com/scrapinghub/splash/
+// Fetch content from url through Splash server https://github.com/scrapinghub/splash/
 func Fetch(req Request) (io.ReadCloser, error) {
 	response, err := req.GetResponse()
 	if err != nil {
@@ -300,38 +304,40 @@ func Fetch(req Request) (io.ReadCloser, error) {
 	return nil, err
 }
 
-//GetURL returns URL from Request
-func (r Request) GetURL() string {
+// GetURL returns URL from Request
+func (req Request) GetURL() string {
 
 	//trim trailing slash if any.
 	//aws s3 bucket item name cannot contain slash at the end.
-	return strings.TrimSpace(strings.TrimRight(r.URL, "/"))
+	return strings.TrimSpace(strings.TrimRight(req.URL, "/"))
 }
 
-func (r Request) Host() (string, error) {
-	u, err := url.Parse(r.GetURL())
+// Host returns Host value from Request
+func (req Request) Host() (string, error) {
+	u, err := url.Parse(req.GetURL())
 	if err != nil {
 		return "", err
 	}
 	return u.Host, nil
 }
 
-//Validate validates each request that will be sent, prior to sending.
-func (r Request) Validate() error {
-	reqURL := strings.TrimSpace(r.URL)
+// Validate validates each request that will be sent, prior to sending.
+func (req Request) Validate() error {
+	reqURL := strings.TrimSpace(req.URL)
 	if _, err := url.ParseRequestURI(reqURL); err != nil {
 		return &errs.BadRequest{err}
 	}
 	return nil
 }
 
-func (r Request) URL2MD5() string {
-	url := r.GetURL()
+// URL2MD5 returns MD5 hash of Request.URL
+func (req Request) URL2MD5() string {
+	url := req.GetURL()
 	return string(crypto.GenerateMD5([]byte(url)))
 }
 
-//http://choly.ca/post/go-json-marshalling/
-//UnmarshalJSON convert headers to http.Header type
+//  UnmarshalJSON convert headers to http.Header type
+//  http://choly.ca/post/go-json-marshalling/
 func (r *Response) UnmarshalJSON(data []byte) error {
 	type Alias Response
 	aux := &struct {
@@ -442,8 +448,8 @@ func (r Response) GetReasonsNotToCache() []cacheobject.Reason {
 	return r.ReasonsNotToCache
 }
 
-//TODO: test it
 //GetURL returns URL after all redirects
+//TODO: test it
 func (r Response) GetURL() string {
 	return r.Response.URL
 }

@@ -4,17 +4,17 @@ import (
 	"github.com/slotix/dataflowkit/splash"
 )
 
-// Define fetch service interface
+// Service defines Fetch service interface
 type Service interface {
 	Fetch(req FetchRequester) (FetchResponser, error)
 	Response(req FetchRequester) (FetchResponser, error)
 }
 
-// Implement service with empty struct
+// FetchService implements service with empty struct
 type FetchService struct {
 }
 
-
+// ServiceMiddleware defines a middleware for a Fetch service
 type ServiceMiddleware func(Service) Service
 
 //Fetch downloads web page content and returns it 

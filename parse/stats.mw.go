@@ -8,6 +8,7 @@ import (
 	"github.com/slotix/dataflowkit/storage"
 )
 
+// StatsMiddleware tracks requests sent to Parse endpoint.
 func StatsMiddleware(userID string) ServiceMiddleware {
 	return func(next Service) Service {
 		return statsMiddleware{userID, next}
@@ -19,6 +20,7 @@ type statsMiddleware struct {
 	Service
 }
 
+//Parse increments counter before sending it to actual Parse service handler.
 func (mw statsMiddleware) Parse(payload scrape.Payload) (output io.ReadCloser, err error) {
 	mw.incrementCount()
 	output, err = mw.Service.Parse(payload)

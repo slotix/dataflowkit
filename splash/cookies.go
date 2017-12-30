@@ -63,6 +63,7 @@ func (r *Response) getSetCookie() (string, error) {
 	return setCookie, nil
 }
 
+//  SetCookieToNextRequest retrieves Set-Cookie from current Request to send it further to the next request withing the same domain.
 func (r *Response) SetCookieToNextRequest(req *Request) error {
 	setCookie, err := r.getSetCookie()
 	if err != nil {

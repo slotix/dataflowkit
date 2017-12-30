@@ -10,44 +10,51 @@ import (
 	"github.com/slotix/dataflowkit/splash"
 )
 
+//Checker is the key interface of healthChecker. All other structs implement methods wchich satisfy that interface.
 type Checker interface {
+	//if server is alive
 	isAlive() error
-	serviceName() string
+	//String returns service name
+	String() string
 }
 
+// RedisConn struct implements methods satisfying Checker interface
 type RedisConn struct {
 	Conn    redis.Conn
 	Network string
 	Host    string
 }
 
+// SplashConn struct implements methods satisfying Checker interface
 type SplashConn struct {
 	Host string
 	//	User            string
 	//	Password        string
 }
 
+// FetchConn struct implements methods satisfying Checker interface
 type FetchConn struct {
 	Host string
 }
 
+// ParseConn struct implements methods satisfying Checker interface
 type ParseConn struct {
 	Host string
 }
 
-func (FetchConn) serviceName() string {
+func (FetchConn) String() string {
 	return "DFK Fetch Service"
 }
 
-func (ParseConn) serviceName() string {
+func (ParseConn) String() string {
 	return "DFK Parse Service"
 }
 
-func (RedisConn) serviceName() string {
+func (RedisConn) String() string {
 	return "Redis"
 }
 
-func (SplashConn) serviceName() string {
+func (SplashConn) String() string {
 	return "Splash"
 }
 
@@ -131,15 +138,16 @@ func (s SplashConn) isAlive() error {
 	return err
 }
 
+// CheckServices checks if services passed as parameters are alive. It returns the map containing serviceName and appropriate status
 func CheckServices(hc ...Checker) (status map[string]string) {
 	status = make(map[string]string)
 	for _, srv := range hc {
 		err := srv.isAlive()
 		if err != nil {
-			status[srv.serviceName()] =
-				fmt.Sprintf("%s: %s", srv.serviceName(), err.Error())
+			status[srv.String()] =
+				fmt.Sprintf("%s: %s", srv.String(), err.Error())
 		} else {
-			status[srv.serviceName()] = "Ok"
+			status[srv.String()] = "Ok"
 		}
 	}
 	return status
