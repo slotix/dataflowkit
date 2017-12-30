@@ -8,7 +8,7 @@ import (
 	"gopkg.in/redsync.v1"
 )
 
-//Options struct inclued parameters for Redis Connection 
+// Options struct inclued parameters for Redis Connection 
 type Options struct {
 	host     string
 	network  string
@@ -18,6 +18,7 @@ type Options struct {
 	socketPath string
 }
 
+// Option represent parameters used for connection to Redis server 
 type Option func(*Options)
 
 func host(h string) Option {

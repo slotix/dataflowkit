@@ -32,10 +32,12 @@ func init() {
 }
 
 var (
-	ErrNoParts     = errors.New("no pieces in payload")
-	ErrNoSelectors = errors.New("no selectors in payload")
+	errNoParts     = errors.New("no pieces found")
+	errNoSelectors = errors.New("no selectors found")
 )
 
+
+// NewTask creates new task to parse fetched page following the rules from Payload.
 func NewTask(p Payload) *Task {
 	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
 	id := ksuid.New()
@@ -50,6 +52,8 @@ func NewTask(p Payload) *Task {
 
 }
 
+
+// Parse processes specified task which parses fetched page.
 func (task *Task) Parse() (io.ReadCloser, error) {
 	scraper, err := task.Payload.newScraper()
 	if err != nil {
@@ -62,7 +66,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	e := NewEncoder(*task)
+	e := newEncoder(*task)
 	if e == nil {
 		return nil, errors.New("invalid output format specified")
 	}
@@ -83,6 +87,7 @@ func (t Task) startTime() (*time.Time, error) {
 	return &idTime, nil
 }
 
+// scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
 func (t *Task) scrape(scraper *Scraper) error {
 	results := []map[string]interface{}{}
 	req := scraper.Request
@@ -283,7 +288,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 		case "link":
 			l := &extract.Link{Href: extract.Attr{Attr: "href"}}
 			if params != nil {
-				err := FillStruct(params, l)
+				err := fillStruct(params, l)
 				if err != nil {
 					logger.Error(err)
 				}
@@ -321,7 +326,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 			i := &extract.Image{Src: extract.Attr{Attr: "src"},
 				Alt: extract.Attr{Attr: "alt"}}
 			if params != nil {
-				err := FillStruct(params, i)
+				err := fillStruct(params, i)
 				if err != nil {
 					logger.Error(err)
 				}
@@ -361,7 +366,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 			}
 
 			if params != nil {
-				err := FillStruct(params, e)
+				err := fillStruct(params, e)
 				if err != nil {
 					logger.Error(err)
 				}
@@ -375,7 +380,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 	}
 	// Validate payload fields
 	if len(parts) == 0 {
-		return nil, ErrNoParts
+		return nil, errNoParts
 	}
 	seenNames := map[string]struct{}{}
 	for i, part := range parts {

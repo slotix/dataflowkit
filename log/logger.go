@@ -10,10 +10,12 @@ import (
 
 type ContextHook struct{}
 
+//Levels return Levels of ContextHook 
 func (hook ContextHook) Levels() []logrus.Level {
 	return logrus.AllLevels
 }
 
+//Fire the hook.
 func (hook ContextHook) Fire(entry *logrus.Entry) error {
 	pc := make([]uintptr, 3, 3)
 	cnt := runtime.Callers(6, pc)
@@ -32,6 +34,7 @@ func (hook ContextHook) Fire(entry *logrus.Entry) error {
 	return nil
 }
 
+//NewLogger creates New Logger instance.
 func NewLogger() *logrus.Logger {
 	logger := logrus.New()
 	logger.AddHook(ContextHook{})

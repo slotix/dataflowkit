@@ -30,7 +30,7 @@ func DividePageBySelector(sel string) DividePageFunc {
 	return ret
 }
 
-var errNoSelectors = errors.New("No selectors found")
+//var errNoSelectors = errors.New("No selectors found")
 
 func intersectionFL(sel *goquery.Selection) *goquery.Selection {
 	first := sel.First()
@@ -103,6 +103,8 @@ func findIntersection(doc *goquery.Selection, selectors []string) (*goquery.Sele
 	return inter1, nil
 }
 
+// DividePageByIntersection returns DividePageFunc function 
+// which determines common ancestor of specified selectors.
 func DividePageByIntersection(selectors []string) DividePageFunc {
 	ret := func(doc *goquery.Selection) []*goquery.Selection {
 		sels := []*goquery.Selection{}
@@ -123,6 +125,7 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 	}
 	return ret
 }
+
 
 func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
 	if len(selectors) == 0 {

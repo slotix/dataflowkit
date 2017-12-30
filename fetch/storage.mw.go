@@ -10,14 +10,14 @@ import (
 	"github.com/slotix/dataflowkit/storage"
 )
 
-//storageMiddleware is used as a cache of web pages to be parsed.
+
 type storageMiddleware struct {
 	//storage instance puts fetching results to a cache
 	storage storage.Store
 	Service
 }
 
-// implement function to return ServiceMiddleware
+// StorageMiddleware caches web pages to be parsed.
 func StorageMiddleware(storage storage.Store) ServiceMiddleware {
 	return func(next Service) Service {
 		return storageMiddleware{storage, next}

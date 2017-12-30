@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -19,6 +20,7 @@ func init() {
 	logger = log.NewLogger()
 }
 
+//Store is the key interface of storage. All other structs implement methods wchich satisfy that interface.
 type Store interface {
 	//Reads value from storage by specified key
 	Read(key string) (value []byte, err error)
@@ -31,6 +33,7 @@ type Store interface {
 	Expired(key string) bool
 }
 
+//Type represent available storage types
 type Type string
 
 const (
@@ -44,6 +47,23 @@ const (
 	Redis = "Redis"
 )
 
+// ParseType takes a string representing storage type and returns the Storage Type constant.
+func ParseType(t string) (Type, error) {
+	switch strings.ToLower(t) {
+	case "s3":
+		return S3, nil
+	case "spaces":
+		return Spaces, nil
+	case "diskv":
+		return Diskv, nil
+	case "redis":
+		return Redis, nil
+	}
+	var tp Type
+	return tp, fmt.Errorf("not a valid Storage Type: %q", tp)
+}
+
+// NewStore creates New initialized Store instance with predefined parameters
 func NewStore(t Type) Store {
 	switch t {
 	case Diskv:
@@ -79,11 +99,13 @@ func newRedisStorage(redisHost, redisPassword string) Store {
 	return redisCon
 }
 
+// Read retrieves value according to the specified key from Redis.
 func (s RedisConn) Read(key string) (value []byte, err error) {
 	value, err = s.Value(key)
 	return
 }
 
+// Write pushes key/ value pair along with Expiration time to Redis storage.
 func (s RedisConn) Write(key string, value []byte, expTime int64) error {
 	err := s.SetValue(key, value)
 	if err != nil {
@@ -96,6 +118,7 @@ func (s RedisConn) Write(key string, value []byte, expTime int64) error {
 	return nil
 }
 
+// Expired returns Expired value of specified key from Redis.
 func (s RedisConn) Expired(key string) bool {
 	ttl, err := s.TTL(key)
 	if err != nil {
@@ -114,11 +137,13 @@ func newS3Storage(config *aws.Config, bucket string) Store {
 	return s3Conn
 }
 
+// Read retrieves value according to the specified key from AWS S3 Storage/ Digital Ocean Spaces.
 func (s S3Conn) Read(key string) (value []byte, err error) {
 	value, err = s.download(key)
 	return
 }
 
+// Write uploads key/ value pair along with Expiration time to  AWS S3 Storage/ Digital Ocean Spaces.
 func (s S3Conn) Write(key string, value []byte, expTime int64) error {
 	err := s.upload(key, value, expTime)
 	if err != nil {
@@ -127,6 +152,7 @@ func (s S3Conn) Write(key string, value []byte, expTime int64) error {
 	return nil
 }
 
+// Expired returns Expired value of specified key from AWS S3 Storage/ Digital Ocean Spaces.
 func (s S3Conn) Expired(key string) bool {
 	obj, err := s.getObject(key)
 	if err != nil {
@@ -152,6 +178,7 @@ func newDiskvStorage(baseDir string, CacheSizeMax uint64) Store {
 	return d
 }
 
+// Read loads value according to the specified key from DiskV KV storage.
 func (d DiskvConn) Read(key string) (value []byte, err error) {
 	value, err = d.diskv.Read(key)
 	if err != nil {
@@ -160,6 +187,7 @@ func (d DiskvConn) Read(key string) (value []byte, err error) {
 	return value, nil
 }
 
+// Write stores key/ value pair along with Expiration time to DiskV KV storage.
 func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
 	err := d.diskv.Write(key, value)
 	if err != nil {
@@ -168,6 +196,7 @@ func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
 	return nil
 }
 
+// Expired returns Expired value of specified key from DiskV.
 func (s DiskvConn) Expired(key string) bool {
 	//pwd
 	ex, err := os.Executable()

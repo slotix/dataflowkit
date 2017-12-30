@@ -37,6 +37,7 @@ type Const struct {
 	Val interface{}
 }
 
+// Extract returns Const value. 
 func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
 	return e.Val, nil
 }
@@ -53,6 +54,7 @@ type Text struct {
 	IncludeIfEmpty bool
 }
 
+// Extract returns Text value from specified selection. 
 func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
 	results := []string{}
 
@@ -83,6 +85,8 @@ var _ Extractor = Text{}
 // The return type is a string of all the inner HTML joined together.
 type Html struct{}
 
+
+// Extract returns HTML from specified selection. 
 func (e Html) Extract(sel *goquery.Selection) (interface{}, error) {
 	var ret, h string
 	var err error
@@ -115,6 +119,8 @@ var _ Extractor = Html{}
 // The return type is a string of all the outer HTML joined together.
 type OuterHtml struct{}
 
+
+// Extract returns OuterHtml from specified selection. 
 func (e OuterHtml) Extract(sel *goquery.Selection) (interface{}, error) {
 	output := bytes.NewBufferString("")
 	for _, node := range sel.Nodes {
@@ -157,6 +163,7 @@ type Regex struct {
 	IncludeIfEmpty bool
 }
 
+// Extract returns Regex'ed  value from specified selection. 
 func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 	if e.Regex == nil {
 		return nil, errors.New("no regex given")
@@ -262,6 +269,8 @@ type Attr struct {
 	IncludeIfEmpty bool
 }
 
+
+// Extract returns Attr value from specified selection. 
 func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 	if len(e.Attr) == 0 {
 		return nil, errors.New("no attribute provided")
@@ -296,6 +305,8 @@ type Count struct {
 	IncludeIfEmpty bool
 }
 
+
+// Extract returns length of elements in selection. 
 func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 	l := sel.Length()
 	if l == 0 && !e.IncludeIfEmpty {
