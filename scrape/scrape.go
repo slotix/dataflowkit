@@ -52,19 +52,19 @@ func NewTask(p Payload) *Task {
 }
 
 // Parse processes specified task which parses fetched page.
-func (task *Task) Parse() (io.ReadCloser, error) {
-	scraper, err := task.Payload.newScraper()
+func (t *Task) Parse() (io.ReadCloser, error) {
+	scraper, err := t.Payload.newScraper()
 	if err != nil {
 		return nil, err
 	}
-	task.Scrapers = append(task.Scrapers, scraper)
+	t.Scrapers = append(t.Scrapers, scraper)
 
 	//scrape request and return results.
-	err = task.scrape(scraper)
+	err = t.scrape(scraper)
 	if err != nil {
 		return nil, err
 	}
-	e := newEncoder(*task)
+	e := newEncoder(*t)
 	if e == nil {
 		return nil, errors.New("invalid output format specified")
 	}

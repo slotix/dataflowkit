@@ -105,7 +105,7 @@ func EncodeBaseFetcherContent(ctx context.Context, w http.ResponseWriter, respon
 	return nil
 }
 
-//EncodeSplashFetcherContent encodes response returned by Splash service endpoint
+//EncodeSplashFetcherResponse encodes response returned by Splash service endpoint
 func EncodeSplashFetcherResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	if e, ok := response.(errorer); ok && e.error() != nil {
 		// Not a Go kit transport error, but a business-logic error.

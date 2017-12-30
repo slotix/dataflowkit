@@ -336,8 +336,8 @@ func (req Request) URL2MD5() string {
 	return string(crypto.GenerateMD5([]byte(url)))
 }
 
-//  UnmarshalJSON convert headers to http.Header type
-//  http://choly.ca/post/go-json-marshalling/
+// UnmarshalJSON convert headers to http.Header type
+// http://choly.ca/post/go-json-marshalling/
 func (r *Response) UnmarshalJSON(data []byte) error {
 	type Alias Response
 	aux := &struct {

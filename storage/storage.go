@@ -197,7 +197,7 @@ func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
 }
 
 // Expired returns Expired value of specified key from DiskV.
-func (s DiskvConn) Expired(key string) bool {
+func (d DiskvConn) Expired(key string) bool {
 	//pwd
 	ex, err := os.Executable()
 	if err != nil {
@@ -205,7 +205,7 @@ func (s DiskvConn) Expired(key string) bool {
 	}
 	exPath := filepath.Dir(ex)
 	//filename
-	fullPath := exPath + "/" + s.diskv.BasePath + "/" + key
+	fullPath := exPath + "/" + d.diskv.BasePath + "/" + key
 	//file last modification time
 	mTime, err := mTime(fullPath)
 	currentTime := time.Now().UTC()

@@ -4,6 +4,7 @@
 
 [![Build Status](https://travis-ci.org/slotix/dataflowkit.svg?branch=master)](https://travis-ci.org/slotix/dataflowkit)
 [![GoDoc](https://godoc.org/github.com/slotix/dataflowkit?status.svg)](https://godoc.org/github.com/slotix/dataflowkit)
+[![Go Report Card](https://goreportcard.com/badge/github.com/slotix/dataflowkit)](https://goreportcard.com/report/github.com/slotix/dataflowkit)
 
 
 Dataflow kit extracts structured data from web pages, following the specified extractors.

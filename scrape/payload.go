@@ -11,10 +11,10 @@ import (
 	"github.com/slotix/dataflowkit/splash"
 )
 
-//  UnmarshalJSON casts Request interface{} type to custom splash.Request{} type.
-//  If optional payload parameters are not passed along with obligatorily ones
-//  they are initialized with default values.
-//  http://choly.ca/post/go-json-marshalling/
+// UnmarshalJSON casts Request interface{} type to custom splash.Request{} type.
+// If optional payload parameters are not passed along with obligatorily ones
+// they are initialized with default values.
+// http://choly.ca/post/go-json-marshalling/
 func (p *Payload) UnmarshalJSON(data []byte) error {
 	type Alias Payload
 	aux := &struct {
