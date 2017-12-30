@@ -65,8 +65,6 @@ func reverseProxy(p *string) gin.HandlerFunc {
 	}
 }
 
-
-
 /* func ReverseProxy(p *string) gin.HandlerFunc {
 
 	host := fmt.Sprintf("localhost%s", *p)

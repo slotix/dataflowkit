@@ -10,7 +10,6 @@ import (
 	"github.com/slotix/dataflowkit/storage"
 )
 
-
 type storageMiddleware struct {
 	//storage instance puts fetching results to a cache
 	storage storage.Store

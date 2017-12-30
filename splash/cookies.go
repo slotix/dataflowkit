@@ -82,6 +82,3 @@ func (r *Response) SetCookieToNextRequest(req *Request) error {
 	req.Cookies = cookie
 	return nil
 }
-
-
-

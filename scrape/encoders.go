@@ -11,7 +11,6 @@ import (
 	"github.com/clbanning/mxj"
 )
 
-
 func newEncoder(s Task) (e encoder) {
 	switch strings.ToLower(s.Scrapers[0].Opts.Format) {
 	case "csv":
@@ -42,21 +41,20 @@ type encoder interface {
 	Encode() (io.ReadCloser, error)
 }
 
-// CSVEncoder transforms parsed data to CSV format. 
+// CSVEncoder transforms parsed data to CSV format.
 type CSVEncoder struct {
 	partNames []string
 	comma     string
 	results   *Results
 }
 
-// JSONEncoder transforms parsed data to JSON format. 
+// JSONEncoder transforms parsed data to JSON format.
 type JSONEncoder struct {
 	paginateResults bool
 	results         *Results
 }
 
-
-// XMLEncoder transforms parsed data to XML format. 
+// XMLEncoder transforms parsed data to XML format.
 type XMLEncoder struct {
 	results *Results
 }
@@ -72,7 +70,6 @@ func (e JSONEncoder) Encode() (io.ReadCloser, error) {
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
 }
-
 
 //Encode method implementation for CSVEncoder
 func (e CSVEncoder) Encode() (io.ReadCloser, error) {
@@ -101,7 +98,6 @@ func (e CSVEncoder) Encode() (io.ReadCloser, error) {
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
 }
-
 
 //Encode method implementation for XMLEncoder
 func (e XMLEncoder) Encode() (io.ReadCloser, error) {

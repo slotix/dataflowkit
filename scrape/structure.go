@@ -11,12 +11,12 @@ import (
 )
 
 // Extractor type represents Extractor types available for scraping.
-// Here is the list of Extractor types are currently supported: 
+// Here is the list of Extractor types are currently supported:
 // text, html, outerHtml, attr, link, image, regex, const, count
 // Find more actual information in docs/extractors.md
 type Extractor struct {
-	Type   string      `json:"type"`
-	// Params are unique for definite type 
+	Type string `json:"type"`
+	// Params are unique for definite type
 	Params interface{} `json:"params"`
 }
 
@@ -40,19 +40,19 @@ type paginator struct {
 
 // Find more actual information in docs/payload.md
 type Payload struct {
-	// Name - Collection name.  
+	// Name - Collection name.
 	Name string `json:"name"`
 	//Request             splash.Request `json:"request"`
 	Request interface{} `json:"request"`
-	//A set of fields used to extract data from a web page. 
-	Fields  []field     `json:"fields"`
+	//A set of fields used to extract data from a web page.
+	Fields []field `json:"fields"`
 	//PayloadMD5 encodes payload content to MD5. It is used for generating file name to be stored.
-	PayloadMD5          []byte        `json:"payloadMD5"`
+	PayloadMD5 []byte `json:"payloadMD5"`
 	// The following Output formats are available: CSV, JSON, Microsoft Excel, XML
-	Format              string        `json:"format"`
+	Format string `json:"format"`
 	//Paginator is used to scrape multiple pages.
-	Paginator           *paginator    `json:"paginator"`
-	//Paginated results are returned if *paginateResults* is *true*. 
+	Paginator *paginator `json:"paginator"`
+	//Paginated results are returned if *paginateResults* is *true*.
 	//Default value is false
 	PaginateResults     *bool         `json:"paginateResults"`
 	FetchDelay          time.Duration `json:"fetchDelay"`

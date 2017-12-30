@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/PuerkitoBio/goquery"
-	
 )
 
 // The Paginator interface should be implemented by things that can retrieve the
@@ -19,7 +18,6 @@ type Paginator interface {
 	NextPage(url string, document *goquery.Selection) (string, error)
 	// TODO(andrew-d): should this return a string, a url.URL, ???
 }
-
 
 // RelUrl is a helper function that aids in calculating the absolute URL from a
 // base URL and relative URL.

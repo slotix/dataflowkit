@@ -13,7 +13,7 @@ end
 `
 
 //LUA script for general pages processing
-//Also formdata parameters may be passed 
+//Also formdata parameters may be passed
 //For example it may be used for processing pages which require authentication
 //formdata Example:
 //local ok, reason = splash:go{url,
@@ -35,7 +35,6 @@ end
 //value: "session_id=29d7b97879209ca89316181ed14eb01f; path=/; httponly"
 //This cookie should be passed to the next pages on the same domain.
 //splash:add_cookie{"session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"}
-
 
 var baseLUA = `
 json = require("json")
@@ -87,9 +86,6 @@ function main(splash, args)
 end
 `
 
-
-
-
 /*
 //LUA script for general pages processing
 var baseLUAOld = `
@@ -139,8 +135,8 @@ function main(splash)
       cookies = splash:get_cookies(),
       request = r.request.info,
       response = r.info,
-	    html = splash:html(),       
-  } 
+	    html = splash:html(),
+  }
 end
 `
 */

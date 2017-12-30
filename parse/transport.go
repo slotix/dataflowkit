@@ -28,7 +28,6 @@ func DecodeParseRequest(ctx context.Context, r *http.Request) (interface{}, erro
 	return p, nil
 }
 
-
 //EncodeParseResponse encodes response returned by Parser
 func EncodeParseResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	data, err := ioutil.ReadAll(response.(io.Reader))

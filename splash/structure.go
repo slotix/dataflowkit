@@ -8,7 +8,7 @@ import (
 )
 
 //Request struct is entry point which is initially filled from Payload
-//it is passed to Splash server to fetch web content.  
+//it is passed to Splash server to fetch web content.
 type Request struct {
 	//URL is required to be passed to Fetch Endpoint
 	URL string `json:"url"`
@@ -71,10 +71,10 @@ type Response struct {
 	HTML string `json:"html"`
 	//Error is returned in case of an error, f.e. "http404".
 	//If Error is not nil all other fields are nil
-	Error             string     `json:"error,omitempty"`
-	Request           *SRequest  `json:"request"`
-	Response          *SResponse `json:"response"`
-	//ReasonsNotToCache is an array of reasons why a response should not be cached. 
+	Error    string     `json:"error,omitempty"`
+	Request  *SRequest  `json:"request"`
+	Response *SResponse `json:"response"`
+	//ReasonsNotToCache is an array of reasons why a response should not be cached.
 	ReasonsNotToCache []cacheobject.Reason
 	//Expires - How long object stay in a cache before Splash fetcher forwards another request to an origin.
 	Expires time.Time //how long object stay in a cache before Splash fetcher forwards another request to an origin.

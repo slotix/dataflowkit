@@ -56,7 +56,7 @@ func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
 		Alias: (*Alias)(r),
 	})
 }
- 
+
 // SetCacheInfo checks if resource is cacheable.
 // Respource is cachable if length of ReasonsNotToCache is zero.
 // ReasonsNotToCache and Expires values are filled here
@@ -75,7 +75,7 @@ func (r *BaseFetcherResponse) SetCacheInfo() {
 }
 
 //GetURL returns URL after all redirects
-func (r BaseFetcherResponse) GetURL() string{
+func (r BaseFetcherResponse) GetURL() string {
 	return r.URL
 }
 

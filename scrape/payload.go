@@ -11,8 +11,7 @@ import (
 	"github.com/slotix/dataflowkit/splash"
 )
 
-
-//  UnmarshalJSON casts Request interface{} type to custom splash.Request{} type. 
+//  UnmarshalJSON casts Request interface{} type to custom splash.Request{} type.
 //  If optional payload parameters are not passed along with obligatorily ones
 //  they are initialized with default values.
 //  http://choly.ca/post/go-json-marshalling/
@@ -65,7 +64,6 @@ func fillStruct(m map[string]interface{}, s interface{}) error {
 	}
 	return nil
 }
-
 
 func setField(obj interface{}, name string, value interface{}) error {
 	//logger.Info("%T, %t", obj, obj)
