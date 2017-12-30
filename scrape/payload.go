@@ -11,9 +11,11 @@ import (
 	"github.com/slotix/dataflowkit/splash"
 )
 
-//http://choly.ca/post/go-json-marshalling/
-//UnmarshalJSON casts Request interface{} type to custom splash.Request{} type. It initializes other payload parameters with default values.
 
+//  UnmarshalJSON casts Request interface{} type to custom splash.Request{} type. 
+//  If optional payload parameters are not passed along with obligatorily ones
+//  they are initialized with default values.
+//  http://choly.ca/post/go-json-marshalling/
 func (p *Payload) UnmarshalJSON(data []byte) error {
 	type Alias Payload
 	aux := &struct {
@@ -26,7 +28,7 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	splashRequest := splash.Request{}
-	err := FillStruct(aux.Request.(map[string]interface{}), &splashRequest)
+	err := fillStruct(aux.Request.(map[string]interface{}), &splashRequest)
 	if err != nil {
 		return err
 	}
@@ -52,11 +54,11 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-//FillStruct fills s Structure with values from m map
-func FillStruct(m map[string]interface{}, s interface{}) error {
+//fillStruct fills s Structure with values from m map
+func fillStruct(m map[string]interface{}, s interface{}) error {
 	for k, v := range m {
 		//	logger.Info(k,v)
-		err := SetField(s, k, v)
+		err := setField(s, k, v)
 		if err != nil {
 			return err
 		}
@@ -64,7 +66,8 @@ func FillStruct(m map[string]interface{}, s interface{}) error {
 	return nil
 }
 
-func SetField(obj interface{}, name string, value interface{}) error {
+
+func setField(obj interface{}, name string, value interface{}) error {
 	//logger.Info("%T, %t", obj, obj)
 	structValue := reflect.ValueOf(obj).Elem()
 	//Value which come from json usually is in lowercase but outgoing structs may contain fields in Title Case or in UPPERCASE - f.e. URL. So we should check if there are fields in Title case or upper case before skipping non-existent fields.

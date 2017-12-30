@@ -7,6 +7,8 @@ import (
 	"github.com/pquerna/cachecontrol/cacheobject"
 )
 
+//Request struct is entry point which is initially filled from Payload
+//it is passed to Splash server to fetch web content.  
 type Request struct {
 	//URL is required to be passed to Fetch Endpoint
 	URL string `json:"url"`

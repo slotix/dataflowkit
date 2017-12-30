@@ -121,7 +121,7 @@ func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
 
 }
 
-//Allowed checks if scraping of specified URL is allowed by robots.txt
+//AllowedByRobots checks if scraping of specified URL is allowed by robots.txt
 func AllowedByRobots(url string, robotsData *robotstxt.RobotsData) bool {
 	if robotsData == nil {
 		return true

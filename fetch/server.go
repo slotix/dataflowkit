@@ -12,11 +12,11 @@ import (
 	"github.com/go-kit/kit/log"
 
 	"github.com/slotix/dataflowkit/storage"
-	"github.com/spf13/viper"
 )
 
 var storageType storage.Type
 
+// Start func launches Parsing service at DFKFetch address
 func Start(DFKFetch string) {
 	ctx := context.Background()
 	errChan := make(chan error)
@@ -29,25 +29,16 @@ func Start(DFKFetch string) {
 		//logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 	//creating storage for caching of html content
-	sType := viper.GetString("STORAGE_TYPE")
-	switch sType {
-	case "S3":
-		storageType = storage.S3
-	case "Spaces":
-		storageType = storage.Spaces
-	case "Redis":
-		storageType = storage.Redis
-	case "Diskv":
-		storageType = storage.Diskv
-	default:
-		panic("Storage type is undefined")
+	/* storageType, err := storage.ParseType(viper.GetString("STORAGE_TYPE"))
+	if err != nil {
+		logger.Log(err)
 	}
-//	storage := storage.NewStore(storageType)
+	storage := storage.NewStore(storageType) */
 	var svc Service
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
 	svc = RobotsTxtMiddleware()(svc)
-//	svc = StorageMiddleware(storage)(svc)
+	//svc = StorageMiddleware(storage)(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{

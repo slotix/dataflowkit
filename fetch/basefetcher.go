@@ -56,9 +56,10 @@ func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
 		Alias: (*Alias)(r),
 	})
 }
-
-//setCacheInfo check if resource is cacheable
-//ReasonsNotToCache and Expires values are filled here
+ 
+// SetCacheInfo checks if resource is cacheable.
+// Respource is cachable if length of ReasonsNotToCache is zero.
+// ReasonsNotToCache and Expires values are filled here
 func (r *BaseFetcherResponse) SetCacheInfo() {
 	reasons, expires, err := cachecontrol.CachableResponse(r.Response.Request, r.Response, cachecontrol.Options{})
 	if err != nil {
@@ -88,21 +89,22 @@ func (r BaseFetcherResponse) GetReasonsNotToCache() []cacheobject.Reason {
 	return r.ReasonsNotToCache
 }
 
-//GetExpires returns URL to be fetched
-func (r BaseFetcherRequest) GetURL() string {
-	return strings.TrimSpace(strings.TrimRight(r.URL, "/"))
+//GetURL returns URL to be fetched
+func (req BaseFetcherRequest) GetURL() string {
+	return strings.TrimSpace(strings.TrimRight(req.URL, "/"))
 }
 
 //Validate validates request to be send, prior to sending.
-func (r BaseFetcherRequest) Validate() error {
-	reqURL := strings.TrimSpace(r.URL)
+func (req BaseFetcherRequest) Validate() error {
+	reqURL := strings.TrimSpace(req.URL)
 	if _, err := url.ParseRequestURI(reqURL); err != nil {
 		return &errs.BadRequest{err}
 	}
 	return nil
 }
 
-func (r BaseFetcherRequest) URL2MD5() string {
-	url := r.GetURL()
+// URL2MD5 returns MD5 hash of Request.URL
+func (req BaseFetcherRequest) URL2MD5() string {
+	url := req.GetURL()
 	return string(crypto.GenerateMD5([]byte(url)))
 }

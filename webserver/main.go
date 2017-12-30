@@ -47,13 +47,13 @@ func main() {
 			nil)
 	})
 
-	r.POST("/fetch/splash", ReverseProxy(fetcherPort))
-	r.POST("/fetch/base", ReverseProxy(fetcherPort))
-	r.POST("/parse", ReverseProxy(dfkParserPort))
+	r.POST("/fetch/splash", reverseProxy(fetcherPort))
+	r.POST("/fetch/base", reverseProxy(fetcherPort))
+	r.POST("/parse", reverseProxy(dfkParserPort))
 	r.Run(*port)
 }
 
-func ReverseProxy(p *string) gin.HandlerFunc {
+func reverseProxy(p *string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		host := fmt.Sprintf("localhost%s", *p)
 		proxy := httputil.NewSingleHostReverseProxy(&url.URL{
