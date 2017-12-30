@@ -25,7 +25,7 @@ const (
 	Splash = "Splash"
 )
 
-//NewFetcher creates an instanse of Fetcher for downloading a web page.
+//NewFetcher creates instances of Fetcher for downloading a web page.
 func NewFetcher(t Type) (fetcher Fetcher, err error) {
 	switch t {
 	case Base:
@@ -100,7 +100,7 @@ type SplashFetcher struct {
 	PrepareRequest func(*splash.Request) error
 }
 
-// NewSplashFetcher creates an instanse of SplashFetcher{} to fetch a page content from remote Scrapinghub splash service.
+// NewSplashFetcher creates instances of SplashFetcher{} to fetch a page content from remote Scrapinghub splash service.
 func NewSplashFetcher() (*SplashFetcher, error) {
 	// Set up the HTTP client
 	// jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
@@ -146,7 +146,7 @@ func (sf *SplashFetcher) Close() {
 	return
 }
 
-// NewBaseFetcher creates an instanse of NewBaseFetcher{} to fetch
+// NewBaseFetcher creates instances of NewBaseFetcher{} to fetch
 // a page content from regular websites as-is
 // without running js scripts on the page.
 // f.e. robots.txt are retrieved with BaseFetcher
