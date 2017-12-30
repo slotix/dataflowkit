@@ -39,6 +39,7 @@ func newEncoder(s Task) (e encoder) {
 
 type encoder interface {
 	Encode() (io.ReadCloser, error)
+	Format() string
 }
 
 // CSVEncoder transforms parsed data to CSV format.
@@ -71,6 +72,11 @@ func (e JSONEncoder) Encode() (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
+//Format returns format of JSONEncoder
+func (JSONEncoder) Format() string {
+	return "JSON"
+}
+
 //Encode method implementation for CSVEncoder
 func (e CSVEncoder) Encode() (io.ReadCloser, error) {
 	var buf bytes.Buffer
@@ -99,6 +105,11 @@ func (e CSVEncoder) Encode() (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
+//Format returns format of CSVEncoder
+func (CSVEncoder) Format() string {
+	return "CSV"
+}
+
 //Encode method implementation for XMLEncoder
 func (e XMLEncoder) Encode() (io.ReadCloser, error) {
 	/*
@@ -123,6 +134,11 @@ func (e XMLEncoder) Encode() (io.ReadCloser, error) {
 	}
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
+}
+
+//Format returns format of XMLEncoder
+func (XMLEncoder) Format() string {
+	return "XML"
 }
 
 //encodeCSV writes data to w *csv.Writer.
