@@ -214,7 +214,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	})
 }
 
-// endpoints wrapper
+// Endpoints wrapper
 type Endpoints struct {
 	SplashFetchEndpoint    endpoint.Endpoint
 	SplashResponseEndpoint endpoint.Endpoint
@@ -222,7 +222,7 @@ type Endpoints struct {
 	BaseResponseEndpoint   endpoint.Endpoint
 }
 
-// creating Splash Fetch Endpoint
+// MakeSplashFetchEndpoint creates Splash Fetch Endpoint
 func MakeSplashFetchEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(splash.Request)
@@ -234,7 +234,7 @@ func MakeSplashFetchEndpoint(svc Service) endpoint.Endpoint {
 	}
 }
 
-// creating Base Fetch Endpoint
+// MakeBaseFetchEndpoint creates BaseFetch Endpoint
 func MakeBaseFetchEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(BaseFetcherRequest)
@@ -246,7 +246,7 @@ func MakeBaseFetchEndpoint(svc Service) endpoint.Endpoint {
 	}
 }
 
-// creating Splash Response Endpoint
+// MakeSplashResponseEndpoint creates SplashResponse Endpoint
 func MakeSplashResponseEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(splash.Request)
@@ -258,7 +258,7 @@ func MakeSplashResponseEndpoint(svc Service) endpoint.Endpoint {
 	}
 }
 
-// creating Base Response Endpoint
+// MakeBaseResponseEndpoint creates BaseResponse Endpoint
 func MakeBaseResponseEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(BaseFetcherRequest)
@@ -277,7 +277,7 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, `{"alive": true}`)
 }
 
-// Make Http Handler
+// MakeHttpHandler mounts all of the service endpoints into an http.Handler.
 func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger) http.Handler {
 	/*
 		router := httprouter.New()

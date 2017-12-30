@@ -11,51 +11,57 @@ import (
 	"github.com/clbanning/mxj"
 )
 
-func NewEncoder(s Task) (encoder Encoder) {
+
+func newEncoder(s Task) (e encoder) {
 	switch strings.ToLower(s.Scrapers[0].Opts.Format) {
 	case "csv":
-		encoder = CSVEncoder{
+		e = CSVEncoder{
 			comma:     ",",
 			partNames: s.Scrapers[0].partNames(),
 			results:   &s.Results,
 		}
 		return
 	case "json":
-		encoder = JSONEncoder{
+		e = JSONEncoder{
 			paginateResults: s.Scrapers[0].Opts.PaginateResults,
 			results:         &s.Results,
 		}
 		return
 	case "xml":
-		encoder = XMLEncoder{
+		e = XMLEncoder{
 			results: &s.Results,
 		}
-		return encoder
+		return e
 	default:
 		return nil
 	}
 	return nil
 }
 
-type Encoder interface {
+type encoder interface {
 	Encode() (io.ReadCloser, error)
 }
 
+// CSVEncoder transforms parsed data to CSV format. 
 type CSVEncoder struct {
 	partNames []string
 	comma     string
 	results   *Results
 }
 
+// JSONEncoder transforms parsed data to JSON format. 
 type JSONEncoder struct {
 	paginateResults bool
 	results         *Results
 }
 
+
+// XMLEncoder transforms parsed data to XML format. 
 type XMLEncoder struct {
 	results *Results
 }
 
+//Encode method implementation for JSONEncoder
 func (e JSONEncoder) Encode() (io.ReadCloser, error) {
 	var buf bytes.Buffer
 	if e.paginateResults {
@@ -67,6 +73,8 @@ func (e JSONEncoder) Encode() (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
+
+//Encode method implementation for CSVEncoder
 func (e CSVEncoder) Encode() (io.ReadCloser, error) {
 	var buf bytes.Buffer
 	/*
@@ -94,6 +102,8 @@ func (e CSVEncoder) Encode() (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
+
+//Encode method implementation for XMLEncoder
 func (e XMLEncoder) Encode() (io.ReadCloser, error) {
 	/*
 		case "xmlviajson":

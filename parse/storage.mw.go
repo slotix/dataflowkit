@@ -20,7 +20,7 @@ type storageMiddleware struct {
 	Service
 }
 
-// implement function to return ServiceMiddleware
+// StorageMiddleware Parsed results in storage.
 func StorageMiddleware(storage storage.Store) ServiceMiddleware {
 	return func(next Service) Service {
 		return storageMiddleware{storage, next}

@@ -17,7 +17,8 @@ import (
 	"github.com/slotix/dataflowkit/scrape"
 )
 
-//decodeParseRequest
+//DecodeParseRequest decodes request sent to Parser
+//if error occures, server returns 400 Bad Request
 func DecodeParseRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var p scrape.Payload
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
@@ -27,6 +28,8 @@ func DecodeParseRequest(ctx context.Context, r *http.Request) (interface{}, erro
 	return p, nil
 }
 
+
+//EncodeParseResponse encodes response returned by Parser
 func EncodeParseResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	data, err := ioutil.ReadAll(response.(io.Reader))
 	if err != nil {
@@ -48,7 +51,7 @@ type errorer interface {
 	error() error
 }
 
-// encode error
+// encodeError encodes erroneous responses and writes http status header.
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	if err == nil {
 		panic("encodeError with nil error")
@@ -93,12 +96,12 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	})
 }
 
-// endpoints wrapper
+// Endpoints wrapper
 type Endpoints struct {
 	ParseEndpoint endpoint.Endpoint
 }
 
-// creating Parse Endpoint
+// MakeParseEndpoint creates Parse Endpoint
 func MakeParseEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		v, err := svc.Parse(request.(scrape.Payload))
@@ -109,13 +112,14 @@ func MakeParseEndpoint(svc Service) endpoint.Endpoint {
 	}
 }
 
+//HealthCheckHandler is used to check if Parse service is alive
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	io.WriteString(w, `{"alive": true}`)
 }
 
-// Make Http Handler
+// MakeHttpHandler mounts all of the service endpoints into an http.Handler.
 func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger) http.Handler {
 	/*
 		router := httprouter.New()

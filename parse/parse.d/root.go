@@ -33,9 +33,8 @@ import (
 )
 
 var (
-	//VERSION               string // VERSION is set during build
-	DFKParse string
-	DFKFetch string
+	DFKParse string //DFKParse service address.
+	DFKFetch string //DFKFetch service address. 
 
 	storageType    string
 	storageExpires int64 //how long in seconds object stay in a cache before expiration.
@@ -43,7 +42,7 @@ var (
 
 	spacesConfig   string //Digital Ocean spaces configuration file
 	spacesEndpoint string //Digital Ocean spaces endpoint address
-	DFKBucket      string
+	DFKBucket      string //Bucket name for AWS S3 or DO Spaces
 
 	redisHost       string
 	redisExpire     int

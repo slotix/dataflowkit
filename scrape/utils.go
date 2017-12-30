@@ -33,6 +33,8 @@ func InsertStringToSlice(slice []string, index int, value string) []string {
 	return slice
 }
 
+
+// AddStringSliceToSlice joins two string slices. 
 func AddStringSliceToSlice(in []string, out []string) {
 	for _, s := range in {
 		if !stringInSlice(s, out) {
@@ -71,6 +73,7 @@ func newStringReadCloser(s string) dummyReadCloser {
 type dummyReadCloser struct {
 	r io.Reader
 }
+
 
 func (c dummyReadCloser) Read(b []byte) (int, error) {
 	return c.r.Read(b)

@@ -35,6 +35,7 @@ import (
 
 var (
 	//VERSION               string // VERSION is set during build
+	//  DFKFetch represents address of DFK Fetch service
 	DFKFetch string //Fetch service address
 
 	splashHost            string
@@ -48,7 +49,7 @@ var (
 
 	spacesConfig  string //Digital Ocean spaces configuration file
 	spacesEndpoint string //Digital Ocean spaces endpoint address
-	DFKBucket string
+	DFKBucket string //Bucket name for AWS S3 or DO Spaces
 
 	redisHost       string
 	redisExpire     int

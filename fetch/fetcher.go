@@ -14,6 +14,7 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
+//Type represents types of fetcher
 type Type string
 
 //Fetcher types
@@ -80,10 +81,9 @@ type BaseFetcher struct {
 	ProcessResponse func(*http.Response) error
 }
 
-// SplashClientFetcher is a Fetcher that uses Scrapinghub splash
+// SplashFetcher is a Fetcher that uses Scrapinghub splash
 // to fetch URLs. Splash is a javascript rendering service
-//
-//https://github.com/scrapinghub/splash
+// Read more at https://github.com/scrapinghub/splash
 type SplashFetcher struct {
 	//client *http.Client
 
@@ -146,10 +146,10 @@ func (sf *SplashFetcher) Close() {
 	return
 }
 
-// NewBaseFetcher creates an instanse of NewBaseFetcher{} to fetch a page content from regular websites as-is
-//without running js scripts on the page.
-
-//Robots.txt are retrieved with BaseFetcher
+// NewBaseFetcher creates an instanse of NewBaseFetcher{} to fetch 
+// a page content from regular websites as-is
+// without running js scripts on the page.
+// f.e. robots.txt are retrieved with BaseFetcher
 func NewBaseFetcher() (*BaseFetcher, error) {
 	// Set up the HTTP client
 	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
