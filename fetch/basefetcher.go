@@ -24,7 +24,7 @@ type BaseFetcherRequest struct {
 
 //BaseFetcherResponse struct groups Response data together after retrieving it by BaseFetcher
 type BaseFetcherResponse struct {
-	//Response is used for determining Cacheable and Expires values. It should be omited when marshaling to intermediary cache.
+	//Response is used for determining Cacheable and Expires values. It should be omitted when marshaling to intermediary cache.
 	Response *http.Response `json:"-"`
 	//URL represents the final URL after all redirects. Response.Request.URL.String()
 	URL string

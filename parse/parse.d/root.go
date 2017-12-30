@@ -56,7 +56,7 @@ var (
 var RootCmd = &cobra.Command{
 	Use:   "dataflowkit",
 	Short: "DataFlow Kit html parser",
-	Long: `DataFlow Kit html parser scrapes html web pages folowing the chosen css selectors.
+	Long: `DataFlow Kit html parser scrapes html web pages following the chosen css selectors.
 	 Actual example of payload structure is available at https://github.com/slotix/dataflowkit/blob/master/docs/payload.md`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Checking services ... ")

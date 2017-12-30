@@ -34,7 +34,6 @@ func newEncoder(s Task) (e encoder) {
 	default:
 		return nil
 	}
-	return nil
 }
 
 type encoder interface {
