@@ -8,8 +8,7 @@ before_install:
   - go get -v github.com/golang/lint/golint
   - go get -t -v ./...
 
-script:
-  - go test -race -coverprofile=coverage.txt -covermode=atomic
-
+script: ./test.sh
+ 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
