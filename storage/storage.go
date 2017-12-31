@@ -208,6 +208,9 @@ func (d DiskvConn) Expired(key string) bool {
 	fullPath := exPath + "/" + d.diskv.BasePath + "/" + key
 	//file last modification time
 	mTime, err := mTime(fullPath)
+	if err != nil{
+		logger.Error(err)
+	}
 	currentTime := time.Now().UTC()
 	//calculate expiration time
 	exp := time.Duration(viper.GetInt64("STORAGE_EXPIRE")) * time.Second
