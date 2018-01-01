@@ -1,4 +1,4 @@
-// Dataflow kit - Errs
+// Dataflow kit - errs
 //
 // Copyright © 2017-2018 Slotix s.r.o. <dm@slotix.sk>
 //
