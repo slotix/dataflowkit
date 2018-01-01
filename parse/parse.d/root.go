@@ -18,8 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Dataflow kit is a web scraping tool for structured data extraction. It follows the specified extractors described in JSON file and returns parsed data as CSV, JSON or XML data.
-//
 package main
 
 import (
