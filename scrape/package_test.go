@@ -1,5 +1,8 @@
 package scrape_test
 
+// The following code was sourced and modified from the
+// https://github.com/andrew-d/goscrape package governed by MIT license.
+
 import (
 	"bytes"
 	"fmt"

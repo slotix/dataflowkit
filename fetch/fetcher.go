@@ -1,5 +1,8 @@
 package fetch
 
+// The following code was sourced and modified from the
+// https://github.com/andrew-d/goscrape package governed by MIT license.
+
 import (
 	"errors"
 	"io/ioutil"
