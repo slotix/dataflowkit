@@ -255,7 +255,7 @@ func (p Payload) newScraper() (*Scraper, error) {
 	}
 
 	scraper := &Scraper{
-		Request:    p.Request.(splash.Request),
+		Request:    p.Request,
 		DividePage: dividePageFunc,
 		Parts:      parts,
 		Paginator:  paginator,

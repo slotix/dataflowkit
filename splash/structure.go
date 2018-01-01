@@ -10,15 +10,34 @@ import (
 //Request struct is entry point which is initially filled from Payload
 //it is passed to Splash server to fetch web content.
 type Request struct {
-	//URL is required to be passed to Fetch Endpoint
+	//URL holds the URL address of the web page to be downloaded.
 	URL string `json:"url"`
-	//Params used for passing formdata to LUA script
+	// Params is a string value for passing formdata parameters.
+	//
+	// For example it may be used for processing pages which require authentication
+	//
+	// Example:
+	//
+	// "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
+	//
 	Params string `json:"params,omitempty"`
-	//Cookies contain cookies to be added to request
+	// Cookies contain cookies to be added to request  before sending it to browser.
+	//
+	// It may be used for processing pages after initial authentication. In the first step formdata with auth info is passed to a web page.
+	//
+	// Response object headers may contain an Object like
+	//
+	// name: "Set-Cookie"
+	//
+	// value: "session_id=29d7b97879209ca89316181ed14eb01f; path=/; httponly"
+	//
+	// These cookie should be passed to the next pages on the same domain.
+	//
+	// "session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"
+	//
 	Cookies string `json:"cookie,omitempty"`
+	// Func is Reserved
 	Func    string `json:"func,omitempty"`
-	//SplashWait - time in seconds to wait until js scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
-	//	SplashWait float64 `json:"wait,omitempty"`
 }
 
 //Cookie - Custom Cookie struct is used to avoid problems with unmarshalling data with invalid Expires field which has time.Time type for original http.Cookie struct.

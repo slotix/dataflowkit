@@ -34,6 +34,7 @@ type Options struct {
 	//Splash connection parameters:
 	timeout         int
 	resourceTimeout int
+	// Time in seconds to wait until java scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
 	wait            float64
 }
 
@@ -58,6 +59,7 @@ func resourceTimeout(t int) Option {
 	}
 }
 
+// Time in seconds to wait until java scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
 func wait(w float64) Option {
 	return func(args *Options) {
 		args.wait = w

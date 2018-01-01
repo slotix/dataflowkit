@@ -34,7 +34,7 @@ type Extractor interface {
 	Extract(*goquery.Selection) (interface{}, error)
 }
 
-// Const is a PartExtractor that returns a constant value.
+// Const is an Extractor that returns a constant value.
 type Const struct {
 	// The value to return when the Extract() function is called.
 	Val interface{}
@@ -47,7 +47,7 @@ func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
 
 var _ Extractor = Const{}
 
-// Text is a PartExtractor that returns the combined text contents of
+// Text is an Extractor that returns the combined text contents of
 // the given selection.
 type Text struct {
 	// If text is empty in the selection, then return the empty string from Extract,
@@ -317,7 +317,7 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 
 var _ Extractor = Count{}
 
-// Link is a PartExtractor that returns the combined text contents and  Attr{Attr: "href"} of
+// Link is an Extractor that returns the combined text contents and  Attr{Attr: "href"} of
 // the given selection
 type Link struct {
 	// If no parts with this attribute are found, then return the empty list from
@@ -366,7 +366,7 @@ func (e Link) Extract(sel *goquery.Selection) (interface{}, error) {
 
 var _ Extractor = Link{}
 
-// Image is a PartExtractor that returns the combined Src and Alt attributes of the given Image
+// Image is an Extractor that returns the combined Src and Alt attributes of the given Image
 type Image struct {
 	// If no parts with this attribute are found, then return the empty list from
 	// Extract, instead of  'nil'.  This signals that the result of this

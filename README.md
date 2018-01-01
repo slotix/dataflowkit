@@ -14,4 +14,5 @@ It can be used in many ways for data mining, data processing or archiving.
 
 The actual use case can be grabbing list of products on several pages and follow each product’s details page to retrieve additional information. Parse endpoint returns information as a JSON, XML or CSV data.
 
+
 ![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/spider/Spider-White-BG.png)
