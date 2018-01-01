@@ -9,7 +9,7 @@
 /*
 Parse service of the Dataflow kit parses html content from web pages following the rules described in Payload JSON file.
 Examples for accessing Parse endpoint are here :
-
+		curl -XPOST  127.0.0.1:8001/parse -d '
 		{
 		"name":"collection",
 		"request":{
@@ -51,7 +51,7 @@ Examples for accessing Parse endpoint are here :
 		},
 		"format":"json",
 		"paginateResults":false
-		}
+		}'
 */
 package main
 
