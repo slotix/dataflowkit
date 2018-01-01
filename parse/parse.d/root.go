@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// Dataflow kit is a web scraping tool for structured data extraction. It follows the specified extractors described in JSON file and returns parsed data as CSV, JSON or XML data.
+//
 package main
 
 import (
@@ -56,8 +58,9 @@ var (
 var RootCmd = &cobra.Command{
 	Use:   "dataflowkit",
 	Short: "DataFlow Kit html parser",
-	Long: `DataFlow Kit html parser scrapes html web pages following the chosen css selectors.
-	 Actual example of payload structure is available at https://github.com/slotix/dataflowkit/blob/master/docs/payload.md`,
+	Long: `// Dataflow kit is a web scraping tool for structured data extraction. It follows the specified extractors described in JSON file and returns parsed data as CSV, JSON or XML data.
+	//
+	 Find more information about  payload structure at https://github.com/slotix/dataflowkit/blob/master/docs/payload.md`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Checking services ... ")
 
