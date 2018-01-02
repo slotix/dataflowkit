@@ -14,7 +14,7 @@
 // querying a given CSS selector and extracting the given HTML attribute from the
 // resulting element.
 //
-//// ByQueryParam returns a Paginator that returns the next page from a document
+// ByQueryParam returns a Paginator that returns the next page from a document
 // by incrementing a given query parameter.  Note that this will paginate
 // infinitely - you probably want to specify a maximum number of pages to
 // scrape by using MaxPages parameter of ScrapeOptions.
