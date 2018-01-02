@@ -1,6 +1,5 @@
 package scrape
 
-
 import (
 	"time"
 )

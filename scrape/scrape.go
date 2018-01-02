@@ -34,7 +34,6 @@ func init() {
 	logger = log.NewLogger()
 }
 
-
 // NewTask creates new task to parse fetched page following the rules from Payload.
 func NewTask(p Payload) *Task {
 	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
@@ -215,7 +214,7 @@ func (t *Task) scrape(scraper *Scraper) error {
 		}
 
 	}
-	if len(results) == 0{
+	if len(results) == 0 {
 		return &errs.BadPayload{errs.ErrEmptyResults}
 	}
 	//logger.Info(task.Visited)

@@ -23,7 +23,7 @@ type Extractor struct {
 
 //A Field corresponds to a given chunk of data to be extracted from every block in each page of a scrape.
 type Field struct {
-	//Name is a name of fiels. It is required, and will be used to aggregate results.
+	//Name is a name of fields. It is required, and will be used to aggregate results.
 	Name string `json:"name"`
 	//Selector is a CSS selector within the given block to process.  Pass in "." to use the root block's selector.
 	Selector string `json:"selector"`
