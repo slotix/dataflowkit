@@ -19,7 +19,6 @@ type Paginator interface {
 	// page 1 should return page 2, not page 3.  The function should return an
 	// empty string when there are no more pages to process.
 	NextPage(url string, document *goquery.Selection) (string, error)
-	// TODO(andrew-d): should this return a string, a url.URL, ???
 }
 
 // RelUrl is a helper function that aids in calculating the absolute URL from a
@@ -68,7 +67,7 @@ type byQueryParamPaginator struct {
 // ByQueryParam returns a Paginator that returns the next page from a document
 // by incrementing a given query parameter.  Note that this will paginate
 // infinitely - you probably want to specify a maximum number of pages to
-// scrape by using the ScrapeWithOpts method.
+// scrape by using MaxPages parameter of ScrapeOptions.
 func ByQueryParam(param string) Paginator {
 	return &byQueryParamPaginator{param}
 }

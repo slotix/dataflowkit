@@ -1,3 +1,14 @@
+// Dataflow kit - log
+//
+// Copyright © 2017-2018 Slotix s.r.o. <dm@slotix.sk>
+//
+//
+// All rights reserved. Use of this source code is governed
+// by the BSD 3-Clause License license.
+
+// Package log of the Dataflow kit implements modified sirupsen/logrus logger enabling to show Log filename and line number.  
+//
+// see more info at https://github.com/sirupsen/logrus/issues/63
 package log
 
 import (

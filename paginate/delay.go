@@ -23,6 +23,7 @@ func WithDelay(delay time.Duration, p Paginator) Paginator {
 	}
 }
 
+
 func (p *withDelayPaginator) NextPage(uri string, doc *goquery.Selection) (string, error) {
 	time.Sleep(p.delay)
 	return p.p.NextPage(uri, doc)
