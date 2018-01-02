@@ -125,11 +125,6 @@ func (s RedisConn) Expired(key string) bool {
 		fmt.Println(err)
 	}
 	return ttl > 0
-	//if ttl > 0 {
-	//	return false
-	//}
-	//return true
-
 }
 
 func newS3Storage(config *aws.Config, bucket string) Store {
@@ -167,10 +162,6 @@ func (s S3Conn) Expired(key string) bool {
 	logger.Info("cache lifespan is %+v\n", diff)
 	//Expired?
 	return diff > 0
-	//if diff > 0 {
-	//	return false
-	//}
-	//return true
 }
 
 func newDiskvStorage(baseDir string, CacheSizeMax uint64) Store {
@@ -208,7 +199,7 @@ func (d DiskvConn) Expired(key string) bool {
 	fullPath := exPath + "/" + d.diskv.BasePath + "/" + key
 	//file last modification time
 	mTime, err := mTime(fullPath)
-	if err != nil{
+	if err != nil {
 		logger.Error(err)
 	}
 	currentTime := time.Now().UTC()
@@ -219,10 +210,6 @@ func (d DiskvConn) Expired(key string) bool {
 	logger.Info("cache lifespan is %+v\n", diff)
 	//Expired?
 	return diff > 0
-	// if diff > 0 {
-	// 	return false
-	// }
-	// return true
 }
 
 //mTime returns File Modify Time
