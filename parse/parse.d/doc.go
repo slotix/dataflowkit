@@ -6,7 +6,7 @@
 // All rights reserved. Use of this source code is governed
 // by the BSD 3-Clause License license.
 
-/*
+/* 
 Parse service of the Dataflow kit parses html content from web pages following the rules described in Payload JSON file.
 
 Here is a simple example for requesting Parse endpoint:
@@ -101,11 +101,11 @@ Set maxPages value to 0 to indicate an unlimited number of pages to be scraped.
 
 Format
 
-The following Output formats are available: CSV, JSON, Microsoft Excel, XML
+The following Output formats are available: CSV, JSON, XML
 
 paginateResults
 
-Paginated results are returned if *paginateResults* is *true*.
+Paginated results are returned if paginateResults is true.
 Single list of combined results from every block on all pages is returned by default.
 Paginated results are applicable for JSON and XML output formats.
 Combined list of results is always returned for CSV format.
