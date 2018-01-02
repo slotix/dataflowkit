@@ -4,11 +4,11 @@ package scrape
 // https://github.com/andrew-d/goscrape package governed by MIT license.
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/slotix/dataflowkit/errs"
 )
 
 type dummyPaginator struct {
@@ -33,8 +33,6 @@ func DividePageBySelector(sel string) DividePageFunc {
 	return ret
 }
 
-//var errNoSelectors = errors.New("No selectors found")
-
 func intersectionFL(sel *goquery.Selection) *goquery.Selection {
 	first := sel.First()
 	last := sel.Last()
@@ -44,7 +42,7 @@ func intersectionFL(sel *goquery.Selection) *goquery.Selection {
 
 func attrOrDataValue(s *goquery.Selection) (value string) {
 	if s.Length() == 0 {
-		return "Empty Selection"
+		return ""
 	}
 	attr, exists := s.Attr("class")
 	if exists && attr != "" { //in some cases tag is invalid f.e. <tr class>
@@ -80,7 +78,7 @@ func findIntersection(doc *goquery.Selection, selectors []string) (*goquery.Sele
 	}
 	//logger.Info(attrOrDataValue(intersection))
 	if intersection == nil || intersection.Length() == 0 {
-		return nil, errNoSelectors
+		return nil, &errs.BadPayload{errs.ErrNoSelectors}
 	}
 	intersectionWithParent := fmt.Sprintf("%s>%s",
 		attrOrDataValue(intersection.Parent()),
@@ -115,7 +113,7 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 		sel, err := getCommonAncestor(doc, selectors)
 		//sel, err = findIntersection(doc, selectors)
 		if err != nil {
-			logger.Error(err)
+			logger.Warn(err)
 			return nil
 		}
 
@@ -131,7 +129,7 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 
 func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
 	if len(selectors) == 0 {
-		return nil, errors.New("An empty selectors list")
+		return nil, &errs.BadPayload{errs.ErrNoSelectors}
 	}
 	selectorAncestor := doc.Find(selectors[0]).First().Parent()
 	if len(selectors) > 1 {
@@ -153,7 +151,7 @@ func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Sel
 		}
 	}
 	if selectorAncestor.Length() == 0 {
-		return nil, errors.New("It seems current selectors has no common ancestor")
+		return nil, &errs.BadPayload{errs.ErrNoCommonAncestor}
 	}
 	intersectionWithParent := fmt.Sprintf("%s>%s",
 		attrOrDataValue(selectorAncestor.Parent()),

@@ -56,7 +56,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		panic("encodeError with nil error")
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	logger.Error("Type: %T\n", err)
+	logger.Info("Type: %T\n", err)
 	//logger.Println(err)
 	//t = err.(type)
 	var httpStatus int
@@ -64,6 +64,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	default:
 		httpStatus = http.StatusInternalServerError
 	case *errs.BadRequest,
+		*errs.BadPayload,
 		*errs.Error:
 		//return 400 Status
 		httpStatus = http.StatusBadRequest
