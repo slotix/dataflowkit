@@ -16,7 +16,7 @@
 // Splash is a javascript rendering service.
 // Read more at https://github.com/scrapinghub/splash
 //
-// Here are two Examples for accessing Fetcher endpoints:
+// Here are examples for accessing Fetcher endpoints:
 //		curl -XPOST  localhost:8000/fetch/splash -d '{"url":"http://example.com"}'
 //		curl -XPOST  localhost:8000/fetch/base -d '{"url":"http://example.com"}'
 //
