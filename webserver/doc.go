@@ -8,7 +8,7 @@
 
 // Webserver service of the Dataflow kit serves website for data extraction. It helps Payload JSON generation with point and click interface for feeding Dataflow kit parser.
 //
-//It also passes requests for fetching html web pages and parser endpoints to corresponding services. 
+//It also passes requests for fetching html web pages and parser endpoints to corresponding services.
 //
 package main
 

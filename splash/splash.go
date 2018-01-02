@@ -35,7 +35,7 @@ type Options struct {
 	timeout         int
 	resourceTimeout int
 	// Time in seconds to wait until java scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
-	wait            float64
+	wait float64
 }
 
 // Option represent parameters used for connection to Splash server

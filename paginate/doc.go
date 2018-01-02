@@ -6,7 +6,7 @@
 // All rights reserved. Use of this source code is governed
 // by the BSD 3-Clause License license.
 
-// Package paginate of the Dataflow kit describes Paginator interface to retrieve the next page from the current one. 
+// Package paginate of the Dataflow kit describes Paginator interface to retrieve the next page from the current one.
 //
 //Next page can be obtained in several ways:
 //

@@ -80,7 +80,7 @@ const (
 	ErrNoCommonAncestor             = "no common ancestor for selectors found"
 )
 
-//BadPayload error is returned if Payload structure is incorrect. 
+//BadPayload error is returned if Payload structure is incorrect.
 type BadPayload struct {
 	ParserError
 }
