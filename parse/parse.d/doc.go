@@ -53,14 +53,13 @@ Here is a simple example for requesting Parse endpoint:
 		"format":"json",
 		"paginateResults":false
 		}'
-*/
 
-/*
-Name.
 
-Collection name.
+Name
 
-Request.
+Collection name
+
+Request
 
 Request parameters are passed to Fetch Endpoint for downloading html pages.
 URL holds the URL address of the web page to be downloaded. URL is required. All other fields including Params, Cookies, Func are optional.
@@ -77,7 +76,7 @@ Response object headers may contain an Object like
 These cookies should be passed to the next pages on the same domain.
 	"session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"
 
-Fields.
+Fields
 
 A set of fields used to extract data from a web page.
 A Field represents a given chunk of data to be extracted from every block in each page of a scrape.
@@ -88,7 +87,7 @@ Selector represents a CSS selector within the given block to process.  Pass in "
 
 Extractor contains the logic on how to extract some results from the selector that is provided to this Field.
 
-Paginator.
+Paginator
 
 Paginator is used to scrape multiple pages.
 If there is no paginator in Payload, then no pagination is performed and it is assumed that the initial URL is the only page.
