@@ -5,10 +5,9 @@
 //
 // All rights reserved. Use of this source code is governed
 // by the BSD 3-Clause License license.
-//
+
 // Package scrape of the Dataflow kit is for structured data extraction from webpages starting from JSON payload processing to encoding scraped data to one of output formats like JSON, CSV, XML
 //
-
 package scrape
 
 // EOF

@@ -22,7 +22,6 @@
 // RobotsTxtMiddleware checks if scraping of specified resource is allowed by robots.txt
 // StorageMiddleware caches web pages content passed to Dataflow kit parser.
 //  
-
 package fetch
 
 // EOF
