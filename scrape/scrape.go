@@ -34,10 +34,6 @@ func init() {
 	logger = log.NewLogger()
 }
 
-var (
-	errNoParts     = errors.New("no pieces found")
-	errNoSelectors = errors.New("no selectors found")
-)
 
 // NewTask creates new task to parse fetched page following the rules from Payload.
 func NewTask(p Payload) *Task {
@@ -203,7 +199,7 @@ func (t *Task) scrape(scraper *Scraper) error {
 		//every time when getting a response the next request will be filled with updated cookie information
 		err = sResponse.SetCookieToNextRequest(&req)
 		if err != nil {
-			logger.Error(err)
+			logger.Warn(err)
 		}
 		req.URL = url
 
@@ -218,6 +214,9 @@ func (t *Task) scrape(scraper *Scraper) error {
 			time.Sleep(opts.FetchDelay)
 		}
 
+	}
+	if len(results) == 0{
+		return &errs.BadPayload{errs.ErrEmptyResults}
 	}
 	//logger.Info(task.Visited)
 	// All good!
@@ -381,7 +380,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 	}
 	// Validate payload fields
 	if len(parts) == 0 {
-		return nil, errNoParts
+		return nil, &errs.BadPayload{errs.ErrNoParts}
 	}
 	seenNames := map[string]struct{}{}
 	for i, part := range parts {
@@ -407,7 +406,7 @@ func (p Payload) selectors() ([]string, error) {
 		selectors = append(selectors, f.Selector)
 	}
 	if len(selectors) == 0 {
-		return nil, errNoSelectors
+		return nil, &errs.BadPayload{errs.ErrNoSelectors}
 	}
 	return selectors, nil
 }
