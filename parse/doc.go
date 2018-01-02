@@ -10,7 +10,6 @@
 //
 // StorageMiddleware caches parsed pages content.
 //
-
 package parse
 
 // EOF
