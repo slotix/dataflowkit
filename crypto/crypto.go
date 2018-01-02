@@ -1,3 +1,13 @@
+// Dataflow kit - crypto
+//
+// Copyright © 2017-2018 Slotix s.r.o. <dm@slotix.sk>
+//
+//
+// All rights reserved. Use of this source code is governed
+// by the BSD 3-Clause License license.
+
+// Package crypto of the Dataflow kit contain functions for generating MD5 and CRC32 
+//
 package crypto
 
 import (
