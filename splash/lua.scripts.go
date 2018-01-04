@@ -1,16 +1,5 @@
 package splash
 
-//LUA script for robots.txt files processing
-var robotsLUA = `
-function main(splash) 
-  local url = splash.args.url 
-  local response = splash:http_get(url)
-  return { 
-    request = response.request.info,
-    response = response.info,
-  } 
-end
-`
 
 //LUA script for general pages processing
 //Also formdata parameters may be passed
@@ -83,6 +72,18 @@ function main(splash, args)
     -- cookies = splash:get_cookies(),
     html = splash:html(),
   }
+end
+`
+
+//LUA script for robots.txt files processing
+var robotsLUA = `
+function main(splash) 
+  local url = splash.args.url 
+  local response = splash:http_get(url)
+  return { 
+    request = response.request.info,
+    response = response.info,
+  } 
 end
 `
 
