@@ -61,10 +61,6 @@ func attrOrDataValue(s *goquery.Selection) (value string) {
 func findIntersection(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
 	var intersection *goquery.Selection
 	for i, f := range selectors {
-		//err := validate.Struct(f)
-		//if err != nil {
-		//	return nil, err
-		//}
 		sel := doc.Find(f)
 		//logger.Info(f, sel.Length())
 		//col.genAttrFieldName(f.Name, sel)

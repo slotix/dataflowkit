@@ -15,7 +15,6 @@ import (
 
 	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/sirupsen/logrus"
-	"github.com/slotix/dataflowkit/crypto"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/log"
 	"github.com/spf13/viper"
@@ -124,9 +123,9 @@ func New(req Request, setters ...Option) (splashURL string) {
 //GetResponse result is passed to storage middleware
 //to provide a RFC7234 compliant HTTP cache
 func (req Request) GetResponse() (*Response, error) {
-	err := req.Validate()
-	if err != nil {
-		return nil, err
+	//URL validation
+	if _, err := url.ParseRequestURI(strings.TrimSpace(req.URL)); err != nil {
+		return nil, &errs.BadRequest{err}
 	}
 	splashURL := New(req)
 	client := &http.Client{}
@@ -295,6 +294,7 @@ func (r *Response) SetCacheInfo() {
 
 // Fetch content from url through Splash server https://github.com/scrapinghub/splash/
 func Fetch(req Request) (io.ReadCloser, error) {
+
 	response, err := req.GetResponse()
 	if err != nil {
 		return nil, err
@@ -321,21 +321,6 @@ func (req Request) Host() (string, error) {
 		return "", err
 	}
 	return u.Host, nil
-}
-
-// Validate validates each request that will be sent, prior to sending.
-func (req Request) Validate() error {
-	reqURL := strings.TrimSpace(req.URL)
-	if _, err := url.ParseRequestURI(reqURL); err != nil {
-		return &errs.BadRequest{err}
-	}
-	return nil
-}
-
-// URL2MD5 returns MD5 hash of Request.URL
-func (req Request) URL2MD5() string {
-	url := req.GetURL()
-	return string(crypto.GenerateMD5([]byte(url)))
 }
 
 // UnmarshalJSON convert headers to http.Header type
