@@ -4,14 +4,11 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
 	"github.com/pquerna/cachecontrol"
 	"github.com/pquerna/cachecontrol/cacheobject"
-	"github.com/slotix/dataflowkit/crypto"
-	"github.com/slotix/dataflowkit/errs"
 )
 
 //BaseFetcherRequest struct collects requests information used by BaseFetcher
@@ -92,19 +89,4 @@ func (r BaseFetcherResponse) GetReasonsNotToCache() []cacheobject.Reason {
 //GetURL returns URL to be fetched
 func (req BaseFetcherRequest) GetURL() string {
 	return strings.TrimSpace(strings.TrimRight(req.URL, "/"))
-}
-
-//Validate validates request to be send, prior to sending.
-func (req BaseFetcherRequest) Validate() error {
-	reqURL := strings.TrimSpace(req.URL)
-	if _, err := url.ParseRequestURI(reqURL); err != nil {
-		return &errs.BadRequest{err}
-	}
-	return nil
-}
-
-// URL2MD5 returns MD5 hash of Request.URL
-func (req BaseFetcherRequest) URL2MD5() string {
-	url := req.GetURL()
-	return string(crypto.GenerateMD5([]byte(url)))
 }

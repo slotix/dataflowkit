@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/pquerna/cachecontrol/cacheobject"
@@ -178,10 +180,11 @@ func (bf *BaseFetcher) Prepare() error {
 
 //Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
-	err := request.Validate()
-	if err != nil {
-		return nil, err
+	//URL validation
+	if _, err := url.ParseRequestURI(strings.TrimSpace(request.GetURL())); err != nil {
+		return nil, &errs.BadRequest{err}
 	}
+
 	r := request.(BaseFetcherRequest)
 	req, err := http.NewRequest(r.Method, r.URL, nil)
 	if err != nil {
@@ -259,7 +262,4 @@ type FetchResponser interface {
 type FetchRequester interface {
 	//GetURL returns initial URL from Request
 	GetURL() string
-	//Validates request before sending
-	Validate() error
-	URL2MD5() string
 }
