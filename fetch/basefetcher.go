@@ -88,5 +88,5 @@ func (r BaseFetcherResponse) GetReasonsNotToCache() []cacheobject.Reason {
 
 //GetURL returns URL to be fetched
 func (req BaseFetcherRequest) GetURL() string {
-	return strings.TrimSpace(strings.TrimRight(req.URL, "/"))
+	return strings.TrimRight(strings.TrimSpace(req.URL),  "/")
 }

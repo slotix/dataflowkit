@@ -37,7 +37,7 @@ type Options struct {
 	wait float64
 }
 
-// Option represent parameters used for connection to Splash server
+/* // Option represent parameters used for connection to Splash server
 type Option func(*Options)
 
 func host(h string) Option {
@@ -63,10 +63,11 @@ func wait(w float64) Option {
 	return func(args *Options) {
 		args.wait = w
 	}
-}
+} */
 
-//New creates new connection to Splash Server
-func New(req Request, setters ...Option) (splashURL string) {
+//NewSplash creates new connection to Splash Server
+//func NewSplash(req Request, setters ...Option) (splashURL string) {
+func NewSplash(req Request) (splashURL string) {
 	//Default options
 
 	args := &Options{
@@ -80,9 +81,16 @@ func New(req Request, setters ...Option) (splashURL string) {
 	args.resourceTimeout = 30
 	args.wait = 1.0
 	*/
-	for _, setter := range setters {
-		setter(args)
+	/* args := &Options{
+		host:            viper.GetString("SPLASH"),
+		timeout:         viper.GetInt("SPLASH_TIMEOUT"),
+		resourceTimeout: viper.GetInt("SPLASH_RESOURCE_TIMEOUT"),
+		wait:            viper.GetFloat64("SPLASH_WAIT"),
 	}
+	//Default options will be overriden by opts parameters if any
+	 for _, opt := range opts {
+		opt(args)
+	 } */
 
 	//Generating Splash URL
 	/*
@@ -127,7 +135,7 @@ func (req Request) GetResponse() (*Response, error) {
 	if _, err := url.ParseRequestURI(strings.TrimSpace(req.URL)); err != nil {
 		return nil, &errs.BadRequest{err}
 	}
-	splashURL := New(req)
+	splashURL := NewSplash(req)
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
@@ -281,8 +289,8 @@ func (r *Response) SetCacheInfo() {
 		} else {
 			r.Expires = rv.OutExpirationTime
 		}
-		logger.Info("Current Time: ", time.Now().UTC())
-		logger.Info(r.Request.URL, r.Expires)
+		//logger.Info("Current Time: ", time.Now().UTC())
+		//logger.Info(r.Request.URL, r.Expires)
 	} else {
 		//if resource is not cacheable set expiration time to the current time.
 		//This way web page will be downloaded every time.
@@ -292,26 +300,12 @@ func (r *Response) SetCacheInfo() {
 
 }
 
-// Fetch content from url through Splash server https://github.com/scrapinghub/splash/
-func Fetch(req Request) (io.ReadCloser, error) {
-
-	response, err := req.GetResponse()
-	if err != nil {
-		return nil, err
-	}
-	content, err := response.GetContent()
-	if err == nil {
-		return content, nil
-	}
-	return nil, err
-}
 
 // GetURL returns URL from Request
 func (req Request) GetURL() string {
-
 	//trim trailing slash if any.
 	//aws s3 bucket item name cannot contain slash at the end.
-	return strings.TrimSpace(strings.TrimRight(req.URL, "/"))
+	return strings.TrimRight(strings.TrimSpace(req.URL),  "/")
 }
 
 // Host returns Host value from Request

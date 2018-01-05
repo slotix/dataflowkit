@@ -54,21 +54,16 @@ func generateCookie(setCookie string) (string, error) {
 	return fmt.Sprintf("[%s]", strings.Join(out, ",")), nil
 }
 
-func (r *Response) getSetCookie() (string, error) {
-	headers := r.Response.Headers.(http.Header)
-	setCookie := headers.Get("Set-Cookie")
-	if setCookie == "" {
-		return "", fmt.Errorf("No Set-Cookie found")
-	}
-	return setCookie, nil
-}
 
 // SetCookieToNextRequest retrieves Set-Cookie from current Request to send it further to the next request within the same domain.
 func (r *Response) SetCookieToNextRequest(req *Request) error {
-	setCookie, err := r.getSetCookie()
-	if err != nil {
-		return err
+	//Get Set-Cookie
+	headers := r.Response.Headers.(http.Header)
+	setCookie := headers.Get("Set-Cookie")
+	if setCookie == "" {
+		return fmt.Errorf("No Set-Cookie found")
 	}
+
 	//it may be more than one cookie in Set-Cookie
 	//heu_uzt=72e3502635d3af8fa2916cf397e93fee; expires=Tue, 04-Jul-2017 13:28:36 GMT; Max-Age=2592000; path=/; domain=.heu.tt
 	//heu_s=1; expires=Mon, 04-Jun-2018 13:28:36 GMT; Max-Age=31536000; path=/; domain=.heu.tt
