@@ -162,7 +162,7 @@ func (t *Task) scrape(scraper *Scraper) error {
 				blockResults[part.Name] = partResults
 
 				//********* details
-				//part.Details = nil
+				part.Details = nil
 				if part.Details != nil {
 					part.Details.Request = splash.Request{
 						URL: partResults.(string),
