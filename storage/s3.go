@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"errors"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -11,26 +12,13 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
-// S3Conn represents a AWS S3 Connection structure
+//S3Conn represents a AWS S3 Connection structure
 type S3Conn struct {
-	//bucket name
-	bucket     string
-	svc        *s3.S3
-	uploader   *s3manager.Uploader
-	downloader *s3manager.Downloader
+	config *aws.Config
+	bucket string
 }
 
-/* func newS3Conn(bucket string) S3Conn {
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-	svc := s3.New(sess)
-	uploader := s3manager.NewUploader(sess)
-	downloader := s3manager.NewDownloader(sess)
-	return S3Conn{bucket, svc, uploader, downloader}
-} */
-
-// newS3Conn initializes new AWS S3 / Digital Ocean Spaces Connection with specified bucket
+// newS3Conn initializes new AWS S3 / Digital Ocean Spaces
 //load credentials from shared file
 //credentials have the following format:
 //[default]
@@ -40,20 +28,17 @@ type S3Conn struct {
 //Spaces access keys are generated in DO Control panel at
 //https://cloud.digitalocean.com/settings/api/tokens?i=2c1aad
 func newS3Conn(config *aws.Config, bucket string) S3Conn {
-	sess := session.New(config)
-	svc := s3.New(sess)
-
-	uploader := s3manager.NewUploader(sess)
-	downloader := s3manager.NewDownloader(sess)
-	return S3Conn{bucket, svc, uploader, downloader}
+	return S3Conn{config, bucket}
 }
 
 //download returns a value of specified key from AWS S3
-func (s S3Conn) download(key string) (value []byte, err error) {
+func (c S3Conn) download(key string) (value []byte, err error) {
+	sess := session.Must(session.NewSession(c.config))
+	downloader := s3manager.NewDownloader(sess)
 	buf := &aws.WriteAtBuffer{}
-	_, err = s.downloader.Download(buf,
+	_, err = downloader.Download(buf,
 		&s3.GetObjectInput{
-			Bucket: aws.String(s.bucket),
+			Bucket: aws.String(c.bucket),
 			Key:    aws.String(key),
 		})
 	if err != nil {
@@ -63,11 +48,13 @@ func (s S3Conn) download(key string) (value []byte, err error) {
 }
 
 //upload sends key/value pair to AWS S3 Storage
-func (s S3Conn) upload(key string, value []byte, expTime int64) error {
+func (c S3Conn) upload(key string, value []byte, expTime int64) error {
+	sess := session.Must(session.NewSession(c.config))
+	uploader := s3manager.NewUploader(sess)
 	r := bytes.NewReader(value)
 	t := time.Unix(expTime, 0)
-	_, err := s.uploader.Upload(&s3manager.UploadInput{
-		Bucket:  aws.String(s.bucket),
+	_, err := uploader.Upload(&s3manager.UploadInput{
+		Bucket:  aws.String(c.bucket),
 		Key:     aws.String(key),
 		Body:    r,
 		Expires: &t,
@@ -79,24 +66,37 @@ func (s S3Conn) upload(key string, value []byte, expTime int64) error {
 }
 
 //getObject returns an object from AWS S3. This may be used to get meta information about an object.
-func (s S3Conn) getObject(key string) (object *s3.GetObjectOutput, err error) {
+func (c S3Conn) getObject(key string) (object *s3.GetObjectOutput, err error) {
+	sess := session.Must(session.NewSession(c.config))
+	svc := s3.New(sess)
 	input := &s3.GetObjectInput{
-		Bucket: aws.String(s.bucket),
+		Bucket: aws.String(c.bucket),
 		Key:    aws.String(key),
 	}
-	object, err = s.svc.GetObject(input)
+	object, err = svc.GetObject(input)
+	return
+}
+
+func (c S3Conn) delete(key string) (result *s3.DeleteObjectOutput, err error) {
+	sess := session.Must(session.NewSession(c.config))
+	svc := s3.New(sess)
+	input := &s3.DeleteObjectInput{
+		Bucket: aws.String(c.bucket),
+		Key:    aws.String(key),
+	}
+
+	result, err = svc.DeleteObject(input)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
-			case s3.ErrCodeNoSuchKey:
-				logger.Error(s3.ErrCodeNoSuchKey, aerr.Error())
 			default:
-				logger.Error(aerr.Error())
+				return result, errors.New(aerr.Error())
+
 			}
 		} else {
 			// Print the error, cast err to awserr.Error to get the Code and
 			// Message from an error.
-			logger.Error(err.Error())
+			return result, errors.New(aerr.Error())
 		}
 		return
 	}
