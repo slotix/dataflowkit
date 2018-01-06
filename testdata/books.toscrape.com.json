@@ -6,7 +6,7 @@
     "fields": [
         {
             "name": "Title",
-            "selector": "h3",
+            "selector": "h3 a",
             "extractor": {
                 "type": "link",
                 "params": {

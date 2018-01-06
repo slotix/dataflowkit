@@ -2,7 +2,6 @@ package storage
 
 //http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/s3-example-basic-bucket-operations.html
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"os/user"
@@ -11,23 +10,21 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
-	//svc        *s3.S3
-	//uploader   *s3manager.Uploader
-	//downloader *s3manager.Downloader
-	bucket string
-	conn   S3Conn
+	conn S3Conn
 )
 
 func init() {
 	viper.Set("SPACES_CONFIG", homeDir()+".spaces/credentials")
 	viper.Set("SPACES_ENDPOINT", "https://ams3.digitaloceanspaces.com")
-	bucket = viper.GetString("DFK_BUCKET")
+	viper.Set("DFK_BUCKET", "dfk-storage")
+	bucket := viper.GetString("DFK_BUCKET")
 	config := &aws.Config{
 		Credentials: credentials.NewSharedCredentials(viper.GetString("SPACES_CONFIG"), ""), //Load credentials from specified file
 		Endpoint:    aws.String(viper.GetString("SPACES_ENDPOINT")),                         //Endpoint is obligatory for DO Spaces
@@ -50,7 +47,9 @@ func init() {
 }
 
 func TestListBuckets(t *testing.T) {
-	result, err := conn.svc.ListBuckets(nil)
+	sess := session.Must(session.NewSession(conn.config))
+	svc := s3.New(sess)
+	result, err := svc.ListBuckets(nil)
 
 	if err != nil {
 		fmt.Println(err)
@@ -66,8 +65,9 @@ func TestListBuckets(t *testing.T) {
 }
 
 func TestListBucketItems(t *testing.T) {
-
-	resp, err := conn.svc.ListObjects(&s3.ListObjectsInput{Bucket: aws.String(bucket)})
+	sess := session.Must(session.NewSession(conn.config))
+	svc := s3.New(sess)
+	resp, err := svc.ListObjects(&s3.ListObjectsInput{Bucket: aws.String(conn.bucket)})
 
 	if err != nil {
 		fmt.Println(err)
@@ -82,89 +82,41 @@ func TestListBucketItems(t *testing.T) {
 	}
 }
 
-func TestUpload(t *testing.T) {
-
+func TestUploadDownloadDelete(t *testing.T) {
+	//Test upload
 	buf := []byte("file content test\nanother line of test here")
-	r := bytes.NewReader(buf)
-	_, err := conn.uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String("urlll"),
-		Body:   r,
-	})
-	if err != nil {
-		fmt.Println(err)
-		fmt.Printf("Type: %T\n", err)
-	}
+	err := conn.upload("test", buf, 0)
+	assert.Equal(t, err, nil)
 
-}
+	//Test download
+	downloaded, _ := conn.download("test")
+	assert.Equal(t, buf, downloaded)
 
-func TestDownload(t *testing.T) {
+	//Test Get Object
+	object, _ := conn.getObject("test")
+	//fmt.Println(*object)
+	assert.NotNil(t, object)
 
-	//	var buf []byte
-	buff := &aws.WriteAtBuffer{}
+	//Test delete
+	_, err = conn.delete("test")
+	assert.Nil(t, err)
 
-	//	numBytes, err := downloader.Download(aws.NewWriteAtBuffer(buf),
-	numBytes, err := conn.downloader.Download(buff,
-		&s3.GetObjectInput{
-			Bucket: aws.String(bucket),
-			Key:    aws.String("http://dbconvert.com"),
-		})
-
-	if err != nil {
-		//fmt.Println(err.(s3.RequestFailure))
-		//fmt.Println(err.(s3.RequestFailure).Code())
-		fmt.Printf("Type: %T\n", err)
-	}
-
-	fmt.Printf("Content: %s\n", string(buff.Bytes()))
-	fmt.Println("Downloaded", numBytes, "bytes")
-
-}
-
-func TestGetObject(t *testing.T) {
-	input := &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String("test"),
-	}
-
-	result, err := conn.svc.GetObject(input)
+	//Test Downloading of item with Invalid Key recently deleted
+	downloaded, err = conn.download("test")
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case s3.ErrCodeNoSuchKey:
-				fmt.Println(s3.ErrCodeNoSuchKey, aerr.Error())
-			default:
-				fmt.Println(aerr.Error())
-			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			fmt.Println(err.Error())
+			assert.Equal(t, aerr.Code(), "NoSuchKey")
 		}
-		return
 	}
-
-	fmt.Println(*result)
-	//expires, err := time.Parse("Mon, 2 Jan 2006 15:04:05 MST", *result.Expires)
-	//fmt.Println(expires.UTC())
+	//Test Get Object with Invalid Key recently deleted
+	_, err = conn.getObject("test")
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			assert.Equal(t, aerr.Code(), "NoSuchKey")
+		}
+	}
 }
 
-func TestDeleteItem(t *testing.T) {
-	// _, err := conn.svc.DeleteObject(&s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String("urlll")})
-
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-
-	// err = conn.svc.WaitUntilObjectNotExists(&s3.HeadObjectInput{
-	// 	Bucket: aws.String(bucket),
-	// 	Key:    aws.String("urlll"),
-	// })
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-
-}
 
 //homeDir returns user's $HOME directory
 func homeDir() string {
