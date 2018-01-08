@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager/s3manageriface"
+	"github.com/spf13/viper"
 )
 
 //S3Conn represents a AWS S3 Connection structure
@@ -31,6 +32,16 @@ func newS3Conn(config *aws.Config, bucket string) S3Conn {
 	return S3Conn{config, bucket}
 }
 
+// Read returns a value of specified key from AWS S3/ DO Spaces
+func (c S3Conn) Read(key string) (value []byte, err error) {
+	sess := session.Must(session.NewSession(c.config))
+	//svc := s3.New(sess)
+	downloader := s3manager.NewDownloader(sess)
+	value, err = download(downloader, c.bucket, key)
+
+	return
+}
+
 //download returns a value of specified key from AWS S3 bucket.
 // s3manageriface.DownloaderAPI interface helps to mock real S3 connection.
 func download(d s3manageriface.DownloaderAPI, bucket, key string) ([]byte, error) {
@@ -46,17 +57,6 @@ func download(d s3manageriface.DownloaderAPI, bucket, key string) ([]byte, error
 	}
 	return buf.Bytes(), nil
 }
-
-//download returns a value of specified key from AWS S3
-func (c S3Conn) download(key string) (value []byte, err error) {
-	sess := session.Must(session.NewSession(c.config))
-	//svc := s3.New(sess)
-	downloader := s3manager.NewDownloader(sess)
-	value, err = download(downloader, c.bucket, key)
-
-	return
-}
-
 
 //upload uploads key/value pair to AWS S3 Storage and sets up Expires parameter
 // s3manageriface.UploaderAPI helps to mock real S3 connection.
@@ -76,10 +76,9 @@ func upload(u s3manageriface.UploaderAPI, bucket, key string, value []byte, expT
 	return nil
 }
 
-//upload uploads key/value pair to AWS S3 Storage and sets up Expires parameter
-func (c S3Conn) upload(key string, value []byte, expTime int64) error {
+// Write uploads key/ value pair along with Expiration time information to  AWS S3 Storage/ Digital Ocean Spaces.
+func (c S3Conn) Write(key string, value []byte, expTime int64) error {
 	sess := session.Must(session.NewSession(c.config))
-	//svc := s3.New(sess)
 	uploader := s3manager.NewUploader(sess)
 	err := upload(uploader, c.bucket, key, value, expTime)
 	return err
@@ -103,6 +102,33 @@ func getObject(svc s3iface.S3API, bucket, key string) (object *s3.GetObjectOutpu
 	}
 	object, err = svc.GetObject(input)
 	return
+}
+
+
+func expiredKey(obj *s3.GetObjectOutput, storageExpire int64) bool {
+	currentTime := time.Now().UTC()
+	lastModified := obj.LastModified
+	//calculate expiration time
+	//storageExpire - Default Storage expire value in seconds
+	exp := time.Duration(storageExpire) * time.Second
+	expiry := lastModified.Add(exp)
+	diff := expiry.Sub(currentTime)
+	logger.Info("cache lifespan is %+v\n", diff)
+	//Expired?
+	return diff > 0
+}
+
+// Expired returns Expired value of specified key from AWS S3 Storage/ Digital Ocean Spaces.
+func (c S3Conn) Expired(key string) bool {
+	sess := session.Must(session.NewSession(c.config))
+	svc := s3.New(sess)
+	obj, err := getObject(svc, c.bucket, key)
+	if err != nil {
+		logger.Warn("error getting object")
+		return true
+	}
+	exp := expiredKey(obj, viper.GetInt64("STORAGE_EXPIRE"))
+	return exp
 }
 
 func listBuckets(svc s3iface.S3API) ([]string, error) {

@@ -2,6 +2,7 @@ package storage
 
 //http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/s3-example-basic-bucket-operations.html
 import (
+	"time"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -39,6 +40,8 @@ func TestDownload(t *testing.T) {
 	assert.Nil(t, err, "Expected no error")
 }
 
+
+
 func TestListBuckets(t *testing.T) {
 	svc := new(mocks.S3API)
 	svc.On("ListBuckets", mock.AnythingOfType("*s3.ListBucketsInput")).Return(&s3.ListBucketsOutput{
@@ -62,6 +65,15 @@ func TestGetObject(t *testing.T) {
 	_, err := getObject(svc, "bucket", "key")
 	assert.Nil(t, err, "Expected no error")
 }
+
+func TestExpiredKey(t *testing.T) {
+	expires := "Wed, 22 Nov 2017 15:36:42 GMT"
+	lastModified  := time.Now().UTC()
+	obj := s3.GetObjectOutput{Expires: &expires, LastModified: &lastModified}
+	exp := expiredKey(&obj, int64(3600))
+	logger.Info(exp)
+}
+
 
 func TestDelete(t *testing.T) {
 	svc := new(mocks.S3API)
