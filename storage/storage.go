@@ -99,33 +99,7 @@ func newRedisStorage(redisHost, redisPassword string) Store {
 	return redisCon
 }
 
-// Read retrieves value according to the specified key from Redis.
-func (s RedisConn) Read(key string) (value []byte, err error) {
-	value, err = s.Value(key)
-	return
-}
 
-// Write pushes key/ value pair along with Expiration time to Redis storage.
-func (s RedisConn) Write(key string, value []byte, expTime int64) error {
-	err := s.SetValue(key, value)
-	if err != nil {
-		return err
-	}
-	err = s.ExpireAt(key, expTime)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Expired returns Expired value of specified key from Redis.
-func (s RedisConn) Expired(key string) bool {
-	ttl, err := s.TTL(key)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return ttl > 0
-}
 
 func newS3Storage(config *aws.Config, bucket string) Store {
 	s3Conn := newS3Conn(config, bucket)
