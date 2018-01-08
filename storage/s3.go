@@ -57,6 +57,7 @@ func (c S3Conn) download(key string) (value []byte, err error) {
 	return
 }
 
+
 //upload uploads key/value pair to AWS S3 Storage and sets up Expires parameter
 // s3manageriface.UploaderAPI helps to mock real S3 connection.
 func upload(u s3manageriface.UploaderAPI, bucket, key string, value []byte, expTime int64) error {
