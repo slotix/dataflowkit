@@ -52,5 +52,8 @@ func TestValue(t *testing.T) {
 	TTL, err = ttl(conn, testKey)
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, TTL > 0, true, "Expected TTL >0")
+	exp := expired(conn, testKey) 
+	logger.Info(TTL)
+	assert.Equal(t, exp, false, "Expected Not expired")
 
 }

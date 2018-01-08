@@ -173,7 +173,7 @@ func expired(conn redis.Conn, key string) bool {
 		logger.Error(err)
 		return true
 	}
-	return t > 0
+	return t < 0
 }
 
 // Expired returns either specified key is expired or not.

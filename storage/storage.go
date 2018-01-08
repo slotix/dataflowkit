@@ -2,10 +2,7 @@ package storage
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -99,100 +96,12 @@ func newRedisStorage(redisHost, redisPassword string) Store {
 	return redisCon
 }
 
-
-
 func newS3Storage(config *aws.Config, bucket string) Store {
 	s3Conn := newS3Conn(config, bucket)
 	return s3Conn
 }
 
-// Read retrieves value according to the specified key from AWS S3 Storage/ Digital Ocean Spaces.
-func (s S3Conn) Read(key string) (value []byte, err error) {
-	value, err = s.download(key)
-	return
-}
-
-// Write uploads key/ value pair along with Expiration time to  AWS S3 Storage/ Digital Ocean Spaces.
-func (s S3Conn) Write(key string, value []byte, expTime int64) error {
-	err := s.upload(key, value, expTime)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Expired returns Expired value of specified key from AWS S3 Storage/ Digital Ocean Spaces.
-func (s S3Conn) Expired(key string) bool {
-	obj, err := s.getObject(key)
-	if err != nil {
-		panic(err)
-	}
-	currentTime := time.Now().UTC()
-	lastModified := obj.LastModified
-	//calculate expiration time
-	exp := time.Duration(viper.GetInt64("STORAGE_EXPIRE")) * time.Second
-	expiry := lastModified.Add(exp)
-	diff := expiry.Sub(currentTime)
-	logger.Info("cache lifespan is %+v\n", diff)
-	//Expired?
-	return diff > 0
-}
-
 func newDiskvStorage(baseDir string, CacheSizeMax uint64) Store {
 	d := newDiskvConn(baseDir, CacheSizeMax)
 	return d
-}
-
-// Read loads value according to the specified key from DiskV KV storage.
-func (d DiskvConn) Read(key string) (value []byte, err error) {
-	value, err = d.diskv.Read(key)
-	if err != nil {
-		return nil, err
-	}
-	return value, nil
-}
-
-// Write stores key/ value pair along with Expiration time to DiskV KV storage.
-func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
-	err := d.diskv.Write(key, value)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Expired returns Expired value of specified key from DiskV.
-func (d DiskvConn) Expired(key string) bool {
-	//pwd
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	exPath := filepath.Dir(ex)
-	//filename
-	fullPath := exPath + "/" + d.diskv.BasePath + "/" + key
-	//file last modification time
-	mTime, err := mTime(fullPath)
-	if err != nil {
-		logger.Error(err)
-	}
-	currentTime := time.Now().UTC()
-	//calculate expiration time
-	exp := time.Duration(viper.GetInt64("STORAGE_EXPIRE")) * time.Second
-	expiry := mTime.Add(exp)
-	diff := expiry.Sub(currentTime)
-	logger.Info("cache lifespan is %+v\n", diff)
-	//Expired?
-	return diff > 0
-}
-
-//mTime returns File Modify Time
-//Last modification time shows time of the  last change to file's contents. It does not change with owner or permission changes, and is therefore used for tracking the actual changes to data of the file itself.
-func mTime(name string) (mtime time.Time, err error) {
-	fi, err := os.Stat(name)
-	if err != nil {
-		return
-	}
-	mtime = fi.ModTime().UTC()
-	return
 }
