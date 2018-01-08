@@ -195,3 +195,16 @@ func (b *RedisConn) TTL(key string) (value int64, err error) {
 	value, err = ttl(conn, key)
 	return
 }
+
+func setTTL(conn redis.Conn, key string, ttl int) error {
+	_, err := conn.Do("EXPIRE", key, ttl)
+	return err
+}
+
+//SetTTL sets TTL value in seconds of the specified key
+func (b *RedisConn) SetTTL(key string, ttl int) error {
+	conn := b.open()
+	defer conn.Close()
+	err := setTTL(conn, key, ttl)
+	return err 
+}

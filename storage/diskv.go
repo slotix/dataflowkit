@@ -2,7 +2,6 @@ package storage
 
 import (
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/peterbourgon/diskv"
@@ -49,6 +48,40 @@ func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
 // Expired returns Expired value of specified key from DiskV.
 func (d DiskvConn) Expired(key string) bool {
 	//pwd
+	//ex, err := os.Executable()
+	//if err != nil {
+	//		panic(err)
+	//	}
+	//	exPath := filepath.Dir(ex)
+	//filename
+	//	fullPath := exPath + "/" + d.diskv.BasePath + "/" + key
+	fullPath := d.diskv.BasePath + "/" + key
+	//file last modification time
+	fStat, err := os.Stat(fullPath)
+	if err != nil {
+		logger.Error(err)
+	}
+	mTime := fStat.ModTime().UTC()
+	//mTime, err := mTime(fullPath)
+	//if err != nil {
+	//	logger.Error(err)
+	//}
+	currentTime := time.Now().UTC()
+	//calculate expiration time
+	exp := time.Duration(viper.GetInt64("ITEM_EXPIRE_IN")) * time.Second
+	//exp := time.Duration(3600) * time.Second
+	logger.Info(exp)
+	//logger.Info(viper.GetInt64("ITEM_EXPIRE_IN"))
+	expiry := mTime.Add(exp)
+	diff := expiry.Sub(currentTime)
+	logger.Infof("cache lifespan is %+v", diff)
+	//Expired?
+	return diff < 0
+}
+
+// Expired returns Expired value of specified key from DiskV.
+/* func (d DiskvConn) Expired(key string) bool {
+	//pwd
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -63,17 +96,17 @@ func (d DiskvConn) Expired(key string) bool {
 	}
 	currentTime := time.Now().UTC()
 	//calculate expiration time
-	exp := time.Duration(viper.GetInt64("STORAGE_EXPIRE")) * time.Second
+	exp := time.Duration(viper.GetInt64("ITEM_EXPIRE_IN")) * time.Second
 	expiry := mTime.Add(exp)
 	diff := expiry.Sub(currentTime)
 	logger.Info("cache lifespan is %+v\n", diff)
 	//Expired?
 	return diff > 0
-}
+} */
 
 //Erase deletes specified key from Diskv storage.
 func (d DiskvConn) Erase(key string) error {
-	err := d.Erase(key)
+	err := d.diskv.Erase(key)
 	if err != nil {
 		return err
 	}
@@ -81,13 +114,13 @@ func (d DiskvConn) Erase(key string) error {
 }
 
 
-//mTime returns File Modify Time
-//Last modification time shows time of the  last change to file's contents. It does not change with owner or permission changes, and is therefore used for tracking the actual changes to data of the file itself.
-func mTime(name string) (mtime time.Time, err error) {
-	fi, err := os.Stat(name)
+//Erase deletes specified key from Diskv storage.
+func (d DiskvConn) EraseAll() error {
+	err := d.diskv.EraseAll()
 	if err != nil {
-		return
+		return err
 	}
-	mtime = fi.ModTime().UTC()
-	return
+	return nil
 }
+
+

@@ -52,3 +52,4 @@ socket-server/debug
 socket-server/socket-server
 webserver/webserver
 coverage.txt
+coverage.out

@@ -3,7 +3,7 @@ package storage
 import (
 	"testing"
 	"time"
-	//"github.com/rafaeljusto/redigomock"
+
 	"github.com/alicebob/miniredis"
 	"github.com/garyburd/redigo/redis"
 	"github.com/stretchr/testify/assert"
@@ -12,7 +12,7 @@ import (
 func init() {
 }
 
-func TestValue(t *testing.T) {
+func TestRedis(t *testing.T) {
 	server, err := miniredis.Run()
 	if err != nil {
 		panic(err)
@@ -52,8 +52,11 @@ func TestValue(t *testing.T) {
 	TTL, err = ttl(conn, testKey)
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, TTL > 0, true, "Expected TTL >0")
-	exp := expired(conn, testKey) 
-	logger.Info(TTL)
+	exp := expired(conn, testKey)
+	//logger.Info(TTL)
 	assert.Equal(t, exp, false, "Expected Not expired")
-
+	
+	err = setTTL(conn, testKey, -1)
+	exp = expired(conn, testKey)
+	assert.Equal(t, exp, true, "Expected expired value")
 }
