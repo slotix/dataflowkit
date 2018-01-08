@@ -25,7 +25,7 @@ type Store interface {
 	//expTime value sets TTL for Redis storage.
 	//expTime set Metadata Expires value for S3Storage
 	Write(key string, value []byte, expTime int64) error
-	//Is key expired ? It checks if parse results storage item is expired. Set up  Expiration fixed value as "STORAGE_EXPIRE" environment variable.
+	//Is key expired ? It checks if parse results storage item is expired. Set up  Expiration as "ITEM_EXPIRE_IN" environment variable.
 	//html pages cache stores this info in sResponse.Expires . It is not used for fetch endpoint.
 	Expired(key string) bool
 }

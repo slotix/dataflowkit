@@ -113,9 +113,9 @@ func expiredKey(obj *s3.GetObjectOutput, storageExpire int64) bool {
 	exp := time.Duration(storageExpire) * time.Second
 	expiry := lastModified.Add(exp)
 	diff := expiry.Sub(currentTime)
-	logger.Info("cache lifespan is %+v\n", diff)
+	logger.Infof("cache lifespan is %+v", diff)
 	//Expired?
-	return diff > 0
+	return diff < 0
 }
 
 // Expired returns Expired value of specified key from AWS S3 Storage/ Digital Ocean Spaces.
@@ -127,7 +127,8 @@ func (c S3Conn) Expired(key string) bool {
 		logger.Warn("error getting object")
 		return true
 	}
-	exp := expiredKey(obj, viper.GetInt64("STORAGE_EXPIRE"))
+	exp := expiredKey(obj, viper.GetInt64("ITEM_EXPIRE_IN"))
+
 	return exp
 }
 

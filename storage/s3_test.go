@@ -1,9 +1,8 @@
 package storage
 
-//http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/s3-example-basic-bucket-operations.html
 import (
-	"time"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -13,7 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestUpload(t *testing.T) {
+func Test_upload(t *testing.T) {
 	uploader := new(mocks.UploaderAPI)
 	uploader.On("Upload", mock.AnythingOfType("*s3manager.UploadInput")).Return(&s3manager.UploadOutput{
 		Location: "location",
@@ -23,7 +22,7 @@ func TestUpload(t *testing.T) {
 	assert.Nil(t, err, "Expected no error")
 }
 
-func TestDownload(t *testing.T) {
+func Test_download(t *testing.T) {
 	downloader := new(mocks.DownloaderAPI)
 	buf := &aws.WriteAtBuffer{}
 	//value := []byte("Value")
@@ -40,9 +39,7 @@ func TestDownload(t *testing.T) {
 	assert.Nil(t, err, "Expected no error")
 }
 
-
-
-func TestListBuckets(t *testing.T) {
+func Test_listBuckets(t *testing.T) {
 	svc := new(mocks.S3API)
 	svc.On("ListBuckets", mock.AnythingOfType("*s3.ListBucketsInput")).Return(&s3.ListBucketsOutput{
 		Buckets: []*s3.Bucket{
@@ -58,7 +55,7 @@ func TestListBuckets(t *testing.T) {
 	assert.Equal(t, "Second Bucket", b[1], "Expected Second Bucket")
 }
 
-func TestGetObject(t *testing.T) {
+func Test_getObject(t *testing.T) {
 	svc := new(mocks.S3API)
 	svc.On("GetObject", mock.AnythingOfType("*s3.GetObjectInput")).Return(&s3.GetObjectOutput{}, nil)
 
@@ -66,16 +63,58 @@ func TestGetObject(t *testing.T) {
 	assert.Nil(t, err, "Expected no error")
 }
 
-func TestExpiredKey(t *testing.T) {
-	expires := "Wed, 22 Nov 2017 15:36:42 GMT"
-	lastModified  := time.Now().UTC()
-	obj := s3.GetObjectOutput{Expires: &expires, LastModified: &lastModified}
-	exp := expiredKey(&obj, int64(3600))
-	logger.Info(exp)
+func Test_expiredKey(t *testing.T) {
+	modifiedRightNow := time.Now().UTC()
+	expired := expiredKey(&s3.GetObjectOutput{
+		LastModified: &modifiedRightNow}, 
+		int64(3600))
+	assert.Equal(t, expired, false, "Expected false for an item modified right now" )
+
+	minus2Hours := time.Duration(-2 * time.Hour)
+	lastModified2HoursAgo := time.Now().UTC().Add(minus2Hours)
+	expired = expiredKey(&s3.GetObjectOutput{
+		LastModified: &lastModified2HoursAgo}, 
+		int64(3600))
+	assert.Equal(t, expired, true, "Expected true for an item modified 2 hours ago" )
+}
+
+func Test_expiredKey1(t *testing.T) {
+	expire := time.Duration(-2 * time.Hour)
+	lastModified2HoursAgo := time.Now().UTC().Add(expire)
+	modifiedRightNow := time.Now().UTC()
+	type args struct {
+		obj           *s3.GetObjectOutput
+		storageExpire int64
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{name: "Modified 2 hours ago", 
+		args : args {
+			obj: &s3.GetObjectOutput{LastModified: &lastModified2HoursAgo}, 
+			storageExpire: int64(3600),
+		},
+		want: true},
+		{name: "Modified right now", 
+			args : args {
+				obj: &s3.GetObjectOutput{LastModified: &modifiedRightNow}, 
+				storageExpire: int64(3600),
+			},
+			want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := expiredKey(tt.args.obj, tt.args.storageExpire); got != tt.want {
+				t.Errorf("expiredKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 
-func TestDelete(t *testing.T) {
+func Test_delete(t *testing.T) {
 	svc := new(mocks.S3API)
 	svc.On("DeleteObject", mock.AnythingOfType("*s3.DeleteObjectInput")).Return(&s3.DeleteObjectOutput{}, nil)
 
