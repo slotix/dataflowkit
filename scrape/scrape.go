@@ -196,10 +196,8 @@ func (t *Task) scrape(scraper *Scraper) error {
 		}
 
 		//every time when getting a response the next request will be filled with updated cookie information
-		err = sResponse.SetCookieToNextRequest(&req)
-		if err != nil {
-			logger.Warn(err)
-		}
+		headers := sResponse.Response.Headers.(http.Header)	
+		req.Cookies = splash.GetSetCookie(headers)
 		req.URL = url
 
 		if opts.RandomizeFetchDelay {

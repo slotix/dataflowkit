@@ -17,13 +17,6 @@ func init() {
 	viper.Set("SPLASH_TIMEOUT", 20)
 	viper.Set("SPLASH_RESOURCE_TIMEOUT", 30)
 	viper.Set("SPLASH_WAIT", 0.5)
-
-	//Splash running inside Docker container cannot render a page on a localhost. It leads to rendering page errors https://github.com/scrapinghub/splash/issues/237 .
-	//Only URLs on the web are available for testing.
-	req := Request{
-		URL: "http://example.com",
-	}
-	resp, _ = req.GetResponse()
 }
 
 func TestSplashRenderHTMLEndpoint(t *testing.T) {
@@ -55,6 +48,10 @@ func TestSplashRenderHTMLEndpoint(t *testing.T) {
 }
 
 func TestGetResponse(t *testing.T) {
+	//Splash running inside Docker container cannot render a page on a localhost. It leads to rendering page errors https://github.com/scrapinghub/splash/issues/237 .
+	//Only URLs on the web are available for testing.
+	req := Request{URL: "http://example.com",}
+	resp, _ = req.GetResponse()
 	statusCode := resp.Response.Status
 	assert.Equal(t, statusCode, 200)
 	respURL := resp.GetURL()
@@ -64,6 +61,30 @@ func TestGetResponse(t *testing.T) {
 	assert.Equal(t, "time.Time", tp)
 	reasons := resp.GetReasonsNotToCache()
 	logger.Info(reasons)
+
+	req = Request{URL: "http://httpbin.org/status/400",}
+	resp, _ = req.GetResponse()
+	logger.Info(resp)
+	_, err := resp.GetContent()
+	assert.Error(t, err, "error returned")
+
+	urls := []string{
+		"http://httpbin.org/status/404",
+		"http://httpbin.org/status/400",
+		"http://httpbin.org/status/500",
+		"http://httpbin.org/status/403",
+		//"http://httpbin.org/status/504",
+		"http://google",
+		"google.com",
+	}
+	for _, url := range urls {
+		req := Request{
+			URL: url,
+		}
+		_, err := req.GetResponse()
+		assert.Error(t, err, "error returned")
+	}
+
 }
 
 func TestGetContent(t *testing.T) {
@@ -104,19 +125,6 @@ func TestParamsToLUATable(t *testing.T) {
 	assert.Equal(t, `{"auth_key":"880ea6a14ea49e853634fbdc5015a024","referer":"http%3A%2F%2Fexample.com%2F","ips_username":"user","ips_password":"password","rememberMe":"1"}`, p)
 
 }
-
-func TestGenerateCookie(t *testing.T) {
-	cookie := `example_uzt=72e3502635d3af8fa2916cf397e93fee; expires=Tue, 04-Jul-2017 13:28:36 GMT; Max-Age=2592000; path=/; domain=.example.com; HttpOnly
-heureka_s=1; expires=Mon, 04-Jun-2018 13:28:36 GMT; Max-Age=31536000; path=/; domain=.example.com`
-	s, err := generateCookie(cookie)
-	if err != nil {
-		logger.Println(nil)
-	}
-	assert.Equal(t, `[{"name":"example_uzt", "value":"72e3502635d3af8fa2916cf397e93fee", "path":"/", "domain":".example.com", "expires":"Tue, 04-Jul-2017 13:28:36 GMT", "httpOnly":true, "secure":false},{"name":"heureka_s", "value":"1", "path":"/", "domain":".example.com", "expires":"Mon, 04-Jun-2018 13:28:36 GMT", "httpOnly":false, "secure":false}]`, s)
-}
-
-
-
 
 //Script for LUA debug
 var debugLUA = `

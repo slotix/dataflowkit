@@ -199,15 +199,15 @@ func (req Request) GetResponse() (*Response, error) {
 	}
 
 	if !sResponse.Response.Ok {
-		if sResponse.Response.Status == 0 {
-			err = fmt.Errorf("%s",
-				//sResponse.Error)
-				sResponse.Response.StatusText)
-		} else {
-			err = fmt.Errorf("%d. %s",
-				sResponse.Response.Status,
-				sResponse.Response.StatusText)
-		}
+		// if sResponse.Response.Status == 0 {
+		// 	err = fmt.Errorf("%s",
+		// 		//sResponse.Error)
+		// 		sResponse.Response.StatusText)
+		// } else {
+		// 	err = fmt.Errorf("%d. %s",
+		// 		sResponse.Response.Status,
+		// 		sResponse.Response.StatusText)
+		// }
 		return nil, err
 	}
 	//is resource cacheable ?
@@ -219,9 +219,9 @@ func (req Request) GetResponse() (*Response, error) {
 
 // GetContent returns HTML content from Splash Response
 func (r *Response) GetContent() (io.ReadCloser, error) {
-	//if r == nil {
-	//	return nil, errors.New("empty response")
-	//}
+	if r == nil {
+		return nil, errors.New("empty response")
+	}
 	if r.Error != "" {
 		return nil, errors.New(r.Error)
 	}
