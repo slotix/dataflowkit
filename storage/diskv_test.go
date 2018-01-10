@@ -14,7 +14,11 @@ func Test_diskv(t *testing.T) {
 	testKey := "testKey"
 	err := d.Write(testKey, testValue, 0)
 	assert.NoError(t, err, "Expected no error")
-	value, err := d.Read(testKey)
+	
+	value, err := d.Read("NonExistent key")
+	assert.Error(t, err, "Expected error")
+	
+	value, err = d.Read(testKey)
 	assert.Equal(t, testValue, value, "Expected equal")
 
 	expired := d.Expired(testKey)
