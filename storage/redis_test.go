@@ -60,3 +60,12 @@ func TestRedis(t *testing.T) {
 	exp = expired(conn, testKey)
 	assert.Equal(t, exp, true, "Expected expired value")
 }
+
+func TestNewRedisConn(t *testing.T) {
+	rc := NewRedisConn()
+	t.Log(rc)
+	conn := rc.open()
+	t.Log(conn)
+	defer conn.Close()
+
+}
