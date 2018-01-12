@@ -210,6 +210,8 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 			return nil, &errs.Forbidden{r.URL}
 		case 400:
 			return nil, &errs.BadRequest{err}
+		case 504:
+			return nil, &errs.GatewayTimeout{}
 		default:
 			return nil, err
 		}

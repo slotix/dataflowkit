@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/slotix/dataflowkit/storage"
+	"github.com/spf13/viper"
 )
 
 var storageType storage.Type
@@ -29,16 +30,16 @@ func Start(DFKParse string) {
 		//logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 	//creating storage for caching of parsed results
-	/* storageType, err := storage.ParseType(viper.GetString("STORAGE_TYPE"))
+	storageType, err := storage.ParseType(viper.GetString("STORAGE_TYPE"))
 	if err != nil {
 		logger.Log(err)
 	}
-	storage := storage.NewStore(storageType) */
+	storage := storage.NewStore(storageType)
 
 	var svc Service
 	svc = ParseService{}
 	//svc = StatsMiddleware("18")(svc)
-	//	svc = StorageMiddleware(storage)(svc)
+	svc = StorageMiddleware(storage)(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{

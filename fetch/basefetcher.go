@@ -1,8 +1,6 @@
 package fetch
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -39,7 +37,7 @@ type BaseFetcherResponse struct {
 
 //MarshalJSON customizes marshaling of http.Response.Body which has type io.ReadCloser. It cannot be marshaled with standard Marshal method without casting to []byte.
 //http://choly.ca/post/go-json-marshalling/
-func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
+/* func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
 	type Alias BaseFetcherResponse
 	body, err := ioutil.ReadAll(r.Response.Body)
 	if err != nil {
@@ -52,7 +50,7 @@ func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
 		HTML:  body,
 		Alias: (*Alias)(r),
 	})
-}
+} */
 
 // SetCacheInfo checks if resource is cacheable.
 // Respource is cachable if length of ReasonsNotToCache is zero.
@@ -88,5 +86,5 @@ func (r BaseFetcherResponse) GetReasonsNotToCache() []cacheobject.Reason {
 
 //GetURL returns URL to be fetched
 func (req BaseFetcherRequest) GetURL() string {
-	return strings.TrimRight(strings.TrimSpace(req.URL),  "/")
+	return strings.TrimRight(strings.TrimSpace(req.URL), "/")
 }

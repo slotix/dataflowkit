@@ -4,8 +4,6 @@ package extract
 // https://github.com/andrew-d/goscrape package governed by MIT license.
 
 import (
-	"fmt"
-	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -34,19 +32,12 @@ func TestText(t *testing.T) {
 	ret, err = Text{}.Extract(sel)
 	assert.NoError(t, err)
 	assert.Equal(t, ret, "FirstSecond")
+
+	sel = selFrom(`<p>First</p><p>Second</p><p>Third</p>`)
+	ret, err = Text{}.Extract(sel.Find("p"))
+	assert.NoError(t, err)
+	assert.Equal(t, ret, []string{"First", "Second", "Third"})
 }
-
-/* func TestMultipleText(t *testing.T) {
-	sel := selFrom(`<p>Test 123</p>`)
-	ret, err := MultipleText{}.Extract(sel.Find("p"))
-	assert.NoError(t, err)
-	assert.Equal(t, ret, []string{"Test 123"})
-
-	sel = selFrom(`<p>First</p><p>Second</p>`)
-	ret, err = MultipleText{}.Extract(sel.Find("p"))
-	assert.NoError(t, err)
-	assert.Equal(t, ret, []string{"First", "Second"})
-} */
 
 func TestHtml(t *testing.T) {
 	sel := selFrom(
@@ -195,15 +186,8 @@ func TestLink(t *testing.T) {
 	ret, err := Link{}.Extract(sel.Find("a"))
 	assert.NoError(t, err)
 	m := []map[string]string{{"google": "http://www.google.com"}, {"yahoo": "http://www.yahoo.com"}, {"microsoft": "http://www.microsoft.com"}}
-	eq := reflect.DeepEqual(ret, m)
-	if eq {
-		fmt.Println("They're equal.")
-	} else {
-		fmt.Println("They're unequal.")
-	}
-	//assert.Equal(t, ret)
-	logger.Info(m)
-	logger.Info(ret)
+
+	assert.Equal(t, ret, m, "check if maps are equal")
 }
 func TestCount(t *testing.T) {
 	sel := selFrom(`
