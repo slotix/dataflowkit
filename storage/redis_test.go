@@ -67,5 +67,6 @@ func TestNewRedisConn(t *testing.T) {
 	conn := rc.open()
 	t.Log(conn)
 	defer conn.Close()
-
+	// err := rc.Write("test",[]byte("fff"),0)
+	// t.Log(err)
 }

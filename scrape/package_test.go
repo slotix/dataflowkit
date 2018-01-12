@@ -11,7 +11,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/andrew-d/goscrape"
-	"github.com/andrew-d/goscrape/extract"
+	"github.com/slotix/dataflowkit/extract"
 	"github.com/stretchr/testify/assert"
 )
 
