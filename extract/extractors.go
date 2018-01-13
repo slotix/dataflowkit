@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/slotix/dataflowkit/log"
 
@@ -288,7 +289,7 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 					logger.Error(err)
 				}
 				if u.Host == "" {
-					val = e.BaseURL + "/" + val
+					val = strings.TrimSuffix(e.BaseURL, "/") + "/" + val
 				}
 				results = append(results, val)
 			}
