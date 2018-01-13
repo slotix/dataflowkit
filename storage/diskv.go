@@ -60,6 +60,7 @@ func (d DiskvConn) Expired(key string) bool {
 	fStat, err := os.Stat(fullPath)
 	if err != nil {
 		logger.Error(err)
+		return true 
 	}
 	mTime := fStat.ModTime().UTC()
 	//mTime, err := mTime(fullPath)
