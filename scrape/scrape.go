@@ -196,7 +196,7 @@ func (t *Task) scrape(scraper *Scraper) error {
 		}
 
 		//every time when getting a response the next request will be filled with updated cookie information
-		headers := sResponse.Response.Headers.(http.Header)	
+		headers := sResponse.Response.Headers.(http.Header)
 		req.Cookies = splash.GetSetCookie(headers)
 		req.URL = url
 
@@ -283,7 +283,10 @@ func (p Payload) fields2parts() ([]Part, error) {
 
 		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
 		case "link":
-			l := &extract.Link{Href: extract.Attr{Attr: "href"}}
+			l := &extract.Link{Href: extract.Attr{
+				Attr:    "href",
+				BaseURL: p.Request.URL},
+			}
 			if params != nil {
 				err := fillStruct(params, l)
 				if err != nil {
@@ -320,7 +323,10 @@ func (p Payload) fields2parts() ([]Part, error) {
 
 		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
 		case "image":
-			i := &extract.Image{Src: extract.Attr{Attr: "src"},
+			i := &extract.Image{Src: extract.Attr{
+				Attr:    "src",
+				BaseURL: p.Request.URL,
+			},
 				Alt: extract.Attr{Attr: "alt"}}
 			if params != nil {
 				err := fillStruct(params, i)

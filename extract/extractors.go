@@ -11,6 +11,8 @@ import (
 
 	"github.com/slotix/dataflowkit/log"
 
+	"net/url"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
@@ -256,7 +258,8 @@ var _ Extractor = Regex{}
 type Attr struct {
 	// The HTML attribute to extract from each part.
 	Attr string
-
+	//BaseURL specifies the base URL to use for all relative URLs contained within a document.
+	BaseURL string
 	// By default, if there is only a single attribute extracted, AttrExtractor
 	// will return the match itself (as opposed to an array containing the single
 	// match). Set AlwaysReturnList to true to disable this behaviour, ensuring
@@ -271,16 +274,24 @@ type Attr struct {
 }
 
 // Extract returns Attr value from specified selection.
+//Absolute URL will be returned for href and src attributes if relative URLs provided
 func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 	if len(e.Attr) == 0 {
 		return nil, errors.New("no attribute provided")
 	}
-
 	results := []string{}
-
 	sel.Each(func(i int, s *goquery.Selection) {
 		if val, found := s.Attr(e.Attr); found {
-			results = append(results, val)
+			if e.Attr == "href" || e.Attr == "src" {
+				u, err := url.Parse(val)
+				if err != nil {
+					logger.Error(err)
+				}
+				if u.Host == "" {
+					val = e.BaseURL + "/" + val
+				}
+				results = append(results, val)
+			}
 		}
 	})
 
@@ -336,7 +347,7 @@ type Link struct {
 
 //Extract returns maps of links including text and href attributes.
 //It is not used as we need these values separated as a result. Own Extract methods for Text and Attr are used instead.
-func (e Link) Extract(sel *goquery.Selection) (interface{}, error) {
+/* func (e Link) Extract(sel *goquery.Selection) (interface{}, error) {
 	//we need to keep an order of links.
 	//map structure doesn't guarantee an order of items when iterating through map
 	links := []map[string]string{}
@@ -364,7 +375,7 @@ func (e Link) Extract(sel *goquery.Selection) (interface{}, error) {
 	return links, nil
 }
 
-var _ Extractor = Link{}
+var _ Extractor = Link{} */
 
 // Image is an Extractor that returns the combined Src and Alt attributes of the given Image
 type Image struct {

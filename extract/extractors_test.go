@@ -161,22 +161,29 @@ func TestAttr(t *testing.T) {
 	}.Extract(sel.Find(".abc"))
 	assert.NoError(t, err)
 	assert.Nil(t, ret)
+
+}
+func TestAttrRelativeURLs(t *testing.T) {
+	sel := selFrom(`<a href="search">google</a>`)
+	baseURL := "http://www.google.com/"
+	ret, err := Attr{Attr: "href", BaseURL: baseURL}.Extract(sel.Find("a"))
+	assert.NoError(t, err)
+	assert.Equal(t, "http://www.google.com/search", ret, "Test Attr Relative URLs")
+
 }
 
 func TestImgAttr(t *testing.T) {
 	sel := selFrom(`
 	<img src="smiley.gif" alt="Smiley face" height="42" width="42">
 	`)
-	ret, err := Attr{Attr: "src"}.Extract(sel.Find("img"))
+	baseURL := "http://www.google.com/"
+	ret, err := Attr{Attr: "src",  BaseURL: baseURL}.Extract(sel.Find("img"))
 	assert.NoError(t, err)
-	assert.Equal(t, ret, string("smiley.gif"))
-	ret, err = Attr{Attr: "alt"}.Extract(sel.Find("img"))
-	assert.NoError(t, err)
-	assert.Equal(t, ret, string("Smiley face"))
+	assert.Equal(t, string("http://www.google.com/smiley.gif"), ret, "Test img attr")
 
 }
 
-func TestLink(t *testing.T) {
+/* func TestLink(t *testing.T) {
 	sel := selFrom(`
 		<a href="http://www.google.com">google</a>
 		<a href="http://www.yahoo.com">yahoo</a>
@@ -188,7 +195,7 @@ func TestLink(t *testing.T) {
 	m := []map[string]string{{"google": "http://www.google.com"}, {"yahoo": "http://www.yahoo.com"}, {"microsoft": "http://www.microsoft.com"}}
 
 	assert.Equal(t, ret, m, "check if maps are equal")
-}
+} */
 func TestCount(t *testing.T) {
 	sel := selFrom(`
 	<div>One</div>
