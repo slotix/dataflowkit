@@ -43,9 +43,9 @@ var (
 	splashResourceTimeout int
 	splashWait            float64
 
-	storageType    string
+	storageType        string
 	storageItemExpires int64 //how long in seconds object stay in a cache before expiration.
-	diskvBaseDir   string
+	diskvBaseDir       string
 
 	spacesConfig   string //Digital Ocean spaces configuration file
 	spacesEndpoint string //Digital Ocean spaces endpoint address

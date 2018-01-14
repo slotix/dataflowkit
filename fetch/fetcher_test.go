@@ -11,11 +11,18 @@ import (
 
 const addr = "localhost:12345"
 
-var indexContent = []byte(`<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`)
+var (
+	indexContent = []byte(`<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`)
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Conent-Type", "text/html")
-	w.Write(indexContent)
+	robotstxtData = []byte(`
+		User-agent: *
+		Allow: /allowed
+		Disallow: /disallowed
+		`)
+)
+
+func robotstxtHandler(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func init() {
@@ -24,7 +31,23 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Conent-Type", "text/html")
+		w.Write(indexContent)
+	})
+	http.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Conent-Type", "text/html")
+		w.Write(robotstxtData)
+	})
+	http.HandleFunc("/allowed", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("allowed"))
+	})
+	http.HandleFunc("/disallowed", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("disallowed"))
+	})
+
 	go func() {
 		if err := server.Serve(listener); err != nil {
 			logger.Error("Httpserver: ListenAndServe() error: %s", err)
@@ -65,5 +88,12 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 		_, err := fetcher.Fetch(req)
 		assert.Error(t, err, "error returned")
 	}
-
+	//fetch robots.txt data
+	resp, err = fetcher.Fetch(BaseFetcherRequest{
+		URL:    "http://" + addr + "/robots.txt",
+		Method: "GET",
+	})
+	bfResponse = resp.(*BaseFetcherResponse)
+	//t.Log(string(bfResponse.HTML))
+	assert.Equal(t, robotstxtData, bfResponse.HTML)
 }
