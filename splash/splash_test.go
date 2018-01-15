@@ -51,7 +51,8 @@ func TestGetResponse(t *testing.T) {
 	//Splash running inside Docker container cannot render a page on a localhost. It leads to rendering page errors https://github.com/scrapinghub/splash/issues/237 .
 	//Only URLs on the web are available for testing.
 	req := Request{URL: "http://example.com",}
-	resp, _ = req.GetResponse()
+	resp, err := req.GetResponse()
+	assert.Nil(t, err, "Expected no error")
 	statusCode := resp.Response.Status
 	assert.Equal(t, statusCode, 200)
 	respURL := resp.GetURL()
@@ -65,7 +66,7 @@ func TestGetResponse(t *testing.T) {
 	req = Request{URL: "http://httpbin.org/status/400",}
 	resp, _ = req.GetResponse()
 	logger.Info(resp)
-	_, err := resp.GetContent()
+	_, err = resp.GetContent()
 	assert.Error(t, err, "error returned")
 
 	urls := []string{
