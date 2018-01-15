@@ -1,11 +1,14 @@
 package fetch
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/slotix/dataflowkit/splash"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -75,9 +78,11 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 	urls := []string{
 		"http://httpbin.org/status/404",
 		"http://httpbin.org/status/400",
+		"http://httpbin.org/status/unknown",
 		"http://httpbin.org/status/403",
-		//"http://httpbin.org/status/500",
+		"http://httpbin.org/status/500",
 		"http://httpbin.org/status/504",
+		"http://httpbin.org/status/600",
 		"http://google",
 		"google.com",
 	}
@@ -86,7 +91,8 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 			URL: url,
 		}
 		_, err := fetcher.Fetch(req)
-		assert.Error(t, err, "error returned")
+		t.Log(err)
+		assert.Error(t, err, fmt.Sprintf("%T", err)+"error returned")
 	}
 	//fetch robots.txt data
 	resp, err = fetcher.Fetch(BaseFetcherRequest{
@@ -96,4 +102,47 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 	bfResponse = resp.(*BaseFetcherResponse)
 	//t.Log(string(bfResponse.HTML))
 	assert.Equal(t, robotstxtData, bfResponse.HTML)
+}
+
+func TestSplashFetcher_Fetch(t *testing.T) {
+	viper.Set("SPLASH", "127.0.0.1:8050")
+	viper.Set("SPLASH_TIMEOUT", 20)
+	viper.Set("SPLASH_RESOURCE_TIMEOUT", 30)
+	viper.Set("SPLASH_WAIT", 0.5)
+
+	fetcher, err := NewFetcher(Splash)
+	assert.Nil(t, err, "Expected no error")
+	err = fetcher.Prepare()
+	assert.Nil(t, err, "Expected no error")
+
+	req := splash.Request{
+		URL: "http://example.com",
+	}
+	resp, err := fetcher.Fetch(req)
+	assert.Nil(t, err, "Expected no error")
+	assert.NotNil(t, resp, "Expected resp not nil")
+
+	//Test invalid Response Status codes.
+	urls := []string{
+		"http://httpbin.org/status/404",
+		"http://httpbin.org/status/400",
+		"http://httpbin.org/status/403",
+		//"http://httpbin.org/status/500",
+		"http://httpbin.org/status/504",
+		"http://google",
+		"google.com",
+	}
+	for _, url := range urls {
+		req := splash.Request{
+			URL: url,
+		}
+		_, err := fetcher.Fetch(req)
+		assert.Error(t, err, "error returned")
+	}
+}
+
+
+func TestNewFetcher_invalid(t *testing.T) {
+	_, err := NewFetcher("Invalid")
+	assert.NotNil(t, err, "Expected Invalid Fetcher error")
 }

@@ -17,7 +17,12 @@ type BadRequest struct {
 	Err error
 }
 
-func (e *BadRequest) Error() string { return e.Err.Error() }
+func (e *BadRequest) Error() string {
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	return "Bad Request"
+}
 
 // ForbiddenByRobots 403
 //
@@ -46,6 +51,15 @@ type NotFound struct {
 
 func (e *NotFound) Error() string {
 	return e.URL + ": Not found"
+}
+
+//500 Internal Server Error
+//A generic error message, given when an unexpected condition was encountered and no more specific message is suitable
+type InternalServerError struct {
+}
+
+func (*InternalServerError) Error() string {
+	return "Internal Server Error"
 }
 
 // BadGateway 502

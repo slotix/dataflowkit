@@ -210,10 +210,12 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 			return nil, &errs.Forbidden{r.URL}
 		case 400:
 			return nil, &errs.BadRequest{err}
+		case 500:
+			return nil, &errs.InternalServerError{}
 		case 504:
 			return nil, &errs.GatewayTimeout{}
 		default:
-			return nil, err
+			return nil, &errs.Error{"Unknown Error"}
 		}
 	}
 	body, err := ioutil.ReadAll(resp.Body)
