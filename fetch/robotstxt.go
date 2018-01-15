@@ -35,7 +35,7 @@ func fetchRobots(req BaseFetcherRequest) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	//request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	r, err := client.Do(request)
 	//if r != nil {
