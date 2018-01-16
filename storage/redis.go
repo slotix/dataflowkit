@@ -208,3 +208,8 @@ func (b *RedisConn) SetTTL(key string, ttl int) error {
 	err := setTTL(conn, key, ttl)
 	return err 
 }
+
+func (b RedisConn) EraseAll() error {
+	//TODO: implement the method
+	return nil
+}
