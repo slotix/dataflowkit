@@ -1,12 +1,13 @@
 package fetch
 
 import (
-	 "log"
-	"os"
+	"github.com/slotix/dataflowkit/log"
+
+	"github.com/sirupsen/logrus"
 )
 
-var logger *log.Logger
+var logger *logrus.Logger
 
 func init() {
-	logger = log.New(os.Stdout, "Fetcher: ", log.Lshortfile)
+	logger = log.NewLogger()
 }

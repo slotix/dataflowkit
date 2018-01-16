@@ -20,7 +20,7 @@ type storageMiddleware struct {
 	Service
 }
 
-// implement function to return ServiceMiddleware
+// StorageMiddleware Parsed results in storage.
 func StorageMiddleware(storage storage.Store) ServiceMiddleware {
 	return func(next Service) Service {
 		return storageMiddleware{storage, next}
@@ -48,18 +48,18 @@ func (mw storageMiddleware) Parse(p scrape.Payload) (output io.ReadCloser, err e
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(parsed)
 	if err != nil {
-		logger.Println(err.Error())
+		logger.Error(err.Error())
 	}
 
 	//save parsed results after scraping to storage
 	//calculate expiration time. It is actual for Redis storage.
-	exp := time.Duration(viper.GetInt64("STORAGE_EXPIRE")) * time.Second
+	exp := time.Duration(viper.GetInt64("ITEM_EXPIRE_IN")) * time.Second
 	expiry := time.Now().UTC().Add(exp)
-	logger.Printf("Cache lifespan is %+v\n", expiry.Sub(time.Now().UTC()))
+	logger.Info("Cache lifespan is %+v\n", expiry.Sub(time.Now().UTC()))
 
 	err = mw.storage.Write(sKey, buf.Bytes(), expiry.Unix())
 	if err != nil {
-		logger.Println(err.Error())
+		logger.Error(err.Error())
 	}
 	output = ioutil.NopCloser(buf)
 	return

@@ -1,5 +1,8 @@
 package scrape
 
+// The following code was sourced and modified from the
+// https://github.com/andrew-d/goscrape package governed by MIT license.
+
 import (
 	"bytes"
 	"encoding/json"
@@ -7,34 +10,31 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/segmentio/ksuid"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/fetch"
+	"github.com/slotix/dataflowkit/log"
 	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 	"github.com/temoto/robotstxt"
 )
 
-var logger *log.Logger
+var logger *logrus.Logger
 
 func init() {
-	logger = log.New(os.Stdout, "scrape: ", log.Lshortfile)
+	logger = log.NewLogger()
 }
 
-var (
-	ErrNoParts     = errors.New("no pieces in payload")
-	ErrNoSelectors = errors.New("no selectors in payload")
-)
-
+// NewTask creates new task to parse fetched page following the rules from Payload.
 func NewTask(p Payload) *Task {
 	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
 	id := ksuid.New()
@@ -49,19 +49,20 @@ func NewTask(p Payload) *Task {
 
 }
 
-func (task *Task) Parse() (io.ReadCloser, error) {
-	scraper, err := task.Payload.newScraper()
+// Parse processes specified task which parses fetched page.
+func (t *Task) Parse() (io.ReadCloser, error) {
+	scraper, err := t.Payload.newScraper()
 	if err != nil {
 		return nil, err
 	}
-	task.Scrapers = append(task.Scrapers, scraper)
+	t.Scrapers = append(t.Scrapers, scraper)
 
 	//scrape request and return results.
-	err = task.scrape(scraper)
+	err = t.scrape(scraper)
 	if err != nil {
 		return nil, err
 	}
-	e := NewEncoder(*task)
+	e := newEncoder(*t)
 	if e == nil {
 		return nil, errors.New("invalid output format specified")
 	}
@@ -82,6 +83,7 @@ func (t Task) startTime() (*time.Time, error) {
 	return &idTime, nil
 }
 
+// scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
 func (t *Task) scrape(scraper *Scraper) error {
 	results := []map[string]interface{}{}
 	req := scraper.Request
@@ -93,14 +95,14 @@ func (t *Task) scrape(scraper *Scraper) error {
 	host, err := req.Host()
 	if err != nil {
 		t.Visited[url] = err
-		logger.Println(err)
+		logger.Error(err)
 		//return err
 	}
 	if _, ok := t.Robots[host]; !ok {
 		robots, err := fetch.RobotstxtData(url)
 		if err != nil {
 			t.Visited[url] = err
-			logger.Println(err)
+			logger.Error(err)
 			//return err
 		}
 		t.Robots[host] = robots
@@ -160,7 +162,7 @@ func (t *Task) scrape(scraper *Scraper) error {
 				blockResults[part.Name] = partResults
 
 				//********* details
-				//part.Details = nil
+				part.Details = nil
 				if part.Details != nil {
 					part.Details.Request = splash.Request{
 						URL: partResults.(string),
@@ -170,12 +172,8 @@ func (t *Task) scrape(scraper *Scraper) error {
 					if err != nil {
 						return err
 					}
-					//	logger.Println(s.Visited)
-					//logger.Println(t.Results)
 
-					//blockResults[part.Name] = s.
-
-					//logger.Println(part.Details.Results)
+					//blockResults[part.Name]
 					//part.Details.Results = append(part.Details.Results, )
 					//	logger.Println(blockResults[part.Name], part.Details)
 				}
@@ -198,24 +196,26 @@ func (t *Task) scrape(scraper *Scraper) error {
 		}
 
 		//every time when getting a response the next request will be filled with updated cookie information
-		err = sResponse.SetCookieToNextRequest(&req)
-		if err != nil {
-			logger.Println(err)
-		}
+		headers := sResponse.Response.Headers.(http.Header)
+		req.Cookies = splash.GetSetCookie(headers)
 		req.URL = url
 
 		if opts.RandomizeFetchDelay {
 			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 			rand := Random(500, 1500)
 			delay := opts.FetchDelay * time.Duration(rand) / 1000
-			logger.Println(delay)
+			logger.Info(delay)
+
 			time.Sleep(delay)
 		} else {
 			time.Sleep(opts.FetchDelay)
 		}
 
 	}
-	//logger.Println(task.Visited)
+	if len(results) == 0 {
+		return &errs.BadPayload{errs.ErrEmptyResults}
+	}
+	//logger.Info(task.Visited)
 	// All good!
 	//return &s.Results, nil
 	return nil
@@ -251,7 +251,7 @@ func (p Payload) newScraper() (*Scraper, error) {
 	}
 
 	scraper := &Scraper{
-		Request:    p.Request.(splash.Request),
+		Request:    p.Request,
 		DividePage: dividePageFunc,
 		Parts:      parts,
 		Paginator:  paginator,
@@ -283,11 +283,14 @@ func (p Payload) fields2parts() ([]Part, error) {
 
 		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
 		case "link":
-			l := &extract.Link{Href: extract.Attr{Attr: "href"}}
+			l := &extract.Link{Href: extract.Attr{
+				Attr:    "href",
+				BaseURL: p.Request.URL},
+			}
 			if params != nil {
-				err := FillStruct(params, l)
+				err := fillStruct(params, l)
 				if err != nil {
-					logger.Println(err)
+					logger.Error(err)
 				}
 			}
 			//******* details
@@ -320,12 +323,15 @@ func (p Payload) fields2parts() ([]Part, error) {
 
 		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
 		case "image":
-			i := &extract.Image{Src: extract.Attr{Attr: "src"},
+			i := &extract.Image{Src: extract.Attr{
+				Attr:    "src",
+				BaseURL: p.Request.URL,
+			},
 				Alt: extract.Attr{Attr: "alt"}}
 			if params != nil {
-				err := FillStruct(params, i)
+				err := fillStruct(params, i)
 				if err != nil {
-					logger.Println(err)
+					logger.Error(err)
 				}
 			}
 			parts = append(parts, Part{
@@ -363,9 +369,9 @@ func (p Payload) fields2parts() ([]Part, error) {
 			}
 
 			if params != nil {
-				err := FillStruct(params, e)
+				err := fillStruct(params, e)
 				if err != nil {
-					logger.Println(err)
+					logger.Error(err)
 				}
 			}
 			parts = append(parts, Part{
@@ -377,7 +383,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 	}
 	// Validate payload fields
 	if len(parts) == 0 {
-		return nil, ErrNoParts
+		return nil, &errs.BadPayload{errs.ErrNoParts}
 	}
 	seenNames := map[string]struct{}{}
 	for i, part := range parts {
@@ -385,7 +391,6 @@ func (p Payload) fields2parts() ([]Part, error) {
 			return nil, fmt.Errorf("no name provided for part %d", i)
 		}
 		if _, seen := seenNames[part.Name]; seen {
-			logger.Println(part.Name)
 			return nil, fmt.Errorf("part %s has a duplicate name", part.Name)
 		}
 		seenNames[part.Name] = struct{}{}
@@ -404,7 +409,7 @@ func (p Payload) selectors() ([]string, error) {
 		selectors = append(selectors, f.Selector)
 	}
 	if len(selectors) == 0 {
-		return nil, errNoSelectors
+		return nil, &errs.BadPayload{errs.ErrNoSelectors}
 	}
 	return selectors, nil
 }
@@ -438,7 +443,7 @@ func responseFromFetchService(req splash.Request) (*splash.Response, error) {
 	}
 	var sResponse *splash.Response
 	if err := json.Unmarshal(resp, &sResponse); err != nil {
-		logger.Println("Json Unmarshall error", err)
+		logger.Error("Json Unmarshall error", err)
 	}
 	return sResponse, nil
 }

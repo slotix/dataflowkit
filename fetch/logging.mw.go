@@ -20,13 +20,12 @@ type loggingMiddleware struct {
 	logger log.Logger
 }
 
-
 // Logging Service Fetches
 func (mw loggingMiddleware) Fetch(req FetchRequester) (response FetchResponser, err error) {
 	defer func(begin time.Time) {
 		url := req.GetURL()
 		mw.logger.Log(
-			"function", "fetch",
+			//	"function", "fetch",
 			"url", url,
 			//	"output", output,
 			"err", err,
@@ -37,12 +36,12 @@ func (mw loggingMiddleware) Fetch(req FetchRequester) (response FetchResponser, 
 	return
 }
 
-// Logging Service Responses 
+// Logging Service Responses
 func (mw loggingMiddleware) Response(req FetchRequester) (response FetchResponser, err error) {
 	defer func(begin time.Time) {
 		url := req.GetURL()
 		mw.logger.Log(
-			"function", "response",
+			//"function", "response",
 			"url", url,
 			//	"output", output,
 			"err", err,

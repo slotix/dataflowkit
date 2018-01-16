@@ -33,6 +33,7 @@ func InsertStringToSlice(slice []string, index int, value string) []string {
 	return slice
 }
 
+// AddStringSliceToSlice joins two string slices.
 func AddStringSliceToSlice(in []string, out []string) {
 	for _, s := range in {
 		if !stringInSlice(s, out) {
@@ -45,7 +46,7 @@ func AddStringSliceToSlice(in []string, out []string) {
 func ReadLinesOfFile(filename string) []string {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		logger.Println(err.Error())
+		logger.Error(err.Error())
 	}
 	lines := strings.Split(string(content), "\n")
 	return lines
@@ -76,12 +77,13 @@ func (c dummyReadCloser) Read(b []byte) (int, error) {
 	return c.r.Read(b)
 }
 
-func (s dummyReadCloser) Close() error {
+func (dummyReadCloser) Close() error {
 	return nil
 }
 
 var _ io.ReadCloser = &dummyReadCloser{}
 
+//Random generates random int64 value
 func Random(min, max int64) int64 {
 	rand.Seed(time.Now().Unix())
 	return rand.Int63n(max-min) + min

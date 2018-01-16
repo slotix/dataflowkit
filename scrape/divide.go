@@ -1,11 +1,14 @@
 package scrape
 
+// The following code was sourced and modified from the
+// https://github.com/andrew-d/goscrape package governed by MIT license.
+
 import (
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/slotix/dataflowkit/errs"
 )
 
 type dummyPaginator struct {
@@ -30,8 +33,6 @@ func DividePageBySelector(sel string) DividePageFunc {
 	return ret
 }
 
-var errNoSelectors = errors.New("No selectors found")
-
 func intersectionFL(sel *goquery.Selection) *goquery.Selection {
 	first := sel.First()
 	last := sel.Last()
@@ -41,7 +42,7 @@ func intersectionFL(sel *goquery.Selection) *goquery.Selection {
 
 func attrOrDataValue(s *goquery.Selection) (value string) {
 	if s.Length() == 0 {
-		return "Empty Selection"
+		return ""
 	}
 	attr, exists := s.Attr("class")
 	if exists && attr != "" { //in some cases tag is invalid f.e. <tr class>
@@ -60,12 +61,8 @@ func attrOrDataValue(s *goquery.Selection) (value string) {
 func findIntersection(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
 	var intersection *goquery.Selection
 	for i, f := range selectors {
-		//err := validate.Struct(f)
-		//if err != nil {
-		//	return nil, err
-		//}
 		sel := doc.Find(f)
-		//logger.Println(f, sel.Length())
+		//logger.Info(f, sel.Length())
 		//col.genAttrFieldName(f.Name, sel)
 		if sel.Length() > 0 { //don't add selectors to intersection if length is 0. Otherwise the whole intersection returns No selectors error
 			if i == 0 {
@@ -75,17 +72,17 @@ func findIntersection(doc *goquery.Selection, selectors []string) (*goquery.Sele
 			}
 		}
 	}
-	//logger.Println(attrOrDataValue(intersection))
+	//logger.Info(attrOrDataValue(intersection))
 	if intersection == nil || intersection.Length() == 0 {
-		return nil, errNoSelectors
+		return nil, &errs.BadPayload{errs.ErrNoSelectors}
 	}
 	intersectionWithParent := fmt.Sprintf("%s>%s",
 		attrOrDataValue(intersection.Parent()),
 		attrOrDataValue(intersection))
-	//logger.Println(intersectionWithParent)
+	//logger.Info(intersectionWithParent)
 	items := doc.Find(intersectionWithParent)
 	//return intersectionWithParent, nil
-	//logger.Println(items.Length())
+	//logger.Info(items.Length())
 
 	var inter1 *goquery.Selection
 	if items.Length() == 1 {
@@ -103,6 +100,8 @@ func findIntersection(doc *goquery.Selection, selectors []string) (*goquery.Sele
 	return inter1, nil
 }
 
+// DividePageByIntersection returns DividePageFunc function
+// which determines common ancestor of specified selectors.
 func DividePageByIntersection(selectors []string) DividePageFunc {
 	ret := func(doc *goquery.Selection) []*goquery.Selection {
 		sels := []*goquery.Selection{}
@@ -110,7 +109,7 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 		sel, err := getCommonAncestor(doc, selectors)
 		//sel, err = findIntersection(doc, selectors)
 		if err != nil {
-			logger.Println(err)
+			logger.Warn(err)
 			return nil
 		}
 
@@ -126,7 +125,7 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 
 func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
 	if len(selectors) == 0 {
-		return nil, errors.New("An empty selectors list")
+		return nil, &errs.BadPayload{errs.ErrNoSelectors}
 	}
 	selectorAncestor := doc.Find(selectors[0]).First().Parent()
 	if len(selectors) > 1 {
@@ -148,7 +147,7 @@ func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Sel
 		}
 	}
 	if selectorAncestor.Length() == 0 {
-		return nil, errors.New("It seems current selectors has no common ancestor")
+		return nil, &errs.BadPayload{errs.ErrNoCommonAncestor}
 	}
 	intersectionWithParent := fmt.Sprintf("%s>%s",
 		attrOrDataValue(selectorAncestor.Parent()),

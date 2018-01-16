@@ -1,10 +1,15 @@
 package fetch
 
+// The following code was sourced and modified from the
+// https://github.com/andrew-d/goscrape package governed by MIT license.
+
 import (
 	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/pquerna/cachecontrol/cacheobject"
@@ -14,6 +19,7 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
+//Type represents types of fetcher
 type Type string
 
 //Fetcher types
@@ -24,7 +30,7 @@ const (
 	Splash = "Splash"
 )
 
-//NewFetcher creates an instanse of Fetcher for downloading a web page.
+//NewFetcher creates instances of Fetcher for downloading a web page.
 func NewFetcher(t Type) (fetcher Fetcher, err error) {
 	switch t {
 	case Base:
@@ -80,10 +86,9 @@ type BaseFetcher struct {
 	ProcessResponse func(*http.Response) error
 }
 
-// SplashClientFetcher is a Fetcher that uses Scrapinghub splash
+// SplashFetcher is a Fetcher that uses Scrapinghub splash
 // to fetch URLs. Splash is a javascript rendering service
-//
-//https://github.com/scrapinghub/splash
+// Read more at https://github.com/scrapinghub/splash
 type SplashFetcher struct {
 	//client *http.Client
 
@@ -100,7 +105,7 @@ type SplashFetcher struct {
 	PrepareRequest func(*splash.Request) error
 }
 
-// NewSplashFetcher creates an instanse of SplashFetcher{} to fetch a page content from remote Scrapinghub splash service.
+// NewSplashFetcher creates instances of SplashFetcher{} to fetch a page content from remote Scrapinghub splash service.
 func NewSplashFetcher() (*SplashFetcher, error) {
 	// Set up the HTTP client
 	// jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
@@ -146,10 +151,10 @@ func (sf *SplashFetcher) Close() {
 	return
 }
 
-// NewBaseFetcher creates an instanse of NewBaseFetcher{} to fetch a page content from regular websites as-is
-//without running js scripts on the page.
-
-//Robots.txt are retrieved with BaseFetcher
+// NewBaseFetcher creates instances of NewBaseFetcher{} to fetch
+// a page content from regular websites as-is
+// without running js scripts on the page.
+// f.e. robots.txt are retrieved with BaseFetcher
 func NewBaseFetcher() (*BaseFetcher, error) {
 	// Set up the HTTP client
 	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
@@ -173,13 +178,13 @@ func (bf *BaseFetcher) Prepare() error {
 	return nil
 }
 
-
 //Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
-	err := request.Validate()
-	if err != nil {
-		return nil, err
+	//URL validation
+	if _, err := url.ParseRequestURI(strings.TrimSpace(request.GetURL())); err != nil {
+		return nil, &errs.BadRequest{err}
 	}
+
 	r := request.(BaseFetcherRequest)
 	req, err := http.NewRequest(r.Method, r.URL, nil)
 	if err != nil {
@@ -205,8 +210,12 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 			return nil, &errs.Forbidden{r.URL}
 		case 400:
 			return nil, &errs.BadRequest{err}
+		case 500:
+			return nil, &errs.InternalServerError{}
+		case 504:
+			return nil, &errs.GatewayTimeout{}
 		default:
-			return nil, err
+			return nil, &errs.Error{"Unknown Error"}
 		}
 	}
 	body, err := ioutil.ReadAll(resp.Body)
@@ -214,11 +223,11 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 		return nil, err
 	}
 	response := BaseFetcherResponse{
-		Response: resp, 
-		URL: resp.Request.URL.String(),
-		HTML: body, 
-		StatusCode: resp.StatusCode, 
-		Status: resp.Status,
+		Response:   resp,
+		URL:        resp.Request.URL.String(),
+		HTML:       body,
+		StatusCode: resp.StatusCode,
+		Status:     resp.Status,
 	}
 
 	//set Cache control parameters
@@ -251,14 +260,10 @@ type FetchResponser interface {
 	SetCacheInfo()
 	//GetURL returns final URL after all redirects
 	GetURL() string
-
 }
 
 //FetchRequester interface interface that must be satisfied the listed methods
 type FetchRequester interface {
 	//GetURL returns initial URL from Request
 	GetURL() string
-	//Validates request before sending
-	Validate() error
-	URL2MD5() string
 }

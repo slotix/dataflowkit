@@ -11,51 +11,55 @@ import (
 	"github.com/clbanning/mxj"
 )
 
-func NewEncoder(s Task) (encoder Encoder) {
+func newEncoder(s Task) (e encoder) {
 	switch strings.ToLower(s.Scrapers[0].Opts.Format) {
 	case "csv":
-		encoder = CSVEncoder{
+		e = CSVEncoder{
 			comma:     ",",
 			partNames: s.Scrapers[0].partNames(),
 			results:   &s.Results,
 		}
 		return
 	case "json":
-		encoder = JSONEncoder{
+		e = JSONEncoder{
 			paginateResults: s.Scrapers[0].Opts.PaginateResults,
 			results:         &s.Results,
 		}
 		return
 	case "xml":
-		encoder = XMLEncoder{
+		e = XMLEncoder{
 			results: &s.Results,
 		}
-		return encoder
+		return e
 	default:
 		return nil
 	}
-	return nil
 }
 
-type Encoder interface {
+type encoder interface {
 	Encode() (io.ReadCloser, error)
+	Format() string
 }
 
+// CSVEncoder transforms parsed data to CSV format.
 type CSVEncoder struct {
 	partNames []string
 	comma     string
 	results   *Results
 }
 
+// JSONEncoder transforms parsed data to JSON format.
 type JSONEncoder struct {
 	paginateResults bool
 	results         *Results
 }
 
+// XMLEncoder transforms parsed data to XML format.
 type XMLEncoder struct {
 	results *Results
 }
 
+//Encode method implementation for JSONEncoder
 func (e JSONEncoder) Encode() (io.ReadCloser, error) {
 	var buf bytes.Buffer
 	if e.paginateResults {
@@ -67,6 +71,12 @@ func (e JSONEncoder) Encode() (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
+//Format returns format of JSONEncoder
+func (JSONEncoder) Format() string {
+	return "JSON"
+}
+
+//Encode method implementation for CSVEncoder
 func (e CSVEncoder) Encode() (io.ReadCloser, error) {
 	var buf bytes.Buffer
 	/*
@@ -78,7 +88,7 @@ func (e CSVEncoder) Encode() (io.ReadCloser, error) {
 			}
 			err = encodeCSV(names, includeHeader, page, ",", w)
 			if err != nil {
-				logger.Println(err)
+				logger.Error(err)
 			}
 		}
 		w.Flush()
@@ -94,6 +104,12 @@ func (e CSVEncoder) Encode() (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
+//Format returns format of CSVEncoder
+func (CSVEncoder) Format() string {
+	return "CSV"
+}
+
+//Encode method implementation for XMLEncoder
 func (e XMLEncoder) Encode() (io.ReadCloser, error) {
 	/*
 		case "xmlviajson":
@@ -107,7 +123,7 @@ func (e XMLEncoder) Encode() (io.ReadCloser, error) {
 			m, err := mxj.NewMapJson(jbuf.Bytes())
 			err = m.XmlIndentWriter(&buf, "", "  ")
 			if err != nil {
-				logger.Println(err)
+				logger.Error(err)
 			}
 	*/
 	var buf bytes.Buffer
@@ -117,6 +133,11 @@ func (e XMLEncoder) Encode() (io.ReadCloser, error) {
 	}
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
+}
+
+//Format returns format of XMLEncoder
+func (XMLEncoder) Format() string {
+	return "XML"
 }
 
 //encodeCSV writes data to w *csv.Writer.

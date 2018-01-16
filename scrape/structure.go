@@ -1,8 +1,9 @@
 package scrape
 
 import (
-	"github.com/slotix/dataflowkit/splash"
 	"time"
+
+	"github.com/slotix/dataflowkit/splash"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/slotix/dataflowkit/extract"
@@ -10,42 +11,82 @@ import (
 	"github.com/temoto/robotstxt"
 )
 
+// Extractor type represents Extractor types available for scraping.
+// Here is the list of Extractor types are currently supported:
+// text, html, outerHtml, attr, link, image, regex, const, count
+// Find more actual information in docs/extractors.md
 type Extractor struct {
-	Type   string      `json:"type"`
+	Type string `json:"type"`
+	// Params are unique for definite type
 	Params interface{} `json:"params"`
 }
 
-type field struct {
-	Name     string `json:"name"`
+//A Field corresponds to a given chunk of data to be extracted from every block in each page of a scrape.
+type Field struct {
+	//Name is a name of fields. It is required, and will be used to aggregate results.
+	Name string `json:"name"`
+	//Selector is a CSS selector within the given block to process.  Pass in "." to use the root block's selector.
 	Selector string `json:"selector"`
-	//Count     int       `json:"count"`
+	//Extractor contains the logic on how to extract some results from the selector that is provided to this Field.
 	Extractor Extractor `json:"extractor"`
-	Details   *details  `json:"details"`
+	//Details is an optional field strictly for Link extractor type. It guides scraper to parse additional pages following the links according to the set of fields specified inside "details"
+	Details *details `json:"details"`
 }
 
 type details struct {
-	Fields []field `json:"fields"`
+	Fields []Field `json:"fields"`
 }
 
+// paginator is used to scrape multiple pages.
+// paginator extracts the next page from a document by querying a given CSS selector and extracting the given HTML attribute from the resulting element.
 type paginator struct {
-	Selector  string `json:"selector"`
+	//Selector represents CSS selector for the next page
+	Selector string `json:"selector"`
+	// HTML attribute for the next page
 	Attribute string `json:"attr"`
-	MaxPages  int    `json:"maxPages"`
+	// The maximum number of pages to scrape. The scrape will proceed until either this number of pages have been scraped, or until the paginator returns no further URLs.
+	//
+	// Default value is 1.
+	// Set this value to 0 to indicate an unlimited number of pages to be scraped.
+	//
+	MaxPages int `json:"maxPages"`
 }
 
+// Payload structure contain information and rules to be passed to a scraper
+// Find the most actual information in docs/payload.md
 type Payload struct {
+	// Name - Collection name.
 	Name string `json:"name"`
-	//Request             splash.Request `json:"request"`
-	Request interface{} `json:"request"`
-	Fields  []field     `json:"fields"`
+	//Request struct represents HTTP request to be sent to a server. It combines parameters for passing for downloading html pages by Fetch Endpoint.
+	//Request.URL field is required. All other fields including Params, Cookies, Func are optional.
+	Request splash.Request `json:"request"`
+	//Fields is a set of fields used to extract data from a web page.
+	Fields []Field `json:"fields"`
 	//PayloadMD5 encodes payload content to MD5. It is used for generating file name to be stored.
-	PayloadMD5          []byte        `json:"payloadMD5"`
-	Format              string        `json:"format"`
-	Paginator           *paginator    `json:"paginator"`
-	PaginateResults     *bool         `json:"paginateResults"`
-	FetchDelay          time.Duration `json:"fetchDelay"`
-	RandomizeFetchDelay *bool         `json:"randomizeFetchDelay"`
-	RetryTimes          int           `json:"retryTimes"`
+	PayloadMD5 []byte `json:"payloadMD5"`
+	// The following Output formats are available: CSV, JSON, XML
+	Format string `json:"format"`
+	//Paginator is used to scrape multiple pages.
+	//If Paginator is nil, then no pagination is performed and it is assumed that the initial URL is the only page.
+	Paginator *paginator `json:"paginator"`
+	//Paginated results are returned if PaginateResults is true.
+	//Default value is false
+	// Single list of combined results from every block on all pages is returned by default.
+	//
+	// Paginated results are applicable for JSON and XML output formats.
+	//
+	// Combined list of results is always returned for CSV format.
+	PaginateResults *bool `json:"paginateResults"`
+	////FetchDelay should be used for a scraper to throttle the crawling speed to avoid hitting the web servers too frequently.
+	//FetchDelay specifies sleep time for multiple requests for the same domain. It is equal to FetchDelay * random value between 500 and 1500 msec
+	FetchDelay time.Duration `json:"fetchDelay"`
+	//Some web sites track  statistically significant similarities in the time between requests to them. RandomizeCrawlDelay setting decreases the chance of a crawler being blocked by such sites. This way a random delay ranging from 0.5 * CrawlDelay to 1.5 * CrawlDelay seconds is used between consecutive requests to the same domain. If CrawlDelay is zero (default) this option has no effect.
+	RandomizeFetchDelay *bool `json:"randomizeFetchDelay"`
+	//Maximum number of times to retry, in addition to the first download.
+	//RETRY_HTTP_CODES
+	//Default: [500, 502, 503, 504, 408]
+	//Failed pages should be rescheduled for download at the end. once the spider has finished crawling all other (non failed) pages.
+	RetryTimes int `json:"retryTimes"`
 }
 
 // The DividePageFunc type is used to extract a page's blocks during a scrape.
@@ -65,7 +106,7 @@ type Part struct {
 	// Extractor contains the logic on how to extract some results from the
 	// selector that is provided to this Piece.
 	Extractor extract.Extractor
-
+	//Details is an optional field strictly for Link extractor type. It guides scraper to parse additional pages following the links according to the set of fields specified inside "details"
 	Details *Scraper
 }
 
@@ -118,12 +159,11 @@ type Results struct {
 	Output [][]map[string]interface{}
 }
 
+// Task keeps Results of Task generated from Payload along with other auxiliary information
 type Task struct {
 	ID       string
 	Payload  Payload
 	Scrapers []*Scraper
-	//Tasks []*Task
-	Robots map[string]*robotstxt.RobotsData
+	Robots   map[string]*robotstxt.RobotsData
 	Results
-	//Cookies string
 }

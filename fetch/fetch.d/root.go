@@ -35,6 +35,7 @@ import (
 
 var (
 	//VERSION               string // VERSION is set during build
+	//  DFKFetch represents address of DFK Fetch service
 	DFKFetch string //Fetch service address
 
 	splashHost            string
@@ -42,13 +43,13 @@ var (
 	splashResourceTimeout int
 	splashWait            float64
 
-	storageType    string
-	storageExpires int64 //how long in seconds object stay in a cache before expiration.
-	diskvBaseDir   string
+	storageType        string
+	storageItemExpires int64 //how long in seconds object stay in a cache before expiration.
+	diskvBaseDir       string
 
-	spacesConfig  string //Digital Ocean spaces configuration file
+	spacesConfig   string //Digital Ocean spaces configuration file
 	spacesEndpoint string //Digital Ocean spaces endpoint address
-	DFKBucket string
+	DFKBucket      string //Bucket name for AWS S3 or DO Spaces
 
 	redisHost       string
 	redisExpire     int
@@ -111,11 +112,11 @@ func init() {
 	RootCmd.Flags().StringVarP(&splashHost, "SPLASH", "s", "127.0.0.1:8050", "Splash host address")
 	RootCmd.Flags().IntVarP(&splashTimeout, "SPLASH_TIMEOUT", "", 20, "A timeout (in seconds) for the render.")
 	RootCmd.Flags().IntVarP(&splashResourceTimeout, "SPLASH_RESOURCE_TIMEOUT", "", 30, "A timeout (in seconds) for individual network requests.")
-	RootCmd.Flags().Float64VarP(&splashWait, "SPLASH_WAIT", "", 0.5 , "Time in seconds to wait until js scripts loaded.")
+	RootCmd.Flags().Float64VarP(&splashWait, "SPLASH_WAIT", "", 0.5, "Time in seconds to wait until js scripts loaded.")
 
 	//set here default type of storage
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
-	RootCmd.Flags().Int64VarP(&storageExpires, "STORAGE_EXPIRE", "", 3600, "Default Storage expire value in seconds")
+	RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 3600, "Default value for item expiration in seconds")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
 	RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", homeDir()+".spaces/credentials", "Digital Ocean Spaces Configuration file")
 	RootCmd.Flags().StringVarP(&spacesEndpoint, "SPACES_ENDPOINT", "", "https://ams3.digitaloceanspaces.com", "Digital Ocean Spaces Endpoint Address")
@@ -137,7 +138,7 @@ func init() {
 	viper.BindPFlag("SPLASH_WAIT", RootCmd.Flags().Lookup("SPLASH_WAIT"))
 
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
-	viper.BindPFlag("STORAGE_EXPIRE", RootCmd.Flags().Lookup("STORAGE_EXPIRE"))
+	viper.BindPFlag("ITEM_EXPIRE_IN", RootCmd.Flags().Lookup("ITEM_EXPIRE_IN"))
 	viper.BindPFlag("SPACES_CONFIG", RootCmd.Flags().Lookup("SPACES_CONFIG"))
 	viper.BindPFlag("SPACES_ENDPOINT", RootCmd.Flags().Lookup("SPACES_ENDPOINT"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
