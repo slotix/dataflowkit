@@ -28,6 +28,7 @@ type Store interface {
 	//Is key expired ? It checks if parse results storage item is expired. Set up  Expiration as "ITEM_EXPIRE_IN" environment variable.
 	//html pages cache stores this info in sResponse.Expires . It is not used for fetch endpoint.
 	Expired(key string) bool
+	EraseAll() error
 }
 
 //Type represent available storage types

@@ -163,3 +163,8 @@ func (c S3Conn) delete(key string) (result *s3.DeleteObjectOutput, err error) {
 	result, err = delete(svc, c.bucket, key)
 	return
 }
+
+func (b S3Conn) EraseAll() error {
+	//TODO: implement the method
+	return nil
+}
