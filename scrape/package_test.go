@@ -1,5 +1,8 @@
 package scrape_test
 
+// The following code was sourced and modified from the
+// https://github.com/andrew-d/goscrape package governed by MIT license.
+
 import (
 	"bytes"
 	"fmt"
@@ -8,7 +11,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/andrew-d/goscrape"
-	"github.com/andrew-d/goscrape/extract"
+	"github.com/slotix/dataflowkit/extract"
 	"github.com/stretchr/testify/assert"
 )
 

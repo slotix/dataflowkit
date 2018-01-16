@@ -7,35 +7,37 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	neturl "net/url"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/pquerna/cachecontrol/cacheobject"
-	"github.com/slotix/dataflowkit/crypto"
+	"github.com/sirupsen/logrus"
 	"github.com/slotix/dataflowkit/errs"
+	"github.com/slotix/dataflowkit/log"
 	"github.com/spf13/viper"
 )
 
-var logger *log.Logger
+var logger *logrus.Logger
 
 func init() {
 	viper.AutomaticEnv() // read in environment variables that match
-	logger = log.New(os.Stdout, "splash: ", log.Lshortfile)
+	logger = log.NewLogger()
 }
 
+// Options struct inclued parameters for Splash Connection
 type Options struct {
 	host string //splash host address
 	//Splash connection parameters:
 	timeout         int
 	resourceTimeout int
-	wait            float64
+	// Time in seconds to wait until java scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
+	wait float64
 }
 
+/* // Option represent parameters used for connection to Splash server
 type Option func(*Options)
 
 func host(h string) Option {
@@ -56,14 +58,16 @@ func resourceTimeout(t int) Option {
 	}
 }
 
+// Time in seconds to wait until java scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
 func wait(w float64) Option {
 	return func(args *Options) {
 		args.wait = w
 	}
-}
+} */
 
-//New creates new connection to Splash Server
-func New(req Request, setters ...Option) (splashURL string) {
+//NewSplash creates new connection to Splash Server
+//func NewSplash(req Request, setters ...Option) (splashURL string) {
+func NewSplash(req Request) (splashURL string) {
 	//Default options
 
 	args := &Options{
@@ -77,9 +81,16 @@ func New(req Request, setters ...Option) (splashURL string) {
 	args.resourceTimeout = 30
 	args.wait = 1.0
 	*/
-	for _, setter := range setters {
-		setter(args)
+	/* args := &Options{
+		host:            viper.GetString("SPLASH"),
+		timeout:         viper.GetInt("SPLASH_TIMEOUT"),
+		resourceTimeout: viper.GetInt("SPLASH_RESOURCE_TIMEOUT"),
+		wait:            viper.GetFloat64("SPLASH_WAIT"),
 	}
+	//Default options will be overriden by opts parameters if any
+	 for _, opt := range opts {
+		opt(args)
+	 } */
 
 	//Generating Splash URL
 	/*
@@ -120,11 +131,11 @@ func New(req Request, setters ...Option) (splashURL string) {
 //GetResponse result is passed to storage middleware
 //to provide a RFC7234 compliant HTTP cache
 func (req Request) GetResponse() (*Response, error) {
-	err := req.Validate()
-	if err != nil {
-		return nil, err
+	//URL validation
+	if _, err := url.ParseRequestURI(strings.TrimSpace(req.URL)); err != nil {
+		return nil, &errs.BadRequest{err}
 	}
-	splashURL := New(req)
+	splashURL := NewSplash(req)
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", splashURL, nil)
 	//req.SetBasicAuth(s.user, s.password)
@@ -153,7 +164,7 @@ func (req Request) GetResponse() (*Response, error) {
 	var sResponse Response
 
 	if err := json.Unmarshal(res, &sResponse); err != nil {
-		logger.Println("Json Unmarshall error", err)
+		logger.Error("Json Unmarshall error", err)
 	}
 	//if response status code is not 200
 
@@ -188,15 +199,15 @@ func (req Request) GetResponse() (*Response, error) {
 	}
 
 	if !sResponse.Response.Ok {
-		if sResponse.Response.Status == 0 {
-			err = fmt.Errorf("%s",
-				//sResponse.Error)
-				sResponse.Response.StatusText)
-		} else {
-			err = fmt.Errorf("%d. %s",
-				sResponse.Response.Status,
-				sResponse.Response.StatusText)
-		}
+		// if sResponse.Response.Status == 0 {
+		// 	err = fmt.Errorf("%s",
+		// 		//sResponse.Error)
+		// 		sResponse.Response.StatusText)
+		// } else {
+		// 	err = fmt.Errorf("%d. %s",
+		// 		sResponse.Response.Status,
+		// 		sResponse.Response.StatusText)
+		// }
 		return nil, err
 	}
 	//is resource cacheable ?
@@ -206,10 +217,11 @@ func (req Request) GetResponse() (*Response, error) {
 
 }
 
+// GetContent returns HTML content from Splash Response
 func (r *Response) GetContent() (io.ReadCloser, error) {
-	//if r == nil {
-	//	return nil, errors.New("empty response")
-	//}
+	if r == nil {
+		return nil, errors.New("empty response")
+	}
 	if r.Error != "" {
 		return nil, errors.New(r.Error)
 	}
@@ -227,8 +239,9 @@ func (r *Response) GetContent() (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
-//setCacheInfo check if resource is cacheable
-//ReasonsNotToCache and Expires values are filled here.
+// SetCacheInfo checks if resource is cacheable.
+// Respource is cachable if length of ReasonsNotToCache is zero.
+// ReasonsNotToCache and Expires values are filled here.
 func (r *Response) SetCacheInfo() {
 	respHeader := r.Response.Headers.(http.Header)
 	reqHeader := r.Request.Headers.(http.Header)
@@ -237,11 +250,11 @@ func (r *Response) SetCacheInfo() {
 
 	reqDir, err := cacheobject.ParseRequestCacheControl(reqHeader.Get("Cache-Control"))
 	if err != nil {
-		logger.Printf(err.Error())
+		logger.Error(err.Error())
 	}
 	resDir, err := cacheobject.ParseResponseCacheControl(respHeader.Get("Cache-Control"))
 	if err != nil {
-		logger.Printf(err.Error())
+		logger.Error(err.Error())
 	}
 	//logger.Println(respHeader)
 	expiresHeader, _ := http.ParseTime(respHeader.Get("Expires"))
@@ -276,8 +289,8 @@ func (r *Response) SetCacheInfo() {
 		} else {
 			r.Expires = rv.OutExpirationTime
 		}
-		logger.Println("Current Time: ", time.Now().UTC())
-		logger.Println(r.Request.URL, r.Expires)
+		//logger.Info("Current Time: ", time.Now().UTC())
+		//logger.Info(r.Request.URL, r.Expires)
 	} else {
 		//if resource is not cacheable set expiration time to the current time.
 		//This way web page will be downloaded every time.
@@ -287,53 +300,25 @@ func (r *Response) SetCacheInfo() {
 
 }
 
-//Fetch content from url through Splash server https://github.com/scrapinghub/splash/
-func Fetch(req Request) (io.ReadCloser, error) {
-	//logger.Println(splashURL)
-	response, err := req.GetResponse()
-	if err != nil {
-		return nil, err
-	}
-	logger.Println(err)
-	content, err := response.GetContent()
-	if err == nil {
-		return content, nil
-	}
-	return nil, err
-}
 
-//GetURL returns URL from Request
-func (r Request) GetURL() string {
-
+// GetURL returns URL from Request
+func (req Request) GetURL() string {
 	//trim trailing slash if any.
 	//aws s3 bucket item name cannot contain slash at the end.
-	return strings.TrimSpace(strings.TrimRight(r.URL, "/"))
+	return strings.TrimRight(strings.TrimSpace(req.URL),  "/")
 }
 
-func (r Request) Host() (string, error) {
-	u, err := url.Parse(r.GetURL())
+// Host returns Host value from Request
+func (req Request) Host() (string, error) {
+	u, err := url.Parse(req.GetURL())
 	if err != nil {
 		return "", err
 	}
 	return u.Host, nil
 }
 
-//Validate validates each request that will be sent, prior to sending.
-func (r Request) Validate() error {
-	reqURL := strings.TrimSpace(r.URL)
-	if _, err := url.ParseRequestURI(reqURL); err != nil {
-		return &errs.BadRequest{err}
-	}
-	return nil
-}
-
-func (r Request) URL2MD5() string {
-	url := r.GetURL()
-	return string(crypto.GenerateMD5([]byte(url)))
-}
-
-//http://choly.ca/post/go-json-marshalling/
-//UnmarshalJSON convert headers to http.Header type
+// UnmarshalJSON convert headers to http.Header type
+// http://choly.ca/post/go-json-marshalling/
 func (r *Response) UnmarshalJSON(data []byte) error {
 	type Alias Response
 	aux := &struct {
@@ -444,8 +429,8 @@ func (r Response) GetReasonsNotToCache() []cacheobject.Reason {
 	return r.ReasonsNotToCache
 }
 
-//TODO: test it 
 //GetURL returns URL after all redirects
-func (r Response) GetURL() string{
+//TODO: test it
+func (r Response) GetURL() string {
 	return r.Response.URL
 }

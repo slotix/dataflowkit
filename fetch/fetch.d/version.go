@@ -21,20 +21,20 @@
 package main
 
 import (
-    "github.com/spf13/cobra"
-    "fmt"
+	"fmt"
+	"github.com/spf13/cobra"
 )
 
 func init() {
-    RootCmd.AddCommand(versionCmd)
+	RootCmd.AddCommand(versionCmd)
 }
 
 var versionCmd = &cobra.Command{
-    Use:   "version",
-    Short: "Print the version number of DFK",
-    Long:  `Dataflow Kit parser version 
+	Use:   "version",
+	Short: "Print the version number of DFK",
+	Long: `Dataflow Kit parser version 
     and Build time information`,
-    Run: func(cmd *cobra.Command, args []string) {
-        fmt.Printf("Dataflow Kit parser v%s", VERSION )
-    },
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("Dataflow Kit parser v%s", VERSION)
+	},
 }

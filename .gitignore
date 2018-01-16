@@ -53,3 +53,5 @@ socket-server/socket-server
 parseNATS/debug
 parseNATS/parseNATS
 webserver/webserver
+coverage.txt
+coverage.out

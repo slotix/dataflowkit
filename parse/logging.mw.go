@@ -26,7 +26,7 @@ type loggingMiddleware struct {
 func (mw loggingMiddleware) Parse(payload scrape.Payload) (output io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		mw.logger.Log(
-			"function", "parse",
+			//"function", "parse",
 			//"input", payload,
 			//"output", output,
 			"err", err,

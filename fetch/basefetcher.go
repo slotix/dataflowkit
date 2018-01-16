@@ -1,17 +1,12 @@
 package fetch
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
 	"github.com/pquerna/cachecontrol"
 	"github.com/pquerna/cachecontrol/cacheobject"
-	"github.com/slotix/dataflowkit/crypto"
-	"github.com/slotix/dataflowkit/errs"
 )
 
 //BaseFetcherRequest struct collects requests information used by BaseFetcher
@@ -24,7 +19,7 @@ type BaseFetcherRequest struct {
 
 //BaseFetcherResponse struct groups Response data together after retrieving it by BaseFetcher
 type BaseFetcherResponse struct {
-	//Response is used for determining Cacheable and Expires values. It should be omited when marshaling to intermediary cache.
+	//Response is used for determining Cacheable and Expires values. It should be omitted when marshaling to intermediary cache.
 	Response *http.Response `json:"-"`
 	//URL represents the final URL after all redirects. Response.Request.URL.String()
 	URL string
@@ -42,7 +37,7 @@ type BaseFetcherResponse struct {
 
 //MarshalJSON customizes marshaling of http.Response.Body which has type io.ReadCloser. It cannot be marshaled with standard Marshal method without casting to []byte.
 //http://choly.ca/post/go-json-marshalling/
-func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
+/* func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
 	type Alias BaseFetcherResponse
 	body, err := ioutil.ReadAll(r.Response.Body)
 	if err != nil {
@@ -55,14 +50,15 @@ func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
 		HTML:  body,
 		Alias: (*Alias)(r),
 	})
-}
+} */
 
-//setCacheInfo check if resource is cacheable
-//ReasonsNotToCache and Expires values are filled here
+// SetCacheInfo checks if resource is cacheable.
+// Respource is cachable if length of ReasonsNotToCache is zero.
+// ReasonsNotToCache and Expires values are filled here
 func (r *BaseFetcherResponse) SetCacheInfo() {
 	reasons, expires, err := cachecontrol.CachableResponse(r.Response.Request, r.Response, cachecontrol.Options{})
 	if err != nil {
-		logger.Println(err)
+		logger.Errorln(err)
 	}
 	if expires.IsZero() {
 		//if time is zero than set it to current time plus 24 hours.
@@ -74,7 +70,7 @@ func (r *BaseFetcherResponse) SetCacheInfo() {
 }
 
 //GetURL returns URL after all redirects
-func (r BaseFetcherResponse) GetURL() string{
+func (r BaseFetcherResponse) GetURL() string {
 	return r.URL
 }
 
@@ -88,21 +84,7 @@ func (r BaseFetcherResponse) GetReasonsNotToCache() []cacheobject.Reason {
 	return r.ReasonsNotToCache
 }
 
-//GetExpires returns URL to be fetched
-func (r BaseFetcherRequest) GetURL() string {
-	return strings.TrimSpace(strings.TrimRight(r.URL, "/"))
-}
-
-//Validate validates request to be send, prior to sending.
-func (r BaseFetcherRequest) Validate() error {
-	reqURL := strings.TrimSpace(r.URL)
-	if _, err := url.ParseRequestURI(reqURL); err != nil {
-		return &errs.BadRequest{err}
-	}
-	return nil
-}
-
-func (r BaseFetcherRequest) URL2MD5() string {
-	url := r.GetURL()
-	return string(crypto.GenerateMD5([]byte(url)))
+//GetURL returns URL to be fetched
+func (req BaseFetcherRequest) GetURL() string {
+	return strings.TrimRight(strings.TrimSpace(req.URL), "/")
 }

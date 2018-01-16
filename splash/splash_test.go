@@ -1,21 +1,190 @@
 package splash
 
 import (
+	"bytes"
+	"fmt"
+	"net/http"
 	"testing"
+
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestGetResponse(t *testing.T) {
-	//	url := "http://127.0.0.1:8050/execute?url=http%3A%2F%2Fgoogle.com&timeout=20&resource_timeout=30&lua_source=%0Afunction+string.ends%28String%2CEnd%29%0A++return+End%3D%3D%27%27+or+string.sub%28String%2C-string.len%28End%29%29%3D%3DEnd%0Aend%0Afunction+remove_trailing_slash%28text%29%0A++if+string.ends%28text%2C+%22%2F%22%29+then%0A++++text+%3D+text%3Asub%281%2C+-2%29%0A++end%0A++return+text%0Aend%0A%0Afunction+main%28splash%29%0A++local+url+%3D+splash.args.url%0A++local+responses+%3D+%7B%7D%0A++splash%3Aon_response%28function+%28response%29%0A++url+%3D+remove_trailing_slash%28url%29%0A++resp_url+%3D+remove_trailing_slash%28response.info.url%29%0A%09if+resp_url+%3D%3D+url+then%0A++++status+%3D+response.info.status%0A++++is_redirect+%3D+status+%3D%3D+301+or+status+%3D%3D+302%0A++++if+is_redirect+then%0A++++++url+%3D+response.info.redirectURL%0A++++elseif+status+%3D%3D+200+then%0A++%09%09%09r+%3D+response%0A++++end%0A++end%0A++end%29%0A++local+ok%2C+reason+%3D+splash%3Ago%28url%29%0A++assert%28splash%3Await%280.500000%29%29%0A++cookies+%3D+splash%3Aget_cookies%28%29%0A++if+not+ok+then%0A+++++++return+%7B%0A++++++++reason+%3D+reason%2C%0A+++++--+++request+%3D+r.request.info%2C%0A+++++--+++response+%3D+r.info%2C%0A++++++%7D%0A++end%0A++return+%7B%0A++++++cookies+%3D+cookies%2C%0A++++++request+%3D+r.request.info%2C%0A++++++response+%3D+r.info%2C%0A%09++++html+%3D+splash%3Ahtml%28%29%2C+++++++%0A++%7D+%0Aend%0A"
+var resp *Response
 
-	url := "http://127.0.0.1:8050/execute?url=http%3A%2F%2Fdiesel.elcat.kg%2Findex.php%3Fs%3Defdce93be39d164b431291d301b7e368%26app%3Dcore%26module%3Dglobal%26section%3Dlogin%26do%3Dprocess&timeout=20&resource_timeout=30&lua_source=%0Afunction+string.ends%28String%2CEnd%29%0A++return+End%3D%3D%27%27+or+string.sub%28String%2C-string.len%28End%29%29%3D%3DEnd%0Aend%0Afunction+remove_trailing_slash%28text%29%0A++if+string.ends%28text%2C+%22%2F%22%29+then%0A++++text+%3D+text%3Asub%281%2C+-2%29%0A++end%0A++return+text%0Aend%0A%0Afunction+main%28splash%29%0A++local+url+%3D+splash.args.url%0A++local+responses+%3D+%7B%7D%0A++splash%3Aon_response%28function+%28response%29%0A++url+%3D+remove_trailing_slash%28url%29%0A++resp_url+%3D+remove_trailing_slash%28response.info.url%29%0A%09if+resp_url+%3D%3D+url+then%0A++++status+%3D+response.info.status%0A++++is_redirect+%3D+status+%3D%3D+301+or+status+%3D%3D+302%0A++++if+is_redirect+then%0A++++++url+%3D+response.info.redirectURL%0A++++elseif+status+%3D%3D+200+then%0A++%09%09%09r+%3D+response%0A++++end%0A++end%0A++end%29%0A++local+ok%2C+reason+%3D+splash%3Ago%7Burl%2C%0A++++formdata%3D%7Bauth_key%3D%22880ea6a14ea49e853634fbdc5015a024%22%2Creferer%3D%22http%253A%252F%252Fdiesel.elcat.kg%252F%22%2Cips_username%3D%22dm_%22%2Cips_password%3D%22dmsoft%22%2CrememberMe%3D%221%22%2C%7D%2C%0A++++http_method%3D%22POST%22%7D%0A++assert%28splash%3Await%280.500000%29%29%0A++cookies+%3D+splash%3Aget_cookies%28%29%0A++if+not+ok+then%0A+++++++return+%7B%0A++++++++reason+%3D+reason%2C%0A+++++--+++request+%3D+r.request.info%2C%0A+++++--+++response+%3D+r.info%2C%0A++++++%7D%0A++end%0A++return+%7B%0A++++++cookies+%3D+cookies%2C%0A++++++request+%3D+r.request.info%2C%0A++++++response+%3D+r.info%2C%0A%09++++html+%3D+splash%3Ahtml%28%29%2C+++++++%0A++%7D+%0Aend%0A"
-
-	response, err := GetResponse(url)
-	if err != nil {
-		logger.Println(err)
-	}
-	//	response.Response.Headers = castHeaders(response.Response.Headers)
-
-	//logger.Printf("%T - %s", response.Response.Headers, response.Response.Headers)
-	logger.Printf("%T - %v- %d\n", response.Request.Cookies, response.Request.Cookies, len(response.Request.Cookies))
-	logger.Printf("%T - %v\n", response.Request.URL, response.Request.URL)
+func init() {
+	viper.Set("SPLASH", "127.0.0.1:8050")
+	viper.Set("SPLASH_TIMEOUT", 20)
+	viper.Set("SPLASH_RESOURCE_TIMEOUT", 30)
+	viper.Set("SPLASH_WAIT", 0.5)
 }
+
+func TestSplashRenderHTMLEndpoint(t *testing.T) {
+	//Splash running inside Docker container cannot render a page on a localhost. It leads to rendering page errors https://github.com/scrapinghub/splash/issues/237 .
+	//Only URLs on the web are available for testing.
+	sReq := []byte(`{"url": "http://example.com", "wait": 0.5}`)
+	reader := bytes.NewReader(sReq)
+	splashExecuteURL := "http://" + viper.GetString("SPLASH") + "/render.html"
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", splashExecuteURL, reader)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		logger.Error(err)
+	}
+	statusCode := resp.StatusCode
+	assert.Equal(t, statusCode, 200)
+	//	logger.Info("Status code:", statusCode)
+
+	//res, err := ioutil.ReadAll(resp.Body)
+	//if err != nil {
+	//	logger.Error(err)
+	//}
+	//logger.Info(string(res))
+
+}
+
+func TestGetResponse(t *testing.T) {
+	//Splash running inside Docker container cannot render a page on a localhost. It leads to rendering page errors https://github.com/scrapinghub/splash/issues/237 .
+	//Only URLs on the web are available for testing.
+	req := Request{URL: "http://example.com",}
+	resp, err := req.GetResponse()
+	assert.Nil(t, err, "Expected no error")
+	statusCode := resp.Response.Status
+	assert.Equal(t, statusCode, 200)
+	respURL := resp.GetURL()
+	assert.Equal(t, respURL, "http://example.com/")
+	expires := resp.GetExpires()
+	tp := fmt.Sprintf("%T", expires)
+	assert.Equal(t, "time.Time", tp)
+	reasons := resp.GetReasonsNotToCache()
+	logger.Info(reasons)
+
+	req = Request{URL: "http://httpbin.org/status/400",}
+	resp, _ = req.GetResponse()
+	logger.Info(resp)
+	_, err = resp.GetContent()
+	assert.Error(t, err, "error returned")
+
+	urls := []string{
+		"http://httpbin.org/status/404",
+		"http://httpbin.org/status/400",
+		"http://httpbin.org/status/500",
+		"http://httpbin.org/status/403",
+		//"http://httpbin.org/status/504",
+		"http://google",
+		"google.com",
+	}
+	for _, url := range urls {
+		req := Request{
+			URL: url,
+		}
+		_, err := req.GetResponse()
+		assert.Error(t, err, "error returned")
+	}
+
+}
+
+func TestGetContent(t *testing.T) {
+	resp := Response{
+		HTML: `<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`,
+	}
+	readCloser, _ := resp.GetContent()
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(readCloser)
+	s := buf.String()
+	assert.Equal(t, `<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`, s)
+}
+
+func TestReqGetURL(t *testing.T) {
+	req := Request{
+		URL: "   http://example.com/	",
+	}
+	assert.Equal(t, "http://example.com", req.GetURL())
+}
+
+func TestHost(t *testing.T) {
+	req := Request{
+		URL: "   http://example.com/	",
+	}
+	host, _ := req.Host()
+	assert.Equal(t, "example.com", host)
+}
+
+func TestPing(t *testing.T) {
+	host := viper.GetString("SPLASH")
+	pr, _ := Ping(host)
+	assert.Equal(t, "ok", pr.Status)
+}
+
+func TestParamsToLUATable(t *testing.T) {
+	params := "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=password&rememberMe=1"
+	p := paramsToLuaTable(params)
+	assert.Equal(t, `{"auth_key":"880ea6a14ea49e853634fbdc5015a024","referer":"http%3A%2F%2Fexample.com%2F","ips_username":"user","ips_password":"password","rememberMe":"1"}`, p)
+
+}
+
+//Script for LUA debug
+var debugLUA = `
+treat = require("treat")
+function string.ends(String,End)
+  return End=='' or string.sub(String,-string.len(End))==End
+end
+function remove_trailing_slash(text)
+  if string.ends(text, "/") then
+    text = text:sub(1, -2)
+  end
+  return text
+end
+
+function main(splash)
+  local url = splash.args.url
+  local urls = {}
+	local resp_urls = {}
+  splash:on_response(function (response)
+  url = remove_trailing_slash(url)
+  resp_url = remove_trailing_slash(response.info.url)
+	table.insert(urls, url)
+	table.insert(resp_urls, resp_url)
+  if resp_url == url then
+    status = response.info.status
+    is_redirect = status == 301 or status == 302
+    if is_redirect then
+      url = response.info.redirectURL
+    elseif status == 200 then
+  			r = response
+    end
+  end
+  end)
+  local ok, reason = splash:go(url)
+  assert(splash:wait(1))
+  if not ok then
+       return {
+        reason = reason,
+     --   request = r.request.info,
+     --   response = r.info,
+      }
+  end
+  return {
+     -- request = r.request.info,
+     -- response = r.info,
+			urls = treat.as_array(urls),
+			resp_urls = treat.as_array(resp_urls),
+	    html = splash:html(),       
+  } 
+end
+`
+
+/*
+func TestParamsToJSON(t *testing.T) {
+	//params := "auth_key=test&referer=http%3A%2F%2Fexample.com%2F&ips_username=test&ips_password=test&rememberMe=1"
+	params := "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=dmsoft&rememberMe=1"
+//	logger.Println(paramsToJSON(params))
+	assert.Equal(t,
+	`{"auth_key":["880ea6a14ea49e853634fbdc5015a024"],"ips_password":["dmsoft"],"ips_username":["dm_"],"referer":["http://diesel.elcat.kg/"],"rememberMe":["1"]}`, paramsToJSON(params))
+
+}
+*/

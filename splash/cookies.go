@@ -22,14 +22,11 @@ func generateCookie(setCookie string) (string, error) {
 				cf := strings.Split(g, "=")
 				cookie.Name = cf[0]
 				cookie.Value = cf[1]
-				//	logger.Println(groups)
 			}
 			cf := strings.Split(g, "=")
-			//	logger.Println(cf[0])
 			switch strings.ToLower(strings.Trim(cf[0], " ")) {
 			case "expires":
 				cookie.Expires = cf[1]
-				//logger.Println(cookie)
 			//case "Max-Age":
 			//cookie.MaxAge = cf[1]
 			case "path":
@@ -57,33 +54,28 @@ func generateCookie(setCookie string) (string, error) {
 	return fmt.Sprintf("[%s]", strings.Join(out, ",")), nil
 }
 
-func (r *Response) getSetCookie() (string, error) {
-	headers := r.Response.Headers.(http.Header)
+
+// GetSetCookie retrieves Set-Cookie from http.Header 
+// This cookie will be passed to the next request within the same domain.
+func GetSetCookie(headers http.Header) string{
+	//Get Set-Cookie
+	// Important! Get gets the first value associated with the given key.
 	setCookie := headers.Get("Set-Cookie")
 	if setCookie == "" {
-		return "", fmt.Errorf("No Set-Cookie found")
+		return ""
 	}
-	return setCookie, nil
-}
-
-func (r *Response) SetCookieToNextRequest(req *Request) error {
-	setCookie, err := r.getSetCookie()
-	if err != nil {
-		return err
-	}
-	//it may be more than one cookie in Set-Cookie
+	logger.Info(setCookie)
+	//there may be more than one cookie in Set-Cookie
 	//heu_uzt=72e3502635d3af8fa2916cf397e93fee; expires=Tue, 04-Jul-2017 13:28:36 GMT; Max-Age=2592000; path=/; domain=.heu.tt
 	//heu_s=1; expires=Mon, 04-Jun-2018 13:28:36 GMT; Max-Age=31536000; path=/; domain=.heu.tt
 
 	//cookies = splash:add_cookie{name, value, path=nil, domain=nil, expires=nil, httpOnly=nil, secure=nil}
 	//cookieLUA := `"session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"`
+
 	cookie, err := generateCookie(setCookie)
 	if err != nil {
-		logger.Println(err)
+		logger.Error(err)
 	}
-	req.Cookies = cookie
-	return nil
+//	logger.Info(cookie)
+	return cookie
 }
-
-
-

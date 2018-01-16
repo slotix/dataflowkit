@@ -4,7 +4,8 @@ import (
 	"fmt"
 )
 
-var VERSION = "0.1"
+//VERSION represents the current version of the service
+var VERSION = "0.5"
 var buildTime = "No buildstamp"
 
 func main() {

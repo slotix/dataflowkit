@@ -6,18 +6,19 @@ import (
 	"github.com/slotix/dataflowkit/scrape"
 )
 
-// Define service interface
+// Service defines Parse service interface
 type Service interface {
 	Parse(scrape.Payload) (io.ReadCloser, error)
 }
 
-// Implement service with empty struct
+// ParseService implements service with empty struct
 type ParseService struct {
 }
 
+// ServiceMiddleware defines a middleware for a Parse service
 type ServiceMiddleware func(Service) Service
 
-//Parse calls Fetcher to download web page for parsing
+//Parse service processes fetched page following the rules from Payload.
 func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
 	task := scrape.NewTask(p)
 	r, err := task.Parse()

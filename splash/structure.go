@@ -7,16 +7,37 @@ import (
 	"github.com/pquerna/cachecontrol/cacheobject"
 )
 
+//Request struct is entry point which is initially filled from Payload
+//it is passed to Splash server to fetch web content.
 type Request struct {
-	//URL is required to be passed to Fetch Endpoint
+	//URL holds the URL address of the web page to be downloaded.
 	URL string `json:"url"`
-	//Params used for passing formdata to LUA script
+	// Params is a string value for passing formdata parameters.
+	//
+	// For example it may be used for processing pages which require authentication
+	//
+	// Example:
+	//
+	// "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
+	//
 	Params string `json:"params,omitempty"`
-	//Cookies contain cookies to be added to request
+	// Cookies contain cookies to be added to request  before sending it to browser.
+	//
+	// It may be used for processing pages after initial authentication. In the first step formdata with auth info is passed to a web page.
+	//
+	// Response object headers may contain an Object like
+	//
+	// name: "Set-Cookie"
+	//
+	// value: "session_id=29d7b97879209ca89316181ed14eb01f; path=/; httponly"
+	//
+	// These cookie should be passed to the next pages on the same domain.
+	//
+	// "session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"
+	//
 	Cookies string `json:"cookie,omitempty"`
-	Func    string `json:"func,omitempty"`
-	//SplashWait - time in seconds to wait until js scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
-	//	SplashWait float64 `json:"wait,omitempty"`
+	// Func is Reserved
+	Func string `json:"func,omitempty"`
 }
 
 //Cookie - Custom Cookie struct is used to avoid problems with unmarshalling data with invalid Expires field which has time.Time type for original http.Cookie struct.
@@ -69,10 +90,10 @@ type Response struct {
 	HTML string `json:"html"`
 	//Error is returned in case of an error, f.e. "http404".
 	//If Error is not nil all other fields are nil
-	Error             string     `json:"error,omitempty"`
-	Request           *SRequest  `json:"request"`
-	Response          *SResponse `json:"response"`
-	//ReasonsNotToCache is an array of reasons why a response should not be cached. 
+	Error    string     `json:"error,omitempty"`
+	Request  *SRequest  `json:"request"`
+	Response *SResponse `json:"response"`
+	//ReasonsNotToCache is an array of reasons why a response should not be cached.
 	ReasonsNotToCache []cacheobject.Reason
 	//Expires - How long object stay in a cache before Splash fetcher forwards another request to an origin.
 	Expires time.Time //how long object stay in a cache before Splash fetcher forwards another request to an origin.

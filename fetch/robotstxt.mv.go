@@ -26,12 +26,14 @@ func (mw robotstxtMiddleware) Fetch(req FetchRequester) (response FetchResponser
 		if !AllowedByRobots(url, robotsData) {
 			r := BaseFetcherRequest{URL: url, Method: "HEAD"}
 			resp, err := Response(r)
+			//resp, err := fetchRobots(r)
 			if err != nil {
 				return nil, err
 			}
 			//if initial URL is not equal to final URL (Redirected) f.e. domains are different
 			//then try to fetch robots following by final URL
 			finalURL := resp.GetURL()
+			//finalURL := resp.Request.URL.String()
 			if url != finalURL {
 				robotsData, err = RobotstxtData(finalURL)
 				if err != nil {

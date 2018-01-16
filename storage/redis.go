@@ -8,90 +8,43 @@ import (
 	"gopkg.in/redsync.v1"
 )
 
-//Options struct inclued parameters for Redis Connection 
-type Options struct {
+// RedisConn represents a Redis Connection structure
+type RedisConn struct {
 	host     string
 	network  string
 	password string
 	db       int
 	// If set, path to a socket file overrides hostname
 	socketPath string
-}
-
-type Option func(*Options)
-
-func host(h string) Option {
-	return func(args *Options) {
-		args.host = h
-	}
-}
-
-func network(n string) Option {
-	return func(args *Options) {
-		args.network = n
-	}
-}
-
-func password(p string) Option {
-	return func(args *Options) {
-		args.password = p
-	}
-}
-
-func db(d int) Option {
-	return func(args *Options) {
-		args.db = d
-	}
-}
-
-func socketPath(s string) Option {
-	return func(args *Options) {
-		args.socketPath = s
-	}
-}
-
-
-// RedisConn represents a Redis Connection structure
-type RedisConn struct {
-	//host     string
-	//password string
-	//db       int
-	opts *Options
-	pool *redis.Pool
-	// If set, path to a socket file overrides hostname
-	//socketPath string
-	redsync *redsync.Redsync
+	pool       *redis.Pool
+	redsync    *redsync.Redsync
 }
 
 // NewRedisConn initializes parameters for new Redis Connection
-func NewRedisConn(setters ...Option) RedisConn {
-	args := &Options{
+func NewRedisConn() RedisConn {
+	return RedisConn{
 		host:       viper.GetString("REDIS"),
 		network:    viper.GetString("REDIS_NETWORK"),
 		password:   viper.GetString("REDIS_PASSWORD"),
 		db:         viper.GetInt("REDIS_DB"),
 		socketPath: viper.GetString("REDIS_SOCKET_PATH"),
 	}
-
-	return RedisConn{
-		opts: args,
-	}
 }
 
 // Returns / creates instance of Redis connection
-func (b *RedisConn) open() redis.Conn {
-	if b.pool == nil {
-		b.pool = b.newPool()
+func (rc *RedisConn) open() redis.Conn {
+	if rc.pool == nil {
+		rc.pool = rc.newPool()
 	}
-	if b.redsync == nil {
-		var pools = []redsync.Pool{b.pool}
-		b.redsync = redsync.New(pools)
+	if rc.redsync == nil {
+		var pools = []redsync.Pool{rc.pool}
+		rc.redsync = redsync.New(pools)
 	}
-	return b.pool.Get()
+	return rc.pool.Get()
 }
 
 // Returns a new pool of Redis connections
-func (b *RedisConn) newPool() *redis.Pool {
+func (rc *RedisConn) newPool() *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:     3,
 		IdleTimeout: 240 * time.Second,
@@ -102,18 +55,18 @@ func (b *RedisConn) newPool() *redis.Pool {
 				opts = make([]redis.DialOption, 0)
 			)
 
-			if b.opts.password != "" {
-				opts = append(opts, redis.DialPassword(b.opts.password))
+			if rc.password != "" {
+				opts = append(opts, redis.DialPassword(rc.password))
 			}
 
-			if b.opts.socketPath != "" {
-				c, err = redis.Dial("unix", b.opts.socketPath, opts...)
+			if rc.socketPath != "" {
+				c, err = redis.Dial("unix", rc.socketPath, opts...)
 			} else {
-				c, err = redis.Dial(b.opts.network, b.opts.host, opts...)
+				c, err = redis.Dial(rc.network, rc.host, opts...)
 			}
 
-			if b.opts.db != 0 {
-				_, err = c.Do("SELECT", b.opts.db)
+			if rc.db != 0 {
+				_, err = c.Do("SELECT", rc.db)
 			}
 
 			if err != nil {
@@ -128,75 +81,130 @@ func (b *RedisConn) newPool() *redis.Pool {
 	}
 }
 
-//Value returns value of specified key
-func (b *RedisConn) Value(key string) ([]byte, error) {
-	//Get a key
-	conn := b.open()
-	defer conn.Close()
-	content, err := redis.Bytes(conn.Do("GET", key))
-	if err == nil {
-		return content, nil
-	}
-	return nil, err
+func val(conn redis.Conn, key string) (value []byte, err error) {
+	value, err = redis.Bytes(conn.Do("GET", key))
+	return
 }
 
-//IntValue returns int64 value of specified key 
-func (b *RedisConn) IntValue(key string) (int64, error) {
+// Read retrieves value from the specified key.
+func (c RedisConn) Read(key string) (value []byte, err error) {
 	//Get a key
+	conn := c.open()
+	defer conn.Close()
+	value, err = val(conn, key)
+	return
+}
+
+func intVal(conn redis.Conn, key string) (value int64, err error) {
+	value, err = redis.Int64(conn.Do("GET", key))
+	return
+}
+
+//IntValue returns int64 value of specified key
+func (b *RedisConn) ReadInt(key string) (value int64, err error) {
 	conn := b.open()
 	defer conn.Close()
-	int, err := redis.Int64(conn.Do("GET", key))
-	if err == nil {
-		return int, nil
-	}
-	return 0, err
+	value, err = intVal(conn, key)
+	return
+
+}
+
+func setVal(conn redis.Conn, key string, value interface{}) error {
+	_, err := conn.Do("SET", key, value)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	if reply.(string) == "OK" {
+	//		return nil
+	//	}
+	return err
 }
 
 //SetValue saves key/ value pair to Redis
 func (b *RedisConn) SetValue(key string, value interface{}) error {
 	conn := b.open()
 	defer conn.Close()
-	reply, err := conn.Do("SET", key, value)
+	err := setVal(conn, key, value)
+	return err
+}
+
+// Write saves key/ value pair along with Expiration time to Redis storage.
+func (s RedisConn) Write(key string, value []byte, expTime int64) error {
+	err := s.SetValue(key, value)
 	if err != nil {
 		return err
 	}
-	if reply.(string) == "OK" {
-		return nil
-	}
-	return err
-
-}
-
-//ExpireAt sets TTL value of the specified key to expiresAt time
-func (b *RedisConn) ExpireAt(key string, expiresAt int64) error {
-	conn := b.open()
-	defer conn.Close()
-	_, err := conn.Do("EXPIREAT", key, expiresAt)
+	err = s.SetExpireAt(key, expTime)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func setExpireAt(conn redis.Conn, key string, expiresAt int64) error {
+	_, err := conn.Do("EXPIREAT", key, expiresAt)
+	return err
+}
+
+//ExpireAt sets TTL value of the specified key to expiresAt time
+func (b *RedisConn) SetExpireAt(key string, expiresAt int64) error {
+	conn := b.open()
+	defer conn.Close()
+	err := setExpireAt(conn, key, expiresAt)
+	return err
+}
+
+func setExpireIn(conn redis.Conn, key string, expireIn int64) error {
+	_, err := conn.Do("EXPIRE", key, expireIn)
+	return err
 }
 
 //ExpireIn sets TTL value of the key to current Time + expireIn seconds
 func (b *RedisConn) ExpireIn(key string, expireIn int64) error {
 	conn := b.open()
 	defer conn.Close()
-
-	_, err := conn.Do("EXPIRE", key, expireIn)
-	if err != nil {
-		return err
-	}
-	return nil
+	err := setExpireIn(conn, key, expireIn)
+	return err
 }
 
-//TTL returns Time to live value in seconds for the specified key 
-func (b *RedisConn) TTL(key string) (int64, error) {
+func expired(conn redis.Conn, key string) bool {
+	t, err := ttl(conn, key)
+	if err != nil {
+		logger.Error(err)
+		return true
+	}
+	return t < 0
+}
+
+// Expired returns either specified key is expired or not.
+func (s RedisConn) Expired(key string) bool {
+	conn := s.open()
+	defer conn.Close()
+	return expired(conn, key)
+}
+
+func ttl(conn redis.Conn, key string) (int64, error) {
+	value, err := conn.Do("TTL", key)
+	return value.(int64), err
+}
+
+//TTL returns Time to live value in seconds for the specified key
+func (b *RedisConn) TTL(key string) (value int64, err error) {
 	conn := b.open()
 	defer conn.Close()
-	reply, err := conn.Do("TTL", key)
-	if err != nil {
-		return 0, err
-	}
-	return reply.(int64), nil
+	value, err = ttl(conn, key)
+	return
+}
+
+func setTTL(conn redis.Conn, key string, ttl int) error {
+	_, err := conn.Do("EXPIRE", key, ttl)
+	return err
+}
+
+//SetTTL sets TTL value in seconds of the specified key
+func (b *RedisConn) SetTTL(key string, ttl int) error {
+	conn := b.open()
+	defer conn.Close()
+	err := setTTL(conn, key, ttl)
+	return err 
 }

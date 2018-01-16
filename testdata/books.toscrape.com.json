@@ -1,0 +1,42 @@
+{
+    "name": "books_to_scrape",
+    "request": {
+        "url": "http://books.toscrape.com"
+    },
+    "fields": [
+        {
+            "name": "Title",
+            "selector": "h3 a",
+            "extractor": {
+                "type": "link",
+                "params": {
+                    "includeIfEmpty": false
+                }
+            }         
+        },
+        {
+            "name": "Image",
+            "selector": ".thumbnail",
+            "extractor": {
+                "type": "image"
+            }
+        },
+        {
+            "name": "Price",
+            "selector": ".price_color",
+            "extractor": {
+                "type": "text",
+                "params": {
+                    "includeIfEmpty": false
+                }
+            }
+        }
+    ],
+    "paginator": {
+        "selector": ".next a",
+        "attr": "href",
+        "maxPages": 1
+    },
+    "format": "json",
+    "paginatedResults": false
+}
