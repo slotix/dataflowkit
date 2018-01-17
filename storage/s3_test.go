@@ -122,6 +122,21 @@ func Test_delete(t *testing.T) {
 	assert.Nil(t, err, "Expected no error")
 }
 
+func Test_deleteAll(t *testing.T) {
+	svc := new(mocks.S3API)
+	svc.On("ListObjects", mock.AnythingOfType("*s3.ListObjectsInput")).Return(&s3.ListObjectsOutput{
+		Contents: []*s3.Object{
+			&s3.Object{Key: aws.String("1")},
+			&s3.Object{Key: aws.String("2")},
+			&s3.Object{Key: aws.String("3")},
+			},
+		IsTruncated: aws.Bool(false),
+	}, nil)
+	svc.On("DeleteObjects", mock.AnythingOfType("*s3.DeleteObjectsInput")).Return(&s3.DeleteObjectsOutput{}, nil)
+
+	err := deleteAll(svc, "bucket")
+	assert.Nil(t, err, "Expected no error")
+}
 //Actual tests *******
 /*
 var (
