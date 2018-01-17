@@ -80,30 +80,7 @@ func (d DiskvConn) Expired(key string) bool {
 	return diff < 0
 }
 
-// Expired returns Expired value of specified key from DiskV.
-/* func (d DiskvConn) Expired(key string) bool {
-	//pwd
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	exPath := filepath.Dir(ex)
-	//filename
-	fullPath := exPath + "/" + d.diskv.BasePath + "/" + key
-	//file last modification time
-	mTime, err := mTime(fullPath)
-	if err != nil {
-		logger.Error(err)
-	}
-	currentTime := time.Now().UTC()
-	//calculate expiration time
-	exp := time.Duration(viper.GetInt64("ITEM_EXPIRE_IN")) * time.Second
-	expiry := mTime.Add(exp)
-	diff := expiry.Sub(currentTime)
-	logger.Info("cache lifespan is %+v\n", diff)
-	//Expired?
-	return diff > 0
-} */
+
 
 //Delete deletes specified key from Diskv storage.
 func (d DiskvConn) Delete(key string) error {

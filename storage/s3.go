@@ -156,6 +156,7 @@ func delete(svc s3iface.S3API, bucket, key string) (result *s3.DeleteObjectOutpu
 	return
 }
 
+//Delete deletes an object from S3 bucket with specified key
 func (c S3Conn) Delete(key string) error {
 	sess := session.Must(session.NewSession(c.config))
 	svc := s3.New(sess)
@@ -163,9 +164,7 @@ func (c S3Conn) Delete(key string) error {
 	return err
 }
 
-func (c S3Conn) DeleteAll() error {
-	sess := session.Must(session.NewSession(c.config))
-	svc := s3.New(sess)
+func deleteAll(svc s3iface.S3API, bucket string) error{
 	// Get the list of objects
 	// Note that if the bucket has more than 1000 objects,
 	// we have to run this multiple times
@@ -174,9 +173,9 @@ func (c S3Conn) DeleteAll() error {
 	totalObjects := 0
 
 	for hasMoreObjects {
-		resp, err := svc.ListObjects(&s3.ListObjectsInput{Bucket: aws.String(c.bucket)})
+		resp, err := svc.ListObjects(&s3.ListObjectsInput{Bucket: aws.String(bucket)})
 		if err != nil {
-			logger.Error("Unable to list items in bucket %q, %v", c.bucket, err)
+			logger.Error("Unable to list items in bucket %q, %v", bucket, err)
 		}
 
 		numObjs := len(resp.Contents)
@@ -195,12 +194,19 @@ func (c S3Conn) DeleteAll() error {
 		items.SetObjects(objs)
 
 		// Delete the items
-		_, err = svc.DeleteObjects(&s3.DeleteObjectsInput{Bucket: &c.bucket, Delete: &items})
+		_, err = svc.DeleteObjects(&s3.DeleteObjectsInput{Bucket: &bucket, Delete: &items})
 		if err != nil {
-			logger.Error("Unable to delete objects from bucket %q, %v", c.bucket, err)
+			logger.Error("Unable to delete objects from bucket %q, %v", bucket, err)
 		}
 
 		hasMoreObjects = *resp.IsTruncated
 	}
 	return nil
+}
+//DeleteAll deletes all objects from S3 bucket
+func (c S3Conn) DeleteAll() error {
+	sess := session.Must(session.NewSession(c.config))
+	svc := s3.New(sess)
+	err := deleteAll(svc, c.bucket)
+	return err
 }
