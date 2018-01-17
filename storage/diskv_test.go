@@ -24,16 +24,16 @@ func Test_diskv(t *testing.T) {
 	expired := d.Expired(testKey)
 	assert.Equal(t, expired, false, "Expected non expired value")
 
-	err = d.Erase(testKey)
+	err = d.Delete(testKey)
 	assert.NoError(t, err, "Expected no error")
-	err = d.Erase("NonExistedKey")
+	err = d.Delete("NonExistedKey")
 	assert.Error(t, err, "Expected error")
 
 	//Add two values to storage
 	err = d.Write(testKey, testValue, 0)
 	err = d.Write("secondKey", []byte("testValue"), 0)
 	//erase all items
-	err = d.EraseAll()
+	err = d.DeleteAll()
 	assert.NoError(t, err, "Expected no error")
 }
 

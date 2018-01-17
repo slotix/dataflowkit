@@ -25,7 +25,7 @@ func Test_storageMiddleware(t *testing.T) {
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
 
-	err = storage.EraseAll()
+	err = storage.DeleteAll()
 	assert.Nil(t, err, "Expected no error")
 
 
@@ -37,7 +37,7 @@ func Test_storageMiddleware(t *testing.T) {
 	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
 	
 
-	err = storage.EraseAll()
+	err = storage.DeleteAll()
 	assert.Nil(t, err, "Expected no error")
 
 

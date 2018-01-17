@@ -209,7 +209,26 @@ func (b *RedisConn) SetTTL(key string, ttl int) error {
 	return err 
 }
 
-func (b RedisConn) EraseAll() error {
-	//TODO: implement the method
-	return nil
+func  deleteKey(conn redis.Conn, key string) error {
+	_, err := conn.Do("DEL", key)
+	return err
+}
+
+func (b RedisConn) Delete(key string) error {
+	conn := b.open()
+	defer conn.Close()
+	err := deleteKey(conn, key)
+	return err
+}
+
+func  deleteAll(conn redis.Conn) error {
+	_, err := conn.Do("FLUSHDB")
+	return err
+}
+
+func (b RedisConn) DeleteAll() error {
+	conn := b.open()
+	defer conn.Close()
+	err := deleteAll(conn)
+	return err
 }
