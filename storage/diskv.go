@@ -105,8 +105,8 @@ func (d DiskvConn) Expired(key string) bool {
 	return diff > 0
 } */
 
-//Erase deletes specified key from Diskv storage.
-func (d DiskvConn) Erase(key string) error {
+//Delete deletes specified key from Diskv storage.
+func (d DiskvConn) Delete(key string) error {
 	err := d.diskv.Erase(key)
 	if err != nil {
 		return err
@@ -115,8 +115,8 @@ func (d DiskvConn) Erase(key string) error {
 }
 
 
-//Erase deletes specified key from Diskv storage.
-func (d DiskvConn) EraseAll() error {
+//DeleteAll deletes everything from Diskv storage.
+func (d DiskvConn) DeleteAll() error {
 	err := d.diskv.EraseAll()
 	if err != nil {
 		return err

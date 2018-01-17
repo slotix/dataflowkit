@@ -104,7 +104,6 @@ func getObject(svc s3iface.S3API, bucket, key string) (object *s3.GetObjectOutpu
 	return
 }
 
-
 func expiredKey(obj *s3.GetObjectOutput, storageExpire int64) bool {
 	currentTime := time.Now().UTC()
 	lastModified := obj.LastModified
@@ -157,14 +156,51 @@ func delete(svc s3iface.S3API, bucket, key string) (result *s3.DeleteObjectOutpu
 	return
 }
 
-func (c S3Conn) delete(key string) (result *s3.DeleteObjectOutput, err error) {
+func (c S3Conn) Delete(key string) error {
 	sess := session.Must(session.NewSession(c.config))
 	svc := s3.New(sess)
-	result, err = delete(svc, c.bucket, key)
-	return
+	_, err := delete(svc, c.bucket, key)
+	return err
 }
 
-func (b S3Conn) EraseAll() error {
-	//TODO: implement the method
+func (c S3Conn) DeleteAll() error {
+	sess := session.Must(session.NewSession(c.config))
+	svc := s3.New(sess)
+	// Get the list of objects
+	// Note that if the bucket has more than 1000 objects,
+	// we have to run this multiple times
+	hasMoreObjects := true
+	// Keep track of how many objects we delete
+	totalObjects := 0
+
+	for hasMoreObjects {
+		resp, err := svc.ListObjects(&s3.ListObjectsInput{Bucket: aws.String(c.bucket)})
+		if err != nil {
+			logger.Error("Unable to list items in bucket %q, %v", c.bucket, err)
+		}
+
+		numObjs := len(resp.Contents)
+		totalObjects += numObjs
+
+		// Create Delete object with slots for the objects to delete
+		var items s3.Delete
+		var objs = make([]*s3.ObjectIdentifier, numObjs)
+
+		for i, o := range resp.Contents {
+			// Add objects from command line to array
+			objs[i] = &s3.ObjectIdentifier{Key: aws.String(*o.Key)}
+		}
+
+		// Add list of objects to delete to Delete object
+		items.SetObjects(objs)
+
+		// Delete the items
+		_, err = svc.DeleteObjects(&s3.DeleteObjectsInput{Bucket: &c.bucket, Delete: &items})
+		if err != nil {
+			logger.Error("Unable to delete objects from bucket %q, %v", c.bucket, err)
+		}
+
+		hasMoreObjects = *resp.IsTruncated
+	}
 	return nil
 }
