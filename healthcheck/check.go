@@ -5,7 +5,7 @@
 //
 // All rights reserved. Use of this source code is governed
 // by the BSD 3-Clause License license.
-//
+
 // Package healthcheck of the Dataflow kit checks if specified services are alive.
 //
 package healthcheck
