@@ -283,9 +283,13 @@ func (p Payload) fields2parts() ([]Part, error) {
 
 		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
 		case "link":
-			l := &extract.Link{Href: extract.Attr{
-				Attr:    "href",
-				BaseURL: p.Request.URL},
+			l := &extract.Link{
+				Href: extract.Attr{
+					Attr:    "href",
+					BaseURL: p.Request.URL},
+				Text: extract.Text{
+					Filters: f.Extractor.Filters,
+				},
 			}
 			if params != nil {
 				err := fillStruct(params, l)
@@ -323,11 +327,15 @@ func (p Payload) fields2parts() ([]Part, error) {
 
 		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
 		case "image":
-			i := &extract.Image{Src: extract.Attr{
-				Attr:    "src",
-				BaseURL: p.Request.URL,
-			},
-				Alt: extract.Attr{Attr: "alt"}}
+			i := &extract.Image{
+				Src: extract.Attr{
+					Attr:    "src",
+					BaseURL: p.Request.URL},
+				Alt: extract.Attr{
+					Attr: "alt",
+					Filters: f.Extractor.Filters,
+				},
+			}
 			if params != nil {
 				err := fillStruct(params, i)
 				if err != nil {
@@ -354,7 +362,24 @@ func (p Payload) fields2parts() ([]Part, error) {
 			case "count":
 				e = &extract.Count{}
 			case "text":
-				e = &extract.Text{}
+				e = &extract.Text{
+					Filters: f.Extractor.Filters,
+				}
+				/*
+					t := &extract.Text{}
+					fParams := params["filters"]
+					filters := []string{}
+					if fParams != nil {
+						for _, f := range fParams.([]interface{}) {
+							filters = append(filters, f.(string))
+						}
+					}
+					logger.Info(filters)
+					logger.Infof("%T", filters)
+
+					t.Filters = filters
+					//	f2 := filters.([]string)
+					e = t */
 			case "html":
 				e = &extract.Html{}
 			case "outerHtml":
@@ -374,6 +399,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 					logger.Error(err)
 				}
 			}
+			logger.Info(e)
 			parts = append(parts, Part{
 				Name:      f.Name,
 				Selector:  f.Selector,

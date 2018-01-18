@@ -1,60 +1,75 @@
-{
-    "name": "drones_collection",
-    "request": {
-        "url": "https://drony.heureka.sk"
+{  
+    "name":"drones_collection",
+    "request":{  
+       "url":"https://drony.heureka.sk"
     },
-    "fields": [
-        {
-            "name": "Title",
-            "selector": ".product-container a",
-            "extractor": {
-                "type": "link",
-                "params": {
-                    "includeIfEmpty": false
+    "fields":[  
+       {  
+          "name":"Title",
+          "selector":".product-container a",
+          "extractor":{  
+             "type":"link",
+             "filters":[  
+                "trim",
+                "lowerCase"
+             ],
+             "params":{  
+                "includeIfEmpty":false
+             }
+          },
+          "details":{  
+             "fields":[  
+                {  
+                   "name":"Title",
+                   "selector":"h1",
+                   "extractor":{  
+                      "type":"text",
+                      "params":{  
+                         "includeIfEmpty":true                  
+                      }
+                   }
+                },
+                {  
+                   "name":"Price",
+                   "selector":".js-top-price",
+                   "extractor":{  
+                      "type":"text"
+                   }
                 }
-            },
-            "details": {
-                "fields": [
-                    {
-                        "name": "Title",
-                        "selector": "h1",
-                        "extractor": {
-                            "type": "text"
-                        }
-                    },
-                    {
-                        "name": "Price",
-                        "selector": ".js-top-price",
-                        "extractor": {
-                            "type": "text"
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            "name": "Image",
-            "selector": "#product-container img",
-            "extractor": {
-                "type": "image"
-            }
-        },
-        {
-            "name": "Buyinfo",
-            "selector": ".buy-info",
-            "extractor": {
-                "type": "text",
-                "params": {
-                    "includeIfEmpty": false
-                }
-            }
-        }
+             ]
+          }
+       },
+       {  
+          "name":"Image",
+          "selector":"#product-container img",
+          "extractor":{  
+             "type":"image",
+             "filters":[  
+                "trim",
+                "upperCase"
+             ]
+          }
+       },
+       {  
+          "name":"Buyinfo",
+          "selector":".buy-info",
+          "extractor":{  
+             "type":"text",
+             "filters":[  
+                "trim",
+                "UpPerCaSe"
+             ],
+             "params":{  
+                "includeIfEmpty":false
+             }
+          }
+       }
     ],
-    "paginator": {
-        "selector": ".next",
-        "attr": "href",
-        "maxPages": 1
+    "paginator":{  
+       "selector":".next",
+       "attr":"href",
+       "maxPages":1
     },
-    "format": "json",
-    "paginatedResults": false
-}
+    "format":"json",
+    "paginatedResults":false
+ }
