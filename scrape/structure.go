@@ -17,8 +17,9 @@ import (
 // Find more actual information in docs/extractors.md
 type Extractor struct {
 	Type string `json:"type"`
-	// Params are unique for definite type
-	Params interface{} `json:"params"`
+	// Params are unique for each type
+	Params  interface{} `json:"params"`
+	Filters []string `json:"filters"`
 }
 
 //A Field corresponds to a given chunk of data to be extracted from every block in each page of a scrape.
