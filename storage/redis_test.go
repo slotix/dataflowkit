@@ -30,6 +30,8 @@ func TestRedis(t *testing.T) {
 	assert.Nil(t, err, "Expected no error")
 	err = setVal(conn, "numeric key", 18)
 	assert.Nil(t, err, "Expected no error")
+	err = setVal(conn, "One more value", 111)
+	assert.Nil(t, err, "Expected no error")
 
 	//Read from Redis
 	value, err := val(conn, testKey)
@@ -59,6 +61,12 @@ func TestRedis(t *testing.T) {
 	err = setTTL(conn, testKey, -1)
 	exp = expired(conn, testKey)
 	assert.Equal(t, exp, true, "Expected expired value")
+
+	err = deleteKey(conn, "numeric key")
+	assert.Nil(t, err, "Expected no error")
+	err = deleteAllKeys(conn)
+	assert.Nil(t, err, "Expected no error")
+
 }
 
 func TestNewRedisConn(t *testing.T) {

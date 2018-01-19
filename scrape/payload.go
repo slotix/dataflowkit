@@ -56,12 +56,29 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 //fillStruct fills s Structure with values from m map
 func fillStruct(m map[string]interface{}, s interface{}) error {
 	for k, v := range m {
-		//	logger.Info(k,v)
+		//switch v.(type) {
+		//	case []interface{}:
+
+		//determine the type of array
+
+		//		value := []string{}
+		//		for _, item := range v.([]interface{}) {
+		//				logger.Infof("%T", item)
+		//TODO: casting to string should be exchanged with something more universal.
+		//			value = append(value, item.(string))
+		//		}
+		//
+		//		err := setField(s, k, value)
+		//		if err != nil {
+		//			return err
+		//			}
+		//		default:
 		err := setField(s, k, v)
 		if err != nil {
 			return err
 		}
 	}
+	//}
 	return nil
 }
 

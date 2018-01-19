@@ -208,3 +208,29 @@ func (b *RedisConn) SetTTL(key string, ttl int) error {
 	err := setTTL(conn, key, ttl)
 	return err 
 }
+
+func  deleteKey(conn redis.Conn, key string) error {
+	_, err := conn.Do("DEL", key)
+	return err
+}
+
+//Delete deletes an object from Redis storage with specified key
+func (b RedisConn) Delete(key string) error {
+	conn := b.open()
+	defer conn.Close()
+	err := deleteKey(conn, key)
+	return err
+}
+
+func  deleteAllKeys(conn redis.Conn) error {
+	_, err := conn.Do("FLUSHDB")
+	return err
+}
+
+//DeleteAll deletes all objects from Redis storage
+func (b RedisConn) DeleteAll() error {
+	conn := b.open()
+	defer conn.Close()
+	err := deleteAllKeys(conn)
+	return err
+}
