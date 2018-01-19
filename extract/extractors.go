@@ -60,8 +60,9 @@ type Text struct {
 	IncludeIfEmpty bool
 	//Filters are used to manipulate Text data when extracting.
 	//Currently the following filters are available:
-	//upperCase returns a copy of the text with all Unicode letters mapped to their upper case. 
-	//lowerCase returns a copy of the text with all Unicode letters mapped to their lower case.
+	//upperCase makes all of the letters in the selected text  uppercase. 
+	//lowerCase makes all of the letters in the selected text lowercase.
+	//capitalize capitalizes the first letter of each word in the selected text
 	//trim returns a copy of the text, with all leading and trailing white space removed
 	Filters        []string
 }
@@ -282,8 +283,9 @@ type Attr struct {
 	IncludeIfEmpty bool
 	//Filters are used to manipulate HTML attribute when extracting.
 	//Currently the following filters are available:
-	//upperCase returns a copy of the Attr with all Unicode letters mapped to their upper case. 
-	//lowerCase returns a copy of the Attr with all Unicode letters mapped to their lower case.
+	//upperCase makes all of the letters in the Attr uppercase. 
+	//lowerCase makes all of the letters in the Attr lowercase.
+	//capitalizes the first letter of each word in the Attr
 	//trim returns a copy of the Attr, with all leading and trailing white space removed
 	Filters        []string
 }

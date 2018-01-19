@@ -12,11 +12,13 @@
 //
 //Currently the following filters are available:
 //
-//upperCase returns a copy of the Attr with all Unicode letters mapped to their upper case.
+//upperCase makes all of the letters in the Extractor's text/ Attr  uppercase.
 //
-//lowerCase returns a copy of the Attr with all Unicode letters mapped to their lower case.
+//lowerCase  makes all of the letters in the Extractor's text/ Attr   lowercase.
 //
-//trim returns a copy of the Attr, with all leading and trailing white space removed
+//capitalize capitalizes the first letter of each word in the Extractor's text/ Attr 
+//
+//trim returns a copy of the Extractor's text/ Attr, with all leading and trailing white space removed
 //
 //Filters are available for Text, Link and Image extractor types.
 //
