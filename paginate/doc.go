@@ -11,8 +11,7 @@
 //Next page can be obtained in several ways:
 //
 // BySelector returns a Paginator that extracts the next page from a document by
-// querying a given CSS selector and extracting the given HTML attribute from the
-// resulting element.
+// querying a given CSS selector and extracting the given HTML attribute from the resulting element.
 //
 // ByQueryParam returns a Paginator that returns the next page from a document
 // by incrementing a given query parameter.  Note that this will paginate

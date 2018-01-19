@@ -58,14 +58,22 @@ type Text struct {
 	// should be included to the results, as opposed to omitting the
 	// empty string.
 	IncludeIfEmpty bool
+	//Filters are used to manipulate Text data when extracting.
+	//Currently the following filters are available:
+	//upperCase returns a copy of the text with all Unicode letters mapped to their upper case. 
+	//lowerCase returns a copy of the text with all Unicode letters mapped to their lower case.
+	//trim returns a copy of the text, with all leading and trailing white space removed
+	Filters        []string
 }
+
 
 // Extract returns Text value from specified selection.
 func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
 	results := []string{}
-
 	sel.Each(func(i int, s *goquery.Selection) {
-		results = append(results, s.Text())
+		//filtering text data. 
+		filtered := filterText(s.Text(), e.Filters)
+		results = append(results, filtered)
 	})
 
 	if len(results) == 0 && !e.IncludeIfEmpty {
@@ -272,6 +280,12 @@ type Attr struct {
 	// Part should be included to the results, as opposed to omitting
 	// the empty list.
 	IncludeIfEmpty bool
+	//Filters are used to manipulate HTML attribute when extracting.
+	//Currently the following filters are available:
+	//upperCase returns a copy of the Attr with all Unicode letters mapped to their upper case. 
+	//lowerCase returns a copy of the Attr with all Unicode letters mapped to their lower case.
+	//trim returns a copy of the Attr, with all leading and trailing white space removed
+	Filters        []string
 }
 
 // Extract returns Attr value from specified selection.
@@ -291,8 +305,9 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 				if u.Host == "" {
 					val = strings.TrimSuffix(e.BaseURL, "/") + "/" + val
 				}
-				results = append(results, val)
 			}
+			filtered := filterText(val, e.Filters)
+			results = append(results, filtered)
 		}
 	})
 
@@ -390,6 +405,8 @@ type Image struct {
 	// match). Set AlwaysReturnList to true to disable this behaviour, ensuring
 	// that the Extract function always returns an array.
 	AlwaysReturnList bool
+	//Src represents src attribute of extracted Image
 	Src              Attr
+	//Alt represents alt attribute of extracted Image
 	Alt              Attr
 }
