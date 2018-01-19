@@ -22,6 +22,10 @@ Here is a simple example for requesting Parse endpoint:
 				"selector":".product-container a",
 				"extractor":{
 					"type":"link",
+            		"filters":[  
+                		"trim",
+                		"lowerCase"
+             		],
 					"params":{
 					"includeIfEmpty":false
 					}
@@ -31,7 +35,11 @@ Here is a simple example for requesting Parse endpoint:
 				"name":"Image",
 				"selector":"#product-container img",
 				"extractor":{
-					"type":"image"
+					"type":"image",
+					"filters":[  
+						"trim",
+						"upperCase"
+					]
 				}
 			},
 			{

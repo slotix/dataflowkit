@@ -46,7 +46,7 @@
              "type":"image",
              "filters":[  
                 "trim",
-                "upperCase"
+                "UpPerCaSe"
              ]
           }
        },
@@ -57,7 +57,7 @@
              "type":"text",
              "filters":[  
                 "trim",
-                "UpPerCaSe"
+                "capitalize"
              ],
              "params":{  
                 "includeIfEmpty":false
