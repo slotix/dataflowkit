@@ -281,7 +281,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 		var err error
 		switch eType := f.Extractor.Type; eType {
 
-		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
+		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors added.
 		case "link":
 			l := &extract.Link{
 				Href: extract.Attr{

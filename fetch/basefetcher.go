@@ -74,6 +74,11 @@ func (r BaseFetcherResponse) GetURL() string {
 	return r.URL
 }
 
+//GetHTML returns HTML content
+func (r BaseFetcherResponse) GetHTML() []byte {
+	return r.HTML
+}
+
 //GetExpires returns Response Expires value.
 func (r BaseFetcherResponse) GetExpires() time.Time {
 	return r.Expires
@@ -88,3 +93,5 @@ func (r BaseFetcherResponse) GetReasonsNotToCache() []cacheobject.Reason {
 func (req BaseFetcherRequest) GetURL() string {
 	return strings.TrimRight(strings.TrimSpace(req.URL), "/")
 }
+
+

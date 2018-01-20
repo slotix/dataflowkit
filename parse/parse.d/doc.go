@@ -7,7 +7,7 @@
 // by the BSD 3-Clause License license.
 
 /*
-Parse service of the Dataflow kit parses html content from web pages following the rules described in Payload JSON file.
+Parse service of the Dataflow kit parses html content from web pages following the rules described in configuration JSON file.
 
 Here is a simple example for requesting Parse endpoint:
 		curl -XPOST  127.0.0.1:8001/parse -d '
