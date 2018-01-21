@@ -8,6 +8,8 @@
 
 // Package extract of the Dataflow kit describes available extractors to retrieve a structured data from html web pages. The following extractor types are available: Text, HTML, OuterHTML, Attr, Link, Image, Regex.
 //
+//Filters
+//
 //Filters are used to manipulate text data when extracting.
 //
 //Currently the following filters are available:

@@ -16,24 +16,40 @@
 // Splash is a javascript rendering service.
 // Read more at https://github.com/scrapinghub/splash
 //
-// Here are examples for accessing Fetcher endpoints:
+// Accessing Fetcher endpoints
+//
+// Examples
 //		curl -XPOST  localhost:8000/fetch/splash -d '{"url":"http://example.com"}'
 //		curl -XPOST  localhost:8000/fetch/base -d '{"url":"http://example.com"}'
 //
-//Flags and configuration settings.
+// Flags and configuration settings
+//
+//General settings
 //		DFK_FETCH: HTTP listen address of Fetch service (defaults to "127.0.0.1:8000")
 //		SPLASH: Splash server host address. (defaults to "127.0.0.1:8050")
 //		SPLASH_TIMEOUT: Timeout in seconds for the page render (defaults to 20)
-//		SPLASH_RESOURCE_TIMEOUT: Timeout in seconds for individual network requests (defaults to 30)
-//		SPLASH_WAIT: Time in seconds to wait for updates after page is loaded(defaults to 0.5). Increase this value if you expect pages to contain setInterval/setTimeout javascript calls, because with wait=0 callbacks of setInterval/setTimeout won’t be executed. SPLASH_WAIT time must be less than SPLASH_TIMEOUT
-//		STORAGE_TYPE: Storage backend for intermediary data passed to Dataflow kit Parse service. Types: S3, Digital Ocean Spaces, Redis, Diskv (defaults to "Diskv"). It is case insensitive. 
-//		IGNORE_CACHE_INFO:  If a website is not cachable by some reason, ignore this and use cached copy if any (defaults to false). Please don't set it to true in production environment.
-//Specific settings for various storage backends are listed below.
-//		DISKV_BASE_DIR: diskv base directory for storing fetched html pages (defaults to "diskv"). Find more information about Diskv storage at https://github.com/peterbourgon/diskv
-//		SPACES_ENDPOINT: Digital Ocean Spaces Endpoint Address. find ,more information about DO Spaces at https://www.digitalocean.com/community/tutorials/an-introduction-to-digitalocean-spaces
-//		SPACES_CONFIG: Digital Ocean Spaces Configuration file location. (defaults to "~/.spaces/credentials")
+//		SPLASH_RESOURCE_TIMEOUT: Timeout in seconds for individual network requests 
+//		(defaults to 30)
+//		SPLASH_WAIT: Time in seconds to wait for updates after page is loaded
+//		(defaults to 0.5). Increase this value if you expect pages to contain
+//		setInterval/setTimeout javascript calls, because with wait=0 callbacks of
+//		setInterval/setTimeout won’t be executed. SPLASH_WAIT time must be less than SPLASH_TIMEOUT
+//Storage settings
+//		STORAGE_TYPE: Storage backend for intermediary data passed to Dataflow 
+//		kit Parse service. Types: S3, Digital Ocean Spaces, Redis, Diskv 
+//		(defaults to "Diskv"). It is case insensitive.
+//		IGNORE_CACHE_INFO:  If a website is not cachable by some reason, 
+//		ignore this and use cached copy if any (defaults to false). 
+//		Don't set it to true in production environment.
+//		DISKV_BASE_DIR: diskv base directory for storing fetched html pages (defaults to "diskv").
+//		Find more information about Diskv storage at https://github.com/peterbourgon/diskv
+//		SPACES_ENDPOINT: Digital Ocean Spaces Endpoint Address.
+//		Find more information about DO Spaces at https://www.digitalocean.com/community/tutorials/an-introduction-to-digitalocean-spaces
+//		SPACES_CONFIG: Digital Ocean Spaces Configuration file location.
+//		(defaults to "~/.spaces/credentials")
 //		S3_REGION: AWS S3 or Digital Ocean Spaces region (defaults to "us-east-1")
-//		DFK_BUCKET: Amazon AWS S3 or Digital Ocean Spaces bucket name for storing fetch results. (defaults to "dfk-storage")
+//		DFK_BUCKET: Amazon AWS S3 or Digital Ocean Spaces bucket name for storing 
+//		fetch results. (defaults to "dfk-storage")
 //		REDIS: Redis host address (defaults to "127.0.0.1:6379")
 //		REDIS_EXPIRE: Default Redis expire value in seconds  (defaults to 3600)
 //		REDIS_NETWORK: Redis Network (defaults to "tcp")
