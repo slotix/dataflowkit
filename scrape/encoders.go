@@ -12,17 +12,18 @@ import (
 )
 
 func newEncoder(s Task) (e encoder) {
-	switch strings.ToLower(s.Scrapers[0].Opts.Format) {
+	//switch strings.ToLower(s.Scrapers[0].Opts.Format) {
+	switch strings.ToLower(s.Payload.Format) {
 	case "csv":
 		e = CSVEncoder{
 			comma:     ",",
-			partNames: s.Scrapers[0].partNames(),
+		//	partNames: s.Scrapers[0].partNames(),
 			results:   &s.Results,
 		}
 		return
 	case "json":
 		e = JSONEncoder{
-			paginateResults: s.Scrapers[0].Opts.PaginateResults,
+		//	paginateResults: s.Scrapers[0].Opts.PaginateResults,
 			results:         &s.Results,
 		}
 		return

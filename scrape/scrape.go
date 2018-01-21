@@ -38,12 +38,14 @@ func init() {
 func NewTask(p Payload) *Task {
 	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
 	id := ksuid.New()
+	tQueue := make(chan *Scraper, 100)
 	return &Task{
 		ID:      id.String(),
 		Payload: p,
 		Results: Results{
 			Visited: make(map[string]error),
 		},
+		TaskQueue: tQueue,
 		Robots: make(map[string]*robotstxt.RobotsData),
 	}
 
@@ -55,7 +57,8 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.Scrapers = append(t.Scrapers, scraper)
+	//t.Scrapers = append(t.Scrapers, scraper)
+	t.TaskQueue <- scraper
 
 	//scrape request and return results.
 	err = t.scrape(scraper)
@@ -148,26 +151,27 @@ func (t *Task) scrape(scraper *Scraper) error {
 					sel = sel.Find(part.Selector)
 				}
 
-				partResults, err := part.Extractor.Extract(sel)
+				extractedPartResults, err := part.Extractor.Extract(sel)
 				if err != nil {
 					return err
 				}
 
 				// A nil response from an extractor means that we don't even include it in
 				// the results.
-				if partResults == nil {
+				if extractedPartResults == nil {
 					continue
 				}
 
-				blockResults[part.Name] = partResults
+				blockResults[part.Name] = extractedPartResults
 
 				//********* details
-				part.Details = nil
+				//part.Details = nil
 				if part.Details != nil {
 					part.Details.Request = splash.Request{
-						URL: partResults.(string),
+						URL: extractedPartResults.(string),
 					}
-					t.Scrapers = append(t.Scrapers, part.Details)
+					//t.Scrapers = append(t.Scrapers, part.Details)
+					t.TaskQueue <- part.Details
 					err := t.scrape(part.Details)
 					if err != nil {
 						return err
@@ -332,7 +336,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 					Attr:    "src",
 					BaseURL: p.Request.URL},
 				Alt: extract.Attr{
-					Attr: "alt",
+					Attr:    "alt",
 					Filters: f.Extractor.Filters,
 				},
 			}

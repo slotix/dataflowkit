@@ -43,13 +43,19 @@ var (
 	splashResourceTimeout int
 	splashWait            float64
 
-	storageType        string
-	storageItemExpires int64 //how long in seconds object stay in a cache before expiration.
-	diskvBaseDir       string
+	storageType string
+	//how long in seconds object stay in a cache before expiration.
+	//storageItemExpires int64
+	ignoreCacheInfo bool
+	diskvBaseDir    string
 
-	spacesConfig   string //Digital Ocean spaces configuration file
-	spacesEndpoint string //Digital Ocean spaces endpoint address
-	DFKBucket      string //Bucket name for AWS S3 or DO Spaces
+	//Digital Ocean spaces configuration file
+	spacesConfig string
+	//Digital Ocean spaces endpoint address
+	spacesEndpoint string
+	s3Region       string
+	//Bucket name for AWS S3 or DO Spaces
+	DFKBucket string
 
 	redisHost       string
 	redisExpire     int
@@ -110,16 +116,18 @@ func init() {
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "a", "127.0.0.1:8000", "HTTP listen address")
 
 	RootCmd.Flags().StringVarP(&splashHost, "SPLASH", "s", "127.0.0.1:8050", "Splash host address")
-	RootCmd.Flags().IntVarP(&splashTimeout, "SPLASH_TIMEOUT", "", 20, "A timeout (in seconds) for the render.")
+	RootCmd.Flags().IntVarP(&splashTimeout, "SPLASH_TIMEOUT", "", 20, "Timeout (in seconds) for the render.")
 	RootCmd.Flags().IntVarP(&splashResourceTimeout, "SPLASH_RESOURCE_TIMEOUT", "", 30, "A timeout (in seconds) for individual network requests.")
 	RootCmd.Flags().Float64VarP(&splashWait, "SPLASH_WAIT", "", 0.5, "Time in seconds to wait until js scripts loaded.")
 
 	//set here default type of storage
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
-	RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 3600, "Default value for item expiration in seconds")
+	//RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 3600, "Default value for item expiration in seconds")
+	RootCmd.Flags().BoolVarP(&ignoreCacheInfo, "IGNORE_CACHE_INFO", "", true, "If a website is not cachable by some reason, ignore this and use cached copy if any. Please don't set it to true in production")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
 	RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", homeDir()+".spaces/credentials", "Digital Ocean Spaces Configuration file")
 	RootCmd.Flags().StringVarP(&spacesEndpoint, "SPACES_ENDPOINT", "", "https://ams3.digitaloceanspaces.com", "Digital Ocean Spaces Endpoint Address")
+	RootCmd.Flags().StringVarP(&s3Region, "S3_REGION", "", "us-east-1", "AWS S3 or Digital Ocean Spaces region")
 	RootCmd.Flags().StringVarP(&DFKBucket, "DFK_BUCKET", "", "dfk-storage", "AWS S3 or Digital Ocean Spaces bucket name for storing fetch results")
 
 	RootCmd.Flags().StringVarP(&redisHost, "REDIS", "r", "127.0.0.1:6379", "Redis host address")
@@ -138,10 +146,12 @@ func init() {
 	viper.BindPFlag("SPLASH_WAIT", RootCmd.Flags().Lookup("SPLASH_WAIT"))
 
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
-	viper.BindPFlag("ITEM_EXPIRE_IN", RootCmd.Flags().Lookup("ITEM_EXPIRE_IN"))
+	//viper.BindPFlag("ITEM_EXPIRE_IN", RootCmd.Flags().Lookup("ITEM_EXPIRE_IN"))
+	viper.BindPFlag("IGNORE_CACHE_INFO", RootCmd.Flags().Lookup("IGNORE_CACHE_INFO"))
 	viper.BindPFlag("SPACES_CONFIG", RootCmd.Flags().Lookup("SPACES_CONFIG"))
 	viper.BindPFlag("SPACES_ENDPOINT", RootCmd.Flags().Lookup("SPACES_ENDPOINT"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
+	viper.BindPFlag("S3_REGION", RootCmd.Flags().Lookup("S3_REGION"))
 	viper.BindPFlag("DFK_BUCKET", RootCmd.Flags().Lookup("DFK_BUCKET"))
 	viper.BindPFlag("REDIS", RootCmd.Flags().Lookup("REDIS"))
 	viper.BindPFlag("REDIS_EXPIRE", RootCmd.Flags().Lookup("REDIS_EXPIRE"))
