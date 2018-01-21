@@ -112,7 +112,7 @@ func expiredKey(obj *s3.GetObjectOutput, storageExpire int64) bool {
 	exp := time.Duration(storageExpire) * time.Second
 	expiry := lastModified.Add(exp)
 	diff := expiry.Sub(currentTime)
-	logger.Infof("cache lifespan is %+v", diff)
+	//logger.Infof("cache lifespan is %+v", diff)	
 	//Expired?
 	return diff < 0
 }

@@ -164,7 +164,8 @@ type Results struct {
 type Task struct {
 	ID       string
 	Payload  Payload
-	Scrapers []*Scraper
+	//Scrapers []*Scraper
+	TaskQueue chan *Scraper
 	Robots   map[string]*robotstxt.RobotsData
 	Results
 }

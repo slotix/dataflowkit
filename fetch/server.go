@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
+	"github.com/spf13/viper"
 
 	"github.com/slotix/dataflowkit/storage"
 )
@@ -29,18 +30,18 @@ func Start(DFKFetch string) {
 		//logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 	//creating storage for caching of html content
-	/*
-		storageType, err := storage.ParseType(viper.GetString("STORAGE_TYPE"))
-		if err != nil {
-			logger.Log(err)
-		}
-		storage := storage.NewStore(storageType)
-	*/
+
+	storageType, err := storage.ParseType(viper.GetString("STORAGE_TYPE"))
+	if err != nil {
+		logger.Log(err)
+	}
+	storage := storage.NewStore(storageType)
+
 	var svc Service
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
 	svc = RobotsTxtMiddleware()(svc)
-	//svc = StorageMiddleware(storage)(svc)
+	svc = StorageMiddleware(storage)(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{
