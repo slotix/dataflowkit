@@ -10,57 +10,57 @@
 Parse service of the Dataflow kit parses html content from web pages following the rules described in configuration JSON file.
 
 Here is a simple example for requesting Parse endpoint:
-		curl -XPOST  127.0.0.1:8001/parse -d '
-		{
-		"name":"collection",
-		"request":{
-			"url":"https://example.com"
-		},
-		"fields":[
-			{
-				"name":"Title",
-				"selector":".product-container a",
-				"extractor":{
-					"type":"link",
-            		"filters":[  
-                		"trim",
-                		"lowerCase"
-             		],
-					"params":{
-					"includeIfEmpty":false
-					}
-				}
-			},
-			{
-				"name":"Image",
-				"selector":"#product-container img",
-				"extractor":{
-					"type":"image",
-					"filters":[  
-						"trim",
-						"upperCase"
-					]
-				}
-			},
-			{
-				"name":"Buyinfo",
-				"selector":".buy-info",
-				"extractor":{
-					"type":"text",
-					"params":{
-					"includeIfEmpty":false
-					}
-				}
-			}
-		],
-		"paginator":{
-			"selector":".next",
-			"attr":"href",
-			"maxPages":3
-		},
-		"format":"json",
-		"paginateResults":false
-		}'
+  curl -XPOST  127.0.0.1:8001/parse -d '
+  {
+   "name":"collection",
+   "request":{
+      "url":"https://example.com"
+   },
+   "fields":[
+      {
+         "name":"Title",
+         "selector":".product-container a",
+         "extractor":{
+            "type":"link",
+            "filters":[
+               "trim",
+               "lowerCase"
+            ],
+            "params":{
+               "includeIfEmpty":false
+            }
+         }
+      },
+      {
+         "name":"Image",
+         "selector":"#product-container img",
+         "extractor":{
+            "type":"image",
+            "filters":[
+               "trim",
+               "upperCase"
+            ]
+         }
+      },
+      {
+         "name":"Buyinfo",
+         "selector":".buy-info",
+         "extractor":{
+            "type":"text",
+            "params":{
+               "includeIfEmpty":false
+            }
+         }
+      }
+   ],
+   "paginator":{
+      "selector":".next",
+      "attr":"href",
+      "maxPages":3
+   },
+   "format":"json",
+   "paginateResults":false
+  }'
 
 
 Name
