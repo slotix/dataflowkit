@@ -43,10 +43,6 @@ func NewTask(p Payload) *Task {
 		ID:      id.String(),
 		Payload: p,
 		Visited: make(map[string]error),
-	//	Results: Results{
-			
-	//	},
-		//	TaskQueue: tQueue,
 		Robots: make(map[string]*robotstxt.RobotsData),
 	}
 
@@ -58,23 +54,19 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	//t.Scrapers = append(t.Scrapers, scraper)
-	//t.TaskQueue <- scraper
 
 	//scrape request and return results.
-	output, err := t.scrape(scraper)
+	results, err := t.scrape(scraper)
 	if err != nil {
 		return nil, err
 	}
 	logger.Info(t.Visited)
-//	t.Results.Output = output
-	t.Results = *output
 	
-	e := newEncoder(*t)
+	e := newEncoder(t.Payload.Format)
 	if e == nil {
 		return nil, errors.New("invalid output format specified")
 	}
-	r, err := e.Encode()
+	r, err := e.Encode(results)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +137,6 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 		}
 
 		t.Visited[url] = nil //???????
-		//results := []map[string]interface{}{}
 
 		// Divide this page into blocks
 		for _, block := range scraper.DividePage(doc.Selection) {
@@ -177,15 +168,10 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 					part.Details.Request = splash.Request{
 						URL: extractedPartResults.(string),
 					}
-					//	t.Scrapers = append(t.Scrapers, part.Details)
-					//t.TaskQueue <- part.Details
 					resDetails, err := t.scrape(part.Details)
 					if err != nil {
 						return nil, err
 					}
-					//rs := Results{resDetails}
-					//logger.Info(rs)
-					//blockResults[part.Name+"_details"] = rs.AllBlocks()
 					blockResults[part.Name+"_details"] = resDetails.AllBlocks()
 				}
 			}
@@ -195,8 +181,6 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 			}
 		}
 
-		// Append the results from this page.
-		//t.Output = append(t.Output, results)
 		output = append(output, results)
 
 		numPages++
@@ -229,8 +213,6 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 	}
 
 	// All good!
-	//return &s.Results, nil
-	//return output, nil
 	return &Results{output}, err
 
 }
