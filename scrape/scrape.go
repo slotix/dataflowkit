@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -43,9 +44,9 @@ func NewTask(p Payload) *Task {
 		ID:      id.String(),
 		Payload: p,
 		Visited: make(map[string]error),
-		Robots: make(map[string]*robotstxt.RobotsData),
+		Robots:  make(map[string]*robotstxt.RobotsData),
 	}
-	
+
 }
 
 // Parse processes specified task which parses fetched page.
@@ -54,26 +55,36 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	//scrape request and return results.
 	results, err := t.scrape(scraper)
 	if err != nil {
 		return nil, err
 	}
 	logger.Info(t.Visited)
-	
-	e := newEncoder(t.Payload.Format)
-	if e == nil {
+
+	var e encoder
+	switch strings.ToLower(t.Payload.Format) {
+	case "csv":
+		e = CSVEncoder{
+			comma: ",",
+			partNames: scraper.partNames(),
+		}
+	case "json":
+		e = JSONEncoder{
+			paginateResults: *t.Payload.PaginateResults,
+		}
+	case "xml":
+		e = XMLEncoder{}
+	default:
 		return nil, errors.New("invalid output format specified")
 	}
+	
 	r, err := e.Encode(results)
 	if err != nil {
 		return nil, err
 	}
 	return r, err
 }
-
-
 
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
 func (t *Task) scrape(scraper *Scraper) (*Results, error) {
@@ -126,7 +137,7 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 			return nil, err
 		}
 
-		t.Visited[url] = nil 
+		t.Visited[url] = nil
 
 		// Divide this page into blocks
 		for _, block := range scraper.DividePage(doc.Selection) {
@@ -188,11 +199,11 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 		if *t.Payload.RandomizeFetchDelay {
 			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 			rand := Random(500, 1500)
-			delay := t.Payload.FetchDelay * time.Duration(rand) / 1000
-			logger.Info(delay, " ",req.URL)
+			delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
+			logger.Info(delay, " ", req.URL)
 			time.Sleep(delay)
 		} else {
-			time.Sleep(t.Payload.FetchDelay)
+			time.Sleep(*t.Payload.FetchDelay)
 		}
 
 	}
@@ -466,7 +477,6 @@ func (r *Results) AllBlocks() []map[string]interface{} {
 
 	return ret
 }
-
 
 //KSUID stores the timestamp portion in ID. So we can retrieve it from Task object as a Time object
 func (t Task) startTime() (*time.Time, error) {

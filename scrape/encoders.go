@@ -11,34 +11,11 @@ import (
 	"github.com/clbanning/mxj"
 )
 
-//TODO: 1. process gi ts??? for CSV, PaginateResults
-//2. skip details for CSV encoder
-//3. Add Excel
+//bug: xml is not correct if there are details in payload
 //
-func newEncoder(format string) (e encoder) {
-	switch strings.ToLower(format) {
-	case "csv":
-		e = CSVEncoder{
-			comma: ",",
-			//	partNames: s.Scrapers[0].partNames(),
-		}
-		return
-	case "json":
-		e = JSONEncoder{
-		//	paginateResults: s.Scrapers[0].Opts.PaginateResults,
-		}
-		return
-	case "xml":
-		e = XMLEncoder{}
-		return e
-	default:
-		return nil
-	}
-}
 
 type encoder interface {
 	Encode(*Results) (io.ReadCloser, error)
-	Format() string
 }
 
 // CSVEncoder transforms parsed data to CSV format.
@@ -66,11 +43,6 @@ func (e JSONEncoder) Encode(results *Results) (io.ReadCloser, error) {
 	}
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
-}
-
-//Format returns format of JSONEncoder
-func (JSONEncoder) Format() string {
-	return "JSON"
 }
 
 //Encode method implementation for CSVEncoder
@@ -101,10 +73,7 @@ func (e CSVEncoder) Encode(results *Results) (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
-//Format returns format of CSVEncoder
-func (CSVEncoder) Format() string {
-	return "CSV"
-}
+
 
 //Encode method implementation for XMLEncoder
 func (e XMLEncoder) Encode(results *Results) (io.ReadCloser, error) {
@@ -132,10 +101,6 @@ func (e XMLEncoder) Encode(results *Results) (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
-//Format returns format of XMLEncoder
-func (XMLEncoder) Format() string {
-	return "XML"
-}
 
 //encodeCSV writes data to w *csv.Writer.
 //header represent an array of fields for csv.
