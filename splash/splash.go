@@ -308,6 +308,7 @@ func (req Request) GetURL() string {
 	return strings.TrimRight(strings.TrimSpace(req.URL),  "/")
 }
 
+
 // Host returns Host value from Request
 func (req Request) Host() (string, error) {
 	u, err := url.Parse(req.GetURL())

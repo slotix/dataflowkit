@@ -64,7 +64,7 @@ func GetSetCookie(headers http.Header) string{
 	if setCookie == "" {
 		return ""
 	}
-	logger.Info(setCookie)
+//	logger.Info(setCookie)
 	//there may be more than one cookie in Set-Cookie
 	//heu_uzt=72e3502635d3af8fa2916cf397e93fee; expires=Tue, 04-Jul-2017 13:28:36 GMT; Max-Age=2592000; path=/; domain=.heu.tt
 	//heu_s=1; expires=Mon, 04-Jun-2018 13:28:36 GMT; Max-Age=31536000; path=/; domain=.heu.tt

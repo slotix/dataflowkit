@@ -13,6 +13,8 @@ func filterText(data string, filters []string) string{
 			data = strings.ToLower(data)
 		case "uppercase":
 			data = strings.ToUpper(data)
+		case "capitalize":
+			data = strings.Title(data)			
 		}
 	}
 	return data

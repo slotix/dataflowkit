@@ -148,12 +148,7 @@ type Scraper struct {
 // pages (URLs) visited during the process, along with all results generated
 // from each Part in each page.
 type Results struct {
-	// Visited contain a map[url]error during this scrape.
-	// Always contains at least one element - the initial URL.
-	//Failed pages should be rescheduled for download at the end if during a scrape one of the following statuses returned [500, 502, 503, 504, 408]
-	//once the spider has finished crawling all other (non failed) pages.
-	Visited map[string]error
-
+	
 	// Output represents combined results after parsing from each Part of each page.  Essentially, the top-level array
 	// is for each page, the second-level array is for each block in a page, and
 	// the final map[string]interface{} is the mapping of Part.Name to results.
@@ -164,7 +159,13 @@ type Results struct {
 type Task struct {
 	ID       string
 	Payload  Payload
-	Scrapers []*Scraper
+	//Scrapers []*Scraper
+	// Visited contain a map[url]error during this scrape.
+	// Always contains at least one element - the initial URL.
+	//Failed pages should be rescheduled for download at the end if during a scrape one of the following statuses returned [500, 502, 503, 504, 408]
+	//once the spider has finished crawling all other (non failed) pages.
+	Visited map[string]error
+	//TaskQueue chan *Scraper
 	Robots   map[string]*robotstxt.RobotsData
-	Results
+	//Results
 }

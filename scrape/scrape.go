@@ -38,12 +38,11 @@ func init() {
 func NewTask(p Payload) *Task {
 	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
 	id := ksuid.New()
+	//tQueue := make(chan *Scraper, 100)
 	return &Task{
 		ID:      id.String(),
 		Payload: p,
-		Results: Results{
-			Visited: make(map[string]error),
-		},
+		Visited: make(map[string]error),
 		Robots: make(map[string]*robotstxt.RobotsData),
 	}
 
@@ -55,18 +54,19 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.Scrapers = append(t.Scrapers, scraper)
 
 	//scrape request and return results.
-	err = t.scrape(scraper)
+	results, err := t.scrape(scraper)
 	if err != nil {
 		return nil, err
 	}
-	e := newEncoder(*t)
+	logger.Info(t.Visited)
+	
+	e := newEncoder(t.Payload.Format)
 	if e == nil {
 		return nil, errors.New("invalid output format specified")
 	}
-	r, err := e.Encode()
+	r, err := e.Encode(results)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +84,10 @@ func (t Task) startTime() (*time.Time, error) {
 }
 
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
-func (t *Task) scrape(scraper *Scraper) error {
+func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 	results := []map[string]interface{}{}
+	output := [][]map[string]interface{}{}
+
 	req := scraper.Request
 	url := req.GetURL()
 
@@ -122,20 +124,19 @@ func (t *Task) scrape(scraper *Scraper) error {
 		sResponse, err := responseFromFetchService(req)
 		//sResponse, err := req.(splash.Request).GetResponse()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		content, err := sResponse.GetContent()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		// Create a goquery document.
 		doc, err := goquery.NewDocumentFromReader(content)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		t.Visited[url] = nil //???????
-		//results := []map[string]interface{}{}
 
 		// Divide this page into blocks
 		for _, block := range scraper.DividePage(doc.Selection) {
@@ -148,34 +149,30 @@ func (t *Task) scrape(scraper *Scraper) error {
 					sel = sel.Find(part.Selector)
 				}
 
-				partResults, err := part.Extractor.Extract(sel)
+				extractedPartResults, err := part.Extractor.Extract(sel)
 				if err != nil {
-					return err
+					return nil, err
 				}
 
 				// A nil response from an extractor means that we don't even include it in
 				// the results.
-				if partResults == nil {
+				if extractedPartResults == nil {
 					continue
 				}
 
-				blockResults[part.Name] = partResults
+				blockResults[part.Name] = extractedPartResults
 
 				//********* details
-				part.Details = nil
+				//part.Details = nil
 				if part.Details != nil {
 					part.Details.Request = splash.Request{
-						URL: partResults.(string),
+						URL: extractedPartResults.(string),
 					}
-					t.Scrapers = append(t.Scrapers, part.Details)
-					err := t.scrape(part.Details)
+					resDetails, err := t.scrape(part.Details)
 					if err != nil {
-						return err
+						return nil, err
 					}
-
-					//blockResults[part.Name]
-					//part.Details.Results = append(part.Details.Results, )
-					//	logger.Println(blockResults[part.Name], part.Details)
+					blockResults[part.Name+"_details"] = resDetails.AllBlocks()
 				}
 			}
 			if len(blockResults) > 0 {
@@ -184,15 +181,14 @@ func (t *Task) scrape(scraper *Scraper) error {
 			}
 		}
 
-		// Append the results from this page.
-		t.Output = append(t.Output, results)
+		output = append(output, results)
 
 		numPages++
 
 		// Get the next page.
 		url, err = scraper.Paginator.NextPage(url, doc.Selection)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		//every time when getting a response the next request will be filled with updated cookie information
@@ -213,12 +209,11 @@ func (t *Task) scrape(scraper *Scraper) error {
 
 	}
 	if len(results) == 0 {
-		return &errs.BadPayload{errs.ErrEmptyResults}
+		return nil, &errs.BadPayload{errs.ErrEmptyResults}
 	}
-	//logger.Info(task.Visited)
+
 	// All good!
-	//return &s.Results, nil
-	return nil
+	return &Results{output}, err
 
 }
 
@@ -281,7 +276,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 		var err error
 		switch eType := f.Extractor.Type; eType {
 
-		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors are added.
+		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors added.
 		case "link":
 			l := &extract.Link{
 				Href: extract.Attr{
@@ -332,7 +327,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 					Attr:    "src",
 					BaseURL: p.Request.URL},
 				Alt: extract.Attr{
-					Attr: "alt",
+					Attr:    "alt",
 					Filters: f.Extractor.Filters,
 				},
 			}
@@ -365,21 +360,6 @@ func (p Payload) fields2parts() ([]Part, error) {
 				e = &extract.Text{
 					Filters: f.Extractor.Filters,
 				}
-				/*
-					t := &extract.Text{}
-					fParams := params["filters"]
-					filters := []string{}
-					if fParams != nil {
-						for _, f := range fParams.([]interface{}) {
-							filters = append(filters, f.(string))
-						}
-					}
-					logger.Info(filters)
-					logger.Infof("%T", filters)
-
-					t.Filters = filters
-					//	f2 := filters.([]string)
-					e = t */
 			case "html":
 				e = &extract.Html{}
 			case "outerHtml":
@@ -399,7 +379,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 					logger.Error(err)
 				}
 			}
-			logger.Info(e)
+			//logger.Info(e)
 			parts = append(parts, Part{
 				Name:      f.Name,
 				Selector:  f.Selector,

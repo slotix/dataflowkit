@@ -66,16 +66,16 @@ func Test_getObject(t *testing.T) {
 func Test_expiredKey(t *testing.T) {
 	modifiedRightNow := time.Now().UTC()
 	expired := expiredKey(&s3.GetObjectOutput{
-		LastModified: &modifiedRightNow}, 
+		LastModified: &modifiedRightNow},
 		int64(3600))
-	assert.Equal(t, expired, false, "Expected false for an item modified right now" )
+	assert.Equal(t, expired, false, "Expected false for an item modified right now")
 
 	minus2Hours := time.Duration(-2 * time.Hour)
 	lastModified2HoursAgo := time.Now().UTC().Add(minus2Hours)
 	expired = expiredKey(&s3.GetObjectOutput{
-		LastModified: &lastModified2HoursAgo}, 
+		LastModified: &lastModified2HoursAgo},
 		int64(3600))
-	assert.Equal(t, expired, true, "Expected true for an item modified 2 hours ago" )
+	assert.Equal(t, expired, true, "Expected true for an item modified 2 hours ago")
 }
 
 func Test_expiredKey1(t *testing.T) {
@@ -91,15 +91,15 @@ func Test_expiredKey1(t *testing.T) {
 		args args
 		want bool
 	}{
-		{name: "Modified 2 hours ago", 
-		args : args {
-			obj: &s3.GetObjectOutput{LastModified: &lastModified2HoursAgo}, 
-			storageExpire: int64(3600),
-		},
-		want: true},
-		{name: "Modified right now", 
-			args : args {
-				obj: &s3.GetObjectOutput{LastModified: &modifiedRightNow}, 
+		{name: "Modified 2 hours ago",
+			args: args{
+				obj:           &s3.GetObjectOutput{LastModified: &lastModified2HoursAgo},
+				storageExpire: int64(3600),
+			},
+			want: true},
+		{name: "Modified right now",
+			args: args{
+				obj:           &s3.GetObjectOutput{LastModified: &modifiedRightNow},
 				storageExpire: int64(3600),
 			},
 			want: false},
@@ -112,7 +112,6 @@ func Test_expiredKey1(t *testing.T) {
 		})
 	}
 }
-
 
 func Test_delete(t *testing.T) {
 	svc := new(mocks.S3API)
@@ -129,7 +128,7 @@ func Test_deleteAll(t *testing.T) {
 			&s3.Object{Key: aws.String("1")},
 			&s3.Object{Key: aws.String("2")},
 			&s3.Object{Key: aws.String("3")},
-			},
+		},
 		IsTruncated: aws.Bool(false),
 	}, nil)
 	svc.On("DeleteObjects", mock.AnythingOfType("*s3.DeleteObjectsInput")).Return(&s3.DeleteObjectsOutput{}, nil)
@@ -137,6 +136,7 @@ func Test_deleteAll(t *testing.T) {
 	err := deleteAll(svc, "bucket")
 	assert.Nil(t, err, "Expected no error")
 }
+
 //Actual tests *******
 /*
 var (
@@ -144,20 +144,31 @@ var (
 )
 
 func init() {
-	viper.Set("SPACES_CONFIG", homeDir()+".spaces/credentials")
-	viper.Set("SPACES_ENDPOINT", "https://ams3.digitaloceanspaces.com")
+	//viper.Set("SPACES_CONFIG", homeDir()+".spaces/credentials")
+	//viper.Set("SPACES_ENDPOINT", "https://ams3.digitaloceanspaces.com")
 	viper.Set("DFK_BUCKET", "dfk-storage")
 	bucket := viper.GetString("DFK_BUCKET")
 	config := &aws.Config{
-		//Load credentials from specified file
-		Credentials: credentials.NewSharedCredentials(viper.GetString("SPACES_CONFIG"), ""),
-		//Endpoint is obligatory for DO Spaces
-		Endpoint:    aws.String(viper.GetString("SPACES_ENDPOINT")),
-		//Region parameter may have any value for Digital Ocean spaces. But it can't be omitted.
-		Region:      aws.String("ams333"),
+		Region: aws.String("us-east-1"),
 	}
 	conn = newS3Conn(config, bucket)
 }
+
+// func init() {
+// 	viper.Set("SPACES_CONFIG", homeDir()+".spaces/credentials")
+// 	viper.Set("SPACES_ENDPOINT", "https://ams3.digitaloceanspaces.com")
+// 	viper.Set("DFK_BUCKET", "dfk-storage")
+// 	bucket := viper.GetString("DFK_BUCKET")
+// 	config := &aws.Config{
+// 		//Load credentials from specified file
+// 		Credentials: credentials.NewSharedCredentials(viper.GetString("SPACES_CONFIG"), ""),
+// 		//Endpoint is obligatory for DO Spaces
+// 		Endpoint: aws.String(viper.GetString("SPACES_ENDPOINT")),
+// 		//Region parameter may have any value for Digital Ocean spaces. But it can't be omitted.
+// 		Region: aws.String("ams333"),
+// 	}
+// 	conn = newS3Conn(config, bucket)
+// }
 
 func TestListBucketsAWS(t *testing.T) {
 	config := &aws.Config{Region: aws.String("us-west-1")}
@@ -211,12 +222,12 @@ func TestListBucketItems(t *testing.T) {
 func TestUploadDownloadDelete(t *testing.T) {
 	//Test upload
 	buf := []byte("file content test\nanother line of test here")
-	err := conn.upload("test", buf, 0)
+	err := conn.Write("test", buf, 0)
 	assert := assert.New(t)
 	assert.Equal(err, nil)
 
 	//Test download
-	downloaded, _ := conn.download("test")
+	downloaded, _ := conn.Read("test")
 	assert.Equal(buf, downloaded)
 
 	//Test Get Object
@@ -225,11 +236,11 @@ func TestUploadDownloadDelete(t *testing.T) {
 	assert.NotNil(object)
 
 	//Test delete
-	_, err = conn.delete("test")
+	err = conn.Delete("test")
 	assert.Nil(err)
 
 	//Test Downloading of item with Invalid Key recently deleted
-	downloaded, err = conn.download("test")
+	downloaded, err = conn.Read("test")
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			assert.Equal(aerr.Code(), "NoSuchKey")
@@ -252,6 +263,5 @@ func homeDir() string {
 	}
 	return usr.HomeDir + "/"
 }
-
 */
 //**********

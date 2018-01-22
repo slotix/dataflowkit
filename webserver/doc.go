@@ -6,10 +6,13 @@
 // All rights reserved. Use of this source code is governed
 // by the BSD 3-Clause License license.
 
-// Webserver service of the Dataflow kit serves website for data extraction. It helps Payload JSON generation with point and click interface for feeding Dataflow kit parser.
+// Webserver command of the Dataflow kit starts webserver for serving front end for data extraction services. It generates JSON configuration file with point and click interface for feeding Dataflow kit parser.
 //
-//It also passes requests for fetching html web pages and parser endpoints to corresponding services.
+//It also proxies requests for fetching html web pages and parser endpoints to corresponding services.
 //
+// Starting
+//
+//	
 package main
 
 // EOF

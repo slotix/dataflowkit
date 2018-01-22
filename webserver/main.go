@@ -17,6 +17,7 @@ var (
 	baseDir       = flag.String("b", "../web", "HTML files location.")
 )
 
+
 func main() {
 	flag.Parse()
 	//gin.SetMode(gin.ReleaseMode)

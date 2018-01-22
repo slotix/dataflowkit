@@ -2,43 +2,83 @@ package fetch
 
 import (
 	"testing"
+	"time"
 
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/storage"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_storageMiddleware(t *testing.T) {
+var (
+	mw storageMiddleware
+	s storage.Store
+)
+
+func init() {
 	var svc Service
 	svc = FetchService{}
 	storageType, err := storage.ParseType("Diskv")
-	assert.Nil(t, err, "Expected no error")
-	storage := storage.NewStore(storageType)
-	mw := storageMiddleware{
-		storage: storage,
+	if err != nil{
+		logger.Error(err)
+	}
+	//assert.Nil(t, err, "Expected no error")
+	s = storage.NewStore(storageType)
+	mw = storageMiddleware{
+		storage: s,
 		Service: svc,
 	}
-	resp, err := mw.Fetch(splash.Request{
+}
+
+func Test_storageMiddleware(t *testing.T) {	
+	req := splash.Request{
 		URL:    "http://example.com",
 		Params: "", Cookies: "", Func: "",
-	})
+	}
+	//Loading from remote server
+	start := time.Now()
+	resp, err := mw.Fetch(req)
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
+	elapsed1 := time.Since(start)
+	t.Log("Loading from remote server... ", elapsed1)
 
-	err = storage.DeleteAll()
+	//Loading from cached storage
+	start = time.Now()
+	resp, err = mw.Fetch(req)
 	assert.Nil(t, err, "Expected no error")
+	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
+	elapsed2 := time.Since(start)
+	t.Log("Loading from remote server... ", elapsed2)
+	assert.Equal(t, true, elapsed1>elapsed2, "it takes longer to load a webpage from remote server")
 
+	err = s.DeleteAll()
+	assert.Nil(t, err, "Expected no error")
+}
 
-	resp, err = mw.Response(splash.Request{
-		URL:    "http://example.com",
+func Test_IGNORE_CACHE_INFO(t *testing.T) {
+	viper.Set("IGNORE_CACHE_INFO", true)
+	req := splash.Request{
+		URL:    "http://google.com",
 		Params: "", Cookies: "", Func: "",
-	})
+	}
+	//Loading from remote server
+	start := time.Now()
+	resp, err := mw.Fetch(req)
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
-	
+	elapsed1 := time.Since(start)
+	t.Log("Loading from remote server... ", elapsed1)
 
-	err = storage.DeleteAll()
+	//Loading from cached storage
+	start = time.Now()
+	resp, err = mw.Fetch(req)
 	assert.Nil(t, err, "Expected no error")
+	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
+	elapsed2 := time.Since(start)
+	t.Log("Loading from remote server... ", elapsed2)
+	assert.Equal(t, true, elapsed1>elapsed2, "it takes longer to load a webpage from remote server")
 
-
+	err = s.DeleteAll()
+	assert.Nil(t, err, "Expected no error")
 }

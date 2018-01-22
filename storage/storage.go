@@ -73,7 +73,7 @@ func NewStore(t Type) Store {
 	case S3: //AWS S3
 		bucket := viper.GetString("DFK_BUCKET")
 		config := &aws.Config{
-			Region: aws.String("us-east-1"),
+			Region: aws.String(viper.GetString("S3_REGION")),
 		}
 		return newS3Storage(config, bucket)
 
@@ -82,7 +82,8 @@ func NewStore(t Type) Store {
 		config := &aws.Config{
 			Credentials: credentials.NewSharedCredentials(viper.GetString("SPACES_CONFIG"), ""), //Load credentials from specified file
 			Endpoint:    aws.String(viper.GetString("SPACES_ENDPOINT")),                         //Endpoint is obligatory for DO Spaces
-			Region:      aws.String("ams333"),                                                   //Actually for Digital Ocean spaces region parameter may have any value. But it can't be omitted.
+			Region:      aws.String(viper.GetString("S3_REGION")),
+			//Region:      aws.String("ams333"),                                                   //Actually for Digital Ocean spaces region parameter may have any value. But it can't be omitted.
 		}
 		return newS3Storage(config, bucket)
 
