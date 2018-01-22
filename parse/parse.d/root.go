@@ -36,9 +36,9 @@ var (
 	DFKParse string //DFKParse service address.
 	DFKFetch string //DFKFetch service address.
 
-	storageType    string
+	storageType        string
 	storageItemExpires int64 //how long in seconds object stay in a cache before expiration.
-	diskvBaseDir   string
+	diskvBaseDir       string
 
 	spacesConfig   string //Digital Ocean spaces configuration file
 	spacesEndpoint string //Digital Ocean spaces endpoint address
@@ -50,6 +50,12 @@ var (
 	redisPassword   string
 	redisDB         int
 	redisSocketPath string
+
+	maxPages            int
+	format              string
+	paginateResults     bool
+	fetchDelay          int
+	randomizeFetchDelay bool
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -107,7 +113,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&DFKParse, "DFK_PARSE", "p", "127.0.0.1:8001", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
 
-	//set here default type of storage
+	//default type of storage
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
 	RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 3600, "Default value for item expiration in seconds")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
@@ -121,6 +127,12 @@ func init() {
 	RootCmd.Flags().StringVarP(&redisPassword, "REDIS_PASSWORD", "", "", "Redis Password")
 	RootCmd.Flags().IntVarP(&redisDB, "REDIS_DB", "", 0, "Redis DB")
 	RootCmd.Flags().StringVarP(&redisSocketPath, "REDIS_SOCKET_PATH", "", "", "Redis Socket Path")
+
+	RootCmd.Flags().IntVarP(&maxPages, "MAX_PAGES", "", 1, "The maximum number of pages to scrape")
+	RootCmd.Flags().StringVarP(&format, "FORMAT", "", "json", "Output format")
+	RootCmd.Flags().BoolVarP(&paginateResults, "PAGINATE_RESULTS", "", false, "Paginated results are returned. Single list of combined results from every block on all pages is returned by default.")
+	RootCmd.Flags().IntVarP(&fetchDelay, "FETCH_DELAY", "", 500, "Specifies sleep time in milliseconds for multiple requests for the same domain.")
+	RootCmd.Flags().BoolVarP(&randomizeFetchDelay, "RANDOMIZE_FETCH_DELAY", "", true, "RandomizeFetchDelay setting decreases the chance of a crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay to 1.5 * FetchDelay seconds is used between consecutive requests to the same domain. If FetchDelay is zero (default) this option has no effect.")
 
 	viper.AutomaticEnv() // read in environment variables that match
 	viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
@@ -138,6 +150,12 @@ func init() {
 	viper.BindPFlag("REDIS_PASSWORD", RootCmd.Flags().Lookup("REDIS_PASSWORD"))
 	viper.BindPFlag("REDIS_DB", RootCmd.Flags().Lookup("REDIS_DB"))
 	viper.BindPFlag("REDIS_SOCKET_PATH", RootCmd.Flags().Lookup("REDIS_SOCKET_PATH"))
+	
+	viper.BindPFlag("MAX_PAGES", RootCmd.Flags().Lookup("MAX_PAGES"))
+	viper.BindPFlag("FORMAT", RootCmd.Flags().Lookup("FORMAT"))
+	viper.BindPFlag("PAGINATE_RESULTS", RootCmd.Flags().Lookup("PAGINATE_RESULTS"))
+	viper.BindPFlag("FETCH_DELAY", RootCmd.Flags().Lookup("FETCH_DELAY"))
+	viper.BindPFlag("RANDOMIZE_FETCH_DELAY", RootCmd.Flags().Lookup("RANDOMIZE_FETCH_DELAY"))
 }
 
 //homeDir returns user's $HOME directory

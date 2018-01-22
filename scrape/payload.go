@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/slotix/dataflowkit/crypto"
 	"github.com/slotix/dataflowkit/splash"
+	"github.com/spf13/viper"
 )
 
 // UnmarshalJSON casts Request interface{} type to custom splash.Request{} type.
@@ -36,19 +38,24 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	//init other fields
 	p.PayloadMD5 = crypto.GenerateMD5(data)
 	if p.Format == "" {
-		p.Format = DefaultOptions.Format
+		p.Format = viper.GetString("FORMAT")
 	}
-	if p.RetryTimes == 0 {
-		p.RetryTimes = DefaultOptions.RetryTimes
-	}
+	//if p.RetryTimes == 0 {
+	//	p.RetryTimes = DefaultOptions.RetryTimes
+	//}
 	if p.FetchDelay == 0 {
-		p.FetchDelay = DefaultOptions.FetchDelay
+		p.FetchDelay = time.Duration(viper.GetInt("FETCH_DELAY")) * time.Millisecond
 	}
 	if p.RandomizeFetchDelay == nil {
-		p.RandomizeFetchDelay = &DefaultOptions.RandomizeFetchDelay
+		rand := viper.GetBool("RANDOMIZE_FETCH_DELAY")
+		p.RandomizeFetchDelay = &rand
+	}
+	if p.Paginator.MaxPages == 0{
+		p.Paginator.MaxPages = viper.GetInt("MAX_PAGES")
 	}
 	if p.PaginateResults == nil {
-		p.PaginateResults = &DefaultOptions.PaginateResults
+		pag := viper.GetBool("PAGINATE_RESULTS")
+		p.PaginateResults = &pag
 	}
 	return nil
 }
