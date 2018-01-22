@@ -9,6 +9,7 @@ import (
 	"github.com/slotix/dataflowkit/crypto"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/storage"
+	"github.com/spf13/viper"
 )
 
 type storageMiddleware struct {
@@ -53,14 +54,13 @@ func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err er
 		//}
 		//check if item is expired.
 		expired := fetchResponse.GetExpires()
-		logger.Info(expired)
-		diff := expired.Sub(time.Now().UTC())
-		logger.Infof("%s: cache lifespan is %+v\n", url, diff)
-
-		if diff > 0 { //if cached value is not expired return it
+		untilExpired := -time.Since(expired)
+		logger.Infof("%s: Time until expired: %+v", url, untilExpired)
+		//If a website is not cachable by some reason, ignore this and use cached copy if any
+		ignoreCacheInfo := viper.GetBool("IGNORE_CACHE_INFO")
+		if untilExpired > 0 || ignoreCacheInfo { //if cached value is not expired return it
 			return fetchResponse, nil
 		}
-
 		err = errors.New("Cached item is expired or not cacheable")
 	}
 	return nil, err
@@ -75,13 +75,13 @@ func (mw storageMiddleware) put(req FetchRequester, resp FetchResponser) error {
 
 	reasons := resp.GetReasonsNotToCache()
 	if len(reasons) == 0 {
-		logger.Info(url, "is Cachable")
+		logger.Info(url, " is Cachable")
 	} else {
-		logger.Info(url, "is not Cachable.", "Reasons to not cache:", resp.GetReasonsNotToCache())
+		logger.Info(url, " is not Cachable.", "Reasons to not cache:", resp.GetReasonsNotToCache())
 	}
 	expired := resp.GetExpires()
 
-	logger.Info("Expires:", expired)
+	//logger.Info("Expires:", expired)
 
 	r, err := json.Marshal(resp)
 	if err != nil {
@@ -137,7 +137,7 @@ func (mw storageMiddleware) Response(req FetchRequester) (FetchResponser, error)
 	if err == nil {
 		return fromStorage, nil
 	}
-	logger.Error(err)
+	//logger.Error(err)
 	//Get fetch response directly from web if there is nothing in storage
 	resp, err := mw.Service.Response(req)
 	if err != nil {

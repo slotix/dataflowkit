@@ -11,25 +11,25 @@ import (
 	"github.com/clbanning/mxj"
 )
 
-func newEncoder(s Task) (e encoder) {
-	switch strings.ToLower(s.Scrapers[0].Opts.Format) {
+//TODO: 1. process options like partNames from Results??? for CSV, PaginateResults
+//2. skip details for CSV encoder
+//3. Add Excel
+//
+func newEncoder(format string) (e encoder) {
+	switch strings.ToLower(format) {
 	case "csv":
 		e = CSVEncoder{
-			comma:     ",",
-			partNames: s.Scrapers[0].partNames(),
-			results:   &s.Results,
+			comma: ",",
+			//	partNames: s.Scrapers[0].partNames(),
 		}
 		return
 	case "json":
 		e = JSONEncoder{
-			paginateResults: s.Scrapers[0].Opts.PaginateResults,
-			results:         &s.Results,
+		//	paginateResults: s.Scrapers[0].Opts.PaginateResults,
 		}
 		return
 	case "xml":
-		e = XMLEncoder{
-			results: &s.Results,
-		}
+		e = XMLEncoder{}
 		return e
 	default:
 		return nil
@@ -37,7 +37,7 @@ func newEncoder(s Task) (e encoder) {
 }
 
 type encoder interface {
-	Encode() (io.ReadCloser, error)
+	Encode(*Results) (io.ReadCloser, error)
 	Format() string
 }
 
@@ -45,27 +45,24 @@ type encoder interface {
 type CSVEncoder struct {
 	partNames []string
 	comma     string
-	results   *Results
 }
 
 // JSONEncoder transforms parsed data to JSON format.
 type JSONEncoder struct {
 	paginateResults bool
-	results         *Results
 }
 
 // XMLEncoder transforms parsed data to XML format.
 type XMLEncoder struct {
-	results *Results
 }
 
 //Encode method implementation for JSONEncoder
-func (e JSONEncoder) Encode() (io.ReadCloser, error) {
+func (e JSONEncoder) Encode(results *Results) (io.ReadCloser, error) {
 	var buf bytes.Buffer
 	if e.paginateResults {
-		json.NewEncoder(&buf).Encode(e.results)
+		json.NewEncoder(&buf).Encode(results)
 	} else {
-		json.NewEncoder(&buf).Encode(e.results.AllBlocks())
+		json.NewEncoder(&buf).Encode(results.AllBlocks())
 	}
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
@@ -77,7 +74,7 @@ func (JSONEncoder) Format() string {
 }
 
 //Encode method implementation for CSVEncoder
-func (e CSVEncoder) Encode() (io.ReadCloser, error) {
+func (e CSVEncoder) Encode(results *Results) (io.ReadCloser, error) {
 	var buf bytes.Buffer
 	/*
 		includeHeader := true
@@ -95,7 +92,7 @@ func (e CSVEncoder) Encode() (io.ReadCloser, error) {
 	*/
 	w := csv.NewWriter(&buf)
 
-	err := encodeCSV(e.partNames, e.results.AllBlocks(), e.comma, w)
+	err := encodeCSV(e.partNames, results.AllBlocks(), e.comma, w)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +107,7 @@ func (CSVEncoder) Format() string {
 }
 
 //Encode method implementation for XMLEncoder
-func (e XMLEncoder) Encode() (io.ReadCloser, error) {
+func (e XMLEncoder) Encode(results *Results) (io.ReadCloser, error) {
 	/*
 		case "xmlviajson":
 			var jbuf bytes.Buffer
@@ -127,7 +124,7 @@ func (e XMLEncoder) Encode() (io.ReadCloser, error) {
 			}
 	*/
 	var buf bytes.Buffer
-	err := encodeXML(e.results.AllBlocks(), &buf)
+	err := encodeXML(results.AllBlocks(), &buf)
 	if err != nil {
 		return nil, err
 	}

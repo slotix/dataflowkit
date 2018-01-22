@@ -30,11 +30,13 @@ func Start(DFKFetch string) {
 		//logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 	//creating storage for caching of html content
+
 	storageType, err := storage.ParseType(viper.GetString("STORAGE_TYPE"))
 	if err != nil {
 		logger.Log(err)
 	}
 	storage := storage.NewStore(storageType)
+
 	var svc Service
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)

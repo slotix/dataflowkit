@@ -31,7 +31,13 @@ func Test_filterText(t *testing.T) {
 			},
 			want: "THIS IS THE TEST",
 		},
-		// TODO: Add test cases.
+		{name: "capitalize + uppercase",
+			args: args{
+				data: "\n\t 	this is The test\t\n",
+				filters: []string{"trim", "capitalize"},
+			},
+			want: "This Is The Test",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
