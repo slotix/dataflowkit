@@ -167,5 +167,5 @@ type Task struct {
 	Visited map[string]error
 	//TaskQueue chan *Scraper
 	Robots   map[string]*robotstxt.RobotsData
-	Results
+	//Results
 }
