@@ -65,12 +65,12 @@ type Payload struct {
 	Fields []Field `json:"fields"`
 	//PayloadMD5 encodes payload content to MD5. It is used for generating file name to be stored.
 	PayloadMD5 []byte `json:"payloadMD5"`
-	// The following Output formats are available: CSV, JSON, XML
+	//Format represents output format (CSV, JSON, XML)
 	Format string `json:"format"`
 	//Paginator is used to scrape multiple pages.
 	//If Paginator is nil, then no pagination is performed and it is assumed that the initial URL is the only page.
 	Paginator *paginator `json:"paginator"`
-	//Paginated results are returned if PaginateResults is true.
+	//Paginated results are returned if true.
 	//Default value is false
 	// Single list of combined results from every block on all pages is returned by default.
 	//
@@ -78,7 +78,7 @@ type Payload struct {
 	//
 	// Combined list of results is always returned for CSV format.
 	PaginateResults *bool `json:"paginateResults"`
-	////FetchDelay should be used for a scraper to throttle the crawling speed to avoid hitting the web servers too frequently.
+	//FetchDelay should be used for a scraper to throttle the crawling speed to avoid hitting the web servers too frequently.
 	//FetchDelay specifies sleep time for multiple requests for the same domain. It is equal to FetchDelay * random value between 500 and 1500 msec
 	FetchDelay time.Duration `json:"fetchDelay"`
 	//Some web sites track  statistically significant similarities in the time between requests to them. RandomizeCrawlDelay setting decreases the chance of a crawler being blocked by such sites. This way a random delay ranging from 0.5 * CrawlDelay to 1.5 * CrawlDelay seconds is used between consecutive requests to the same domain. If CrawlDelay is zero (default) this option has no effect.
@@ -141,7 +141,7 @@ type Scraper struct {
 	Parts []Part
 	//Opts contains options that are used during the progress of a
 	// scrape.
-	Opts ScrapeOptions
+	//Opts ScrapeOptions
 }
 
 // Results describes the results of a scrape.  It contains a list of all

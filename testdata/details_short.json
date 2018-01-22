@@ -10,8 +10,7 @@
           "extractor":{  
              "type":"link",
              "filters":[  
-                "trim",
-                "lowerCase"
+                "trim"
              ],
              "params":{  
                 "includeIfEmpty":false
@@ -23,11 +22,7 @@
                    "name":"Title",
                    "selector":"h1",
                    "extractor":{  
-                      "type":"text",
-                      "filters":[  
-                         "trim",
-                         "upperCase"
-                      ],                   
+                      "type":"text",                 
                       "params":{  
                          "includeIfEmpty":true                  
                       }
@@ -42,37 +37,12 @@
                 }
              ]
           }
-       },
-       {  
-          "name":"Image",
-          "selector":"#product-container img",
-          "extractor":{  
-             "type":"image",
-             "filters":[  
-                "trim",
-                "UpPerCaSe"
-             ]
-          }
-       },
-       {  
-          "name":"Buyinfo",
-          "selector":".buy-info",
-          "extractor":{  
-             "type":"text",
-             "filters":[  
-                "trim",
-                "capitalize"
-             ],
-             "params":{  
-                "includeIfEmpty":false
-             }
-          }
        }
     ],
     "paginator":{  
        "selector":".next",
        "attr":"href",
-       "maxPages":1
+       "maxPages":2
     },
     "format":"json",
     "paginatedResults":false

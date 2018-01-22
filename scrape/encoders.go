@@ -11,7 +11,7 @@ import (
 	"github.com/clbanning/mxj"
 )
 
-//TODO: 1. process options like partNames from Results??? for CSV, PaginateResults
+//TODO: 1. process gi ts??? for CSV, PaginateResults
 //2. skip details for CSV encoder
 //3. Add Excel
 //

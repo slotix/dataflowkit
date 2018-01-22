@@ -45,7 +45,7 @@ func NewTask(p Payload) *Task {
 		Visited: make(map[string]error),
 		Robots: make(map[string]*robotstxt.RobotsData),
 	}
-
+	
 }
 
 // Parse processes specified task which parses fetched page.
@@ -73,26 +73,16 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 	return r, err
 }
 
-//KSUID stores the timestamp portion in ID. So we can retrieve it from Task object as a Time object
-func (t Task) startTime() (*time.Time, error) {
-	id, err := ksuid.Parse(t.ID)
-	if err != nil {
-		return nil, err
-	}
-	idTime := id.Time()
-	return &idTime, nil
-}
+
 
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
 func (t *Task) scrape(scraper *Scraper) (*Results, error) {
-	results := []map[string]interface{}{}
 	output := [][]map[string]interface{}{}
 
 	req := scraper.Request
 	url := req.GetURL()
 
 	var numPages int
-	opts := scraper.Opts
 	//get Robotstxt Data
 	host, err := req.Host()
 	if err != nil {
@@ -111,18 +101,18 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 	}
 
 	for {
+		results := []map[string]interface{}{}
 		//check if scraping of current url is not forbidden
 		if !fetch.AllowedByRobots(url, t.Robots[host]) {
 			t.Visited[url] = &errs.ForbiddenByRobots{url}
 		}
 		// Repeat until we don't have any more URLs, or until we hit our page limit.
 		if len(url) == 0 ||
-			(opts.MaxPages > 0 && numPages >= opts.MaxPages) {
+			(t.Payload.Paginator.MaxPages > 0 && numPages >= t.Payload.Paginator.MaxPages) {
 			break
 		}
 		//call remote fetcher to download web page
 		sResponse, err := responseFromFetchService(req)
-		//sResponse, err := req.(splash.Request).GetResponse()
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +126,7 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 			return nil, err
 		}
 
-		t.Visited[url] = nil //???????
+		t.Visited[url] = nil 
 
 		// Divide this page into blocks
 		for _, block := range scraper.DividePage(doc.Selection) {
@@ -159,7 +149,6 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 				if extractedPartResults == nil {
 					continue
 				}
-
 				blockResults[part.Name] = extractedPartResults
 
 				//********* details
@@ -196,19 +185,18 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 		req.Cookies = splash.GetSetCookie(headers)
 		req.URL = url
 
-		if opts.RandomizeFetchDelay {
+		if *t.Payload.RandomizeFetchDelay {
 			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 			rand := Random(500, 1500)
-			delay := opts.FetchDelay * time.Duration(rand) / 1000
-			logger.Info(delay)
-
+			delay := t.Payload.FetchDelay * time.Duration(rand) / 1000
+			logger.Info(delay, " ",req.URL)
 			time.Sleep(delay)
 		} else {
-			time.Sleep(opts.FetchDelay)
+			time.Sleep(t.Payload.FetchDelay)
 		}
 
 	}
-	if len(results) == 0 {
+	if len(output) == 0 {
 		return nil, &errs.BadPayload{errs.ErrEmptyResults}
 	}
 
@@ -224,13 +212,11 @@ func (p Payload) newScraper() (*Scraper, error) {
 		return nil, err
 	}
 	var paginator paginate.Paginator
-	maxPages := 1
 	if p.Paginator == nil {
 		paginator = &dummyPaginator{}
 
 	} else {
 		paginator = paginate.BySelector(p.Paginator.Selector, p.Paginator.Attribute)
-		maxPages = p.Paginator.MaxPages
 	}
 
 	selectors, err := p.selectors()
@@ -250,14 +236,6 @@ func (p Payload) newScraper() (*Scraper, error) {
 		DividePage: dividePageFunc,
 		Parts:      parts,
 		Paginator:  paginator,
-		Opts: ScrapeOptions{
-			MaxPages:            maxPages,
-			Format:              p.Format,
-			PaginateResults:     *p.PaginateResults,
-			FetchDelay:          p.FetchDelay,
-			RandomizeFetchDelay: *p.RandomizeFetchDelay,
-			RetryTimes:          p.RetryTimes,
-		},
 	}
 
 	// All set!
@@ -487,4 +465,15 @@ func (r *Results) AllBlocks() []map[string]interface{} {
 	}
 
 	return ret
+}
+
+
+//KSUID stores the timestamp portion in ID. So we can retrieve it from Task object as a Time object
+func (t Task) startTime() (*time.Time, error) {
+	id, err := ksuid.Parse(t.ID)
+	if err != nil {
+		return nil, err
+	}
+	idTime := id.Time()
+	return &idTime, nil
 }
