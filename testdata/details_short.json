@@ -42,8 +42,9 @@
     "paginator":{  
        "selector":".next",
        "attr":"href",
-       "maxPages":2
+       "maxPages":3
     },
     "format":"json",
-    "paginatedResults":false
+    "paginatedResults":false,
+    "fetchDelay": 0
  }

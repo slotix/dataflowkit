@@ -80,7 +80,7 @@ type Payload struct {
 	PaginateResults *bool `json:"paginateResults"`
 	//FetchDelay should be used for a scraper to throttle the crawling speed to avoid hitting the web servers too frequently.
 	//FetchDelay specifies sleep time for multiple requests for the same domain. It is equal to FetchDelay * random value between 500 and 1500 msec
-	FetchDelay time.Duration `json:"fetchDelay"`
+	FetchDelay *time.Duration `json:"fetchDelay"`
 	//Some web sites track  statistically significant similarities in the time between requests to them. RandomizeCrawlDelay setting decreases the chance of a crawler being blocked by such sites. This way a random delay ranging from 0.5 * CrawlDelay to 1.5 * CrawlDelay seconds is used between consecutive requests to the same domain. If CrawlDelay is zero (default) this option has no effect.
 	RandomizeFetchDelay *bool `json:"randomizeFetchDelay"`
 	//Maximum number of times to retry, in addition to the first download.

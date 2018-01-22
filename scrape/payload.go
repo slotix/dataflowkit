@@ -43,8 +43,9 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	//if p.RetryTimes == 0 {
 	//	p.RetryTimes = DefaultOptions.RetryTimes
 	//}
-	if p.FetchDelay == 0 {
-		p.FetchDelay = time.Duration(viper.GetInt("FETCH_DELAY")) * time.Millisecond
+	if p.FetchDelay == nil {
+		delay := time.Duration(viper.GetInt("FETCH_DELAY")) * time.Millisecond
+		p.FetchDelay = &delay
 	}
 	if p.RandomizeFetchDelay == nil {
 		rand := viper.GetBool("RANDOMIZE_FETCH_DELAY")
