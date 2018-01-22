@@ -12,7 +12,6 @@ import (
 )
 
 func newEncoder(s Task) (e encoder) {
-	//switch strings.ToLower(s.Scrapers[0].Opts.Format) {
 	switch strings.ToLower(s.Payload.Format) {
 	case "csv":
 		e = CSVEncoder{
