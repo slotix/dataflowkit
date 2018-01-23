@@ -8,7 +8,7 @@
           "name":"Title",
           "selector":".product-container a",
           "extractor":{  
-             "type":"link",
+             "type":["text", "href"],
              "filters":[  
                 "trim"
              ],
@@ -22,7 +22,7 @@
                    "name":"Title",
                    "selector":"h1",
                    "extractor":{  
-                      "type":"text",                 
+                      "type":["text"],                 
                       "params":{  
                          "includeIfEmpty":true                  
                       }
@@ -32,7 +32,7 @@
                    "name":"Price",
                    "selector":".js-top-price",
                    "extractor":{  
-                      "type":"text"
+                      "type":["text"]
                    }
                 }
              ]

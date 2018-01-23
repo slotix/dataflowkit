@@ -66,7 +66,7 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 	switch strings.ToLower(t.Payload.Format) {
 	case "csv":
 		e = CSVEncoder{
-			comma: ",",
+			comma:     ",",
 			partNames: scraper.partNames(),
 		}
 	case "json":
@@ -78,12 +78,153 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 	default:
 		return nil, errors.New("invalid output format specified")
 	}
-	
+
 	r, err := e.Encode(results)
 	if err != nil {
 		return nil, err
 	}
 	return r, err
+}
+
+// Create a new scraper with the provided configuration.
+func (p Payload) newScraper() (*Scraper, error) {
+	parts, err := p.fields2parts()
+	if err != nil {
+		return nil, err
+	}
+	var paginator paginate.Paginator
+	if p.Paginator == nil {
+		paginator = &dummyPaginator{}
+
+	} else {
+		paginator = paginate.BySelector(p.Paginator.Selector, p.Paginator.Attribute)
+	}
+
+	selectors, err := p.selectors()
+	if err != nil {
+		return nil, err
+	}
+	//TODO: need to test the case when there are no selectors found in payload.
+	var dividePageFunc DividePageFunc
+	if len(selectors) == 0 {
+		dividePageFunc = DividePageBySelector("body")
+	} else {
+		dividePageFunc = DividePageByIntersection(selectors)
+	}
+
+	scraper := &Scraper{
+		Request:    p.Request,
+		DividePage: dividePageFunc,
+		Parts:      parts,
+		Paginator:  paginator,
+	}
+
+	// All set!
+	return scraper, nil
+}
+
+//fields2parts converts payload []field to []scrape.Part
+func (p Payload) fields2parts() ([]Part, error) {
+	parts := []Part{}
+	//Payload fields
+	for _, f := range p.Fields {
+		params := make(map[string]interface{})
+		if f.Extractor.Params != nil {
+			params = f.Extractor.Params.(map[string]interface{})
+		}
+		var err error
+
+		for _, t := range f.Extractor.Types {
+			part := Part{
+				Name:     f.Name + "_" + t,
+				Selector: f.Selector,
+			}
+
+			var e extract.Extractor
+			switch strings.ToLower(t) {
+			case "text":
+				e = &extract.Text{
+					Filters: f.Extractor.Filters,
+				}
+			case "href", "src":
+				e = &extract.Attr{
+					Attr:    t,
+					BaseURL: p.Request.URL,
+				}
+				scraper := &Scraper{}
+				//******* details
+				if f.Details != nil {
+					detailsPayload := p
+					detailsPayload.Name = f.Name + "Details"
+					detailsPayload.Fields = f.Details.Fields
+					//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
+					scraper, err = detailsPayload.newScraper()
+					if err != nil {
+						return nil, err
+					}
+				} else {
+					scraper = nil
+				}
+				part.Details = scraper
+			case "alt":
+				e = &extract.Attr{
+					Attr:    t,
+					Filters: f.Extractor.Filters,
+				}
+			case "width", "height":
+				e = &extract.Attr{Attr: t}
+			case "regex":
+				r := &extract.Regex{}
+				regExp := params["regexp"]
+				r.Regex = regexp.MustCompile(regExp.(string))
+				e = r
+			case "const":
+				//	c := &extract.Const{Val: params["value"]}
+				//	e = c
+				e = &extract.Const{}
+			case "count":
+				e = &extract.Count{}
+			case "html":
+				e = &extract.Html{}
+			case "outerHtml":
+				e = &extract.OuterHtml{}
+			
+			default:
+				logger.Error(errors.New(t + ": Unknown selector type"))
+				continue
+			}
+			part.Extractor = e
+
+			if params != nil {
+				err := fillStruct(params, e)
+				if err != nil {
+					logger.Error(err)
+				}
+			}
+			//logger.Info(e)
+			parts = append(parts, part)
+
+		}
+	}
+	// Validate payload fields
+	if len(parts) == 0 {
+		return nil, &errs.BadPayload{errs.ErrNoParts}
+	}
+	seenNames := map[string]struct{}{}
+	for i, part := range parts {
+		if len(part.Name) == 0 {
+			return nil, fmt.Errorf("no name provided for part %d", i)
+		}
+		if _, seen := seenNames[part.Name]; seen {
+			return nil, fmt.Errorf("part %s has a duplicate name", part.Name)
+		}
+		seenNames[part.Name] = struct{}{}
+
+		if len(part.Selector) == 0 {
+			return nil, fmt.Errorf("no selector provided for part %d", i)
+		}
+	}
+	return parts, nil
 }
 
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
@@ -214,187 +355,6 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 	// All good!
 	return &Results{output}, err
 
-}
-
-// Create a new scraper with the provided configuration.
-func (p Payload) newScraper() (*Scraper, error) {
-	parts, err := p.fields2parts()
-	if err != nil {
-		return nil, err
-	}
-	var paginator paginate.Paginator
-	if p.Paginator == nil {
-		paginator = &dummyPaginator{}
-
-	} else {
-		paginator = paginate.BySelector(p.Paginator.Selector, p.Paginator.Attribute)
-	}
-
-	selectors, err := p.selectors()
-	if err != nil {
-		return nil, err
-	}
-	//TODO: need to test the case when there are no selectors found in payload.
-	var dividePageFunc DividePageFunc
-	if len(selectors) == 0 {
-		dividePageFunc = DividePageBySelector("body")
-	} else {
-		dividePageFunc = DividePageByIntersection(selectors)
-	}
-
-	scraper := &Scraper{
-		Request:    p.Request,
-		DividePage: dividePageFunc,
-		Parts:      parts,
-		Paginator:  paginator,
-	}
-
-	// All set!
-	return scraper, nil
-}
-
-//fields2parts converts payload []field to []scrape.Part
-func (p Payload) fields2parts() ([]Part, error) {
-	parts := []Part{}
-	//Payload fields
-	for _, f := range p.Fields {
-		params := make(map[string]interface{})
-		if f.Extractor.Params != nil {
-			params = f.Extractor.Params.(map[string]interface{})
-		}
-		var err error
-		switch eType := f.Extractor.Type; eType {
-
-		//For Link type Two pieces as pair Text and Attr{Attr:"href"} extractors added.
-		case "link":
-			l := &extract.Link{
-				Href: extract.Attr{
-					Attr:    "href",
-					BaseURL: p.Request.URL},
-				Text: extract.Text{
-					Filters: f.Extractor.Filters,
-				},
-			}
-			if params != nil {
-				err := fillStruct(params, l)
-				if err != nil {
-					logger.Error(err)
-				}
-			}
-			//******* details
-			scraper := &Scraper{}
-			if f.Details != nil {
-				detailsPayload := p
-				detailsPayload.Name = f.Name + "Details"
-				detailsPayload.Fields = f.Details.Fields
-				//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
-				scraper, err = detailsPayload.newScraper()
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				scraper = nil
-			}
-
-			parts = append(parts,
-				Part{
-					Name:      f.Name + "_text",
-					Selector:  f.Selector,
-					Extractor: l.Text,
-				},
-				Part{
-					Name:      f.Name + "_link",
-					Selector:  f.Selector,
-					Extractor: l.Href,
-					Details:   scraper,
-				})
-
-		//For image type by default Two pieces with different Attr="src" and Attr="alt" extractors will be added for field selector.
-		case "image":
-			i := &extract.Image{
-				Src: extract.Attr{
-					Attr:    "src",
-					BaseURL: p.Request.URL},
-				Alt: extract.Attr{
-					Attr:    "alt",
-					Filters: f.Extractor.Filters,
-				},
-			}
-			if params != nil {
-				err := fillStruct(params, i)
-				if err != nil {
-					logger.Error(err)
-				}
-			}
-			parts = append(parts, Part{
-				Name:      f.Name + "_src",
-				Selector:  f.Selector,
-				Extractor: i.Src,
-			}, Part{
-				Name:      f.Name + "_alt",
-				Selector:  f.Selector,
-				Extractor: i.Alt,
-			})
-
-		default:
-			var e extract.Extractor
-			switch eType {
-			case "const":
-				//	c := &extract.Const{Val: params["value"]}
-				//	e = c
-				e = &extract.Const{}
-			case "count":
-				e = &extract.Count{}
-			case "text":
-				e = &extract.Text{
-					Filters: f.Extractor.Filters,
-				}
-			case "html":
-				e = &extract.Html{}
-			case "outerHtml":
-				e = &extract.OuterHtml{}
-			case "attr":
-				e = &extract.Attr{}
-			case "regex":
-				r := &extract.Regex{}
-				regExp := params["regexp"]
-				r.Regex = regexp.MustCompile(regExp.(string))
-				e = r
-			}
-
-			if params != nil {
-				err := fillStruct(params, e)
-				if err != nil {
-					logger.Error(err)
-				}
-			}
-			//logger.Info(e)
-			parts = append(parts, Part{
-				Name:      f.Name,
-				Selector:  f.Selector,
-				Extractor: e,
-			})
-		}
-	}
-	// Validate payload fields
-	if len(parts) == 0 {
-		return nil, &errs.BadPayload{errs.ErrNoParts}
-	}
-	seenNames := map[string]struct{}{}
-	for i, part := range parts {
-		if len(part.Name) == 0 {
-			return nil, fmt.Errorf("no name provided for part %d", i)
-		}
-		if _, seen := seenNames[part.Name]; seen {
-			return nil, fmt.Errorf("part %s has a duplicate name", part.Name)
-		}
-		seenNames[part.Name] = struct{}{}
-
-		if len(part.Selector) == 0 {
-			return nil, fmt.Errorf("no selector provided for part %d", i)
-		}
-	}
-	return parts, nil
 }
 
 //selectors returns selectors from payload
