@@ -16,10 +16,10 @@ import (
 // text, html, outerHtml, attr, link, image, regex, const, count
 // Find more actual information in docs/extractors.md
 type Extractor struct {
-	Type string `json:"type"`
+	Types []string `json:"types"`
 	// Params are unique for each type
 	Params  interface{} `json:"params"`
-	Filters []string `json:"filters"`
+	Filters []string    `json:"filters"`
 }
 
 //A Field corresponds to a given chunk of data to be extracted from every block in each page of a scrape.
@@ -148,7 +148,7 @@ type Scraper struct {
 // pages (URLs) visited during the process, along with all results generated
 // from each Part in each page.
 type Results struct {
-	
+
 	// Output represents combined results after parsing from each Part of each page.  Essentially, the top-level array
 	// is for each page, the second-level array is for each block in a page, and
 	// the final map[string]interface{} is the mapping of Part.Name to results.
@@ -157,8 +157,8 @@ type Results struct {
 
 // Task keeps Results of Task generated from Payload along with other auxiliary information
 type Task struct {
-	ID       string
-	Payload  Payload
+	ID      string
+	Payload Payload
 	//Scrapers []*Scraper
 	// Visited contain a map[url]error during this scrape.
 	// Always contains at least one element - the initial URL.
@@ -166,6 +166,6 @@ type Task struct {
 	//once the spider has finished crawling all other (non failed) pages.
 	Visited map[string]error
 	//TaskQueue chan *Scraper
-	Robots   map[string]*robotstxt.RobotsData
+	Robots map[string]*robotstxt.RobotsData
 	//Results
 }

@@ -8,7 +8,10 @@
           "name":"Title",
           "selector":".product-container a",
           "extractor":{  
-             "type":"link",
+             "types":[
+                 "href",
+                 "text"
+                ],
              "filters":[  
                 "trim",
                 "lowerCase"
@@ -23,7 +26,7 @@
                    "name":"Title",
                    "selector":"h1",
                    "extractor":{  
-                      "type":"text",
+                      "types":["text"],
                       "filters":[  
                          "trim",
                          "upperCase"
@@ -37,7 +40,7 @@
                    "name":"Price",
                    "selector":".js-top-price",
                    "extractor":{  
-                      "type":"text"
+                      "types":["text"]
                    }
                 }
              ]
@@ -47,7 +50,7 @@
           "name":"Image",
           "selector":"#product-container img",
           "extractor":{  
-             "type":"image",
+             "types":["alt","src","width","height"],
              "filters":[  
                 "trim",
                 "UpPerCaSe"
@@ -58,7 +61,7 @@
           "name":"Buyinfo",
           "selector":".buy-info",
           "extractor":{  
-             "type":"text",
+             "types":["text","unknown"],
              "filters":[  
                 "trim",
                 "capitalize"
@@ -75,5 +78,6 @@
        "maxPages":1
     },
     "format":"json",
-    "paginatedResults":false
+    "paginatedResults":false,
+    "fetchDelay": 0
  }
