@@ -260,7 +260,7 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 		}
 		// Repeat until we don't have any more URLs, or until we hit our page limit.
 		if len(url) == 0 ||
-			(t.Payload.Paginator.MaxPages > 0 && numPages >= t.Payload.Paginator.MaxPages) {
+			(t.Payload.Paginator != nil && (t.Payload.Paginator.MaxPages > 0 && numPages >= t.Payload.Paginator.MaxPages)) {
 			break
 		}
 		//call remote fetcher to download web page
