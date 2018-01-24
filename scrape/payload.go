@@ -14,8 +14,7 @@ import (
 )
 
 // UnmarshalJSON casts Request interface{} type to custom splash.Request{} type.
-// If optional payload parameters are not passed along with obligatorily ones
-// they are initialized with default values.
+// If omited in Payload, Optional payload parameters initialized with default values.
 // http://choly.ca/post/go-json-marshalling/
 func (p *Payload) UnmarshalJSON(data []byte) error {
 	type Alias Payload
@@ -64,23 +63,6 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 //fillStruct fills s Structure with values from m map
 func fillStruct(m map[string]interface{}, s interface{}) error {
 	for k, v := range m {
-		//switch v.(type) {
-		//	case []interface{}:
-
-		//determine the type of array
-
-		//		value := []string{}
-		//		for _, item := range v.([]interface{}) {
-		//				logger.Infof("%T", item)
-		//TODO: casting to string should be exchanged with something more universal.
-		//			value = append(value, item.(string))
-		//		}
-		//
-		//		err := setField(s, k, value)
-		//		if err != nil {
-		//			return err
-		//			}
-		//		default:
 		err := setField(s, k, v)
 		if err != nil {
 			return err
