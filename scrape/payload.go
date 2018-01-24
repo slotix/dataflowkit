@@ -50,7 +50,7 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 		rand := viper.GetBool("RANDOMIZE_FETCH_DELAY")
 		p.RandomizeFetchDelay = &rand
 	}
-	if p.Paginator.MaxPages == 0{
+	if p.Paginator!=nil && p.Paginator.MaxPages == 0{
 		p.Paginator.MaxPages = viper.GetInt("MAX_PAGES")
 	}
 	if p.PaginateResults == nil {
