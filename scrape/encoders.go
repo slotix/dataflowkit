@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"strconv"
 	"strings"
 
 	"github.com/clbanning/mxj"
@@ -37,7 +39,7 @@ type XMLEncoder struct {
 func (e JSONEncoder) Encode(results *Results) (io.ReadCloser, error) {
 	var buf bytes.Buffer
 	if e.paginateResults {
-		json.NewEncoder(&buf).Encode(results)
+		json.NewEncoder(&buf).Encode(results.Output)
 	} else {
 		json.NewEncoder(&buf).Encode(results.AllBlocks())
 	}
@@ -63,8 +65,8 @@ func (e CSVEncoder) Encode(results *Results) (io.ReadCloser, error) {
 		w.Flush()
 	*/
 	w := csv.NewWriter(&buf)
-
-	err := encodeCSV(e.partNames, results.AllBlocks(), e.comma, w)
+	allBlocks := results.AllBlocks()
+	err := encodeCSV(e.partNames, allBlocks, e.comma, w)
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +74,6 @@ func (e CSVEncoder) Encode(results *Results) (io.ReadCloser, error) {
 	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
 	return readCloser, nil
 }
-
-
 
 //Encode method implementation for XMLEncoder
 func (e XMLEncoder) Encode(results *Results) (io.ReadCloser, error) {
@@ -101,6 +101,17 @@ func (e XMLEncoder) Encode(results *Results) (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
+func intArrayToString(a []int, delim string) string {
+	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
+	//return strings.Trim(strings.Join(strings.Split(fmt.Sprint(a), " "), delim), "[]")
+	//return strings.Trim(strings.Join(strings.Fields(fmt.Sprint(a)), delim), "[]")
+}
+
+func floatArrayToString(a []float64, delim string) string {
+	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
+	//return strings.Trim(strings.Join(strings.Split(fmt.Sprint(a), " "), delim), "[]")
+	//return strings.Trim(strings.Join(strings.Fields(fmt.Sprint(a)), delim), "[]")
+}
 
 //encodeCSV writes data to w *csv.Writer.
 //header represent an array of fields for csv.
@@ -125,6 +136,14 @@ func encodeCSV(header []string, rows []map[string]interface{}, comma string, w *
 				r[i] = v
 			case []string:
 				r[i] = strings.Join(v, ";")
+			case int:
+				r[i] = strconv.FormatInt(int64(v), 10)
+			case []int:
+				r[i] = intArrayToString(v, ";")
+			case []float64:
+				r[i] = floatArrayToString(v, ";")
+			case float64:
+				r[i] = strconv.FormatFloat(v,'f',-1,64)
 			case nil:
 				r[i] = ""
 			}

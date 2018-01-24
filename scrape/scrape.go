@@ -78,7 +78,7 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 	default:
 		return nil, errors.New("invalid output format specified")
 	}
-
+	logger.Info(results)
 	r, err := e.Encode(results)
 	if err != nil {
 		return nil, err

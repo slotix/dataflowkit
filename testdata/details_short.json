@@ -8,7 +8,7 @@
           "name":"Title",
           "selector":".product-container a",
           "extractor":{  
-             "type":["text", "href"],
+             "types":["text", "href"],
              "filters":[  
                 "trim"
              ],
@@ -22,7 +22,7 @@
                    "name":"Title",
                    "selector":"h1",
                    "extractor":{  
-                      "type":["text"],                 
+                      "types":["text"],                 
                       "params":{  
                          "includeIfEmpty":true                  
                       }
@@ -32,7 +32,7 @@
                    "name":"Price",
                    "selector":".js-top-price",
                    "extractor":{  
-                      "type":["text"]
+                      "types":["text"]
                    }
                 }
              ]
@@ -44,7 +44,7 @@
        "attr":"href",
        "maxPages":3
     },
-    "format":"json",
+    "format":"csv",
     "paginatedResults":false,
     "fetchDelay": 0
  }
