@@ -143,7 +143,7 @@ func encodeCSV(header []string, rows []map[string]interface{}, comma string, w *
 			case []float64:
 				r[i] = floatArrayToString(v, ";")
 			case float64:
-				r[i] = strconv.FormatFloat(v,'f',-1,64)
+				r[i] = strconv.FormatFloat(v, 'f', -1, 64)
 			case nil:
 				r[i] = ""
 			}
@@ -160,15 +160,34 @@ func encodeXML(blocks []map[string]interface{}, buf *bytes.Buffer) error {
 	mxj.XMLEscapeChars(true)
 	//write header to xml
 	buf.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>`))
-	buf.Write([]byte("<items>"))
+	buf.Write([]byte("<root>"))
 	for _, elem := range blocks {
+		nm := make(map[string]interface{})
+		for key, value := range elem {
+			out := []string{}
+			//[]int and []float slices should be passed as []string
+			switch v := value.(type) {
+			case []int:
+				for _, i := range v {
+					out = append(out, strconv.Itoa(i))
+				}
+				nm[key] = out
+				elem = nm
+			case []float64:
+				for _, i := range v {
+					out = append(out, strconv.FormatFloat(i, 'f', -1, 64))
+				}
+				nm[key] = out
+				elem = nm
+			}
+		} 
 		m := mxj.Map(elem)
 		//err := m.XmlIndentWriter(&buf, "", "  ", "object")
-		err := m.XmlWriter(buf, "item")
+		err := m.XmlWriter(buf, "element")
 		if err != nil {
 			return err
 		}
 	}
-	buf.Write([]byte("</items>"))
+	buf.Write([]byte("</root>"))
 	return nil
 }
