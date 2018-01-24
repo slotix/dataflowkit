@@ -35,6 +35,7 @@ func TestJSONEncoder_Encode(t *testing.T) {
 			want:    []byte(`[{"col1":"1","col2":"2"},{"col1":"3","col2":"4"}]` + "\n"),
 			wantErr: false,
 		},
+		
 		{name: "paginated Results = true",
 			fields: fields{
 				paginateResults: true,
@@ -48,6 +49,22 @@ func TestJSONEncoder_Encode(t *testing.T) {
 				},
 			},
 			want:    []byte(`[[{"col1":"1","col2":"2"}],[{"col1":"3","col2":"4"}]]` + "\n"),
+			wantErr: false,
+		},
+		{name: "complex structure",
+			args: args{
+				results: &Results{
+					Output: [][]map[string]interface{}{
+						{{"col1": 1, "col2": 2.345}},
+						{{"col1": "3", "col2": "4"}},
+						{{"col1": 5, "col2": "6"}},
+						{{"col1": "", "col2": 7}},
+						{{"col1": []string{"8", "9"}, "col2": 10}},
+						{{"col1": []int{11, 12}, "col2": []float64{13.145, 15.16}}},
+					},
+				},
+			},
+			want:    []byte(`[{"col1":1,"col2":2.345},{"col1":"3","col2":"4"},{"col1":5,"col2":"6"},{"col1":"","col2":7},{"col1":["8","9"],"col2":10},{"col1":[11,12],"col2":[13.145,15.16]}]` + "\n"),
 			wantErr: false,
 		},
 	}
@@ -143,7 +160,7 @@ func TestXMLEncoder_Encode(t *testing.T) {
 		want    []byte
 		wantErr bool
 	}{
-		{name: "1",
+		 {name: "1",
 			args: args{
 				results: &Results{
 					Output: [][]map[string]interface{}{
@@ -151,16 +168,27 @@ func TestXMLEncoder_Encode(t *testing.T) {
 						{{"col1": "3", "col2": "4"}},
 						{{"col1": 5, "col2": "6"}},
 						{{"col1": "", "col2": 7}},
-						{{"col1": []string{"8", "9"}, "col2": 10}},
-						{{"col1": []int{11, 12}, "col2": []float64{13.145, 15.16}}},
-						{{"invalidcol1": "111", "invalidcol2": 000}},
+						{{"col1": []string{"8", "9"}, "col2": 10}},	
+						{{"col1": "11,12", "col2": 13}},		
 					},
 				},
 			},
-			want:    []byte(`<?xml version="1.0" encoding="UTF-8"?><items><item><col1>1</col1><col2>2.345</col2></item><item><col1>3</col1><col2>4</col2></item><item><col1>5</col1><col2>6</col2></item><item><col1/><col2>7</col2></item><item><col1>8</col1><col1>9</col1><col2>10</col2></item><item><int>11</int><int>12</int></col1><float64>13.145</float64><float64>15.16</float64></col2></item><item><invalidcol1>111</invalidcol1><invalidcol2>0</invalidcol2></item></items>`),
+			want:    []byte(`<?xml version="1.0" encoding="UTF-8"?><root><element><col1>1</col1><col2>2.345</col2></element><element><col1>3</col1><col2>4</col2></element><element><col1>5</col1><col2>6</col2></element><element><col1/><col2>7</col2></element><element><col1>8</col1><col1>9</col1><col2>10</col2></element><element><col1>11,12</col1><col2>13</col2></element></root>`),
+			wantErr: false,
+		}, 
+		{name: "2",
+			args: args{
+				results: &Results{
+					Output: [][]map[string]interface{}{
+						{{"col1": []int{11, 12}, "col2": []float64{13.145, 15.16}}},		
+					},
+				},
+			},
+			want:    []byte(`<?xml version="1.0" encoding="UTF-8"?><root><element><col1>11</col1><col1>12</col1><col2>13.145</col2><col2>15.16</col2></element></root>`),
 			wantErr: false,
 		},
 	}
+	//
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := XMLEncoder{}
@@ -168,8 +196,8 @@ func TestXMLEncoder_Encode(t *testing.T) {
 
 			buf := new(bytes.Buffer)
 			buf.ReadFrom(got)
-			t.Log(buf.String())
-			t.Log(string(tt.want))
+			//t.Log(buf.String())
+			//t.Log(string(tt.want))
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("XMLEncoder.Encode() error = %v, wantErr %v", err, tt.wantErr)
@@ -182,23 +210,4 @@ func TestXMLEncoder_Encode(t *testing.T) {
 	}
 }
 
-func Test_encodeXML(t *testing.T) {
-	type args struct {
-		blocks []map[string]interface{}
-		buf    *bytes.Buffer
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-	// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := encodeXML(tt.args.blocks, tt.args.buf); (err != nil) != tt.wantErr {
-				t.Errorf("encodeXML() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
+

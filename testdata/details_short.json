@@ -39,7 +39,12 @@
           }
        }
     ],
-    "format":"json",
+    "paginator":{  
+       "selector":".next",
+       "attr":"href",
+       "maxPages":3
+    },
+    "format":"csv",
     "paginatedResults":false,
     "fetchDelay": 0
  }
