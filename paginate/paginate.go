@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/slotix/dataflowkit/utils"
 )
 
 // The Paginator interface should be implemented by things that can retrieve the
@@ -19,22 +20,6 @@ type Paginator interface {
 	// page 1 should return page 2, not page 3.  The function should return an
 	// empty string when there are no more pages to process.
 	NextPage(url string, document *goquery.Selection) (string, error)
-}
-
-// RelUrl is a helper function that aids in calculating the absolute URL from a
-// base URL and relative URL.
-func RelUrl(base, rel string) (string, error) {
-	baseUrl, err := url.Parse(base)
-	if err != nil {
-		return "", err
-	}
-	relUrl, err := url.Parse(rel)
-	if err != nil {
-		return "", err
-	}
-
-	newUrl := baseUrl.ResolveReference(relUrl)
-	return newUrl.String(), nil
 }
 
 type bySelectorPaginator struct {
@@ -57,7 +42,7 @@ func (p *bySelectorPaginator) NextPage(uri string, doc *goquery.Selection) (stri
 		return "", nil
 	}
 
-	return RelUrl(uri, val)
+	return utils.RelUrl(uri, val)
 }
 
 type byQueryParamPaginator struct {

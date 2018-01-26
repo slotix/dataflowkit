@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/slotix/dataflowkit/crypto"
+	"github.com/slotix/dataflowkit/utils"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
@@ -40,7 +40,7 @@ func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err er
 	}
 
 	//URL Conversion MD5 Reduces file name length to avoid the error like file name too long.
-	storageKey := string(crypto.GenerateMD5([]byte(url)))
+	storageKey := string(utils.GenerateMD5([]byte(url)))
 	//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
 	sKey := base32.StdEncoding.EncodeToString([]byte(storageKey))
 	value, err := mw.storage.Read(sKey)
@@ -70,7 +70,7 @@ func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err er
 func (mw storageMiddleware) put(req FetchRequester, resp FetchResponser) error {
 	url := req.GetURL()
 	//URL Conversion MD5 Reduces file name length to avoid the error like file name too long.
-	storageKey := string(crypto.GenerateMD5([]byte(url)))
+	storageKey := string(utils.GenerateMD5([]byte(url)))
 	sKey := base32.StdEncoding.EncodeToString([]byte(storageKey))
 
 	reasons := resp.GetReasonsNotToCache()
