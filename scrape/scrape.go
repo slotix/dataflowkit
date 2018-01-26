@@ -25,6 +25,7 @@ import (
 	"github.com/slotix/dataflowkit/log"
 	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/splash"
+	"github.com/slotix/dataflowkit/utils"
 	"github.com/spf13/viper"
 	"github.com/temoto/robotstxt"
 )
@@ -50,20 +51,20 @@ func NewTask(p Payload) *Task {
 }
 
 // Parse processes specified task which parses fetched page.
-func (t *Task) Parse() (io.ReadCloser, error) {
-	scraper, err := t.Payload.newScraper()
+func (task *Task) Parse() (io.ReadCloser, error) {
+	scraper, err := task.Payload.newScraper()
 	if err != nil {
 		return nil, err
 	}
 	//scrape request and return results.
-	results, err := t.scrape(scraper)
+	results, err := task.scrape(scraper)
 	if err != nil {
 		return nil, err
 	}
-	logger.Info(t.Visited)
+	logger.Info(task.Visited)
 
 	var e encoder
-	switch strings.ToLower(t.Payload.Format) {
+	switch strings.ToLower(task.Payload.Format) {
 	case "csv":
 		e = CSVEncoder{
 			comma:     ",",
@@ -71,14 +72,14 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 		}
 	case "json":
 		e = JSONEncoder{
-			paginateResults: *t.Payload.PaginateResults,
+			paginateResults: *task.Payload.PaginateResults,
 		}
 	case "xml":
 		e = XMLEncoder{}
 	default:
 		return nil, errors.New("invalid output format specified")
 	}
-	logger.Info(results)
+	//logger.Info(results)
 	r, err := e.Encode(results)
 	if err != nil {
 		return nil, err
@@ -148,8 +149,8 @@ func (p Payload) fields2parts() ([]Part, error) {
 				}
 			case "href", "src":
 				e = &extract.Attr{
-					Attr:    t,
-					BaseURL: p.Request.URL,
+					Attr: t,
+					//BaseURL: p.Request.URL,
 				}
 				scraper := &Scraper{}
 				//******* details
@@ -188,7 +189,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 				e = &extract.Html{}
 			case "outerHtml":
 				e = &extract.OuterHtml{}
-			
+
 			default:
 				logger.Error(errors.New(t + ": Unknown selector type"))
 				continue
@@ -229,6 +230,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
 func (t *Task) scrape(scraper *Scraper) (*Results, error) {
+	logger.Info(time.Now())
 	output := [][]map[string]interface{}{}
 
 	req := scraper.Request
@@ -290,7 +292,13 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 				if part.Selector != "." {
 					sel = sel.Find(part.Selector)
 				}
-
+				//update base URL to reflect attr relative URL change
+				if part.Extractor.GetType() == "attr" {
+					attr := part.Extractor.(*extract.Attr)
+					if attr.Attr == "href" || attr.Attr == "src" {
+						attr.BaseURL = url
+					}
+				}
 				extractedPartResults, err := part.Extractor.Extract(sel)
 				if err != nil {
 					return nil, err
@@ -309,6 +317,27 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 					part.Details.Request = splash.Request{
 						URL: extractedPartResults.(string),
 					}
+					//check if domain is the same for initial URL and details' URLs
+					//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
+					detailsHost, err := part.Details.Request.Host()
+					if err != nil {
+						logger.Error(err)
+					}
+					if detailsHost == host {
+						//every time when getting a response the next request will be filled with updated cookie information
+						headers := sResponse.Response.Headers.(http.Header)
+						part.Details.Request.Cookies = splash.GetSetCookie(headers)
+						if *t.Payload.RandomizeFetchDelay {
+							//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
+							rand := utils.Random(500, 1500)
+							delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
+							logger.Infof("%s -> %v", delay, part.Details.Request.URL)
+							time.Sleep(delay)
+						} else {
+							time.Sleep(*t.Payload.FetchDelay)
+						}
+					}
+
 					resDetails, err := t.scrape(part.Details)
 					if err != nil {
 						return nil, err
@@ -326,25 +355,26 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 
 		numPages++
 
-		// Get the next page.
+		// Get the next page. If empty URL is returned there is no Next Pages to proceed.
 		url, err = scraper.Paginator.NextPage(url, doc.Selection)
 		if err != nil {
 			return nil, err
 		}
+		if url != "" {
+			//every time when getting a response the next request will be filled with updated cookie information
+			headers := sResponse.Response.Headers.(http.Header)
+			req.Cookies = splash.GetSetCookie(headers)
+			req.URL = url
 
-		//every time when getting a response the next request will be filled with updated cookie information
-		headers := sResponse.Response.Headers.(http.Header)
-		req.Cookies = splash.GetSetCookie(headers)
-		req.URL = url
-
-		if *t.Payload.RandomizeFetchDelay {
-			//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-			rand := Random(500, 1500)
-			delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
-			logger.Info(delay, " ", req.URL)
-			time.Sleep(delay)
-		} else {
-			time.Sleep(*t.Payload.FetchDelay)
+			if *t.Payload.RandomizeFetchDelay {
+				//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
+				rand := utils.Random(500, 1500)
+				delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
+				logger.Infof("%s -> %v", delay, req.URL)
+				time.Sleep(delay)
+			} else {
+				time.Sleep(*t.Payload.FetchDelay)
+			}
 		}
 
 	}

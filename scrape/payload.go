@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/slotix/dataflowkit/crypto"
+	"github.com/slotix/dataflowkit/utils"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 )
@@ -35,7 +35,7 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	p.Request = splashRequest
 
 	//init other fields
-	p.PayloadMD5 = crypto.GenerateMD5(data)
+	p.PayloadMD5 = utils.GenerateMD5(data)
 	if p.Format == "" {
 		p.Format = viper.GetString("FORMAT")
 	}
@@ -50,7 +50,7 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 		rand := viper.GetBool("RANDOMIZE_FETCH_DELAY")
 		p.RandomizeFetchDelay = &rand
 	}
-	if p.Paginator!=nil && p.Paginator.MaxPages == 0{
+	if p.Paginator != nil && p.Paginator.MaxPages == 0 {
 		p.Paginator.MaxPages = viper.GetInt("MAX_PAGES")
 	}
 	if p.PaginateResults == nil {

@@ -21,7 +21,7 @@ func init() {
 
 func TestSplashRenderHTMLEndpoint(t *testing.T) {
 	//Splash running inside Docker container cannot render a page on a localhost. It leads to rendering page errors https://github.com/scrapinghub/splash/issues/237 .
-	//Only URLs on the web are available for testing.
+	//Only remote web pages are available for testing.
 	sReq := []byte(`{"url": "http://example.com", "wait": 0.5}`)
 	reader := bytes.NewReader(sReq)
 	splashExecuteURL := "http://" + viper.GetString("SPLASH") + "/render.html"

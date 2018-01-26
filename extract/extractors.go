@@ -8,11 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/slotix/dataflowkit/log"
-
-	"net/url"
+	"github.com/slotix/dataflowkit/utils"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/sirupsen/logrus"
@@ -35,6 +33,8 @@ type Extractor interface {
 	//
 	// If this function returns an error, then the scrape is aborted.
 	Extract(*goquery.Selection) (interface{}, error)
+	//GetType returns Extractor type
+	GetType() string
 }
 
 // Const is an Extractor that returns a constant value.
@@ -46,6 +46,11 @@ type Const struct {
 // Extract returns Const value.
 func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
 	return e.Val, nil
+}
+
+//GetType returns Extractor type
+func (Const) GetType() string {
+	return "const"
 }
 
 var _ Extractor = Const{}
@@ -60,19 +65,18 @@ type Text struct {
 	IncludeIfEmpty bool
 	//Filters are used to manipulate Text data when extracting.
 	//Currently the following filters are available:
-	//upperCase makes all of the letters in the selected text  uppercase. 
+	//upperCase makes all of the letters in the selected text  uppercase.
 	//lowerCase makes all of the letters in the selected text lowercase.
 	//capitalize capitalizes the first letter of each word in the selected text
 	//trim returns a copy of the text, with all leading and trailing white space removed
-	Filters        []string
+	Filters []string
 }
-
 
 // Extract returns Text value from specified selection.
 func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
 	results := []string{}
 	sel.Each(func(i int, s *goquery.Selection) {
-		//filtering text data. 
+		//filtering text data.
 		filtered := filterText(s.Text(), e.Filters)
 		results = append(results, filtered)
 	})
@@ -86,6 +90,11 @@ func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
 	}
 
 	return results, nil
+}
+
+//GetType returns Extractor type
+func (Text) GetType() string {
+	return "text"
 }
 
 var _ Extractor = Text{}
@@ -121,6 +130,11 @@ func (e Html) Extract(sel *goquery.Selection) (interface{}, error) {
 	return ret, nil
 }
 
+//GetType returns Extractor type
+func (Html) GetType() string {
+	return "html"
+}
+
 var _ Extractor = Html{}
 
 // OuterHtml extracts and returns the HTML of each part of the
@@ -143,6 +157,11 @@ func (e OuterHtml) Extract(sel *goquery.Selection) (interface{}, error) {
 	}
 
 	return output.String(), nil
+}
+
+//GetType returns Extractor type
+func (OuterHtml) GetType() string {
+	return "outerHtml"
 }
 
 var _ Extractor = OuterHtml{}
@@ -248,6 +267,11 @@ func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
+//GetType returns Extractor type
+func (Regex) GetType() string {
+	return "regex"
+}
+
 var _ Extractor = Regex{}
 
 // Attr extracts the value of a given HTML attribute from each part
@@ -271,11 +295,11 @@ type Attr struct {
 	IncludeIfEmpty bool
 	//Filters are used to manipulate HTML attribute when extracting.
 	//Currently the following filters are available:
-	//upperCase makes all of the letters in the Attr uppercase. 
+	//upperCase makes all of the letters in the Attr uppercase.
 	//lowerCase makes all of the letters in the Attr lowercase.
 	//capitalizes the first letter of each word in the Attr
 	//trim returns a copy of the Attr, with all leading and trailing white space removed
-	Filters        []string
+	Filters []string
 }
 
 // Extract returns Attr value from specified selection.
@@ -288,12 +312,11 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 	sel.Each(func(i int, s *goquery.Selection) {
 		if val, found := s.Attr(e.Attr); found {
 			if e.Attr == "href" || e.Attr == "src" {
-				u, err := url.Parse(val)
+				var err error
+				//transform relative url to absolute url
+				val, err = utils.RelUrl(e.BaseURL, val)
 				if err != nil {
 					logger.Error(err)
-				}
-				if u.Host == "" {
-					val = strings.TrimSuffix(e.BaseURL, "/") + "/" + val
 				}
 			}
 			filtered := filterText(val, e.Filters)
@@ -309,6 +332,11 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 	}
 
 	return results, nil
+}
+
+//GetType returns Extractor type
+func (Attr) GetType() string {
+	return "attr"
 }
 
 var _ Extractor = Attr{}
@@ -330,6 +358,11 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 	}
 
 	return l, nil
+}
+
+//GetType returns Extractor type
+func (Count) GetType() string {
+	return "count"
 }
 
 var _ Extractor = Count{}

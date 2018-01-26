@@ -8,24 +8,42 @@
             "name": "Title",
             "selector": "h3 a",
             "extractor": {
-                "type": "link",
+                "types": ["text","href"],
                 "params": {
                     "includeIfEmpty": false
                 }
-            }         
+            },
+            "details": {  
+                "fields":[  
+                   {  
+                      "name":"availability",
+                      "selector":".availability",
+                      "extractor":{  
+                         "types":["text"],
+                         "filters":[  
+                            "trim",
+                            "upperCase"
+                         ],                   
+                         "params":{  
+                            "includeIfEmpty":true                  
+                         }
+                      }
+                   }
+                ]
+             }
         },
         {
             "name": "Image",
             "selector": ".thumbnail",
             "extractor": {
-                "type": "image"
+                "types": ["alt","src"]
             }
         },
         {
             "name": "Price",
             "selector": ".price_color",
             "extractor": {
-                "type": "text",
+                "types": ["text"],
                 "params": {
                     "includeIfEmpty": false
                 }
@@ -35,7 +53,7 @@
     "paginator": {
         "selector": ".next a",
         "attr": "href",
-        "maxPages": 1
+        "maxPages": 3
     },
     "format": "json",
     "paginatedResults": false
