@@ -18,8 +18,7 @@ var (
 func init() {
 	var svc Service
 	svc = FetchService{}
-	storageType := storage.ParseType("Diskv")
-	s = storage.NewStore(*storageType)
+	s = storage.NewStore("Diskv")
 	mw = storageMiddleware{
 		storage: s,
 		Service: svc,
