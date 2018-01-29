@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -49,19 +48,21 @@ const (
 )
 
 // ParseType takes a string representing storage type and returns the Storage Type constant.
-func ParseType(t string) (Type, error) {
+func ParseType(t string) *Type {
+	var tp Type
 	switch strings.ToLower(t) {
 	case "s3":
-		return S3, nil
+		tp = S3
 	case "spaces":
-		return Spaces, nil
+		tp = Spaces
 	case "diskv":
-		return Diskv, nil
+		tp = Diskv
 	case "redis":
-		return Redis, nil
+		tp = Redis
+	default:
+		return nil
 	}
-	var tp Type
-	return tp, fmt.Errorf("not a valid Storage Type: %q", tp)
+	return &tp
 }
 
 // NewStore creates New initialized Store instance with predefined parameters

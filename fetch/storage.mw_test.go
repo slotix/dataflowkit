@@ -18,12 +18,8 @@ var (
 func init() {
 	var svc Service
 	svc = FetchService{}
-	storageType, err := storage.ParseType("Diskv")
-	if err != nil{
-		logger.Error(err)
-	}
-	//assert.Nil(t, err, "Expected no error")
-	s = storage.NewStore(storageType)
+	storageType := storage.ParseType("Diskv")
+	s = storage.NewStore(*storageType)
 	mw = storageMiddleware{
 		storage: s,
 		Service: svc,
@@ -33,11 +29,11 @@ func init() {
 func Test_storageMiddleware(t *testing.T) {	
 	req := splash.Request{
 		URL:    "http://example.com",
-		Params: "", Cookies: "", Func: "",
+		Params: "", Cookies: "", LUA: "",
 	}
 	//Loading from remote server
 	start := time.Now()
-	resp, err := mw.Fetch(req)
+	resp, err := mw.Response(req)
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
 	elapsed1 := time.Since(start)
@@ -45,7 +41,7 @@ func Test_storageMiddleware(t *testing.T) {
 
 	//Loading from cached storage
 	start = time.Now()
-	resp, err = mw.Fetch(req)
+	resp, err = mw.Response(req)
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
 	elapsed2 := time.Since(start)
@@ -60,11 +56,11 @@ func Test_IGNORE_CACHE_INFO(t *testing.T) {
 	viper.Set("IGNORE_CACHE_INFO", true)
 	req := splash.Request{
 		URL:    "http://google.com",
-		Params: "", Cookies: "", Func: "",
+		Params: "", Cookies: "", LUA: "",
 	}
 	//Loading from remote server
 	start := time.Now()
-	resp, err := mw.Fetch(req)
+	resp, err := mw.Response(req)
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
 	elapsed1 := time.Since(start)
@@ -72,7 +68,7 @@ func Test_IGNORE_CACHE_INFO(t *testing.T) {
 
 	//Loading from cached storage
 	start = time.Now()
-	resp, err = mw.Fetch(req)
+	resp, err = mw.Response(req)
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
 	elapsed2 := time.Since(start)

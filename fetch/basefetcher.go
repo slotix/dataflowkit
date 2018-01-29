@@ -1,6 +1,10 @@
 package fetch
 
 import (
+	"bytes"
+	"errors"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -74,11 +78,6 @@ func (r BaseFetcherResponse) GetURL() string {
 	return r.URL
 }
 
-//GetHTML returns HTML content
-func (r BaseFetcherResponse) GetHTML() []byte {
-	return r.HTML
-}
-
 //GetExpires returns Response Expires value.
 func (r BaseFetcherResponse) GetExpires() time.Time {
 	return r.Expires
@@ -94,4 +93,19 @@ func (req BaseFetcherRequest) GetURL() string {
 	return strings.TrimRight(strings.TrimSpace(req.URL), "/")
 }
 
+//GetHTML return HTML content from BaseFetcherResponse
+func (r *BaseFetcherResponse) GetHTML() (io.ReadCloser, error) {
+	if r == nil {
+		return nil, errors.New("empty response")
+	}
+	if r.StatusCode != 200 {
+		return nil, errors.New(r.Status)
+	}
+	readCloser := ioutil.NopCloser(bytes.NewReader(r.HTML))
+	return readCloser, nil
+}
 
+//GetStatusCode return response status code
+func (r BaseFetcherResponse) GetStatusCode() int {
+	return r.StatusCode
+}

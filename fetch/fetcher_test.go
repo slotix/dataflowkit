@@ -2,6 +2,7 @@ package fetch
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"testing"
@@ -67,10 +68,14 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 		URL:    "http://" + addr,
 		Method: "GET",
 	}
-	resp, err := fetcher.Fetch(req)
+	resp, err := fetcher.Response(req)
 	assert.Nil(t, err, "Expected no error")
 	bfResponse := resp.(*BaseFetcherResponse)
-	assert.Equal(t, indexContent, bfResponse.HTML)
+	html, err := resp.GetHTML()
+	assert.NoError(t, err, "Expected no error")
+	data, err := ioutil.ReadAll(html)
+	assert.NoError(t, err, "Expected no error")
+	assert.Equal(t, indexContent, data)
 	assert.Equal(t, req.GetURL(), resp.GetURL())
 	assert.Equal(t, time.Now().UTC().Add(24*time.Hour).Truncate(1*time.Minute), resp.GetExpires().Truncate(1*time.Minute), "Expires default value is 24 hours")
 
@@ -95,7 +100,7 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 		assert.Error(t, err, fmt.Sprintf("%T", err)+"error returned")
 	}
 	//fetch robots.txt data
-	resp, err = fetcher.Fetch(BaseFetcherRequest{
+	resp, err = fetcher.Response(BaseFetcherRequest{
 		URL:    "http://" + addr + "/robots.txt",
 		Method: "GET",
 	})
@@ -140,7 +145,6 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 		assert.Error(t, err, "error returned")
 	}
 }
-
 
 func TestNewFetcher_invalid(t *testing.T) {
 	_, err := NewFetcher("Invalid")

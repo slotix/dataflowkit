@@ -20,15 +20,15 @@ func TestFetchService(t *testing.T) {
 	svc = FetchService{}
 	response, err := svc.Response(splash.Request{
 		URL:    "http://example.com",
-		Params: "", Cookies: "", Func: "",
+		Params: "", Cookies: "", LUA: "",
 	})
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, 200, response.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
 
 
-	response, err = svc.Fetch(splash.Request{
+	response, err = svc.Response(splash.Request{
 		URL:    "http://example.com",
-		Params: "", Cookies: "", Func: "",
+		Params: "", Cookies: "", LUA: "",
 	})
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, 200, response.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
@@ -40,14 +40,7 @@ func TestFetchService(t *testing.T) {
 	})
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, "200 OK", response.(*BaseFetcherResponse).Status, "Expected  200 status code")
-
-	
-
-
 }
-
-
-
 
 /* func TestEncodeSplashFetcherContent(t *testing.T) {
 	ctx := context.Background()

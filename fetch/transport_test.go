@@ -19,7 +19,7 @@ func TestDecodeSplashFetcherRequest(t *testing.T) {
 	assert.Nil(t, err, "Expected no error")
 	expected := splash.Request{
 		URL:    "http://dbconvert.com",
-		Params: "", Cookies: "", Func: "",
+		Params: "", Cookies: "", LUA: "",
 	}
 	assert.Equal(t, expected, actual)
 }
