@@ -2,7 +2,6 @@ package storage
 
 import (
 	"strings"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/sirupsen/logrus"
@@ -33,52 +32,22 @@ type Store interface {
 	DeleteAll() error
 }
 
-//Type represent available storage types
-type Type string
-
-const (
-	//Amazon S3 storage
-	S3 Type = "S3"
-	//Digital Ocean Spaces
-	Spaces = "Spaces"
-	//diskv key/value storage "github.com/peterbourgon/diskv"
-	Diskv = "Diskv"
-	//Redis
-	Redis = "Redis"
-)
-
-// ParseType takes a string representing storage type and returns the Storage Type constant.
-func ParseType(t string) *Type {
-	var tp Type
-	switch strings.ToLower(t) {
-	case "s3":
-		tp = S3
-	case "spaces":
-		tp = Spaces
-	case "diskv":
-		tp = Diskv
-	case "redis":
-		tp = Redis
-	default:
-		return nil
-	}
-	return &tp
-}
 
 // NewStore creates New initialized Store instance with predefined parameters
-func NewStore(t Type) Store {
-	switch t {
-	case Diskv:
+// Storage Types: S3, Spaces, Redis, Diskv
+func NewStore(tp string) Store {
+	switch strings.ToLower(tp) {
+	case "diskv":
 		baseDir := viper.GetString("DISKV_BASE_DIR")
 		return newDiskvStorage(baseDir, 1024*1024)
-	case S3: //AWS S3
+	case "s3": //AWS S3
 		bucket := viper.GetString("DFK_BUCKET")
 		config := &aws.Config{
 			Region: aws.String(viper.GetString("S3_REGION")),
 		}
 		return newS3Storage(config, bucket)
 
-	case Spaces: //Digital Ocean Spaces
+	case "spaces": //Digital Ocean Spaces
 		bucket := viper.GetString("DFK_BUCKET")
 		config := &aws.Config{
 			Credentials: credentials.NewSharedCredentials(viper.GetString("SPACES_CONFIG"), ""), //Load credentials from specified file
@@ -88,7 +57,7 @@ func NewStore(t Type) Store {
 		}
 		return newS3Storage(config, bucket)
 
-	case Redis:
+	case "redis":
 		redisHost := viper.GetString("REDIS")
 		redisPassword := ""
 		return newRedisStorage(redisHost, redisPassword)
