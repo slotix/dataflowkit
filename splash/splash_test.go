@@ -66,7 +66,7 @@ func TestGetResponse(t *testing.T) {
 	req = Request{URL: "http://httpbin.org/status/400",}
 	resp, _ = req.GetResponse()
 	logger.Info(resp)
-	_, err = resp.GetContent()
+	_, err = resp.GetHTML()
 	assert.Error(t, err, "error returned")
 
 	urls := []string{
@@ -92,7 +92,7 @@ func TestGetContent(t *testing.T) {
 	resp := Response{
 		HTML: `<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`,
 	}
-	readCloser, _ := resp.GetContent()
+	readCloser, _ := resp.GetHTML()
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(readCloser)
 	s := buf.String()
