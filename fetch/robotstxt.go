@@ -1,15 +1,12 @@
 package fetch
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	neturl "net/url"
 	"strings"
 	"time"
 
+	"github.com/go-kit/kit/log"
 	"github.com/spf13/viper"
 	"github.com/temoto/robotstxt"
 )
@@ -21,43 +18,16 @@ func IsRobotsTxt(url string) bool {
 
 //fetchRobots is used for getting robots.txt files.
 func fetchRobots(req BaseFetcherRequest) (*BaseFetcherResponse, error) {
-	//fetch content
-	b, err := json.Marshal(req)
+	svc, err := NewHTTPClient(viper.GetString("DFK_FETCH"), log.NewNopLogger())
 	if err != nil {
-		return nil, err
+		logger.Error(err)
 	}
-	reader := bytes.NewReader(b)
-
-	//https://gitlab.com/gitlab-org/gitlab-ce/issues/33534
-	//Use BaseFetcher to get robots.txt content
-	addr := "http://" + viper.GetString("DFK_FETCH") + "/response/base"
-	request, err := http.NewRequest("POST", addr, reader)
+	resp, err := svc.Response(req)
 	if err != nil {
-		return nil, err
+		logger.Error(err)
 	}
-	request.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	r, err := client.Do(request)
-	//if r != nil {
-	//	defer r.Body.Close()
-	//}
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	bfResponse := &BaseFetcherResponse{}
-
-	if err := json.Unmarshal(data, &bfResponse); err != nil {
-		return nil, err
-	}
-	return bfResponse, nil
+	return resp.(*BaseFetcherResponse), nil
 }
-
-
 
 //RobotstxtData generates robots.txt url, retrieves its content through API fetch endpoint.
 func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
@@ -89,7 +59,6 @@ func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
 	robotsData, err = robotstxt.FromStatusAndBytes(response.StatusCode, response.HTML)
 	return
 }
-
 
 //AllowedByRobots checks if scraping of specified URL is allowed by robots.txt
 func AllowedByRobots(url string, robotsData *robotstxt.RobotsData) bool {

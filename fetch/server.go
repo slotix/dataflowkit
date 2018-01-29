@@ -10,9 +10,6 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
-	"github.com/spf13/viper"
-
-	"github.com/slotix/dataflowkit/storage"
 )
 
 var storageType string
@@ -33,8 +30,8 @@ func Start(DFKFetch string) {
 	var svc Service
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
-	storageType = viper.GetString("STORAGE_TYPE")
-	svc = StorageMiddleware(storage.NewStore(storageType))(svc)
+	//	storageType = viper.GetString("STORAGE_TYPE")
+	//	svc = StorageMiddleware(storage.NewStore(storageType))(svc)
 	svc = RobotsTxtMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
