@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
-	"github.com/spf13/viper"
 
 	"github.com/slotix/dataflowkit/storage"
 )
@@ -29,19 +28,12 @@ func Start(DFKFetch string) {
 		logger = log.With(logger, "ts", time.Now().Format("Jan _2 15:04:05"))
 		//logger = log.With(logger, "caller", log.DefaultCaller)
 	}
-	//creating storage for caching of html content
-
-	storageType, err := storage.ParseType(viper.GetString("STORAGE_TYPE"))
-	if err != nil {
-		logger.Log(err)
-	}
-	storage := storage.NewStore(storageType)
 
 	var svc Service
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
+	//svc = StorageMiddleware(storage.NewStore(*storage.ParseType(viper.GetString("STORAGE_TYPE"))))(svc)
 	svc = RobotsTxtMiddleware()(svc)
-	svc = StorageMiddleware(storage)(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{
@@ -51,7 +43,7 @@ func Start(DFKFetch string) {
 		BaseResponseEndpoint:   MakeBaseResponseEndpoint(svc),
 	}
 
-	r := MakeHttpHandler(ctx, endpoints, logger)
+	r := NewHttpHandler(ctx, endpoints, logger)
 
 	// HTTP transport
 	go func() {

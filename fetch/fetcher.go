@@ -5,6 +5,7 @@ package fetch
 
 import (
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -52,10 +53,10 @@ func NewFetcher(t Type) (fetcher Fetcher, err error) {
 type Fetcher interface {
 	// Prepare is called once at the beginning of the scrape.
 	Prepare() error
-
-	// Fetch is called to retrieve a document from the remote server.
-	Fetch(request FetchRequester) (FetchResponser, error)
-
+	//Response return response after fetch Request.  
+	Response(request FetchRequester) (FetchResponser, error)
+	// Fetch is called to retrieve HTML content of a document from the remote server.
+	Fetch(request FetchRequester) (io.ReadCloser, error)
 	// Close is called when the scrape is finished, and can be used to clean up
 	// allocated resources or perform other cleanup actions.
 	Close()
@@ -132,14 +133,22 @@ func (sf *SplashFetcher) Prepare() error {
 }
 
 //Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
-func (sf *SplashFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
+func (sf *SplashFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
+	r, err := sf.Response(request)
+	if err != nil {
+		return nil, err
+	}
+	return r.GetHTML()
+}
+
+//Response return response from Splash server after document fetching
+func (sf *SplashFetcher) Response(request FetchRequester) (FetchResponser, error) {
 	req := request.(splash.Request)
 	r, err := req.GetResponse()
 	if err != nil {
 		return nil, err
 	}
 	return r, nil
-
 }
 
 // Static type assertion
@@ -179,7 +188,16 @@ func (bf *BaseFetcher) Prepare() error {
 }
 
 //Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
-func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
+func (bf *BaseFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
+	r, err := bf.Response(request)
+	if err != nil {
+		return nil, err
+	}
+	return r.GetHTML()
+}
+
+ //Response return response after document fetching using BaseFetcher
+func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) {
 	//URL validation
 	if _, err := url.ParseRequestURI(strings.TrimSpace(request.GetURL())); err != nil {
 		return nil, &errs.BadRequest{err}
@@ -238,7 +256,7 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (FetchResponser, error) {
 			return nil, err
 		}
 	}
-	return &response, nil
+	return &response, err
 }
 
 // Close is called when the scrape is finished, and can be used to clean up
@@ -260,6 +278,10 @@ type FetchResponser interface {
 	SetCacheInfo()
 	//GetURL returns final URL after all redirects
 	GetURL() string
+	//GetStatusCode returns status code after document fetch
+	GetStatusCode() int
+	//GetHTML return html content of fetched document
+	GetHTML() (io.ReadCloser, error)
 }
 
 //FetchRequester interface interface that must be satisfied the listed methods

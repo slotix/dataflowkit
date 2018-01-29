@@ -270,7 +270,7 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 		if err != nil {
 			return nil, err
 		}
-		content, err := sResponse.GetContent()
+		content, err := sResponse.GetHTML()
 		if err != nil {
 			return nil, err
 		}

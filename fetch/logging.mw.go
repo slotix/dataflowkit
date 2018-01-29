@@ -1,6 +1,7 @@
 package fetch
 
 import (
+	"io"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -21,7 +22,7 @@ type loggingMiddleware struct {
 }
 
 // Logging Service Fetches
-func (mw loggingMiddleware) Fetch(req FetchRequester) (response FetchResponser, err error) {
+func (mw loggingMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		url := req.GetURL()
 		mw.logger.Log(
@@ -32,7 +33,7 @@ func (mw loggingMiddleware) Fetch(req FetchRequester) (response FetchResponser, 
 			"took", time.Since(begin),
 		)
 	}(time.Now())
-	response, err = mw.Service.Fetch(req)
+	out, err = mw.Service.Fetch(req)
 	return
 }
 

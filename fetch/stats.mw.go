@@ -1,6 +1,7 @@
 package fetch
 
 import (
+	"io"
 	"strconv"
 
 	"github.com/slotix/dataflowkit/storage"
@@ -19,9 +20,9 @@ type statsMiddleware struct {
 }
 
 //Fetch increments requst count before sending it to actual Fetch service handler.
-func (mw statsMiddleware) Fetch(req FetchRequester) (response FetchResponser, err error) {
+func (mw statsMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err error) {
 	mw.incrementCount()
-	response, err = mw.Service.Fetch(req)
+	out, err = mw.Service.Fetch(req)
 	return
 }
 

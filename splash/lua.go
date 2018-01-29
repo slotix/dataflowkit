@@ -72,6 +72,7 @@ function main(splash, args)
     	request = last_entry.request
     	response = last_entry.response
     end
+  
   return {
     url = splash:url(),
     request = request,

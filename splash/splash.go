@@ -35,6 +35,7 @@ type Options struct {
 	resourceTimeout int
 	// Time in seconds to wait until java scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
 	wait float64
+	LUA  string
 }
 
 /* // Option represent parameters used for connection to Splash server
@@ -112,8 +113,13 @@ func NewSplash(req Request) (splashURL string) {
 	   	//---------
 	*/
 	//req.Params = `"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fdiesel.elcat.kg%2F&ips_username=dm_&ips_password=asfwwe!444D&rememberMe=1"`
+	var LUAScript string
+	if req.LUA != "" {
+		LUAScript = req.LUA
+	} else {
+		LUAScript = neturl.QueryEscape(baseLUA)
+	}
 
-	LUAScript := baseLUA
 	splashURL = fmt.Sprintf(
 		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s",
 		args.host,
@@ -123,7 +129,7 @@ func NewSplash(req Request) (splashURL string) {
 		args.wait,
 		neturl.QueryEscape(req.Cookies),
 		neturl.QueryEscape(paramsToLuaTable(req.Params)),
-		neturl.QueryEscape(LUAScript))
+		LUAScript)
 
 	return
 }
@@ -217,8 +223,8 @@ func (req Request) GetResponse() (*Response, error) {
 
 }
 
-// GetContent returns HTML content from Splash Response
-func (r *Response) GetContent() (io.ReadCloser, error) {
+// GetHTML returns HTML content from Splash Response
+func (r *Response) GetHTML() (io.ReadCloser, error) {
 	if r == nil {
 		return nil, errors.New("empty response")
 	}
@@ -300,14 +306,12 @@ func (r *Response) SetCacheInfo() {
 
 }
 
-
 // GetURL returns URL from Request
 func (req Request) GetURL() string {
 	//trim trailing slash if any.
 	//aws s3 bucket item name cannot contain slash at the end.
-	return strings.TrimRight(strings.TrimSpace(req.URL),  "/")
+	return strings.TrimRight(strings.TrimSpace(req.URL), "/")
 }
-
 
 // Host returns Host value from Request
 func (req Request) Host() (string, error) {
@@ -434,4 +438,9 @@ func (r Response) GetReasonsNotToCache() []cacheobject.Reason {
 //TODO: test it
 func (r Response) GetURL() string {
 	return r.Response.URL
+}
+
+//GetStatusCode return response status code
+func (r Response) GetStatusCode() int {
+	return r.Response.Status
 }

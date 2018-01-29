@@ -4,11 +4,12 @@ import (
 	"encoding/base32"
 	"encoding/json"
 	"errors"
+	"io"
 	"time"
 
-	"github.com/slotix/dataflowkit/utils"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/storage"
+	"github.com/slotix/dataflowkit/utils"
 	"github.com/spf13/viper"
 )
 
@@ -99,34 +100,12 @@ func (mw storageMiddleware) put(req FetchRequester, resp FetchResponser) error {
 }
 
 //Fetch returns content either from storage or directly from web.
-func (mw storageMiddleware) Fetch(req FetchRequester) (FetchResponser, error) {
-	//loads content from a storage if any
-	fromStorage, err := mw.get(req)
-	if err == nil {
-		return fromStorage, nil
-	}
-	logger.Error(err)
-	//fetch results directly from web if there is nothing in storage
-	resp, err := mw.Service.Fetch(req)
+func (mw storageMiddleware) Fetch(req FetchRequester) (io.ReadCloser, error) {
+	resp, err := mw.Response(req)
 	if err != nil {
 		return nil, err
 	}
-
-	var fetchResponse FetchResponser
-	switch req.(type) {
-	case BaseFetcherRequest:
-		fetchResponse = resp.(*BaseFetcherResponse)
-	case splash.Request:
-		fetchResponse = resp.(*splash.Response)
-	default:
-		panic("invalid fetcher request")
-	}
-	//save fetched content to storage
-	err = mw.put(req, fetchResponse)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return resp.GetHTML()
 }
 
 //Response returns Fetch Response either from storage or directly from web.

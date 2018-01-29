@@ -36,8 +36,8 @@ type Request struct {
 	// "session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"
 	//
 	Cookies string `json:"cookie,omitempty"`
-	// Func is Reserved
-	Func string `json:"func,omitempty"`
+	//LUA Splash custom script 
+	LUA string `json:"lua,omitempty"`
 }
 
 //Cookie - Custom Cookie struct is used to avoid problems with unmarshalling data with invalid Expires field which has time.Time type for original http.Cookie struct.

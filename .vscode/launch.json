@@ -23,6 +23,16 @@
             "showLog": true
         },
         {
+            "name": "Debug Cli",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}/fetch/fetch.cli",
+            "env":{},
+            "args": [],
+            "showLog": true
+        },
+        {
             "name": "Debug Webserver",
             "type": "go",
             "request": "launch",

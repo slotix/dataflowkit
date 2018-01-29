@@ -1,6 +1,9 @@
 package fetch
 
-import "github.com/slotix/dataflowkit/errs"
+import (
+	"io"
+	"github.com/slotix/dataflowkit/errs"
+)
 
 //RobotsTxtMiddleware checks if scraping of specified resource is allowed by robots.txt
 func RobotsTxtMiddleware() ServiceMiddleware {
@@ -15,7 +18,7 @@ type robotstxtMiddleware struct {
 
 //Fetch gets response from req.URL, then passes response.URL to Robots.txt validator.
 //issue #1 https://github.com/slotix/dataflowkit/issues/1
-func (mw robotstxtMiddleware) Fetch(req FetchRequester) (response FetchResponser, err error) {
+func (mw robotstxtMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err error) {
 	url := req.GetURL()
 	//to avoid recursion while retrieving robots.txt
 	if !IsRobotsTxt(url) {
@@ -50,9 +53,10 @@ func (mw robotstxtMiddleware) Fetch(req FetchRequester) (response FetchResponser
 		}
 
 	}
-	response, err = mw.Service.Fetch(req)
-	if err != nil {
-		return nil, err
-	}
-	return response, err
+	//out, err = mw.Service.Fetch(req)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return response, err
+	return mw.Service.Fetch(req)
 }
