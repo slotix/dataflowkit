@@ -10,10 +10,9 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
-	"github.com/slotix/dataflowkit/storage"
 )
 
-var storageType storage.Type
+var storageType string
 
 // Start func launches Parsing service at DFKParse address
 func Start(DFKParse string) {
@@ -28,17 +27,12 @@ func Start(DFKParse string) {
 		logger = log.With(logger, "ts", time.Now().Format("Jan _2 15:04:05"))
 		//logger = log.With(logger, "caller", log.DefaultCaller)
 	}
-	//creating storage for caching of parsed results
-	/* storageType, err := storage.ParseType(viper.GetString("STORAGE_TYPE"))
-	if err != nil {
-		logger.Log(err)
-	}
-	storage := storage.NewStore(storageType)
-	*/
+
 	var svc Service
 	svc = ParseService{}
 	//svc = StatsMiddleware("18")(svc)
-	//svc = StorageMiddleware(storage)(svc)
+	//storageType = viper.GetString("STORAGE_TYPE")
+	//svc = StorageMiddleware(storage.NewStore(storageType))(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{
