@@ -1,4 +1,4 @@
-// Copyright © 2017 Slotix s.r.o. <dm@slotix.sk>
+// Copyright © 2018 Slotix s.r.o. <dm@slotix.sk>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -31,10 +32,10 @@ func init() {
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number of DFK",
-	Long: `Dataflow Kit Fetcher version 
+	Short: "Print the version number of fetch CLI",
+	Long: `Dataflow Kit Fetcher CLI version 
     and Build time information`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Dataflow Kit fetcher v%s", VERSION)
+		fmt.Printf("Dataflow Kit fetcher CLI v%s", VERSION)
 	},
 }
