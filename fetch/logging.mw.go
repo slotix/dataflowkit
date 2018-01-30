@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
+	"github.com/slotix/dataflowkit/splash"
 )
 
 // LoggingMiddleware logs Service endpoints
@@ -25,10 +26,20 @@ type loggingMiddleware struct {
 func (mw loggingMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		url := req.GetURL()
+		var fetcher string
+		switch req.(type) {
+		case BaseFetcherRequest:
+			fetcher = "base"
+		case splash.Request:
+			fetcher = "splash"
+		default:
+			panic("invalid fetcher request")
+		}
 		mw.logger.Log(
-			//	"function", "fetch",
 			"url", url,
 			//	"output", output,
+			"fetcher", fetcher,
+			"function", "fetch",
 			"err", err,
 			"took", time.Since(begin),
 		)
@@ -41,10 +52,20 @@ func (mw loggingMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err er
 func (mw loggingMiddleware) Response(req FetchRequester) (response FetchResponser, err error) {
 	defer func(begin time.Time) {
 		url := req.GetURL()
+		var fetcher string
+		switch req.(type) {
+		case BaseFetcherRequest:
+			fetcher = "base"
+		case splash.Request:
+			fetcher = "splash"
+		default:
+			panic("invalid fetcher request")
+		}
 		mw.logger.Log(
-			//"function", "response",
 			"url", url,
+			"fetcher", fetcher,
 			//	"output", output,
+			"function", "response",
 			"err", err,
 			"took", time.Since(begin),
 		)
