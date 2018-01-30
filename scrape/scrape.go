@@ -4,12 +4,9 @@ package scrape
 // https://github.com/andrew-d/goscrape package governed by MIT license.
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
@@ -18,6 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/PuerkitoBio/goquery"
+	gklog "github.com/go-kit/kit/log"
 	"github.com/segmentio/ksuid"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/extract"
@@ -266,7 +264,7 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 			break
 		}
 		//call remote fetcher to download web page
-		sResponse, err := responseFromFetchService(req)
+		sResponse, err := response(req)
 		if err != nil {
 			return nil, err
 		}
@@ -399,38 +397,17 @@ func (p Payload) selectors() ([]string, error) {
 	return selectors, nil
 }
 
-//responseFromFetchService sends request to fetch service and returns *splash.Response
-func responseFromFetchService(req splash.Request) (*splash.Response, error) {
-
-	//fetch content
-	b, err := json.Marshal(req)
+//response sends request to fetch service and returns *splash.Response
+func response(req splash.Request) (*splash.Response, error) {
+	svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH"), gklog.NewNopLogger())
 	if err != nil {
-		return nil, err
+		logger.Error(err)
 	}
-	reader := bytes.NewReader(b)
-	addr := "http://" + viper.GetString("DFK_FETCH") + "/response/splash"
-	request, err := http.NewRequest("POST", addr, reader)
+	resp, err := svc.Response(req)
 	if err != nil {
-		return nil, err
+		logger.Error(err)
 	}
-	request.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	r, err := client.Do(request)
-	if r != nil {
-		defer r.Body.Close()
-	}
-	if err != nil {
-		panic(err)
-	}
-	resp, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	var sResponse *splash.Response
-	if err := json.Unmarshal(resp, &sResponse); err != nil {
-		logger.Error("Json Unmarshall error", err)
-	}
-	return sResponse, nil
+	return resp.(*splash.Response), nil
 }
 
 //partNames returns Part Names which are used as a header of output CSV

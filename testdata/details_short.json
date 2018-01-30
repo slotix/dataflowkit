@@ -42,7 +42,7 @@
     "paginator":{  
        "selector":".next",
        "attr":"href",
-       "maxPages":3
+       "maxPages":2
     },
     "format":"csv",
     "paginatedResults":false,
