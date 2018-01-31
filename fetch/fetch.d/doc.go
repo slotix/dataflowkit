@@ -35,6 +35,8 @@
 //		setInterval/setTimeout javascript calls, because with wait=0 callbacks of
 //		setInterval/setTimeout won’t be executed. SPLASH_WAIT time must be less than SPLASH_TIMEOUT
 //Storage settings
+//		SKIP_STORAGE_MW: If true no data will be saved to storage. 
+//		This flag forces fetcher to bypass storage middleware.
 //		STORAGE_TYPE: Storage backend for intermediary data passed to Dataflow 
 //		kit Parse service. Types: S3, Digital Ocean Spaces, Redis, Diskv 
 //		(defaults to "Diskv"). It is case insensitive.
