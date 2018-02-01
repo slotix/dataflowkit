@@ -28,5 +28,5 @@ func TypeString(s string) (Type, error) {
 	if val, ok := _TypeNameToValue_map[s]; ok {
 		return val, nil
 	}
-	return 0, fmt.Errorf("%s does not belong to Type values", s)
+	return 0, fmt.Errorf("%s does not belong to Storage Type values", s)
 }

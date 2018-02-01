@@ -36,7 +36,8 @@ func Start(DFKFetch string) {
 		var err error
 		storageType, err = storage.TypeString(viper.GetString("STORAGE_TYPE"))
 		if err != nil {
-			errChan <- fmt.Errorf("%s", err)
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
 		}
 		svc = StorageMiddleware(storage.NewStore(storageType))(svc)
 	}
