@@ -23,8 +23,8 @@ func fetchRobots(req BaseFetcherRequest) (*BaseFetcherResponse, error) {
 		logger.Error(err)
 	}
 	resp, err := svc.Response(req)
-	if err != nil {
-		//logger.Error(err)
+	if err != nil  {
+	//	logger.Error(err)
 		return nil, err
 	}
 	return resp.(*BaseFetcherResponse), nil
