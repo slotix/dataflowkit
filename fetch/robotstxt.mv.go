@@ -24,7 +24,8 @@ func (mw robotstxtMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err 
 	if !IsRobotsTxt(url) {
 		robotsData, err := RobotstxtData(url)
 		if err != nil {
-			return nil, err
+			//robots.txt may be empty but we have to continue processing the page
+			logger.Error(err)
 		}
 		if !AllowedByRobots(url, robotsData) {
 			//no need a body retrieve to get information about redirects
