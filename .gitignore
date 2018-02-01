@@ -63,3 +63,4 @@ fetch/fetch.cli/fetch.cli
 testdata/diesel.json
 testdata/details_short.json
 testdata/details.json
+fetch/fetch.cli/debug
