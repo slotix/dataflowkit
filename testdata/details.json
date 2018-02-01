@@ -3,7 +3,7 @@
     "request":{  
        "url":"https://drony.heureka.sk"
     },
-    "fields":[  
+    "fields":[   
        {  
           "name":"Title",
           "selector":".product-container a",

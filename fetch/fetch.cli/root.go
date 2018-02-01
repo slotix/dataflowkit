@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/go-kit/kit/log"
+	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/healthcheck"
 	"github.com/slotix/dataflowkit/splash"
@@ -39,6 +40,9 @@ var (
 	DFKFetch string //DFKFetch service address.
 	fetcher  string //fetcher type: splash, base
 	URL      string
+	Params   string
+	Cookies  string
+	LUA      string
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -66,6 +70,10 @@ var RootCmd = &cobra.Command{
 			}
 		}
 		if allAlive {
+			if URL == "" {
+				fmt.Fprintf(os.Stderr, "error: %v\n", &errs.BadRequest{errors.New("no URL specified")})
+				os.Exit(1)
+			}
 			svc, err := fetch.NewHTTPClient(DFKFetch, log.NewNopLogger())
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -82,7 +90,7 @@ var RootCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, err.Error())
 				os.Exit(1)
 			}
-		//	req := splash.Request{URL: URL}
+			//	req := splash.Request{URL: URL}
 			resp, err := svc.Fetch(req)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -108,10 +116,18 @@ func init() {
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
 	RootCmd.Flags().StringVarP(&fetcher, "FETCHER_TYPE", "t", "splash", "DFK Fetcher type: splash, base")
 	RootCmd.Flags().StringVarP(&URL, "URL", "u", "", "URL to be fetched")
+	RootCmd.Flags().StringVarP(&Params, "PARAMS", "", "", "Params is a string value for passing formdata parameters.")
+	RootCmd.Flags().StringVarP(&Cookies, "COOKIES", "", "", "Cookies contain cookies to be added to request  before sending it to browser.")
+	RootCmd.Flags().StringVarP(&LUA, "LUA", "", "", "LUA Splash custom script")
+
+
 
 	viper.AutomaticEnv() // read in environment variables that match
 	viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
 	viper.BindPFlag("FETCHER_TYPE", RootCmd.Flags().Lookup("FETCHER_TYPE"))
 	viper.BindPFlag("URL", RootCmd.Flags().Lookup("URL"))
+	viper.BindPFlag("PARAMS", RootCmd.Flags().Lookup("PARAMS"))
+	viper.BindPFlag("COOKIES", RootCmd.Flags().Lookup("COOKIES"))
+	viper.BindPFlag("LUA", RootCmd.Flags().Lookup("LUA"))
 
 }
