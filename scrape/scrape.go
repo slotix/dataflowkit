@@ -312,36 +312,54 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 				//********* details
 				//part.Details = nil
 				if part.Details != nil {
-					part.Details.Request = splash.Request{
-						URL: extractedPartResults.(string),
-					}
-					//check if domain is the same for initial URL and details' URLs
-					//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
-					detailsHost, err := part.Details.Request.Host()
-					if err != nil {
-						logger.Error(err)
-					}
-					if detailsHost == host {
-						//every time when getting a response the next request will be filled with updated cookie information
-						headers := sResponse.Response.Headers.(http.Header)
-						part.Details.Request.Cookies = splash.GetSetCookie(headers)
-						if *t.Payload.RandomizeFetchDelay {
-							//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-							rand := utils.Random(500, 1500)
-							delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
-							logger.Infof("%s -> %v", delay, part.Details.Request.URL)
-							time.Sleep(delay)
-						} else {
-							time.Sleep(*t.Payload.FetchDelay)
+					var requests []splash.Request
+					switch extractedPartResults.(type) {
+					case string:
+						requests = append(requests, splash.Request{
+							URL: extractedPartResults.(string),
+						})
+					case []string:
+						for _, r := range extractedPartResults.([]string) {
+							requests = append(requests, splash.Request{
+								URL: r,
+							})
 						}
-					}
 
-					resDetails, err := t.scrape(part.Details)
-					if err != nil {
-						return nil, err
 					}
-					blockResults[part.Name+"_details"] = resDetails.AllBlocks()
+					for _, r := range requests {
+						//part.Details.Request = splash.Request{
+						//	URL: extractedPartResults.(string),
+						//}
+						part.Details.Request = r
+						//check if domain is the same for initial URL and details' URLs
+						//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
+						detailsHost, err := part.Details.Request.Host()
+						if err != nil {
+							logger.Error(err)
+						}
+						if detailsHost == host {
+							//every time when getting a response the next request will be filled with updated cookie information
+							headers := sResponse.Response.Headers.(http.Header)
+							part.Details.Request.Cookies = splash.GetSetCookie(headers)
+							if *t.Payload.RandomizeFetchDelay {
+								//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
+								rand := utils.Random(500, 1500)
+								delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
+								logger.Infof("%s -> %v", delay, part.Details.Request.URL)
+								time.Sleep(delay)
+							} else {
+								time.Sleep(*t.Payload.FetchDelay)
+							}
+						}
+
+						resDetails, err := t.scrape(part.Details)
+						if err != nil {
+							return nil, err
+						}
+						blockResults[part.Name+"_details"] = resDetails.AllBlocks()
+					}
 				}
+				//********* end details
 			}
 			if len(blockResults) > 0 {
 				// Append the results from this block.

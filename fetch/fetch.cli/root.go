@@ -21,11 +21,13 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/slotix/dataflowkit/errs"
@@ -71,33 +73,66 @@ var RootCmd = &cobra.Command{
 		}
 		if allAlive {
 			if URL == "" {
-				fmt.Fprintf(os.Stderr, "error: %v\n", &errs.BadRequest{errors.New("no URL specified")})
+				fmt.Fprintf(os.Stderr, "error: %v\n", &errs.BadRequest{errors.New("no remote address specified")})
 				os.Exit(1)
 			}
-			svc, err := fetch.NewHTTPClient(DFKFetch, log.NewNopLogger())
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error: %v\n", err)
-				os.Exit(1)
+			cx, cancel := context.WithCancel(context.Background())
+			ch := make(chan error)
+
+			go func() {
+				svc, err := fetch.NewHTTPClient(DFKFetch, log.NewNopLogger())
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error: %v\n", err)
+					os.Exit(1)
+				}
+
+				var req fetch.FetchRequester
+				switch strings.ToLower(fetcher) {
+				case "splash":
+					req = splash.Request{
+						URL:     URL,
+						Params:  Params,
+						Cookies: Cookies,
+						LUA:     LUA,
+					}
+				case "base":
+					req = fetch.BaseFetcherRequest{URL: URL}
+				default:
+					err := errors.New("invalid fetcher type specified")
+					fmt.Fprintf(os.Stderr, err.Error())
+					os.Exit(1)
+				}
+				//	req := splash.Request{URL: URL}
+				resp, err := svc.Fetch(req)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error: %v\n", err)
+					os.Exit(1)
+				}
+				
+				b, err := ioutil.ReadAll(resp)
+				fmt.Println(string(b))
+				select {
+				case <-cx.Done():
+					// Already timedout
+				default:
+					ch <- err
+				}
+			}()
+			// Simulating user cancel request
+			go func() {
+				time.Sleep(10000 * time.Millisecond)
+				cancel()
+			}()
+			select {
+			case err := <-ch:
+				if err != nil {
+					// HTTP error
+					panic(err)
+				}
+				print("no error")
+			case <-cx.Done():
+				fmt.Println(cx.Err())
 			}
-			var req fetch.FetchRequester
-			switch strings.ToLower(fetcher) {
-			case "splash":
-				req = splash.Request{URL: URL}
-			case "base":
-				req = fetch.BaseFetcherRequest{URL: URL}
-			default:
-				err := errors.New("invalid fetcher type specified")
-				fmt.Fprintf(os.Stderr, err.Error())
-				os.Exit(1)
-			}
-			//	req := splash.Request{URL: URL}
-			resp, err := svc.Fetch(req)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error: %v\n", err)
-				os.Exit(1)
-			}
-			b, err := ioutil.ReadAll(resp)
-			fmt.Println(string(b))
 		}
 	},
 }
@@ -119,8 +154,6 @@ func init() {
 	RootCmd.Flags().StringVarP(&Params, "PARAMS", "", "", "Params is a string value for passing formdata parameters.")
 	RootCmd.Flags().StringVarP(&Cookies, "COOKIES", "", "", "Cookies contain cookies to be added to request  before sending it to browser.")
 	RootCmd.Flags().StringVarP(&LUA, "LUA", "", "", "LUA Splash custom script")
-
-
 
 	viper.AutomaticEnv() // read in environment variables that match
 	viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))

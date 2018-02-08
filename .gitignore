@@ -64,3 +64,5 @@ testdata/diesel.json
 testdata/details_short.json
 testdata/details.json
 fetch/fetch.cli/debug
+testdata/diesel1.json
+testdata/najnakup.sk.json

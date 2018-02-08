@@ -22,7 +22,6 @@ import (
 // so likely of the form "host:port". We bake-in certain middlewares,
 // implementing the client library pattern.
 func NewHTTPClient(instance string, logger log.Logger) (Service, error) {
-	//func NewHTTPClient(instance string, logger log.Logger) (Service, error) {
 	// Quickly sanitize the instance string.
 	if !strings.HasPrefix(instance, "http") {
 		instance = "http://" + instance
@@ -31,13 +30,6 @@ func NewHTTPClient(instance string, logger log.Logger) (Service, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// We construct a single ratelimiter middleware, to limit the total outgoing
-	// QPS from this client to all methods on the remote instance. We also
-	// construct per-endpoint circuitbreaker middlewares to demonstrate how
-	// that's done, although they could easily be combined into a single breaker
-	// for the entire remote instance, too.
-	//	limiter := ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), 100))
 
 	// Each individual endpoint is an http/transport.Client (which implements
 	// endpoint.Endpoint) that gets wrapped with various middlewares. If you
@@ -51,11 +43,6 @@ func NewHTTPClient(instance string, logger log.Logger) (Service, error) {
 			encodeHTTPGenericRequest,
 			decodeSplashFetcherContent,
 		).Endpoint()
-		//	splashFetchEndpoint = limiter(splashFetchEndpoint)
-		//	splashFetchEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
-		//		Name:    "Splash Fetch",
-		//		Timeout: 30 * time.Second,
-		//	}))(splashFetchEndpoint)
 	}
 
 	var splashResponseEndpoint endpoint.Endpoint
@@ -100,7 +87,7 @@ func NewHTTPClient(instance string, logger log.Logger) (Service, error) {
 
 // encodeHTTPGenericRequest is a transport/http.EncodeRequestFunc that
 // JSON-encodes any request to the request body. Primarily useful in a client.
-func encodeHTTPGenericRequest(_ context.Context, r *http.Request, request interface{}) error {
+func encodeHTTPGenericRequest(ctx context.Context, r *http.Request, request interface{}) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return err
@@ -114,7 +101,7 @@ func encodeHTTPGenericRequest(_ context.Context, r *http.Request, request interf
 // non-200 status code, we will interpret that as an error and attempt to decode
 // the specific error message from the response body. Primarily useful in a
 // client.
-func decodeSplashFetcherContent(_ context.Context, r *http.Response) (interface{}, error) {
+func decodeSplashFetcherContent(ctx context.Context, r *http.Response) (interface{}, error) {
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
@@ -125,7 +112,7 @@ func decodeSplashFetcherContent(_ context.Context, r *http.Response) (interface{
 	return data, nil
 }
 
-func decodeSplashFetcherResponse(_ context.Context, r *http.Response) (interface{}, error) {
+func decodeSplashFetcherResponse(ctx context.Context, r *http.Response) (interface{}, error) {
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
@@ -134,7 +121,7 @@ func decodeSplashFetcherResponse(_ context.Context, r *http.Response) (interface
 	return resp, err
 }
 
-func decodeBaseFetcherContent(_ context.Context, r *http.Response) (interface{}, error) {
+func decodeBaseFetcherContent(ctx context.Context, r *http.Response) (interface{}, error) {
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
@@ -143,7 +130,7 @@ func decodeBaseFetcherContent(_ context.Context, r *http.Response) (interface{},
 	return resp, err
 }
 
-func decodeBaseFetcherResponse(_ context.Context, r *http.Response) (interface{}, error) {
+func decodeBaseFetcherResponse(ctx context.Context, r *http.Response) (interface{}, error) {
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
