@@ -1,0 +1,40 @@
+{
+    "name": "books.toscrape",
+    "request": {
+        "url": "http://books.toscrape.com/"
+    },
+    "fields": [
+        {
+            "name": "link1",
+            "selector": ".nav-list ul a",
+            "extractor": {
+                "types": [
+                    "href",
+                    "text"
+                ],
+                "displayAs": 2,
+                "params": {
+                    "includeIfEmpty": false
+                }
+            },
+            "details": {
+                "fields": [
+                    {
+                        "name": "link1",
+                        "selector": "h3 a",
+                        "extractor": {
+                            "types": [
+                                "href",
+                                "text"
+                            ],
+                            "params": {
+                                "includeIfEmpty": false
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "format": "json"
+}
