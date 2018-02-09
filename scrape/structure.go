@@ -36,6 +36,7 @@ type Field struct {
 
 type details struct {
 	Fields []Field `json:"fields"`
+	Paginator *paginator `json:"paginator"`
 }
 
 // paginator is used to scrape multiple pages.
