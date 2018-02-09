@@ -1,0 +1,51 @@
+{
+    "name": "books.toscrape",
+    "request": {
+        "url": "http://books.toscrape.com"
+    },
+    "fields": [
+        {
+            "name": "link1",
+            "selector": ".nav-list ul a",
+            "extractor": {
+                "types": [
+                    "href",
+                    "text"
+                ],
+                "displayAs": 2,
+                "params": {
+                    "includeIfEmpty": false
+                }
+            },
+            "details": {
+                "name": "link1details",
+                "request": {
+                    "url": "http://books.toscrape.com/catalogue/category/books/travel_2/index.html"
+                },
+                "fields": [
+                    {
+                        "name": "link1",
+                        "selector": "h3 a",
+                        "extractor": {
+                            "types": [
+                                "href",
+                                "text"
+                            ],
+                            "displayAs": 2,
+                            "params": {
+                                "includeIfEmpty": false
+                            }
+                        }
+                    }
+                ],
+                "paginator": {
+                    "selector": ".next a",
+                    "attr": "href",
+                    "maxPages": 2
+                },
+                "format": ""
+            }
+        }
+    ],
+    "format": "json"
+}

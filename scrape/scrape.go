@@ -3,6 +3,7 @@ package scrape
 // The following code was sourced and modified from the
 // https://github.com/andrew-d/goscrape package governed by MIT license.
 
+//TODO: add paginator to details
 import (
 	"errors"
 	"fmt"
@@ -156,6 +157,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 					detailsPayload := p
 					detailsPayload.Name = f.Name + "Details"
 					detailsPayload.Fields = f.Details.Fields
+					detailsPayload.Paginator = f.Details.Paginator
 					//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
 					scraper, err = detailsPayload.newScraper()
 					if err != nil {
