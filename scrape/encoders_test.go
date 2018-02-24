@@ -35,7 +35,7 @@ func TestJSONEncoder_Encode(t *testing.T) {
 			want:    []byte(`[{"col1":"1","col2":"2"},{"col1":"3","col2":"4"}]` + "\n"),
 			wantErr: false,
 		},
-		
+
 		{name: "paginated Results = true",
 			fields: fields{
 				paginateResults: true,
@@ -160,7 +160,7 @@ func TestXMLEncoder_Encode(t *testing.T) {
 		want    []byte
 		wantErr bool
 	}{
-		 {name: "1",
+		{name: "1",
 			args: args{
 				results: &Results{
 					Output: [][]map[string]interface{}{
@@ -168,19 +168,19 @@ func TestXMLEncoder_Encode(t *testing.T) {
 						{{"col1": "3", "col2": "4"}},
 						{{"col1": 5, "col2": "6"}},
 						{{"col1": "", "col2": 7}},
-						{{"col1": []string{"8", "9"}, "col2": 10}},	
-						{{"col1": "11,12", "col2": 13}},		
+						{{"col1": []string{"8", "9"}, "col2": 10}},
+						{{"col1": "11,12", "col2": 13}},
 					},
 				},
 			},
 			want:    []byte(`<?xml version="1.0" encoding="UTF-8"?><root><element><col1>1</col1><col2>2.345</col2></element><element><col1>3</col1><col2>4</col2></element><element><col1>5</col1><col2>6</col2></element><element><col1/><col2>7</col2></element><element><col1>8</col1><col1>9</col1><col2>10</col2></element><element><col1>11,12</col1><col2>13</col2></element></root>`),
 			wantErr: false,
-		}, 
+		},
 		{name: "2",
 			args: args{
 				results: &Results{
 					Output: [][]map[string]interface{}{
-						{{"col1": []int{11, 12}, "col2": []float64{13.145, 15.16}}},		
+						{{"col1": []int{11, 12}, "col2": []float64{13.145, 15.16}}},
 					},
 				},
 			},
@@ -209,5 +209,3 @@ func TestXMLEncoder_Encode(t *testing.T) {
 		})
 	}
 }
-
-
