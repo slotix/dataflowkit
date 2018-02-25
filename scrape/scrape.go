@@ -409,7 +409,9 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 func (p Payload) selectors() ([]string, error) {
 	selectors := []string{}
 	for _, f := range p.Fields {
-		selectors = append(selectors, f.Selector)
+		if f.Selector != "" {
+			selectors = append(selectors, f.Selector)
+		}
 	}
 	if len(selectors) == 0 {
 		return nil, &errs.BadPayload{errs.ErrNoSelectors}
