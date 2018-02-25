@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
@@ -265,11 +264,4 @@ func TestTask_ParseXML(t *testing.T) {
 	}
 }
 
-func TestNewTask(t *testing.T) {
-	task := NewTask(Payload{})
-	assert.NotEmpty(t, task.ID)
-	start, err := task.startTime()
-	assert.NoError(t, err)
-	assert.NotNil(t, start, "task start time is not nil")
-	//t.Log(start)
-}
+
