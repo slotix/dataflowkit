@@ -1,0 +1,57 @@
+{
+    "name": "diesel.elcat",
+    "request": {
+        "url": "http://diesel.elcat.kg"
+    },
+    "fields": [
+        {
+            "name": "link1",
+            "selector": "h4 a",
+            "extractor": {
+                "types": [
+                    "href",
+                    "text"
+                ],
+                "params": {
+                    "includeIfEmpty": false
+                }
+            },
+            "details": {
+                "name": "link1details",
+                "request": {
+                    "url": "http://diesel.elcat.kg/index.php?s=f941f50ca35cff37fa92dae48a278904&showforum=29"
+                },
+                "fields": [
+                    {
+                        "name": "link1",
+                        "selector": "h4 a",
+                        "extractor": {
+                            "types": [
+                                "href",
+                                "text"
+                            ],
+                            "params": {
+                                "includeIfEmpty": false
+                            }
+                        }
+                    }
+                ],
+                "format": ""
+            }
+        },
+        {
+            "name": "link2",
+            "selector": "#subforums_29 a",
+            "extractor": {
+                "types": [
+                    "href",
+                    "text"
+                ],
+                "params": {
+                    "includeIfEmpty": false
+                }
+            }
+        }
+    ],
+    "format": "json"
+}
