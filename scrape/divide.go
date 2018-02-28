@@ -149,11 +149,12 @@ func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Sel
 	if selectorAncestor.Length() == 0 {
 		return nil, &errs.BadPayload{errs.ErrNoCommonAncestor}
 	}
-	intersectionWithParent := fmt.Sprintf("%s>%s",
-		attrOrDataValue(selectorAncestor.Parent()),
-		attrOrDataValue(selectorAncestor))
-
-	items := doc.Find(intersectionWithParent)
+	fullPath := goquery.NodeName(selectorAncestor)
+	parents := selectorAncestor.ParentsUntilSelection(doc.Find("body"))
+	parents.Each(func(i int, s *goquery.Selection) {
+		fullPath = attrOrDataValue(s) + " > " + fullPath
+	})
+	items := doc.Find(fullPath)
 
 	/*var inter1 *goquery.Selection
 	if items.Length() == 1 {
