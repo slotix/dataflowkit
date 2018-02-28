@@ -49,13 +49,13 @@
 //
 //The following filters are available:
 //
-//**upperCase** makes all of the letters in the Extractor's text/ Attr  uppercase.
+//- upperCase makes all of the letters in the Extractor's text/ Attr  uppercase.
 //
-//lowerCase  makes all of the letters in the Extractor's text/ Attr   lowercase.
+//- lowerCase  makes all of the letters in the Extractor's text/ Attr   lowercase.
 //
-//capitalize capitalizes the first letter of each word in the Extractor's text/ Attr 
+//- capitalize capitalizes the first letter of each word in the Extractor's text/ Attr 
 //
-//trim returns a copy of the Extractor's text/ Attr, with all leading and trailing white space removed
+//- trim returns a copy of the Extractor's text/ Attr, with all leading and trailing white space removed
 //
 //Filters are available for Text, Link and Image extractor types.
 //
