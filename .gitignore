@@ -8,11 +8,10 @@ _obj
 _test
 web/
 
-.vscode/*
-.idea/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
+.vscode
+#!.vscode/settings.json
+#!.vscode/tasks.json
+#!.vscode/launch.json
 
 # Architecture specific extensions/prefixes
 *.[568vq]
@@ -59,12 +58,11 @@ splash/1Dockerfile1
 splash/docker-compose.yml
 splash/deploy_stack.sh
 
+testdata
+
 webserver/main.go
 webserver/doc.go
 fetch/fetch.cli/fetch.cli
-testdata/diesel.json
-testdata/details_short.json
-testdata/details.json
 fetch/fetch.cli/debug
-testdata/diesel1.json
-testdata/najnakup.sk.json
+examples/diesel*
+examples/najnakup.sk.json
