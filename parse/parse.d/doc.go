@@ -161,6 +161,8 @@ Combined list of results is always returned for CSV format.
 //    crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay
 //    to 1.5 * FetchDelay seconds is used between consecutive requests to the same 
 //    domain. If FetchDelay is zero this option has no effect. (defaults to true)
+//    IGNORE_FETCH_DELAY: Ignores fetchDelay setting intended for debug purpose. 
+//    Please set it to false in Production
 //
 //Output settings
 //    FORMAT: Format represents output format (CSV, JSON, XML)(defaults to "json")

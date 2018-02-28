@@ -343,14 +343,16 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 							//every time when getting a response the next request will be filled with updated cookie information
 							headers := sResponse.Response.Headers.(http.Header)
 							part.Details.Request.Cookies = splash.GetSetCookie(headers)
-							if *t.Payload.RandomizeFetchDelay {
-								//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-								rand := utils.Random(500, 1500)
-								delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
-								logger.Infof("%s -> %v", delay, part.Details.Request.URL)
-								time.Sleep(delay)
-							} else {
-								time.Sleep(*t.Payload.FetchDelay)
+							if !viper.GetBool("IGNORE_FETCH_DELAY") {
+								if *t.Payload.RandomizeFetchDelay {
+									//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
+									rand := utils.Random(500, 1500)
+									delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
+									logger.Infof("%s -> %v", delay, part.Details.Request.URL)
+									time.Sleep(delay)
+								} else {
+									time.Sleep(*t.Payload.FetchDelay)
+								}
 							}
 						}
 
@@ -383,15 +385,16 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 			headers := sResponse.Response.Headers.(http.Header)
 			req.Cookies = splash.GetSetCookie(headers)
 			req.URL = url
-
-			if *t.Payload.RandomizeFetchDelay {
-				//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-				rand := utils.Random(500, 1500)
-				delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
-				logger.Infof("%s -> %v", delay, req.URL)
-				time.Sleep(delay)
-			} else {
-				time.Sleep(*t.Payload.FetchDelay)
+			if !viper.GetBool("IGNORE_FETCH_DELAY") {
+				if *t.Payload.RandomizeFetchDelay {
+					//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
+					rand := utils.Random(500, 1500)
+					delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
+					logger.Infof("%s -> %v", delay, req.URL)
+					time.Sleep(delay)
+				} else {
+					time.Sleep(*t.Payload.FetchDelay)
+				}
 			}
 		}
 
