@@ -56,7 +56,8 @@ Read more information about scraper configuration JSON files at our [GoDoc refer
 Information about [extractors and filters](https://godoc.org/github.com/slotix/dataflowkit/extract)
 
 ## Front-End
-Try http://scrape.dataflowkit.org Front-end with Point-and-click interface to Dataflow kit services.  
+Try http://scrape.dataflowkit.org Front-end with Point-and-click interface to Dataflow kit services. 
+ 
 ![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/dfk-screenshot.png)
 
 
