@@ -24,5 +24,43 @@ DFK consists of two general services for fetching and parsing web pages content.
 ## Parse service
 **parse.d** is the daemon that extracts data from downloaded web page following the rules described in configuration JSON file. Extracted data are returned in CSV, JSON or XML format.
 
+## Installation
+Using [dep](https://github.com/golang/dep)
+```
+dep ensure -add github.com/slotix/dataflowkit@master
+```
+or go get
+```
+go get -u github.com/slotix/dataflowkit
+```
+
+## Usage 
+1. Start Splash docker container 
+``` docker run -d -it --rm -p 5023:5023 -p 8050:8050 -p 8051:8051 scrapinghub/splash```
+[Splash](https://github.com/scrapinghub/splash) is used for fetching web pages to feed a Dataflow kit parser. 
+2. Build and run fetch.d service
+```
+cd $GOPATH/src/github.com/slotix/dataflowkit/fetch/fetch.d && go build
+./fetch.d
+```
+3. In new terminal window build and run parse.d service
+```
+cd $GOPATH/src/github.com/slotix/dataflowkit/parse/parse.d && go build
+./parse.d
+```
+4. Launch parsing by sending POST request to parse daemon. Some json configuration files for testing are available in /examples folder.
+```
+curl -XPOST  127.0.0.1:8001/parse --data-binary "@$GOPATH/src/github.com/slotix/dataflowkit/examples/books.toscrape.com.json"
+```
+Read more information about scraper configuration JSON files at our [GoDoc reference](https://godoc.org/github.com/slotix/dataflowkit/parse/parse.d)
+More information about [extractors and filters](https://godoc.org/github.com/slotix/dataflowkit/extract) 
+
+## License
+This is Free Software, released under the BSD 3-Clause License.
+
+## Contributing
+You are welcome to contribute to our project. 
+Please submit [your issues](https://github.com/slotix/dataflowkit/issues) 
+Fork the [project](https://github.com/slotix/dataflowkit)
 
 ![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/spider/Spider-White-BG.png)

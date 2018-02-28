@@ -1,0 +1,48 @@
+{
+    "name": "najnakup.sk",
+    "request": {
+        "url": "http://najnakup.sk/televizory"
+    },
+    "fields": [
+        {
+            "name": "link1",
+            "selector": ".item-title a",
+            "extractor": {
+                "types": [
+                    "href",
+                    "text"
+                ],
+                "params": {
+                    "includeIfEmpty": false
+                }
+            }
+        },
+        {
+            "name": "text1",
+            "selector": "#list-view-cont p",
+            "extractor": {
+                "types": [
+                    "text"
+                ],
+                "params": {
+                    "regexp": "",
+                    "includeIfEmpty": false
+                }
+            }
+        },
+        {
+            "name": "text2",
+            "selector": ".cost strong",
+            "extractor": {
+                "types": [
+                    "text"
+                ],
+                "params": {
+                    "regexp": "",
+                    "includeIfEmpty": false
+                }
+            }
+        }
+    ],
+    "format": "csv"
+}

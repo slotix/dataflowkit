@@ -47,9 +47,9 @@
 //
 //Filters are used to manipulate text data when extracting.
 //
-//Currently the following filters are available:
+//The following filters are available:
 //
-//upperCase makes all of the letters in the Extractor's text/ Attr  uppercase.
+//**upperCase** makes all of the letters in the Extractor's text/ Attr  uppercase.
 //
 //lowerCase  makes all of the letters in the Extractor's text/ Attr   lowercase.
 //

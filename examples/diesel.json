@@ -1,0 +1,44 @@
+{  
+    "name":"diesel.elcat",
+    "request":{  
+       "url":"http://diesel.elcat.kg"
+    },
+    "fields":[  
+       {  
+          "name":"link1",
+          "selector":"h4 a",
+          "extractor":{  
+             "types":[  
+                "href",
+                "text"
+             ],
+             "params":{  
+                "includeIfEmpty":false
+             }
+          },
+          "details":{  
+             "name":"link1details",
+             "request":{  
+                "url":"http://diesel.elcat.kg/index.php?s=2b4eb649e5de31d97146216b388e7e59&showforum=29"
+             },
+             "fields":[  
+                {  
+                   "name":"link1",
+                   "selector":"h4 a",
+                   "extractor":{  
+                      "types":[  
+                         "href",
+                         "text"
+                      ],
+                      "params":{  
+                         "includeIfEmpty":false
+                      }
+                   }
+                }
+             ],
+             "format":""
+          }
+       }
+    ],
+    "format":"json"
+ }
