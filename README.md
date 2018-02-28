@@ -14,8 +14,6 @@ It can be used in many ways for data mining, data processing or archiving.
 
 The actual use case can be grabbing list of products on several pages and follow each product’s details page to retrieve additional information. Parse endpoint returns information as a JSON, XML or CSV data.
 
-Try http://scrape.dataflowkit.org Front-end with Point-and-click interface to Dataflow kit services.  
-
 DFK consists of two general services for fetching and parsing web pages content.
 
 ## Fetch service
@@ -56,6 +54,9 @@ curl -XPOST  127.0.0.1:8001/parse --data-binary "@$GOPATH/src/github.com/slotix/
 Read more information about scraper configuration JSON files at our [GoDoc reference](https://godoc.org/github.com/slotix/dataflowkit/parse/parse.d)
 
 Information about [extractors and filters](https://godoc.org/github.com/slotix/dataflowkit/extract)
+
+## Front-End
+Try http://scrape.dataflowkit.org Front-end with Point-and-click interface to Dataflow kit services.  
 
 ## License
 This is Free Software, released under the BSD 3-Clause License.
