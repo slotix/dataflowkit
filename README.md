@@ -40,6 +40,7 @@ go get -u github.com/slotix/dataflowkit
 ``` docker run -d -it --rm -p 5023:5023 -p 8050:8050 -p 8051:8051 scrapinghub/splash```
 
 [Splash](https://github.com/scrapinghub/splash) is used for fetching web pages to feed a Dataflow kit parser. 
+
 2. Build and run fetch.d service
 ```
 cd $GOPATH/src/github.com/slotix/dataflowkit/fetch/fetch.d && go build && ./fetch.d
