@@ -57,6 +57,8 @@ Information about [extractors and filters](https://godoc.org/github.com/slotix/d
 
 ## Front-End
 Try http://scrape.dataflowkit.org Front-end with Point-and-click interface to Dataflow kit services.  
+![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/dfk-screenshot.png)
+
 
 ## License
 This is Free Software, released under the BSD 3-Clause License.
