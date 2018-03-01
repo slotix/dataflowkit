@@ -3,22 +3,58 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-
-	"github.com/gin-gonic/gin"
 )
 
 var (
-	port          = flag.String("p", ":8080", "HTTP listen address")
-	fetcherPort   = flag.String("f", ":8000", "Fetcher port")
-	dfkParserPort = flag.String("d", ":8001", "DFK Parser port")
-	baseDir       = flag.String("b", "../web", "HTML files location.")
+	port        = flag.String("p", ":8080", "HTTP listen address")
+	fetcherPort = flag.String("f", ":8000", "DFK Fetcher port")
+	parserPort  = flag.String("d", ":8001", "DFK Parser port")
+	baseDir     = flag.String("b", "../web", "HTML files location.")
 )
 
+func helpHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./../web/get_started.html")
+}
+
+func reverseProxy(p *string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		host := "localhost" + *p
+		proxy := httputil.NewSingleHostReverseProxy(&url.URL{
+			Scheme: "http",
+			Host:   host,
+		})
+		proxy.ServeHTTP(w, r)
+	}
+}
 
 func main() {
+	flag.Parse()
+	//http.HandleFunc("/favicon.ico", faviconHandler)
+	http.Handle("/", http.FileServer(http.Dir("./../web")))
+	http.HandleFunc("/get_started", helpHandler)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./../web/static"))))
+
+	// http.HandleFunc("/fetch/splash", func(w http.ResponseWriter, r *http.Request) {
+	// 	host := "localhost" + *fetcherPort
+	// 	proxy := httputil.NewSingleHostReverseProxy(&url.URL{
+	// 		Scheme: "http",
+	// 		//Host:   "localhost:8000",
+	// 		Host: host,
+	// 	})
+	// 	proxy.ServeHTTP(w, r)
+	// })
+	http.HandleFunc("/fetch/splash", reverseProxy(fetcherPort))
+	http.HandleFunc("/fetch/base", reverseProxy(fetcherPort))
+	http.HandleFunc("/parse", reverseProxy(parserPort))
+	fmt.Println("starting at port ", *port)
+	log.Fatal(http.ListenAndServe(*port, nil))
+}
+
+/* func main() {
 	flag.Parse()
 	//gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
@@ -52,9 +88,9 @@ func main() {
 	r.POST("/fetch/base", reverseProxy(fetcherPort))
 	r.POST("/parse", reverseProxy(dfkParserPort))
 	r.Run(*port)
-}
+} */
 
-func reverseProxy(p *string) gin.HandlerFunc {
+/* func reverseProxy(p *string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		host := fmt.Sprintf("localhost%s", *p)
 		proxy := httputil.NewSingleHostReverseProxy(&url.URL{
@@ -64,7 +100,7 @@ func reverseProxy(p *string) gin.HandlerFunc {
 		})
 		proxy.ServeHTTP(c.Writer, c.Request)
 	}
-}
+} */
 
 /* func ReverseProxy(p *string) gin.HandlerFunc {
 
