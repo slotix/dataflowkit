@@ -1,0 +1,70 @@
+{
+    "name": "ht",
+    "request": {
+        "url": "https://www.goodreads.com/quotes"
+    },
+    "fields": [
+        {
+            "name": "image1",
+            "selector": "img",
+            "extractor": {
+                "types": [
+                    "src",
+                    "alt"
+                ],
+                "displayAs": 0,
+                "params": {
+                    "includeIfEmpty": false
+                }
+            }
+        },
+        {
+            "name": "link1",
+            "selector": ".authorOrTitle",
+            "extractor": {
+                "types": [
+                    "href",
+                    "text"
+                ],
+                "displayAs": 2,
+                "params": {
+                    "includeIfEmpty": false
+                }
+            }
+        },
+        {
+            "name": "text1",
+            "selector": ".quoteText",
+            "extractor": {
+                "types": [
+                    "regex"
+                ],
+                "displayAs": 1,
+                "params": {
+                    "regexp": "^([^―]+)",
+                    "includeIfEmpty": false
+                }
+            }
+        },
+        {
+            "name": "text2",
+            "selector": ".right .smallText",
+            "extractor": {
+                "types": [
+                    "text"
+                ],
+                "displayAs": 1,
+                "params": {
+                    "regexp": "",
+                    "includeIfEmpty": false
+                }
+            }
+        }
+    ],
+    "paginator": {
+        "selector": ".next_page",
+        "attr": "href",
+        "maxPages": 100
+    },    
+    "format": "csv"
+}
