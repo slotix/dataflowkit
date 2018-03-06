@@ -51,9 +51,63 @@ cd $GOPATH/src/github.com/slotix/dataflowkit/parse/parse.d && go build && ./pars
 ```
 curl -XPOST  127.0.0.1:8001/parse --data-binary "@$GOPATH/src/github.com/slotix/dataflowkit/examples/books.toscrape.com.json"
 ```
+Here is the sample json configuration file:
+
+```
+{
+			"name":"collection",
+			"request":{
+			   "url":"https://example.com"
+			},
+			"fields":[
+			   {
+				  "name":"Title",
+				  "selector":".product-container a",
+				  "extractor":{
+					 "types":["text", "href"],
+					 "filters":[
+						"trim",
+						"lowerCase"
+					 ],
+					 "params":{
+						"includeIfEmpty":false
+					 }
+				  }
+			   },
+			   {
+				  "name":"Image",
+				  "selector":"#product-container img",
+				  "extractor":{
+					 "types":["alt","src","width","height"],
+					 "filters":[
+						"trim",
+						"upperCase"
+					 ]
+				  }
+			   },
+			   {
+				  "name":"Buyinfo",
+				  "selector":".buy-info",
+				  "extractor":{
+					 "types":["text"],
+					 "params":{
+						"includeIfEmpty":false
+					 }
+				  }
+			   }
+			],
+			"paginator":{
+			   "selector":".next",
+			   "attr":"href",
+			   "maxPages":3
+			},
+			"format":"json",
+			"paginateResults":false
+		   }
+```  
 Read more information about scraper configuration JSON files at our [GoDoc reference](https://godoc.org/github.com/slotix/dataflowkit/parse/parse.d)
 
-Information about [extractors and filters](https://godoc.org/github.com/slotix/dataflowkit/extract)
+Extractors and filters are described at  [https://godoc.org/github.com/slotix/dataflowkit/extract](https://godoc.org/github.com/slotix/dataflowkit/extract)
 
 ## Front-End
 Try http://scrape.dataflowkit.org Front-end with Point-and-click interface to Dataflow kit services. 
