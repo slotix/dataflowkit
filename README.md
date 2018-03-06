@@ -54,7 +54,7 @@ curl -XPOST  127.0.0.1:8001/parse --data-binary "@$GOPATH/src/github.com/slotix/
 Here is the sample json configuration file:
 
 ```
-{
+        {
 			"name":"collection",
 			"request":{
 			   "url":"https://example.com"
@@ -103,7 +103,7 @@ Here is the sample json configuration file:
 			},
 			"format":"json",
 			"paginateResults":false
-		   }
+		}
 ```  
 Read more information about scraper configuration JSON files at our [GoDoc reference](https://godoc.org/github.com/slotix/dataflowkit/parse/parse.d)
 
