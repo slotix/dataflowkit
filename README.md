@@ -32,22 +32,19 @@ or go get
 go get -u github.com/slotix/dataflowkit
 ```
 
-## Usage 
-1. Start Splash docker container 
+## Usage
 
-``` docker run -d -it --rm -p 5023:5023 -p 8050:8050 -p 8051:8051 scrapinghub/splash```
+### Docker
+1. Install [Docker](https://www.docker.com) and [Docker Compose](https://docs.docker.com/compose/install/)
 
-[Splash](https://github.com/scrapinghub/splash) is used for fetching web pages to feed a Dataflow kit parser. 
+2. Start services.
 
-2. Build and run fetch.d service
 ```
-cd $GOPATH/src/github.com/slotix/dataflowkit/fetch/fetch.d && go build && ./fetch.d
+cd $GOPATH/src/github.com/slotix/dataflowkit && docker-compose up
 ```
-3. In new terminal window build and run parse.d service
-```
-cd $GOPATH/src/github.com/slotix/dataflowkit/parse/parse.d && go build && ./parse.d
-```
-4. Launch parsing by sending POST request to parse daemon. Some json configuration files for testing are available in /examples folder.
+This command fetches docker images automatically and starts services.
+
+3. Launch parsing in the second terminal window by sending POST request to parse daemon. Some json configuration files for testing are available in /examples folder.
 ```
 curl -XPOST  127.0.0.1:8001/parse --data-binary "@$GOPATH/src/github.com/slotix/dataflowkit/examples/books.toscrape.com.json"
 ```
@@ -108,6 +105,28 @@ Here is the sample json configuration file:
 Read more information about scraper configuration JSON files at our [GoDoc reference](https://godoc.org/github.com/slotix/dataflowkit/parse/parse.d)
 
 Extractors and filters are described at  [https://godoc.org/github.com/slotix/dataflowkit/extract](https://godoc.org/github.com/slotix/dataflowkit/extract)
+
+4. To stop services just press Ctrl+C and run 
+``` cd $GOPATH/src/github.com/slotix/dataflowkit && docker-compose down --remove-orphans --volumes```
+
+### Manual way
+
+1. Start Splash docker container 
+
+``` docker run -d -it --rm -p 5023:5023 -p 8050:8050 -p 8051:8051 scrapinghub/splash```
+
+[Splash](https://github.com/scrapinghub/splash) is used for fetching web pages to feed a Dataflow kit parser. 
+
+2. Build and run fetch.d service
+```
+cd $GOPATH/src/github.com/slotix/dataflowkit/fetch/fetch.d && go build && ./fetch.d
+```
+3. In new terminal window build and run parse.d service
+```
+cd $GOPATH/src/github.com/slotix/dataflowkit/parse/parse.d && go build && ./parse.d
+```
+4. Launch parsing. See step 3. from the previous section. 
+
 
 ## Front-End
 Try http://scrape.dataflowkit.org Front-end with Point-and-click interface to Dataflow kit services. It generates JSON config file and sends POST request to DFK Parser 
