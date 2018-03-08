@@ -24,7 +24,7 @@ func Start(DFKParse string) {
 	// Logging domain.
 	var logger log.Logger
 	{
-		logger = log.NewLogfmtLogger(os.Stderr)
+		logger = log.NewLogfmtLogger(os.Stdout)
 		//logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 		logger = log.With(logger, "ts", time.Now().Format("Jan _2 15:04:05"))
 		//logger = log.With(logger, "caller", log.DefaultCaller)

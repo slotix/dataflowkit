@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  splash:
+    image: scrapinghub/splash
+    command: --max-timeout 3600 --slots 10 --maxrss 3000 --verbosity 0
+    restart: always
+    ports:
+      - "8050:8050"
+    volumes:
+      - ./splash/filters:/etc/splash/filters:ro
+
+  fetch:
+    image: slotix/dfk-fetch
+    environment:
+      - SPLASH=splash:8050
+      - DFK_FETCH=fetch:8000
+      - DISKV_BASE_DIR=./diskv
+    volumes:
+      - diskv:/diskv
+    ports:
+      - "8000:8000"
+    #env_file: 
+     # - .env
+    depends_on:
+      - splash
+    restart: always
+  
+  parse:
+    image: slotix/dfk-parse
+    environment:
+      - DFK_FETCH=fetch:8000
+      - DFK_PARSE=parse:8001
+      - DISKV_BASE_DIR=./diskv
+    volumes:
+      - diskv:/diskv
+    ports:
+      - "8001:8001"
+    depends_on:
+      - fetch
+    restart: always
+volumes:
+  diskv:
