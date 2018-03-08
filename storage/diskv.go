@@ -71,11 +71,11 @@ func (d DiskvConn) Expired(key string) bool {
 	//calculate expiration time
 	exp := time.Duration(viper.GetInt64("ITEM_EXPIRE_IN")) * time.Second
 	//exp := time.Duration(3600) * time.Second
-	logger.Info(exp)
+	//logger.Info(exp)
 	//logger.Info(viper.GetInt64("ITEM_EXPIRE_IN"))
 	expiry := mTime.Add(exp)
 	diff := expiry.Sub(currentTime)
-	logger.Infof("cache lifespan is %+v", diff)
+	//logger.Infof("cache lifespan is %+v", diff)
 	//Expired?
 	return diff < 0
 }
