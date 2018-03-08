@@ -60,7 +60,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	logger.Info(task.Visited)
+	//logger.Info(task.Visited)
 
 	var e encoder
 	switch strings.ToLower(task.Payload.Format) {

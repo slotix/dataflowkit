@@ -13,6 +13,12 @@
 //
 // Read more at https://github.com/scrapinghub/splash
 //
+//	Request filters
+//
+//  Splash supports filtering requests based on Adblock Plus rules https://adblockplus.org/ . 
+// You can use filters from EasyList to remove ads and tracking codes (and thus speedup page loading), and/or write filters manually to block some of the requests (e.g. to prevent rendering of images, mp3 files, custom fonts, etc.)
+//  Read more about filters at http://splash.readthedocs.io/en/latest/api.html#request-filters
+//
 package splash
 
 // EOF

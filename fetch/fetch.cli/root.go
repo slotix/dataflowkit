@@ -58,7 +58,7 @@ var RootCmd = &cobra.Command{
 		services := []healthcheck.Checker{
 			healthcheck.FetchConn{
 				//Check if Splash Fetch service is alive
-				Host: DFKFetch,
+				Host: viper.GetString("DFK_FETCH"),
 			},
 		}
 
@@ -80,7 +80,7 @@ var RootCmd = &cobra.Command{
 			ch := make(chan error)
 
 			go func() {
-				svc, err := fetch.NewHTTPClient(DFKFetch, log.NewNopLogger())
+				svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH"), log.NewNopLogger())
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %v\n", err)
 					os.Exit(1)
@@ -155,8 +155,14 @@ func init() {
 	RootCmd.Flags().StringVarP(&Cookies, "COOKIES", "", "", "Cookies contain cookies to be added to request  before sending it to browser.")
 	RootCmd.Flags().StringVarP(&LUA, "LUA", "", "", "LUA Splash custom script")
 
-	viper.AutomaticEnv() // read in environment variables that match
-	viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
+	//viper.AutomaticEnv() // read in environment variables that match
+	//Environment variable takes precedence over flag value
+	if os.Getenv("DFK_FETCH") != "" {
+		viper.BindEnv("DFK_FETCH")
+	} else {
+		viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
+	}
+	
 	viper.BindPFlag("FETCHER_TYPE", RootCmd.Flags().Lookup("FETCHER_TYPE"))
 	viper.BindPFlag("URL", RootCmd.Flags().Lookup("URL"))
 	viper.BindPFlag("PARAMS", RootCmd.Flags().Lookup("PARAMS"))
