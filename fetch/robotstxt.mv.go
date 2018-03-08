@@ -2,6 +2,7 @@ package fetch
 
 import (
 	"io"
+
 	"github.com/slotix/dataflowkit/errs"
 )
 
@@ -60,4 +61,9 @@ func (mw robotstxtMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err 
 	//}
 	//return response, err
 	return mw.Service.Fetch(req)
+}
+
+//Response passes req to the next middleware.
+func (mw robotstxtMiddleware) Response(req FetchRequester) (FetchResponser, error) {
+	return mw.Service.Response(req)
 }
