@@ -65,3 +65,5 @@ fetch/fetch.cli/fetch.cli
 fetch/fetch.cli/debug
 examples/diesel*
 examples/najnakup.sk.json
+
+img_src
