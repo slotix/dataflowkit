@@ -60,8 +60,7 @@ splash/deploy_stack.sh
 
 testdata
 
-webserver/main.go
-webserver/doc.go
+webserver
 fetch/fetch.cli/fetch.cli
 fetch/fetch.cli/debug
 examples/diesel*
