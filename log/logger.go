@@ -12,6 +12,7 @@
 package log
 
 import (
+	"os"
 	"path"
 	"runtime"
 	"strings"
@@ -48,6 +49,7 @@ func (hook ContextHook) Fire(entry *logrus.Entry) error {
 //NewLogger creates New Logger instance.
 func NewLogger() *logrus.Logger {
 	logger := logrus.New()
+	logrus.SetOutput(os.Stdout)
 	logger.AddHook(ContextHook{})
 	return logger
 }

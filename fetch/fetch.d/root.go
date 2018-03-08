@@ -22,9 +22,7 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"os/user"
 
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/healthcheck"
@@ -73,7 +71,7 @@ var RootCmd = &cobra.Command{
 		fmt.Println("Checking services ... ")
 		services := []healthcheck.Checker{
 			healthcheck.SplashConn{
-				Host: splashHost,
+				Host: viper.GetString("SPLASH"),
 			},
 		}
 		if storageType == "Redis" {
@@ -91,8 +89,9 @@ var RootCmd = &cobra.Command{
 			}
 		}
 		if allAlive {
-			fmt.Printf("Starting Server %s\n", DFKFetch)
-			fetch.Start(DFKFetch)
+			fetchServer := viper.GetString("DFK_FETCH")
+			fmt.Printf("Starting Server %s\n", fetchServer)
+			fetch.Start(fetchServer)
 		}
 	},
 }
@@ -123,9 +122,10 @@ func init() {
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
 	//RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 3600, "Default value for item expiration in seconds")
 	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", false, "If true no data will be saved to storage. This flag forces fetcher to bypass storage middleware.")
-	RootCmd.Flags().BoolVarP(&ignoreCacheInfo, "IGNORE_CACHE_INFO", "", true, "If a website is not cachable by some reason, ignore this and use cached copy if any. Please don't set it to true in production")
+	RootCmd.Flags().BoolVarP(&ignoreCacheInfo, "IGNORE_CACHE_INFO", "", false, "If a website is not cachable by some reason, ignore this and use cached copy if any. Please don't set it to true in production")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
-	RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", homeDir()+".spaces/credentials", "Digital Ocean Spaces Configuration file")
+	//RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", os.Getenv("HOME") + "/"+".spaces/credentials", "Digital Ocean Spaces Configuration file")
+	RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", "$HOME/.spaces/credentials", "Digital Ocean Spaces Configuration file")
 	RootCmd.Flags().StringVarP(&spacesEndpoint, "SPACES_ENDPOINT", "", "https://ams3.digitaloceanspaces.com", "Digital Ocean Spaces Endpoint Address")
 	RootCmd.Flags().StringVarP(&s3Region, "S3_REGION", "", "us-east-1", "AWS S3 or Digital Ocean Spaces region")
 	RootCmd.Flags().StringVarP(&DFKBucket, "DFK_BUCKET", "", "dfk-storage", "AWS S3 or Digital Ocean Spaces bucket name for storing fetch results")
@@ -137,10 +137,25 @@ func init() {
 	RootCmd.Flags().IntVarP(&redisDB, "REDIS_DB", "", 0, "Redis DB")
 	RootCmd.Flags().StringVarP(&redisSocketPath, "REDIS_SOCKET_PATH", "", "", "Redis Socket Path")
 
-	viper.AutomaticEnv() // read in environment variables that match
-	viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
+	//viper.AutomaticEnv() // read in environment variables that match
+	
+	//Environment variable takes precedence over flag value
+	if os.Getenv("SPLASH") != "" {
+		viper.BindEnv("SPLASH")
+	} else {
+		viper.BindPFlag("SPLASH", RootCmd.Flags().Lookup("SPLASH"))
+	}
+	if os.Getenv("DFK_FETCH") != "" {
+		viper.BindEnv("DFK_FETCH")
+	} else {
+		viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
+	}
+	if os.Getenv("DISKV_BASE_DIR") != "" {
+		viper.BindEnv("DISKV_BASE_DIR")
+	} else {
+		viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
+	}
 
-	viper.BindPFlag("SPLASH", RootCmd.Flags().Lookup("SPLASH"))
 	viper.BindPFlag("SPLASH_TIMEOUT", RootCmd.Flags().Lookup("SPLASH_TIMEOUT"))
 	viper.BindPFlag("SPLASH_RESOURCE_TIMEOUT", RootCmd.Flags().Lookup("SPLASH_RESOURCE_TIMEOUT"))
 	viper.BindPFlag("SPLASH_WAIT", RootCmd.Flags().Lookup("SPLASH_WAIT"))
@@ -161,13 +176,15 @@ func init() {
 	viper.BindPFlag("REDIS_DB", RootCmd.Flags().Lookup("REDIS_DB"))
 	viper.BindPFlag("REDIS_SOCKET_PATH", RootCmd.Flags().Lookup("REDIS_SOCKET_PATH"))
 
-}
-
-//homeDir returns user's $HOME directory
-func homeDir() string {
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return usr.HomeDir + "/"
+	//viper.SetConfigType("yaml")
+	//viper.SetConfigName("conf")
+	//viper.AddConfigPath("$HOME/go/src/github.com/slotix/dataflowkit/fetch/fetch.d/")
+	//err := viper.ReadInConfig() // Find and read the config file
+	//if err != nil {             // Handle errors reading the config file
+	//	panic(fmt.Errorf("Fatal error config file: %s \n", err))
+	//}
+	//err := viper.WriteConfig()
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
 }

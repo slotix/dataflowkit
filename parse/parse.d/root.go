@@ -22,9 +22,7 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"os/user"
 
 	"github.com/slotix/dataflowkit/healthcheck"
 	"github.com/slotix/dataflowkit/parse"
@@ -57,7 +55,7 @@ var (
 	paginateResults     bool
 	fetchDelay          int
 	randomizeFetchDelay bool
-	ignoreFetchDelay bool
+	ignoreFetchDelay    bool
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -71,7 +69,7 @@ var RootCmd = &cobra.Command{
 		services := []healthcheck.Checker{
 			healthcheck.FetchConn{
 				//Check if Splash Fetch service is alive
-				Host: DFKFetch,
+				Host: viper.GetString("DFK_FETCH"),
 			},
 		}
 		if storageType == "Redis" {
@@ -90,8 +88,9 @@ var RootCmd = &cobra.Command{
 			}
 		}
 		if allAlive {
-			fmt.Printf("Starting Server %s\n", DFKParse)
-			parse.Start(DFKParse)
+			parseServer := viper.GetString("DFK_PARSE")
+			fmt.Printf("Starting Server %s\n", parseServer)
+			parse.Start(parseServer)
 		}
 	},
 }
@@ -112,13 +111,17 @@ func init() {
 
 	RootCmd.Flags().StringVarP(&DFKParse, "DFK_PARSE", "p", "127.0.0.1:8001", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
+	
+	fmt.Println("fetch1", viper.GetString("DFK_FETCH"))
 
 	//default type of storage
-	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", true, "If true no parsed data will be saved to storage. This flag forces parser to bypass storage middleware.")
+	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", false, "If true no parsed data will be saved to storage. This flag forces parser to bypass storage middleware.")
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
 	RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 3600, "Default value for item expiration in seconds")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
-	RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", homeDir()+".spaces/credentials", "Digital Ocean Spaces Configuration file")
+	//RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", os.Getenv("HOME")+"/"+".spaces/credentials", "Digital Ocean Spaces Configuration file")
+	RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "",
+		"$HOME/.spaces/credentials", "Digital Ocean Spaces Configuration file")
 	RootCmd.Flags().StringVarP(&spacesEndpoint, "SPACES_ENDPOINT", "", "https://ams3.digitaloceanspaces.com", "Digital Ocean Spaces Endpoint Address")
 	RootCmd.Flags().StringVarP(&DFKBucket, "DFK_BUCKET", "", "dfk-storage", "AWS S3 or Digital Ocean Spaces bucket name for storing parsed results")
 
@@ -136,9 +139,24 @@ func init() {
 	RootCmd.Flags().BoolVarP(&randomizeFetchDelay, "RANDOMIZE_FETCH_DELAY", "", true, "RandomizeFetchDelay setting decreases the chance of a crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay to 1.5 * FetchDelay seconds is used between consecutive requests to the same domain. If FetchDelay is zero this option has no effect.")
 	RootCmd.Flags().BoolVarP(&ignoreFetchDelay, "IGNORE_FETCH_DELAY", "", true, "Ignores fetchDelay setting intended for debug purpose. Please set it to false in Production")
 
-	viper.AutomaticEnv() // read in environment variables that match
-	viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
-	viper.BindPFlag("DFK_PARSE", RootCmd.Flags().Lookup("DFK_PARSE"))
+	//viper.AutomaticEnv() // read in environment variables that match
+
+	//Environment variable takes precedence over flag value
+	if os.Getenv("DFK_PARSE") != "" {
+		viper.BindEnv("DFK_PARSE")
+	} else{
+		viper.BindPFlag("DFK_PARSE", RootCmd.Flags().Lookup("DFK_PARSE"))
+	}
+	if os.Getenv("DFK_FETCH") != "" {
+		viper.BindEnv("DFK_FETCH")
+	} else {
+		viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
+	}
+	if os.Getenv("DISKV_BASE_DIR") != "" {
+		viper.BindEnv("DISKV_BASE_DIR")
+	} else {
+		viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
+	}
 
 	viper.BindPFlag("SKIP_STORAGE_MW", RootCmd.Flags().Lookup("SKIP_STORAGE_MW"))
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
@@ -159,14 +177,6 @@ func init() {
 	viper.BindPFlag("PAGINATE_RESULTS", RootCmd.Flags().Lookup("PAGINATE_RESULTS"))
 	viper.BindPFlag("FETCH_DELAY", RootCmd.Flags().Lookup("FETCH_DELAY"))
 	viper.BindPFlag("RANDOMIZE_FETCH_DELAY", RootCmd.Flags().Lookup("RANDOMIZE_FETCH_DELAY"))
-	viper.BindPFlag("IGNORE_FETCH_DELAY", RootCmd.Flags().Lookup("IGNORE_FETCH_DELAY"))
-}
-
-//homeDir returns user's $HOME directory
-func homeDir() string {
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return usr.HomeDir + "/"
+	viper.BindPFlag("IGNORE_FETCH_DELAY", RootCmd.Flags().Lookup("IGNORE_FETCH_DELAY")) 
+		
 }
