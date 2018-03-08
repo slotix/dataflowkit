@@ -107,7 +107,9 @@ Read more information about scraper configuration JSON files at our [GoDoc refer
 Extractors and filters are described at  [https://godoc.org/github.com/slotix/dataflowkit/extract](https://godoc.org/github.com/slotix/dataflowkit/extract)
 
 4. To stop services just press Ctrl+C and run 
-``` cd $GOPATH/src/github.com/slotix/dataflowkit && docker-compose down --remove-orphans --volumes```
+``` 
+cd $GOPATH/src/github.com/slotix/dataflowkit && docker-compose down --remove-orphans --volumes
+```
 
 ### Manual way
 
