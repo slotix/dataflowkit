@@ -111,8 +111,6 @@ func init() {
 
 	RootCmd.Flags().StringVarP(&DFKParse, "DFK_PARSE", "p", "127.0.0.1:8001", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
-	
-	fmt.Println("fetch1", viper.GetString("DFK_FETCH"))
 
 	//default type of storage
 	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", false, "If true no parsed data will be saved to storage. This flag forces parser to bypass storage middleware.")
@@ -143,17 +141,21 @@ func init() {
 
 	//Environment variable takes precedence over flag value
 	if os.Getenv("DFK_PARSE") != "" {
-		viper.BindEnv("DFK_PARSE")
+		//viper.BindEnv("DFK_PARSE")
+		viper.Set("DFK_PARSE", os.Getenv("DFK_PARSE"))
+		
 	} else{
 		viper.BindPFlag("DFK_PARSE", RootCmd.Flags().Lookup("DFK_PARSE"))
 	}
 	if os.Getenv("DFK_FETCH") != "" {
-		viper.BindEnv("DFK_FETCH")
+		//viper.BindEnv("DFK_FETCH")
+		viper.Set("DFK_FETCH", os.Getenv("DFK_FETCH"))
 	} else {
 		viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
 	}
 	if os.Getenv("DISKV_BASE_DIR") != "" {
-		viper.BindEnv("DISKV_BASE_DIR")
+		//viper.BindEnv("DISKV_BASE_DIR")
+		viper.Set("DISKV_BASE_DIR", os.Getenv("DISKV_BASE_DIR"))
 	} else {
 		viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	}
