@@ -141,17 +141,20 @@ func init() {
 	
 	//Environment variable takes precedence over flag value
 	if os.Getenv("SPLASH") != "" {
-		viper.BindEnv("SPLASH")
+		//viper.BindEnv("SPLASH")
+		viper.Set("SPLASH", os.Getenv("SPLASH"))
 	} else {
 		viper.BindPFlag("SPLASH", RootCmd.Flags().Lookup("SPLASH"))
 	}
 	if os.Getenv("DFK_FETCH") != "" {
-		viper.BindEnv("DFK_FETCH")
+		//viper.BindEnv("DFK_FETCH")
+		viper.Set("DFK_FETCH", os.Getenv("DFK_FETCH"))
 	} else {
 		viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
 	}
 	if os.Getenv("DISKV_BASE_DIR") != "" {
-		viper.BindEnv("DISKV_BASE_DIR")
+		//viper.BindEnv("DISKV_BASE_DIR")
+		viper.Set("DISKV_BASE_DIR", os.Getenv("DISKV_BASE_DIR"))
 	} else {
 		viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	}
