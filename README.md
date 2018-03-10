@@ -111,6 +111,10 @@ Extractors and filters are described at  [https://godoc.org/github.com/slotix/da
 cd $GOPATH/src/github.com/slotix/dataflowkit && docker-compose down --remove-orphans --volumes
 ```
 
+[![IMAFGE ALT CLI Dataflow kit web scraping framework](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/CLI-DFK.png)](https://youtu.be/lqFz1CbWzRs)
+
+Click on image to see CLI in action.
+
 ### Manual way
 
 1. Start Splash docker container 
