@@ -431,6 +431,7 @@ func response(req splash.Request) (*splash.Response, error) {
 	resp, err := svc.Response(req)
 	if err != nil {
 		logger.Error(err)
+		return nil, err
 	}
 	return resp.(*splash.Response), nil
 }
