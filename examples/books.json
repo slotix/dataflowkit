@@ -1,0 +1,47 @@
+{
+    "name": "books.toscrape",
+    "request": {
+        "url": "http://books.toscrape.com/"
+    },
+    "fields": [
+        {
+            "name": "title",
+            "selector": "h3 a",
+            "extractor": {
+                "types": [
+                    "href",
+                    "text"
+                ],
+                "displayAs": 2,
+                "params": {
+                    "includeIfEmpty": false
+                }
+            }
+        },
+        {
+            "name": "image",
+            "selector": ".thumbnail",
+            "extractor": {
+                "types": [
+                    "src",
+                    "alt"
+                ],
+                "params": {
+                    "includeIfEmpty": false
+                }
+            }
+        },
+        {
+            "name": "price",
+            "selector": ".price_color",
+            "extractor": {
+                "types": ["text"],
+                "params": {
+                    "includeIfEmpty": false
+                }
+            }
+        }
+
+    ],
+    "format": "json"
+}
