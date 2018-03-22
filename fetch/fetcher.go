@@ -282,10 +282,17 @@ type FetchResponser interface {
 	GetStatusCode() int
 	//GetHTML return html content of fetched document
 	GetHTML() (io.ReadCloser, error)
+	//GetHeaders returns Headers from response
+	GetHeaders() http.Header
 }
 
 //FetchRequester interface interface that must be satisfied the listed methods
 type FetchRequester interface {
 	//GetURL returns initial URL from Request
 	GetURL() string
+	// Host returns Host value from Request
+	Host()(string, error)
+	SetCookies(string)
+	//SetURL initializes URL value of Request
+	SetURL(string) 
 }

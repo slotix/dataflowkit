@@ -8,8 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/slotix/dataflowkit/utils"
+	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/splash"
+	"github.com/slotix/dataflowkit/utils"
 	"github.com/spf13/viper"
 )
 
@@ -27,12 +28,25 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
-	splashRequest := splash.Request{}
-	err := fillStruct(aux.Request.(map[string]interface{}), &splashRequest)
-	if err != nil {
+
+	//request := splash.Request{}
+	var request fetch.FetchRequester
+	logger.Info(viper.GetString("FETCHER_TYPE"))
+	switch strings.ToLower(viper.GetString("FETCHER_TYPE")) {
+	case "splash":
+		request = &splash.Request{}
+	case "base":
+		request = &fetch.BaseFetcherRequest{}
+	default:
+		err := errors.New("invalid fetcher type specified")
+		logger.Error(err.Error())
 		return err
 	}
-	p.Request = splashRequest
+	err := fillStruct(aux.Request.(map[string]interface{}), request)
+		if err != nil {
+			return err
+		}
+	p.Request = request
 
 	//init other fields
 	p.PayloadMD5 = utils.GenerateMD5(data)

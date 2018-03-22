@@ -29,7 +29,7 @@ func (mw loggingMiddleware) Parse(payload scrape.Payload) (output io.ReadCloser,
 			//"function", "parse",
 			//"input", payload,
 			//"output", output,
-			"parsing", payload.Request.URL,
+			"parsed URL", payload.Request.GetURL(),
 			"err", err,
 			"took", time.Since(begin),
 		)
