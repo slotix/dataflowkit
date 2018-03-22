@@ -17,10 +17,15 @@ The actual use case can be grabbing list of products on several pages and follow
 DFK consists of two general services for fetching and parsing web pages content.
 
 ## Fetch service
-**fetch.d** is the daemon that downloads html pages. It sends requests to [Splash server](https://github.com/scrapinghub/splash). Splash is a javascript rendering service. It is used to retrieve actual data before sending it to parse.d daemon. 
+**fetch.d** is the server intended for html web pages content download. 
+Depending on Fetcher type, web page content is downloaded using either Base Fetcher or Splash fetcher. 
+
+Base fetcher uses standard golang http client to fetch pages as is. It works faster than Splash fetcher. But Base fetcher cannot render dynamic javascript driven web pages. 
+
+Splash fetcher is intended for rendering dynamic javascript based content.  It sends requests to [Splash javascript rendering service](https://github.com/scrapinghub/splash). Splash passes retrieved data to parse.d service. 
 
 ## Parse service
-**parse.d** is the daemon that extracts data from downloaded web page following the rules described in configuration JSON file. Extracted data are returned in CSV, JSON or XML format.
+**parse.d** is the service that extracts data from downloaded web page following the rules described in configuration JSON file. Extracted data are returned in CSV, JSON or XML format.
 
 ## Installation
 Using [dep](https://github.com/golang/dep)
@@ -99,6 +104,7 @@ Here is the sample json configuration file:
 	   "maxPages":3
 	},
 	"format":"json",
+	"fetcherType":"splash",
 	"paginateResults":false
 }
 ```

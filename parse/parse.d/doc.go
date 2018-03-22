@@ -131,51 +131,73 @@ Combined list of results is always returned for CSV format.
 // Flags and configuration settings
 //
 //General settings
-//		DFK_PARSE: HTTP listen address of Parse service (defaults to "127.0.0.1:8001")
-//		DFK_FETCH: HTTP listen address of Fetch service (defaults to "127.0.0.1:8000")
-//    FETCHER_TYPE: DFK Fetcher type: "splash", "base"
+//    DFK_PARSE: HTTP listen address of Parse service (defaults to "127.0.0.1:8001")
+//
+//    DFK_FETCH: HTTP listen address of Fetch service (defaults to "127.0.0.1:8000")
+//
+//    FETCHER_TYPE: represent fetcher which is used for document download.
+//    Set up it to either `base` or `splash` values
+//    fetcherType from Payload structure takes precedence over FETCHER_TYPE flag value.
 //
 //Storage settings
-//		SKIP_STORAGE_MW: If true no data will be saved to storage. 
-//		This flag forces fetcher to bypass storage middleware.
-//		STORAGE_TYPE: Storage backend for intermediary data passed to Dataflow 
-//		kit Parse service. Types: S3, Digital Ocean Spaces, Redis, Diskv 
-//		(defaults to "Diskv"). It is case insensitive.
+//    SKIP_STORAGE_MW: If true no data will be saved to storage. 
+//    This flag forces fetcher to bypass storage middleware.
+//
+//    STORAGE_TYPE: Storage backend for intermediary data passed to Dataflow 
+//    kit Parse service. 
+//    Types: S3, Digital Ocean Spaces, Redis, Diskv 
+//    (defaults to "Diskv"). It is case insensitive.
+//
 //    ITEM_EXPIRE_IN: Default value for item expiration in seconds (defaults to 3600)
-//		DISKV_BASE_DIR: diskv base directory for storing parsed results (defaults to "diskv").
-//		Find more information about Diskv storage at https://github.com/peterbourgon/diskv
-//		SPACES_ENDPOINT: Digital Ocean Spaces Endpoint Address.
-//		Find more information about DO Spaces at https://www.digitalocean.com/community/tutorials/an-introduction-to-digitalocean-spaces
-//		SPACES_CONFIG: Digital Ocean Spaces Configuration file location.
-//		(defaults to "~/.spaces/credentials")
-//		S3_REGION: AWS S3 or Digital Ocean Spaces region (defaults to "us-east-1")
-//		DFK_BUCKET: Amazon AWS S3 or Digital Ocean Spaces bucket name for storing 
-//		parsed results. (defaults to "dfk-storage")
-//		REDIS: Redis host address (defaults to "127.0.0.1:6379")
-//		REDIS_EXPIRE: Default Redis expire value in seconds  (defaults to 3600)
-//		REDIS_NETWORK: Redis Network (defaults to "tcp")
-//		REDIS_PASSWORD: Redis Password (defaults to "")
-//		REDIS_DB: Redis database (defaults to 0)
-//		REDIS_SOCKET_PATH: Redis Socket Path (defaults to "")
+//
+//    DISKV_BASE_DIR: diskv base directory for storing parsed results (defaults to "diskv").
+//    Find more information about Diskv storage at https://github.com/peterbourgon/diskv
+//
+//    SPACES_ENDPOINT: Digital Ocean Spaces Endpoint Address.
+//    Find more information about DO Spaces at https://www.digitalocean.com/community/tutorials/an-introduction-to-digitalocean-spaces
+//
+//    SPACES_CONFIG: Digital Ocean Spaces Configuration file location.
+//    (defaults to "~/.spaces/credentials")
+//
+//    S3_REGION: AWS S3 or Digital Ocean Spaces region (defaults to "us-east-1")
+//
+//    DFK_BUCKET: Amazon AWS S3 or Digital Ocean Spaces bucket name for storing 
+//    parsed results. (defaults to "dfk-storage")
+//
+//    REDIS: Redis host address (defaults to "127.0.0.1:6379")
+//
+//    REDIS_EXPIRE: Default Redis expire value in seconds  (defaults to 3600)
+//
+//    REDIS_NETWORK: Redis Network (defaults to "tcp")
+//
+//    REDIS_PASSWORD: Redis Password (defaults to "")
+//
+//    REDIS_DB: Redis database (defaults to 0)
+//
+//    REDIS_SOCKET_PATH: Redis Socket Path (defaults to "")
 //
 //Crawler settings
 //    MAX_PAGES: The maximum number of pages to scrape. The scrape will proceed 
 //    until either this number of pages have been scraped, or until the paginator
 //    returns no further URLs. Set this value to 0 to indicate an unlimited number
 //    of pages to be scraped.(defaults to 1)
+//
 //    FETCH_DELAY: FetchDelay should be used for a scraper to throttle the crawling
 //    speed to avoid hitting the web servers too frequently.
 //    FetchDelay specifies sleep time for multiple requests for the same domain.
 //    It is equal to FetchDelay * random value between 500 and 1500 msec. (defaults to 500)
+//
 //    RANDOMIZE_FETCH_DELAY:  RandomizeFetchDelay setting decreases the chance of a 
 //    crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay
 //    to 1.5 * FetchDelay seconds is used between consecutive requests to the same 
 //    domain. If FetchDelay is zero this option has no effect. (defaults to true)
+//
 //    IGNORE_FETCH_DELAY: Ignores fetchDelay setting intended for debug purpose. 
 //    Please set it to false in Production
 //
 //Output settings
 //    FORMAT: Format represents output format (CSV, JSON, XML)(defaults to "json")
+//
 //    PAGINATE_RESULTS: Paginated results are returned if true. 
 //    Single list of combined results from every block on all pages is returned by default.
 //    Paginated results are applicable for JSON and XML output formats.
