@@ -3,7 +3,7 @@ package scrape
 import (
 	"time"
 
-	"github.com/slotix/dataflowkit/splash"
+	"github.com/slotix/dataflowkit/fetch"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/slotix/dataflowkit/extract"
@@ -35,7 +35,7 @@ type Field struct {
 }
 
 type details struct {
-	Fields []Field `json:"fields"`
+	Fields    []Field    `json:"fields"`
 	Paginator *paginator `json:"paginator"`
 }
 
@@ -61,7 +61,7 @@ type Payload struct {
 	Name string `json:"name"`
 	//Request struct represents HTTP request to be sent to a server. It combines parameters for passing for downloading html pages by Fetch Endpoint.
 	//Request.URL field is required. All other fields including Params, Cookies, Func are optional.
-	Request splash.Request `json:"request"`
+	Request fetch.FetchRequester `json:"request"`
 	//Fields is a set of fields used to extract data from a web page.
 	Fields []Field `json:"fields"`
 	//PayloadMD5 encodes payload content to MD5. It is used for generating file name to be stored.
@@ -114,7 +114,7 @@ type Part struct {
 
 //Scraper struct consolidates settings for scraping task.
 type Scraper struct {
-	Request splash.Request
+	Request fetch.FetchRequester
 	// Paginator is the Paginator to use for this current scrape.
 	//
 	// If Paginator is nil, then no pagination is performed and it is assumed that

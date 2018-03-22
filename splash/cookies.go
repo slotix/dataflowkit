@@ -2,7 +2,6 @@ package splash
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 )
@@ -54,17 +53,16 @@ func generateCookie(setCookie string) (string, error) {
 	return fmt.Sprintf("[%s]", strings.Join(out, ",")), nil
 }
 
-
-// GetSetCookie retrieves Set-Cookie from http.Header 
+// GetSetCookie retrieves Set-Cookie from http.Header
 // This cookie will be passed to the next request within the same domain.
-func GetSetCookie(headers http.Header) string{
+func GetSetCookie(cookies string) string {
 	//Get Set-Cookie
 	// Important! Get gets the first value associated with the given key.
-	setCookie := headers.Get("Set-Cookie")
-	if setCookie == "" {
-		return ""
-	}
-//	logger.Info(setCookie)
+	//setCookie := headers.Get("Set-Cookie")
+	//if setCookie == "" {
+	//	return ""
+	//}
+	//	logger.Info(setCookie)
 	//there may be more than one cookie in Set-Cookie
 	//heu_uzt=72e3502635d3af8fa2916cf397e93fee; expires=Tue, 04-Jul-2017 13:28:36 GMT; Max-Age=2592000; path=/; domain=.heu.tt
 	//heu_s=1; expires=Mon, 04-Jun-2018 13:28:36 GMT; Max-Age=31536000; path=/; domain=.heu.tt
@@ -72,10 +70,10 @@ func GetSetCookie(headers http.Header) string{
 	//cookies = splash:add_cookie{name, value, path=nil, domain=nil, expires=nil, httpOnly=nil, secure=nil}
 	//cookieLUA := `"session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"`
 
-	cookie, err := generateCookie(setCookie)
+	cookie, err := generateCookie(cookies)
 	if err != nil {
 		logger.Error(err)
 	}
-//	logger.Info(cookie)
+	//	logger.Info(cookie)
 	return cookie
 }

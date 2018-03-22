@@ -156,14 +156,14 @@ func (e Endpoints) Fetch(req FetchRequester) (io.ReadCloser, error) {
 func (e Endpoints) Response(req FetchRequester) (FetchResponser, error) {
 	ctx := context.Background()
 	switch req.(type) {
-	case BaseFetcherRequest:
+	case  BaseFetcherRequest, *BaseFetcherRequest:
 		resp, err := e.BaseResponseEndpoint(ctx, req)
 		if err != nil {
 			return nil, err
 		}
 		response := resp.(BaseFetcherResponse)
 		return &response, nil
-	case splash.Request:
+	case splash.Request, *splash.Request:
 		resp, err := e.SplashResponseEndpoint(ctx, req)
 		if err != nil {
 			return nil, err
@@ -171,6 +171,6 @@ func (e Endpoints) Response(req FetchRequester) (FetchResponser, error) {
 		response := resp.(splash.Response)
 		return &response, nil
 	default:
-		panic("invalid fetcher request")
+		return nil, errors.New("invalid fetcher request")
 	}
 }

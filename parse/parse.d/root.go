@@ -32,8 +32,8 @@ import (
 
 var (
 	DFKParse string //DFKParse service address.
-	DFKFetch string //DFKFetch service address.
-
+	DFKFetch           string //DFKFetch service address.
+	fetcherType        string //fetcher type: splash, base
 	storageType        string
 	skipStorageMW      bool
 	storageItemExpires int64 //how long in seconds object stay in a cache before expiration.
@@ -111,7 +111,7 @@ func init() {
 
 	RootCmd.Flags().StringVarP(&DFKParse, "DFK_PARSE", "p", "127.0.0.1:8001", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
-
+	RootCmd.Flags().StringVarP(&fetcherType, "FETCHER_TYPE", "t", "base", "DFK Fetcher type: splash, base")
 	//default type of storage
 	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", false, "If true no parsed data will be saved to storage. This flag forces parser to bypass storage middleware.")
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
@@ -143,23 +143,29 @@ func init() {
 	if os.Getenv("DFK_PARSE") != "" {
 		//viper.BindEnv("DFK_PARSE")
 		viper.Set("DFK_PARSE", os.Getenv("DFK_PARSE"))
-		
-	} else{
+
+	} else {
 		viper.BindPFlag("DFK_PARSE", RootCmd.Flags().Lookup("DFK_PARSE"))
 	}
 	if os.Getenv("DFK_FETCH") != "" {
-		//viper.BindEnv("DFK_FETCH")
 		viper.Set("DFK_FETCH", os.Getenv("DFK_FETCH"))
 	} else {
 		viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
 	}
+
+	if os.Getenv("FETCHER_TYPE") != "" {
+		viper.Set("FETCHER_TYPE", os.Getenv("FETCHER_TYPE"))
+	} else {
+		viper.BindPFlag("FETCHER_TYPE", RootCmd.Flags().Lookup("FETCHER_TYPE"))
+	}
+
 	if os.Getenv("DISKV_BASE_DIR") != "" {
 		//viper.BindEnv("DISKV_BASE_DIR")
 		viper.Set("DISKV_BASE_DIR", os.Getenv("DISKV_BASE_DIR"))
 	} else {
 		viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	}
-
+	//viper.BindPFlag("FETCHER_TYPE", RootCmd.Flags().Lookup("FETCHER_TYPE"))
 	viper.BindPFlag("SKIP_STORAGE_MW", RootCmd.Flags().Lookup("SKIP_STORAGE_MW"))
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
 	viper.BindPFlag("ITEM_EXPIRE_IN", RootCmd.Flags().Lookup("ITEM_EXPIRE_IN"))
@@ -179,6 +185,6 @@ func init() {
 	viper.BindPFlag("PAGINATE_RESULTS", RootCmd.Flags().Lookup("PAGINATE_RESULTS"))
 	viper.BindPFlag("FETCH_DELAY", RootCmd.Flags().Lookup("FETCH_DELAY"))
 	viper.BindPFlag("RANDOMIZE_FETCH_DELAY", RootCmd.Flags().Lookup("RANDOMIZE_FETCH_DELAY"))
-	viper.BindPFlag("IGNORE_FETCH_DELAY", RootCmd.Flags().Lookup("IGNORE_FETCH_DELAY")) 
-		
+	viper.BindPFlag("IGNORE_FETCH_DELAY", RootCmd.Flags().Lookup("IGNORE_FETCH_DELAY"))
+
 }

@@ -322,6 +322,15 @@ func (req Request) Host() (string, error) {
 	return u.Host, nil
 }
 
+func (r Request) SetCookies(cookies string) {
+	r.Cookies = GetSetCookie(cookies)
+}
+
+//SetURL initializes URL value of Request
+func (r Request) SetURL(u string) {
+	r.URL = u
+}
+
 // UnmarshalJSON convert headers to http.Header type
 // http://choly.ca/post/go-json-marshalling/
 func (r *Response) UnmarshalJSON(data []byte) error {
@@ -344,6 +353,12 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+//GetHeaders returns Headers from response
+func (r *Response) GetHeaders() http.Header {
+	return r.Response.Headers.(http.Header)
+}
+
 
 //castHeaders serves for casting headers returned by Splash to standard http.Header type
 func castHeaders(splashHeaders interface{}) (header http.Header) {

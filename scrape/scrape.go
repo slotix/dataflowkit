@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -341,14 +340,17 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 						}
 						if detailsHost == host {
 							//every time when getting a response the next request will be filled with updated cookie information
-							headers := sResponse.Response.Headers.(http.Header)
-							part.Details.Request.Cookies = splash.GetSetCookie(headers)
+							//headers := sResponse.Response.Headers.(http.Header)
+							headers := sResponse.GetHeaders()
+							setCookie := headers.Get("Set-Cookie")
+							part.Details.Request.SetCookies(setCookie)
+							//part.Details.Request.Cookies = splash.GetSetCookie(headers)
 							if !viper.GetBool("IGNORE_FETCH_DELAY") {
 								if *t.Payload.RandomizeFetchDelay {
 									//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 									rand := utils.Random(500, 1500)
 									delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
-									logger.Infof("%s -> %v", delay, part.Details.Request.URL)
+									logger.Infof("%s -> %v", delay, part.Details.Request.GetURL())
 									time.Sleep(delay)
 								} else {
 									time.Sleep(*t.Payload.FetchDelay)
@@ -382,15 +384,18 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 		}
 		if url != "" {
 			//every time when getting a response the next request will be filled with updated cookie information
-			headers := sResponse.Response.Headers.(http.Header)
-			req.Cookies = splash.GetSetCookie(headers)
-			req.URL = url
+			//headers := sResponse.Response.Headers.(http.Header)
+			headers := sResponse.GetHeaders()
+			setCookie := headers.Get("Set-Cookie")
+			//req.Cookies = splash.GetSetCookie(setCookie)
+			req.SetCookies(setCookie)
+			req.SetURL(url)
 			if !viper.GetBool("IGNORE_FETCH_DELAY") {
 				if *t.Payload.RandomizeFetchDelay {
 					//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 					rand := utils.Random(500, 1500)
 					delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
-					logger.Infof("%s -> %v", delay, req.URL)
+					logger.Infof("%s -> %v", delay, req.GetURL())
 					time.Sleep(delay)
 				} else {
 					time.Sleep(*t.Payload.FetchDelay)
@@ -423,7 +428,7 @@ func (p Payload) selectors() ([]string, error) {
 }
 
 //response sends request to fetch service and returns *splash.Response
-func response(req splash.Request) (*splash.Response, error) {
+func response(req fetch.FetchRequester) (fetch.FetchResponser, error) {
 	svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH"), gklog.NewNopLogger())
 	if err != nil {
 		logger.Error(err)
@@ -433,7 +438,7 @@ func response(req splash.Request) (*splash.Response, error) {
 		logger.Error(err)
 		return nil, err
 	}
-	return resp.(*splash.Response), nil
+	return resp, nil
 }
 
 //partNames returns Part Names which are used as a header of output CSV

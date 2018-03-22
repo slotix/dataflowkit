@@ -35,7 +35,7 @@ var (
 	//VERSION               string // VERSION is set during build
 	//  DFKFetch represents address of DFK Fetch service
 	DFKFetch string //Fetch service address
-
+	fetcherType        string //fetcher type: splash, base
 	splashHost            string
 	splashTimeout         int
 	splashResourceTimeout int
@@ -90,7 +90,8 @@ var RootCmd = &cobra.Command{
 		}
 		if allAlive {
 			fetchServer := viper.GetString("DFK_FETCH")
-			fmt.Printf("Starting Server %s\n", fetchServer)
+			fetcherType := viper.GetString("FETCHER_TYPE")
+			fmt.Printf("Starting Server %s: %s fetcher\n", fetchServer, fetcherType)
 			fetch.Start(fetchServer)
 		}
 	},
@@ -112,7 +113,7 @@ func init() {
 	//flags and configuration settings. They are global for the application.
 
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "a", "127.0.0.1:8000", "HTTP listen address")
-
+	RootCmd.Flags().StringVarP(&fetcherType, "FETCHER_TYPE", "t", "base", "DFK Fetcher type: splash, base")
 	RootCmd.Flags().StringVarP(&splashHost, "SPLASH", "s", "127.0.0.1:8050", "Splash host address")
 	RootCmd.Flags().IntVarP(&splashTimeout, "SPLASH_TIMEOUT", "", 20, "Timeout (in seconds) for the render.")
 	RootCmd.Flags().IntVarP(&splashResourceTimeout, "SPLASH_RESOURCE_TIMEOUT", "", 30, "A timeout (in seconds) for individual network requests.")
@@ -138,20 +139,29 @@ func init() {
 	RootCmd.Flags().StringVarP(&redisSocketPath, "REDIS_SOCKET_PATH", "", "", "Redis Socket Path")
 
 	//viper.AutomaticEnv() // read in environment variables that match
-	
-	//Environment variable takes precedence over flag value
+
+	//Environmoent variable takes precedence over flag value
 	if os.Getenv("SPLASH") != "" {
 		//viper.BindEnv("SPLASH")
 		viper.Set("SPLASH", os.Getenv("SPLASH"))
 	} else {
 		viper.BindPFlag("SPLASH", RootCmd.Flags().Lookup("SPLASH"))
 	}
+	
 	if os.Getenv("DFK_FETCH") != "" {
-		//viper.BindEnv("DFK_FETCH")
 		viper.Set("DFK_FETCH", os.Getenv("DFK_FETCH"))
 	} else {
 		viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
+		//os.Setenv("DFK_FETCH", DFKFetch)
 	}
+
+	if os.Getenv("FETCHER_TYPE") != "" {
+		viper.Set("FETCHER_TYPE", os.Getenv("FETCHER_TYPE"))
+	} else {
+		viper.BindPFlag("FETCHER_TYPE", RootCmd.Flags().Lookup("FETCHER_TYPE"))
+		//os.Setenv("FETCHER_TYPE", DFKFetch)
+	}
+	
 	if os.Getenv("DISKV_BASE_DIR") != "" {
 		//viper.BindEnv("DISKV_BASE_DIR")
 		viper.Set("DISKV_BASE_DIR", os.Getenv("DISKV_BASE_DIR"))
