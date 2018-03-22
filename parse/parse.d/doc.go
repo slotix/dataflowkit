@@ -163,14 +163,17 @@ Combined list of results is always returned for CSV format.
 //    until either this number of pages have been scraped, or until the paginator
 //    returns no further URLs. Set this value to 0 to indicate an unlimited number
 //    of pages to be scraped.(defaults to 1)
+//
 //    FETCH_DELAY: FetchDelay should be used for a scraper to throttle the crawling
 //    speed to avoid hitting the web servers too frequently.
 //    FetchDelay specifies sleep time for multiple requests for the same domain.
 //    It is equal to FetchDelay * random value between 500 and 1500 msec. (defaults to 500)
+//
 //    RANDOMIZE_FETCH_DELAY:  RandomizeFetchDelay setting decreases the chance of a 
 //    crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay
 //    to 1.5 * FetchDelay seconds is used between consecutive requests to the same 
 //    domain. If FetchDelay is zero this option has no effect. (defaults to true)
+//
 //    IGNORE_FETCH_DELAY: Ignores fetchDelay setting intended for debug purpose. 
 //    Please set it to false in Production
 //
