@@ -66,6 +66,10 @@ type Payload struct {
 	Fields []Field `json:"fields"`
 	//PayloadMD5 encodes payload content to MD5. It is used for generating file name to be stored.
 	PayloadMD5 []byte `json:"payloadMD5"`
+	//FetcherType represent fetcher which is used for document download. 
+	//Set up it to either `base` or `splash` values
+	//If FetcherType is omited the value of FETCHER_TYPE of parse.d service is used by default.
+	FetcherType string `json:"fetcherType"`
 	//Format represents output format (CSV, JSON, XML)
 	Format string `json:"format"`
 	//Paginator is used to scrape multiple pages.

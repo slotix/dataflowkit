@@ -43,5 +43,6 @@
         }
 
     ],
-    "format": "json"
+    "format": "json",
+    "fetcherType": "splash"
 }

@@ -59,6 +59,7 @@ Here is a simple example for requesting Parse endpoint:
       "maxPages":3
    },
    "format":"json",
+   "fetcherType": "splash",
    "paginateResults":false
   }'
 
@@ -111,6 +112,14 @@ Format
 
 The following Output formats are available: CSV, JSON, XML
 
+fetcherType
+
+fetcherType represents fetcher which is used for document download. 
+Set it to either "splash" or "base" value. 
+If omited in Payload, default fetcher type is defined as FETCHER_TYPE variable of parse.d service. 
+fetcherType from Payload structure takes precedence over FETCHER_TYPE flag value.
+
+
 paginateResults
 
 Paginated results are returned if paginateResults is true.
@@ -124,6 +133,7 @@ Combined list of results is always returned for CSV format.
 //General settings
 //		DFK_PARSE: HTTP listen address of Parse service (defaults to "127.0.0.1:8001")
 //		DFK_FETCH: HTTP listen address of Fetch service (defaults to "127.0.0.1:8000")
+//    FETCHER_TYPE: DFK Fetcher type: "splash", "base"
 //
 //Storage settings
 //		SKIP_STORAGE_MW: If true no data will be saved to storage. 

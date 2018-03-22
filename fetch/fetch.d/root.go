@@ -35,7 +35,6 @@ var (
 	//VERSION               string // VERSION is set during build
 	//  DFKFetch represents address of DFK Fetch service
 	DFKFetch string //Fetch service address
-	fetcherType        string //fetcher type: splash, base
 	splashHost            string
 	splashTimeout         int
 	splashResourceTimeout int
@@ -90,8 +89,7 @@ var RootCmd = &cobra.Command{
 		}
 		if allAlive {
 			fetchServer := viper.GetString("DFK_FETCH")
-			fetcherType := viper.GetString("FETCHER_TYPE")
-			fmt.Printf("Starting Server %s: %s fetcher\n", fetchServer, fetcherType)
+			fmt.Printf("Starting Server %s\n", fetchServer)
 			fetch.Start(fetchServer)
 		}
 	},
@@ -113,7 +111,6 @@ func init() {
 	//flags and configuration settings. They are global for the application.
 
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "a", "127.0.0.1:8000", "HTTP listen address")
-	RootCmd.Flags().StringVarP(&fetcherType, "FETCHER_TYPE", "t", "base", "DFK Fetcher type: splash, base")
 	RootCmd.Flags().StringVarP(&splashHost, "SPLASH", "s", "127.0.0.1:8050", "Splash host address")
 	RootCmd.Flags().IntVarP(&splashTimeout, "SPLASH_TIMEOUT", "", 20, "Timeout (in seconds) for the render.")
 	RootCmd.Flags().IntVarP(&splashResourceTimeout, "SPLASH_RESOURCE_TIMEOUT", "", 30, "A timeout (in seconds) for individual network requests.")
@@ -121,11 +118,9 @@ func init() {
 
 	//set here default type of storage
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
-	//RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 3600, "Default value for item expiration in seconds")
 	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", false, "If true no data will be saved to storage. This flag forces fetcher to bypass storage middleware.")
 	RootCmd.Flags().BoolVarP(&ignoreCacheInfo, "IGNORE_CACHE_INFO", "", false, "If a website is not cachable by some reason, ignore this and use cached copy if any. Please don't set it to true in production")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
-	//RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", os.Getenv("HOME") + "/"+".spaces/credentials", "Digital Ocean Spaces Configuration file")
 	RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", "$HOME/.spaces/credentials", "Digital Ocean Spaces Configuration file")
 	RootCmd.Flags().StringVarP(&spacesEndpoint, "SPACES_ENDPOINT", "", "https://ams3.digitaloceanspaces.com", "Digital Ocean Spaces Endpoint Address")
 	RootCmd.Flags().StringVarP(&s3Region, "S3_REGION", "", "us-east-1", "AWS S3 or Digital Ocean Spaces region")
@@ -153,13 +148,6 @@ func init() {
 	} else {
 		viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
 		//os.Setenv("DFK_FETCH", DFKFetch)
-	}
-
-	if os.Getenv("FETCHER_TYPE") != "" {
-		viper.Set("FETCHER_TYPE", os.Getenv("FETCHER_TYPE"))
-	} else {
-		viper.BindPFlag("FETCHER_TYPE", RootCmd.Flags().Lookup("FETCHER_TYPE"))
-		//os.Setenv("FETCHER_TYPE", DFKFetch)
 	}
 	
 	if os.Getenv("DISKV_BASE_DIR") != "" {
