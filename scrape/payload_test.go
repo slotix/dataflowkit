@@ -6,6 +6,7 @@ import (
 
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/utils"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,11 +63,12 @@ func TestPayload_UnmarshalJSON(t *testing.T) {
 			"paginateResults":false
 		   }
 		`)
+	viper.Set("FETCHER_TYPE", "splash")
 	p := &Payload{}
 	err := p.UnmarshalJSON(data)
 	assert.NoError(t, err)
 	assert.Equal(t, p.Name, "collection")
-	assert.Equal(t, p.Request, splash.Request{URL: "https://example.com"})
+	assert.Equal(t, p.Request, &splash.Request{URL: "https://example.com"})
 	assert.Equal(t, p.Fields,
 		[]Field{
 			Field{

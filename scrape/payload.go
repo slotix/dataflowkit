@@ -31,7 +31,6 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 
 	//request := splash.Request{}
 	var request fetch.FetchRequester
-	logger.Info(viper.GetString("FETCHER_TYPE"))
 	switch strings.ToLower(viper.GetString("FETCHER_TYPE")) {
 	case "splash":
 		request = &splash.Request{}
