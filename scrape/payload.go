@@ -29,9 +29,14 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	//request := splash.Request{}
+	//fetcher type from Payload structure takes precedence over FETCHER_TYPE flag value
+	fetcherType := p.FetcherType
+	if fetcherType == ""{
+		fetcherType = viper.GetString("FETCHER_TYPE")
+	}
+
 	var request fetch.FetchRequester
-	switch strings.ToLower(viper.GetString("FETCHER_TYPE")) {
+	switch strings.ToLower(fetcherType) {
 	case "splash":
 		request = &splash.Request{}
 	case "base":
