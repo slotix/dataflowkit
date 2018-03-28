@@ -1,7 +1,7 @@
 package parse
 
 import (
-	"github.com/slotix/dataflowkit/log"
+	"github.com/slotix/dataflowkit/logger"
 
 	"github.com/sirupsen/logrus"
 )
