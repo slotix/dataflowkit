@@ -5,7 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/sirupsen/logrus"
-	"github.com/slotix/dataflowkit/log"
+	"github.com/slotix/dataflowkit/logger"
 	"github.com/spf13/viper"
 )
 

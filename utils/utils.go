@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/slotix/dataflowkit/log"
+	"github.com/slotix/dataflowkit/logger"
 )
 
 var logger *logrus.Logger

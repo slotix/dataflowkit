@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/slotix/dataflowkit/log"
+	"github.com/slotix/dataflowkit/logger"
 	"github.com/slotix/dataflowkit/utils"
 
 	"github.com/PuerkitoBio/goquery"

@@ -20,7 +20,7 @@ import (
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/fetch"
-	"github.com/slotix/dataflowkit/log"
+	"github.com/slotix/dataflowkit/logger"
 	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/utils"
