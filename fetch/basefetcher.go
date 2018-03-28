@@ -119,6 +119,10 @@ func (req BaseFetcherRequest) Host() (string, error) {
 	return u.Host, nil
 }
 
+func (req BaseFetcherRequest) GetParams() string{
+	return req.Params
+}
+
 func (req BaseFetcherRequest) SetCookies(cookies string) {
 	//req.Cookies = cookies
 	//!!!temp....

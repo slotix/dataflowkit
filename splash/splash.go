@@ -16,7 +16,7 @@ import (
 	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/sirupsen/logrus"
 	"github.com/slotix/dataflowkit/errs"
-	"github.com/slotix/dataflowkit/log"
+	"github.com/slotix/dataflowkit/logger"
 	"github.com/spf13/viper"
 )
 
@@ -311,6 +311,10 @@ func (req Request) GetURL() string {
 	//trim trailing slash if any.
 	//aws s3 bucket item name cannot contain slash at the end.
 	return strings.TrimRight(strings.TrimSpace(req.URL), "/")
+}
+
+func (req Request) GetParams() string{
+	return req.Params
 }
 
 // Host returns Host value from Request

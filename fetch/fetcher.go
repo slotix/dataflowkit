@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,6 +32,54 @@ const (
 	Splash = "Splash"
 )
 
+// Fetcher is the interface that must be satisfied by things that can fetch
+// remote URLs and return their contents.
+//
+// Note: Fetchers may or may not be safe to use concurrently.  Please read the
+// documentation for each fetcher for more details.
+type Fetcher interface {
+	// Prepare is called once at the beginning of the scrape.
+	Prepare() error
+	//Response return response after fetch Request.
+	Response(request FetchRequester) (FetchResponser, error)
+	// Fetch is called to retrieve HTML content of a document from the remote server.
+	Fetch(request FetchRequester) (io.ReadCloser, error)
+	// Close is called when the scrape is finished, and can be used to clean up
+	// allocated resources or perform other cleanup actions.
+	Close()
+}
+
+//FetchResponser interface that must be satisfied the listed methods
+type FetchResponser interface {
+	//Returns expires value of response
+	GetExpires() time.Time
+	//Returns an array of reasons why a response should not be cached if any.
+	GetReasonsNotToCache() []cacheobject.Reason
+	//ReasonsNotToCache and Expires values are set here
+	SetCacheInfo()
+	//GetURL returns final URL after all redirects
+	GetURL() string
+	//GetStatusCode returns status code after document fetch
+	GetStatusCode() int
+	//GetHTML return html content of fetched document
+	GetHTML() (io.ReadCloser, error)
+	//GetHeaders returns Headers from response
+	GetHeaders() http.Header
+}
+
+//FetchRequester interface interface that must be satisfied the listed methods
+type FetchRequester interface {
+	//GetURL returns initial URL from Request
+	GetURL() string
+	// Host returns Host value from Request
+	Host() (string, error)
+	SetCookies(string)
+	//SetURL initializes URL value of Request
+	SetURL(string)
+	//Returns Params (FormData)
+	GetParams() string
+}
+
 //NewFetcher creates instances of Fetcher for downloading a web page.
 func NewFetcher(t Type) (fetcher Fetcher, err error) {
 	switch t {
@@ -45,22 +94,7 @@ func NewFetcher(t Type) (fetcher Fetcher, err error) {
 	}
 }
 
-// Fetcher is the interface that must be satisfied by things that can fetch
-// remote URLs and return their contents.
-//
-// Note: Fetchers may or may not be safe to use concurrently.  Please read the
-// documentation for each fetcher for more details.
-type Fetcher interface {
-	// Prepare is called once at the beginning of the scrape.
-	Prepare() error
-	//Response return response after fetch Request.  
-	Response(request FetchRequester) (FetchResponser, error)
-	// Fetch is called to retrieve HTML content of a document from the remote server.
-	Fetch(request FetchRequester) (io.ReadCloser, error)
-	// Close is called when the scrape is finished, and can be used to clean up
-	// allocated resources or perform other cleanup actions.
-	Close()
-}
+
 
 // BaseFetcher is a Fetcher that uses the Go standard library's http
 // client to fetch URLs.
@@ -87,6 +121,7 @@ type BaseFetcher struct {
 	ProcessResponse func(*http.Response) error
 }
 
+
 // SplashFetcher is a Fetcher that uses Scrapinghub splash
 // to fetch URLs. Splash is a javascript rendering service
 // Read more at https://github.com/scrapinghub/splash
@@ -108,18 +143,6 @@ type SplashFetcher struct {
 
 // NewSplashFetcher creates instances of SplashFetcher{} to fetch a page content from remote Scrapinghub splash service.
 func NewSplashFetcher() (*SplashFetcher, error) {
-	// Set up the HTTP client
-	// jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
-	// jar, err := cookiejar.New(jarOpts)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// client := &http.Client{Jar: jar}
-
-	// ret := &SplashFetcher{
-	// 	client: client,
-	// }
-	// return ret, nil
 	sf := &SplashFetcher{}
 	return sf, nil
 }
@@ -163,7 +186,6 @@ func (sf *SplashFetcher) Close() {
 // NewBaseFetcher creates instances of NewBaseFetcher{} to fetch
 // a page content from regular websites as-is
 // without running js scripts on the page.
-// f.e. robots.txt are retrieved with BaseFetcher
 func NewBaseFetcher() (*BaseFetcher, error) {
 	// Set up the HTTP client
 	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
@@ -173,10 +195,10 @@ func NewBaseFetcher() (*BaseFetcher, error) {
 	}
 	client := &http.Client{Jar: jar}
 
-	ret := &BaseFetcher{
+	bf := &BaseFetcher{
 		client: client,
 	}
-	return ret, nil
+	return bf, nil
 }
 
 // Prepare is called once at the beginning of the scrape.
@@ -196,7 +218,18 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
 	return r.GetHTML()
 }
 
- //Response return response after document fetching using BaseFetcher
+func parseParams(params string) url.Values {
+	//"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=usr&ips_password=passw&rememberMe=0"
+	formData := url.Values{}
+	pairs := strings.Split(params, "&")
+	for _, pair := range pairs {
+		kv := strings.Split(pair, "=")
+		formData.Add(kv[0], kv[1])
+	}
+	return formData
+}
+
+//Response return response after document fetching using BaseFetcher
 func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) {
 	//URL validation
 	if _, err := url.ParseRequestURI(strings.TrimSpace(request.GetURL())); err != nil {
@@ -204,22 +237,34 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 	}
 
 	r := request.(BaseFetcherRequest)
-	req, err := http.NewRequest(r.Method, r.URL, nil)
-	if err != nil {
-		return nil, err
+	var err error
+	var req *http.Request
+	var resp *http.Response
+	if request.GetParams() == "" {
+		req, err = http.NewRequest(r.Method, r.URL, nil)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		r.Method = "POST"
+		formData := parseParams(r.GetParams())
+		req, err = http.NewRequest(r.Method, r.URL, strings.NewReader(formData.Encode()))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Add("Content-Length", strconv.Itoa(len(formData.Encode())))
 	}
-
 	if bf.PrepareRequest != nil {
 		if err = bf.PrepareRequest(req); err != nil {
 			return nil, err
 		}
 	}
 
-	resp, err := bf.client.Do(req)
+	resp, err = bf.client.Do(req)
 	if err != nil {
 		return nil, &errs.BadRequest{err}
 	}
-
 	if resp.StatusCode != 200 {
 		switch resp.StatusCode {
 		case 404:
@@ -268,31 +313,4 @@ func (bf *BaseFetcher) Close() {
 // Static type assertion
 var _ Fetcher = &BaseFetcher{}
 
-//FetchResponser interface that must be satisfied the listed methods
-type FetchResponser interface {
-	//Returns expires value of response
-	GetExpires() time.Time
-	//Returns an array of reasons why a response should not be cached if any.
-	GetReasonsNotToCache() []cacheobject.Reason
-	//ReasonsNotToCache and Expires values are set here
-	SetCacheInfo()
-	//GetURL returns final URL after all redirects
-	GetURL() string
-	//GetStatusCode returns status code after document fetch
-	GetStatusCode() int
-	//GetHTML return html content of fetched document
-	GetHTML() (io.ReadCloser, error)
-	//GetHeaders returns Headers from response
-	GetHeaders() http.Header
-}
 
-//FetchRequester interface interface that must be satisfied the listed methods
-type FetchRequester interface {
-	//GetURL returns initial URL from Request
-	GetURL() string
-	// Host returns Host value from Request
-	Host()(string, error)
-	SetCookies(string)
-	//SetURL initializes URL value of Request
-	SetURL(string) 
-}
