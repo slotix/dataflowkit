@@ -37,12 +37,12 @@ dataflowkit_linux
 webserver/
 
 
-fetch/fetch.d/fetch.d
-fetch/fetch.d/debug
-fetch/fetch.d/diskv
-parse/parse.d/parse.d
-parse/parse.d/debug
-parse/parse.d/diskv
+cmd/fetch.d/fetch.d
+cmd/fetch.d/debug
+cmd/fetch.d/diskv
+cmd/parse.d/parse.d
+cmd/parse.d/debug
+cmd/parse.d/diskv
 diskv
 .deploy
 deploy.sh
@@ -67,3 +67,4 @@ examples/diesel*
 examples/najnakup.sk.json
 
 img_src
+.vscode/launch.json
