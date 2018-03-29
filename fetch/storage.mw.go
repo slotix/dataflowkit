@@ -111,29 +111,38 @@ func (mw storageMiddleware) Fetch(req FetchRequester) (io.ReadCloser, error) {
 //Response returns Fetch Response either from storage or directly from web.
 //This middleware method is used by Parse service.
 func (mw storageMiddleware) Response(req FetchRequester) (FetchResponser, error) {
-	//loads content from a storage if any
-	fromStorage, err := mw.get(req)
-	if err == nil {
-		return fromStorage, nil
-	}
-	//logger.Error(err)
-	//Get fetch response directly from web if there is nothing in storage
-	resp, err := mw.Service.Response(req)
-	if err != nil {
-		return nil, err
-	}
+	//if form Data is emtpy try to get cached data from storage first
+	if req.GetParams() == "" {
+		//loads content from a storage if any
+		fromStorage, err := mw.get(req)
+		if err == nil {
+			return fromStorage, nil
+		}
+		//logger.Error(err)
+		//Get fetch response directly from web if there is nothing in storage
+		resp, err := mw.Service.Response(req)
+		if err != nil {
+			return nil, err
+		}
 
-	var fetchResponse FetchResponser
-	switch req.(type) {
-	case BaseFetcherRequest:
-		fetchResponse = resp.(*BaseFetcherResponse)
-	case splash.Request:
-		fetchResponse = resp.(*splash.Response)
-	default:
-		panic("invalid fetcher request")
-	}
-	//save fetched content to storage
-	err = mw.put(req, fetchResponse)
+		var fetchResponse FetchResponser
+		switch req.(type) {
+		case BaseFetcherRequest:
+			fetchResponse = resp.(*BaseFetcherResponse)
+		case splash.Request:
+			fetchResponse = resp.(*splash.Response)
+		default:
+			panic("invalid fetcher request")
+		}
+		//save fetched content to storage
+		err = mw.put(req, fetchResponse)
+		if err != nil {
+			return nil, err
+		}
+		return resp, nil
+	} 
+	//if form Data exists don't use storage!!!
+	resp, err := mw.Service.Response(req)
 	if err != nil {
 		return nil, err
 	}
