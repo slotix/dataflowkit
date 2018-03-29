@@ -94,8 +94,6 @@ func NewFetcher(t Type) (fetcher Fetcher, err error) {
 	}
 }
 
-
-
 // BaseFetcher is a Fetcher that uses the Go standard library's http
 // client to fetch URLs.
 type BaseFetcher struct {
@@ -174,14 +172,15 @@ func (sf *SplashFetcher) Response(request FetchRequester) (FetchResponser, error
 	return r, nil
 }
 
-// Static type assertion
-var _ Fetcher = &SplashFetcher{}
-
 // Close is called when the scrape is finished, and can be used to clean up
 // allocated resources or perform other cleanup actions.
 func (sf *SplashFetcher) Close() {
 	return
 }
+
+// Static type assertion
+var _ Fetcher = &SplashFetcher{}
+
 
 // NewBaseFetcher creates instances of NewBaseFetcher{} to fetch
 // a page content from regular websites as-is
