@@ -68,3 +68,7 @@ examples/najnakup.sk.json
 
 img_src
 .vscode/launch.json
+fetch/fetch.d/debug
+fetch/fetch.d/fetch.d
+parse/parse.d/debug
+parse/parse.d/parse.d
