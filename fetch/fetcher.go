@@ -33,7 +33,7 @@ func init() {
 	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
 	jar, err := cookiejar.New(jarOpts)
 	if err != nil {
-		logger.Error("Blya jar")
+		logger.Error("Failed to create Cookie Jar")
 
 	} else {
 		uc.jar = jar
@@ -183,10 +183,42 @@ func (sf *SplashFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
 //Response return response from Splash server after document fetching
 func (sf *SplashFetcher) Response(request FetchRequester) (FetchResponser, error) {
 	req := request.(splash.Request)
+	u, err := url.Parse(req.GetURL())
+	if err != nil {
+		return nil, err
+	}
+	req.Cookies = uc.jar.Cookies(u)
 	r, err := req.GetResponse()
 	if err != nil {
 		return nil, err
 	}
+	//headers := r.GetHeaders()
+	//setCookie := headers.Get("Set-Cookie")
+	//logger.Info(setCookie)
+	
+	//ckooies := r.Response.Cookies
+	cArr := []*http.Cookie{}
+	for _, cookie := range r.Response.Cookies {
+		cArr = append(cArr, &cookie.Cookie)
+	}
+
+	for i := 0; i < len(cArr); i++ {
+		var curCk *http.Cookie = cArr[i]
+		log.Printf("curCk.Raw=%s", curCk.Raw)
+		log.Printf("Cookie [%d]", i)
+		log.Printf("Name\t=%s", curCk.Name)
+		log.Printf("Value\t=%s", curCk.Value)
+		log.Printf("Path\t=%s", curCk.Path)
+		log.Printf("Domain\t=%s", curCk.Domain)
+		log.Printf("Expires\t=%s", curCk.Expires)
+		log.Printf("RawExpires=%s", curCk.RawExpires)
+		log.Printf("MaxAge\t=%d", curCk.MaxAge)
+		log.Printf("Secure\t=%t", curCk.Secure)
+		log.Printf("HttpOnly=%t", curCk.HttpOnly)
+		log.Printf("Raw\t=%s", curCk.Raw)
+		log.Printf("Unparsed=%s", curCk.Unparsed)
+	}
+	uc.jar.SetCookies(u, cArr)
 	return r, nil
 }
 
@@ -277,25 +309,25 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 		}
 	}
 
-	gCurCookies := bf.client.Jar.Cookies(req.URL)
-	var cookieNum int = len(gCurCookies)
-	log.Printf("cookieNum=%d", cookieNum)
-	for i := 0; i < cookieNum; i++ {
-		var curCk *http.Cookie = gCurCookies[i]
-		//log.Printf("curCk.Raw=%s", curCk.Raw)
-		log.Printf("Cookie [%d]", i)
-		log.Printf("Name\t=%s", curCk.Name)
-		log.Printf("Value\t=%s", curCk.Value)
-		log.Printf("Path\t=%s", curCk.Path)
-		log.Printf("Domain\t=%s", curCk.Domain)
-		log.Printf("Expires\t=%s", curCk.Expires)
-		log.Printf("RawExpires=%s", curCk.RawExpires)
-		log.Printf("MaxAge\t=%d", curCk.MaxAge)
-		log.Printf("Secure\t=%t", curCk.Secure)
-		log.Printf("HttpOnly=%t", curCk.HttpOnly)
-		log.Printf("Raw\t=%s", curCk.Raw)
-		log.Printf("Unparsed=%s", curCk.Unparsed)
-	}
+	//gCurCookies := bf.client.Jar.Cookies(req.URL)
+	//var cookieNum int = len(gCurCookies)
+	//log.Printf("cookieNum=%d", cookieNum)
+	//for i := 0; i < cookieNum; i++ {
+	//var curCk *http.Cookie = gCurCookies[i]
+	//log.Printf("curCk.Raw=%s", curCk.Raw)
+	// log.Printf("Cookie [%d]", i)
+	// log.Printf("Name\t=%s", curCk.Name)
+	// log.Printf("Value\t=%s", curCk.Value)
+	// log.Printf("Path\t=%s", curCk.Path)
+	// log.Printf("Domain\t=%s", curCk.Domain)
+	// log.Printf("Expires\t=%s", curCk.Expires)
+	// log.Printf("RawExpires=%s", curCk.RawExpires)
+	// log.Printf("MaxAge\t=%d", curCk.MaxAge)
+	// log.Printf("Secure\t=%t", curCk.Secure)
+	// log.Printf("HttpOnly=%t", curCk.HttpOnly)
+	// log.Printf("Raw\t=%s", curCk.Raw)
+	// log.Printf("Unparsed=%s", curCk.Unparsed)
+	//}
 
 	resp, err = bf.client.Do(req)
 	if err != nil {
@@ -337,25 +369,25 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 			return nil, err
 		}
 	}
-	gCurCookies = bf.client.Jar.Cookies(req.URL)
-	cookieNum = len(gCurCookies)
-	log.Printf("cookieNum=%d", cookieNum)
-	for i := 0; i < cookieNum; i++ {
-		var curCk *http.Cookie = gCurCookies[i]
-		//log.Printf("curCk.Raw=%s", curCk.Raw)
-		log.Printf("Cookie [%d]", i)
-		log.Printf("Name\t=%s", curCk.Name)
-		log.Printf("Value\t=%s", curCk.Value)
-		log.Printf("Path\t=%s", curCk.Path)
-		log.Printf("Domain\t=%s", curCk.Domain)
-		log.Printf("Expires\t=%s", curCk.Expires)
-		log.Printf("RawExpires=%s", curCk.RawExpires)
-		log.Printf("MaxAge\t=%d", curCk.MaxAge)
-		log.Printf("Secure\t=%t", curCk.Secure)
-		log.Printf("HttpOnly=%t", curCk.HttpOnly)
-		log.Printf("Raw\t=%s", curCk.Raw)
-		log.Printf("Unparsed=%s", curCk.Unparsed)
-	}
+	// gCurCookies = bf.client.Jar.Cookies(req.URL)
+	// cookieNum = len(gCurCookies)
+	// log.Printf("cookieNum=%d", cookieNum)
+	// for i := 0; i < cookieNum; i++ {
+	// 	var curCk *http.Cookie = gCurCookies[i]
+	// 	//log.Printf("curCk.Raw=%s", curCk.Raw)
+	// 	log.Printf("Cookie [%d]", i)
+	// 	log.Printf("Name\t=%s", curCk.Name)
+	// 	log.Printf("Value\t=%s", curCk.Value)
+	// 	log.Printf("Path\t=%s", curCk.Path)
+	// 	log.Printf("Domain\t=%s", curCk.Domain)
+	// 	log.Printf("Expires\t=%s", curCk.Expires)
+	// 	log.Printf("RawExpires=%s", curCk.RawExpires)
+	// 	log.Printf("MaxAge\t=%d", curCk.MaxAge)
+	// 	log.Printf("Secure\t=%t", curCk.Secure)
+	// 	log.Printf("HttpOnly=%t", curCk.HttpOnly)
+	// 	log.Printf("Raw\t=%s", curCk.Raw)
+	// 	log.Printf("Unparsed=%s", curCk.Unparsed)
+	// }
 	return &response, err
 }
 

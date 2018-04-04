@@ -1,12 +1,6 @@
 package splash
 
-import (
-	"fmt"
-	"strconv"
-	"strings"
-)
-
-func generateCookie(setCookie string) (string, error) {
+/* func generateCookie(setCookie string) (string, error) {
 	//split strings in case of more than one cookie
 	ss := strings.Split(setCookie, "\n")
 	//split groups divided by ;
@@ -51,11 +45,11 @@ func generateCookie(setCookie string) (string, error) {
 	}
 
 	return fmt.Sprintf("[%s]", strings.Join(out, ",")), nil
-}
+} */
 
 // GetSetCookie retrieves Set-Cookie from http.Header
 // This cookie will be passed to the next request within the same domain.
-func GetSetCookie(cookies string) string {
+/* func GetSetCookie(cookies string) string {
 	//Get Set-Cookie
 	// Important! Get gets the first value associated with the given key.
 	//setCookie := headers.Get("Set-Cookie")
@@ -77,3 +71,4 @@ func GetSetCookie(cookies string) string {
 	//	logger.Info(cookie)
 	return cookie
 }
+ */

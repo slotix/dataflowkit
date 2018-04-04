@@ -118,7 +118,7 @@ func init() {
 
 	//set here default type of storage
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
-	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", false, "If true no data will be saved to storage. This flag forces fetcher to bypass storage middleware.")
+	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", true, "If true no data will be saved to storage. This flag forces fetcher to bypass storage middleware.")
 	RootCmd.Flags().BoolVarP(&ignoreCacheInfo, "IGNORE_CACHE_INFO", "", false, "If a website is not cachable by some reason, ignore this and use cached copy if any. Please don't set it to true in production")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
 	RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", "$HOME/.spaces/credentials", "Digital Ocean Spaces Configuration file")

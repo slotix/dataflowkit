@@ -35,8 +35,9 @@ type Request struct {
 	//
 	// "session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"
 	//
-	Cookies string `json:"cookie,omitempty"`
-	//LUA Splash custom script 
+	//Cookies string `json:"cookie,omitempty"`
+	Cookies []*http.Cookie `json:"cookie,omitempty"`
+	//LUA Splash custom script
 	LUA string `json:"lua,omitempty"`
 }
 
