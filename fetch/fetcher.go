@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -20,6 +21,24 @@ import (
 
 	"golang.org/x/net/publicsuffix"
 )
+
+type UserCookies struct {
+	jar *cookiejar.Jar
+}
+
+var uc UserCookies
+
+func init() {
+	uc = UserCookies{}
+	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
+	jar, err := cookiejar.New(jarOpts)
+	if err != nil {
+		logger.Error("Blya jar")
+
+	} else {
+		uc.jar = jar
+	}
+}
 
 //Type represents types of fetcher
 type Type string
@@ -119,7 +138,6 @@ type BaseFetcher struct {
 	ProcessResponse func(*http.Response) error
 }
 
-
 // SplashFetcher is a Fetcher that uses Scrapinghub splash
 // to fetch URLs. Splash is a javascript rendering service
 // Read more at https://github.com/scrapinghub/splash
@@ -181,18 +199,17 @@ func (sf *SplashFetcher) Close() {
 // Static type assertion
 var _ Fetcher = &SplashFetcher{}
 
-
 // NewBaseFetcher creates instances of NewBaseFetcher{} to fetch
 // a page content from regular websites as-is
 // without running js scripts on the page.
 func NewBaseFetcher() (*BaseFetcher, error) {
 	// Set up the HTTP client
-	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
-	jar, err := cookiejar.New(jarOpts)
-	if err != nil {
-		return nil, err
-	}
-	client := &http.Client{Jar: jar}
+	/* 	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
+	   	jar, err := cookiejar.New(jarOpts)
+	   	if err != nil {
+	   		return nil, err
+	   	} */
+	client := &http.Client{Jar: uc.jar}
 
 	bf := &BaseFetcher{
 		client: client,
@@ -260,6 +277,26 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 		}
 	}
 
+	gCurCookies := bf.client.Jar.Cookies(req.URL)
+	var cookieNum int = len(gCurCookies)
+	log.Printf("cookieNum=%d", cookieNum)
+	for i := 0; i < cookieNum; i++ {
+		var curCk *http.Cookie = gCurCookies[i]
+		//log.Printf("curCk.Raw=%s", curCk.Raw)
+		log.Printf("Cookie [%d]", i)
+		log.Printf("Name\t=%s", curCk.Name)
+		log.Printf("Value\t=%s", curCk.Value)
+		log.Printf("Path\t=%s", curCk.Path)
+		log.Printf("Domain\t=%s", curCk.Domain)
+		log.Printf("Expires\t=%s", curCk.Expires)
+		log.Printf("RawExpires=%s", curCk.RawExpires)
+		log.Printf("MaxAge\t=%d", curCk.MaxAge)
+		log.Printf("Secure\t=%t", curCk.Secure)
+		log.Printf("HttpOnly=%t", curCk.HttpOnly)
+		log.Printf("Raw\t=%s", curCk.Raw)
+		log.Printf("Unparsed=%s", curCk.Unparsed)
+	}
+
 	resp, err = bf.client.Do(req)
 	if err != nil {
 		return nil, &errs.BadRequest{err}
@@ -300,6 +337,25 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 			return nil, err
 		}
 	}
+	gCurCookies = bf.client.Jar.Cookies(req.URL)
+	cookieNum = len(gCurCookies)
+	log.Printf("cookieNum=%d", cookieNum)
+	for i := 0; i < cookieNum; i++ {
+		var curCk *http.Cookie = gCurCookies[i]
+		//log.Printf("curCk.Raw=%s", curCk.Raw)
+		log.Printf("Cookie [%d]", i)
+		log.Printf("Name\t=%s", curCk.Name)
+		log.Printf("Value\t=%s", curCk.Value)
+		log.Printf("Path\t=%s", curCk.Path)
+		log.Printf("Domain\t=%s", curCk.Domain)
+		log.Printf("Expires\t=%s", curCk.Expires)
+		log.Printf("RawExpires=%s", curCk.RawExpires)
+		log.Printf("MaxAge\t=%d", curCk.MaxAge)
+		log.Printf("Secure\t=%t", curCk.Secure)
+		log.Printf("HttpOnly=%t", curCk.HttpOnly)
+		log.Printf("Raw\t=%s", curCk.Raw)
+		log.Printf("Unparsed=%s", curCk.Unparsed)
+	}
 	return &response, err
 }
 
@@ -311,5 +367,3 @@ func (bf *BaseFetcher) Close() {
 
 // Static type assertion
 var _ Fetcher = &BaseFetcher{}
-
-
