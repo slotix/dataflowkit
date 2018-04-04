@@ -2,11 +2,8 @@ package splash
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 )
-
-
 
 //LUA script for general pages processing
 //Also formdata parameters may be passed
@@ -150,8 +147,7 @@ end
 `
 */
 
-
-//paramsToLuaTable generates JSON string
+/*//paramsToLuaTable generates JSON string
 func paramsToLuaTable(params string) string {
 	if params == "" {
 		return params
@@ -161,4 +157,21 @@ func paramsToLuaTable(params string) string {
 	p = strings.TrimSuffix(p, ",") //remove last ","
 	p = fmt.Sprintf("{%s}", p)
 	return p
+}*/
+
+func paramsToLuaTable(params string) string {
+	//"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=usr&ips_password=passw&rememberMe=0"
+	if len(params) == 0 {
+		return ""
+	}
+	formData := ""
+	//formData := make(map[string])
+	pairs := strings.Split(params, "&")
+	for _, pair := range pairs {
+		kv := strings.Split(pair, "=")
+		formData += `"` + kv[0] + `":"` + kv[1] + `",`
+	}
+	formData = strings.TrimSuffix(formData, ",") //remove last ","
+	formData = fmt.Sprintf("{%s}", formData)
+	return formData
 }
