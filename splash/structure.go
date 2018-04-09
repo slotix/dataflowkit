@@ -45,7 +45,7 @@ type Request struct {
 //For some domains like http://yahoo.com it is easier to unmarshal Expires as string
 type Cookie struct {
 	http.Cookie
-	Expires string
+	//Expires string
 }
 
 //SResponse returned by Splash as a part of Response
@@ -53,9 +53,9 @@ type Cookie struct {
 type SResponse struct {
 	Headers     interface{} `json:"headers"`
 	HeadersSize int         `json:"headersSize"`
-	Cookies     []Cookie    `json:"cookies"`
-	Ok          bool        `json:"ok"`
-	Content     struct {
+	//Cookies     []Cookie    `json:"cookies"`
+	Ok      bool `json:"ok"`
+	Content struct {
 		Text     string `json:"text"`
 		MimeType string `json:"mimeType"`
 		Size     int    `json:"size"`
@@ -94,6 +94,7 @@ type Response struct {
 	Error    string     `json:"error,omitempty"`
 	Request  *SRequest  `json:"request"`
 	Response *SResponse `json:"response"`
+	Cookies  []Cookie   `json:"cookies"`
 	//ReasonsNotToCache is an array of reasons why a response should not be cached.
 	ReasonsNotToCache []cacheobject.Reason
 	//Expires - How long object stay in a cache before Splash fetcher forwards another request to an origin.

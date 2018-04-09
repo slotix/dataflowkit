@@ -120,14 +120,16 @@ func NewSplash(req Request) (splashURL string) {
 		LUAScript = neturl.QueryEscape(baseLUA)
 	}
 	cookies := ""
-	//	 for _, c := range req.Cookies {
-	//		cookies = cookies + c.String()
-	//	}
 	if len(req.Cookies) > 0 {
-		cookies = req.Cookies[0].String()
+		for _, c := range req.Cookies {
+			cookies += fmt.Sprintf(`{"name":"%s", "value":"%s", "path":"%s", "domain":"%s", "expires":"%s", "httpOnly":%t, "secure":%t},`,
+				c.Name, c.Value, c.Path, c.Domain, c.Expires, c.HttpOnly, c.Secure)
+			//cookies += `"` + c.Name + `":"` + c.Value + `",`
+		}
+		cookies = strings.TrimSuffix(cookies, ",")
+		cookies = fmt.Sprintf("[%s]", cookies)
 	}
 
-	logger.Info(cookies)
 	splashURL = fmt.Sprintf(
 		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s",
 		args.host,

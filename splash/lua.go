@@ -32,9 +32,8 @@ import (
 var baseLUA = `
 json = require("json")
 function main(splash, args)
-  cookies = args.cookies -- set to "" when running the script in browserl
-  formdata = args.formdata -- set to "" when running the script in browser
-  -- http_method = args.http_method
+  cookies = args.cookies
+  formdata = args.formdata
   decoded = nil
   http_method = "GET"
   if formdata ~= "" then
@@ -43,9 +42,16 @@ function main(splash, args)
   end
   if cookies ~= "" then
     cookies_array = json.decode(cookies)
-    for k,v in next,cookies_array,nil
-    do
-  	  splash:add_cookie(v)
+    for i, cookie in ipairs(cookies_array) do
+ 	  splash:add_cookie{
+        cookie.name,
+        cookie.value,
+        path=cookie.path,
+        domain=cookie.domain,
+        expires=cookie.expires,
+        httpOnly=cookie.httpOnly,
+        secure=cookie.secure
+      }
     end
   end
 
@@ -69,12 +75,11 @@ function main(splash, args)
     	request = last_entry.request
     	response = last_entry.response
     end
-  
   return {
     url = splash:url(),
     request = request,
     response = response,
-    -- cookies = splash:get_cookies(),
+    cookies = splash:get_cookies(),
     html = splash:html(),
   }
 end

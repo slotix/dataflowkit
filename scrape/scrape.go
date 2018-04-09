@@ -341,9 +341,9 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 						if detailsHost == host {
 							//every time when getting a response the next request will be filled with updated cookie information
 							//headers := sResponse.Response.Headers.(http.Header)
-							headers := sResponse.GetHeaders()
+							/* headers := sResponse.GetHeaders()
 							setCookie := headers.Get("Set-Cookie")
-							part.Details.Request.SetCookies(setCookie)
+							part.Details.Request.SetCookies(setCookie) */
 							//part.Details.Request.Cookies = splash.GetSetCookie(headers)
 							if !viper.GetBool("IGNORE_FETCH_DELAY") {
 								if *t.Payload.RandomizeFetchDelay {
@@ -385,10 +385,10 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 		if url != "" {
 			//every time when getting a response the next request will be filled with updated cookie information
 			//headers := sResponse.Response.Headers.(http.Header)
-			headers := sResponse.GetHeaders()
+			/* headers := sResponse.GetHeaders()
 			setCookie := headers.Get("Set-Cookie")
 			//req.Cookies = splash.GetSetCookie(setCookie)
-			req.SetCookies(setCookie)
+			req.SetCookies(setCookie) */
 			req.SetURL(url)
 			if !viper.GetBool("IGNORE_FETCH_DELAY") {
 				if *t.Payload.RandomizeFetchDelay {

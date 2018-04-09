@@ -24,6 +24,14 @@ func (e *BadRequest) Error() string {
 	return "Bad Request"
 }
 
+// Unauthorized 401
+//
+// Client does not have access rights to the content caused by robots.txt restrictions.
+type Unauthorized struct {
+}
+
+func (e *Unauthorized) Error() string { return "Unauthorized" }
+
 // ForbiddenByRobots 403
 //
 // Client does not have access rights to the content caused by robots.txt restrictions.
