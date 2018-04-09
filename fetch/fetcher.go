@@ -7,7 +7,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -192,31 +191,11 @@ func (sf *SplashFetcher) Response(request FetchRequester) (FetchResponser, error
 	if err != nil {
 		return nil, err
 	}
-	//headers := r.GetHeaders()
-	//setCookie := headers.Get("Set-Cookie")
-	//logger.Info(setCookie)
-	
-	//ckooies := r.Response.Cookies
-	cArr := []*http.Cookie{}
-	for _, cookie := range r.Response.Cookies {
-		cArr = append(cArr, &cookie.Cookie)
-	}
 
-	for i := 0; i < len(cArr); i++ {
-		var curCk *http.Cookie = cArr[i]
-		log.Printf("curCk.Raw=%s", curCk.Raw)
-		log.Printf("Cookie [%d]", i)
-		log.Printf("Name\t=%s", curCk.Name)
-		log.Printf("Value\t=%s", curCk.Value)
-		log.Printf("Path\t=%s", curCk.Path)
-		log.Printf("Domain\t=%s", curCk.Domain)
-		log.Printf("Expires\t=%s", curCk.Expires)
-		log.Printf("RawExpires=%s", curCk.RawExpires)
-		log.Printf("MaxAge\t=%d", curCk.MaxAge)
-		log.Printf("Secure\t=%t", curCk.Secure)
-		log.Printf("HttpOnly=%t", curCk.HttpOnly)
-		log.Printf("Raw\t=%s", curCk.Raw)
-		log.Printf("Unparsed=%s", curCk.Unparsed)
+	cArr := []*http.Cookie{}
+	for _, c := range r.Cookies {
+		cookie := c.Cookie
+		cArr = append(cArr, &cookie)
 	}
 	uc.jar.SetCookies(u, cArr)
 	return r, nil
@@ -235,12 +214,6 @@ var _ Fetcher = &SplashFetcher{}
 // a page content from regular websites as-is
 // without running js scripts on the page.
 func NewBaseFetcher() (*BaseFetcher, error) {
-	// Set up the HTTP client
-	/* 	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
-	   	jar, err := cookiejar.New(jarOpts)
-	   	if err != nil {
-	   		return nil, err
-	   	} */
 	client := &http.Client{Jar: uc.jar}
 
 	bf := &BaseFetcher{
@@ -309,26 +282,6 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 		}
 	}
 
-	//gCurCookies := bf.client.Jar.Cookies(req.URL)
-	//var cookieNum int = len(gCurCookies)
-	//log.Printf("cookieNum=%d", cookieNum)
-	//for i := 0; i < cookieNum; i++ {
-	//var curCk *http.Cookie = gCurCookies[i]
-	//log.Printf("curCk.Raw=%s", curCk.Raw)
-	// log.Printf("Cookie [%d]", i)
-	// log.Printf("Name\t=%s", curCk.Name)
-	// log.Printf("Value\t=%s", curCk.Value)
-	// log.Printf("Path\t=%s", curCk.Path)
-	// log.Printf("Domain\t=%s", curCk.Domain)
-	// log.Printf("Expires\t=%s", curCk.Expires)
-	// log.Printf("RawExpires=%s", curCk.RawExpires)
-	// log.Printf("MaxAge\t=%d", curCk.MaxAge)
-	// log.Printf("Secure\t=%t", curCk.Secure)
-	// log.Printf("HttpOnly=%t", curCk.HttpOnly)
-	// log.Printf("Raw\t=%s", curCk.Raw)
-	// log.Printf("Unparsed=%s", curCk.Unparsed)
-	//}
-
 	resp, err = bf.client.Do(req)
 	if err != nil {
 		return nil, &errs.BadRequest{err}
@@ -345,6 +298,8 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 			return nil, &errs.InternalServerError{}
 		case 504:
 			return nil, &errs.GatewayTimeout{}
+		case 401:
+			return nil, &errs.Unauthorized{}
 		default:
 			return nil, &errs.Error{"Unknown Error"}
 		}
