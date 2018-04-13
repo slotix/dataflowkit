@@ -119,19 +119,19 @@ func NewSplash(req Request) (splashURL string) {
 	} else {
 		LUAScript = neturl.QueryEscape(baseLUA)
 	}
+
 	cookies := ""
 	if len(req.Cookies) > 0 {
+		cookies = `{"Cookie":"`
 		for _, c := range req.Cookies {
-			cookies += fmt.Sprintf(`{"name":"%s", "value":"%s", "path":"%s", "domain":"%s", "expires":"%s", "httpOnly":%t, "secure":%t},`,
-				c.Name, c.Value, c.Path, c.Domain, c.Expires, c.HttpOnly, c.Secure)
-			//cookies += `"` + c.Name + `":"` + c.Value + `",`
+			cookies += fmt.Sprintf(`%s=%s;`,
+				c.Name, c.Value)
 		}
-		cookies = strings.TrimSuffix(cookies, ",")
-		cookies = fmt.Sprintf("[%s]", cookies)
+		cookies = strings.TrimSuffix(cookies, ";") + `"}`
 	}
 
 	splashURL = fmt.Sprintf(
-		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&cookies=%s&formdata=%s&lua_source=%s",
+		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&headers=%s&formdata=%s&lua_source=%s",
 		args.host,
 		neturl.QueryEscape(req.URL),
 		args.timeout,
@@ -183,8 +183,8 @@ func (req Request) GetResponse() (*Response, error) {
 	if err := json.Unmarshal(res, &sResponse); err != nil {
 		logger.Error("Json Unmarshall error", err)
 	}
-	//if response status code is not 200
 
+	//if response status code is not 200
 	if sResponse.Error != "" {
 		switch sResponse.Error {
 		case "http404":

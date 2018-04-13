@@ -32,8 +32,9 @@ import (
 var baseLUA = `
 json = require("json")
 function main(splash, args)
-  cookies = args.cookies
+  cookies = ""
   formdata = args.formdata
+  headers = nil
   decoded = nil
   http_method = "GET"
   if formdata ~= "" then
@@ -42,22 +43,16 @@ function main(splash, args)
   end
   if cookies ~= "" then
     cookies_array = json.decode(cookies)
-    for i, cookie in ipairs(cookies_array) do
- 	  splash:add_cookie{
-        cookie.name,
-        cookie.value,
-        path=cookie.path,
-        domain=cookie.domain,
-        expires=cookie.expires,
-        httpOnly=cookie.httpOnly,
-        secure=cookie.secure
-      }
-    end
+    splash:init_cookies(cookies_array)
   end
+  if args.headers ~= "" then
+    headers = json.decode(args.headers)
+  end
+  splash:autoload{url="http://scrape.dataflowkit.org/static/app/selectorgadget/loader.js"}
 
   local ok, reason = splash:go{
     args.url,
-    headers = args.headers,
+    headers = headers,
     http_method = http_method,
     formdata = decoded,
     body = args.body,
@@ -75,6 +70,7 @@ function main(splash, args)
     	request = last_entry.request
     	response = last_entry.response
     end
+  splash:runjs("load()")
   return {
     url = splash:url(),
     request = request,
@@ -96,73 +92,6 @@ function main(splash)
   } 
 end
 `
-
-/*
-//LUA script for general pages processing
-var baseLUAOld = `
-json = require("json")
-function string.ends(String,End)
-  return End=='' or string.sub(String,-string.len(End))==End
-end
-function remove_trailing_slash(text)
-  if string.ends(text, "/") then
-    text = text:sub(1, -2)
-  end
-  return text
-end
-
-function main(splash)
-  local url = splash.args.url
-  splash:init_cookies(splash.args.cookies)
-  formdata = splash.args.formdata
-  splash:on_response(function (response)
-  url = remove_trailing_slash(url)
-  resp_url = remove_trailing_slash(response.info.url)
-	if resp_url == url then
-    status = response.info.status
-    is_redirect = status == 301 or status == 302
-    if is_redirect then
-      url = response.info.redirectURL
-    elseif status == 200 then
-  			r = response
-    end
-  end
-  end)
-  if formdata == "" then
-      ok, reason = splash:go(url)
-  else
-      decoded = json.decode(formdata)
-      ok, reason = splash:go{url,
-      formdata= decoded,
-      http_method="POST"}
-  end
-  assert(splash:wait(splash.args.wait))
-  if not ok then
-       return {
-        reason = reason,
-      }
-  end
-  return {
-      cookies = splash:get_cookies(),
-      request = r.request.info,
-      response = r.info,
-	    html = splash:html(),
-  }
-end
-`
-*/
-
-/*//paramsToLuaTable generates JSON string
-func paramsToLuaTable(params string) string {
-	if params == "" {
-		return params
-	}
-	re := regexp.MustCompile("([\\w-]+)=([\\w%\\.]+)(&)?")
-	p := re.ReplaceAllString(params, "\"$1\":\"$2\",")
-	p = strings.TrimSuffix(p, ",") //remove last ","
-	p = fmt.Sprintf("{%s}", p)
-	return p
-}*/
 
 func paramsToLuaTable(params string) string {
 	//"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=usr&ips_password=passw&rememberMe=0"
