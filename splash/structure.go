@@ -87,8 +87,9 @@ type SRequest struct {
 //Response returned by Splash
 //It includes html body, response, request
 type Response struct {
-	//URL  string `json:"url"`
 	HTML string `json:"html"`
+	//URL represents the final URL after all redirects. Response.Request.URL.String()
+	URL string
 	//Error is returned in case of an error, f.e. "http404".
 	//If Error is not nil all other fields are nil
 	Error    string     `json:"error,omitempty"`
