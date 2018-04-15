@@ -113,7 +113,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
 	RootCmd.Flags().StringVarP(&fetcherType, "FETCHER_TYPE", "t", "base", "DFK Fetcher type: splash, base")
 	//default type of storage
-	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", false, "If true no parsed data will be saved to storage. This flag forces parser to bypass storage middleware.")
+	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", true, "If true no parsed data will be saved to storage. This flag forces parser to bypass storage middleware.")
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
 	RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 3600, "Default value for item expiration in seconds")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")

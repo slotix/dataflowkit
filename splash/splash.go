@@ -139,7 +139,7 @@ func NewSplash(req Request) (splashURL string) {
 		args.wait,
 		//neturl.QueryEscape(req.Cookies),
 		neturl.QueryEscape(cookies),
-		neturl.QueryEscape(paramsToLuaTable(req.Params)),
+		neturl.QueryEscape(paramsToLuaTable(req.FormData)),
 		LUAScript)
 
 	return
@@ -324,8 +324,9 @@ func (req Request) GetURL() string {
 	return strings.TrimRight(strings.TrimSpace(req.URL), "/")
 }
 
-func (req Request) GetParams() string {
-	return req.Params
+//  GetFormData returns form data from Splash Request
+func (req Request) GetFormData() string {
+	return req.FormData
 }
 
 // Host returns Host value from Request
@@ -342,17 +343,6 @@ func (req Request) Type() string {
 	return "splash"
 } 
 
-
-func (r Request) SetCookies(cookies string) {
-	//r.Cookies = GetSetCookie(cookies)
-	//r.Cookies = "TEST COOKIES"
-	return
-}
-
-//SetURL initializes URL value of Request
-func (r Request) SetURL(u string) {
-	r.URL = u
-}
 
 // UnmarshalJSON convert headers to http.Header type
 // http://choly.ca/post/go-json-marshalling/
@@ -377,10 +367,6 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-//GetHeaders returns Headers from response
-func (r *Response) GetHeaders() http.Header {
-	return r.Response.Headers.(http.Header)
-}
 
 //castHeaders serves for casting headers returned by Splash to standard http.Header type
 func castHeaders(splashHeaders interface{}) (header http.Header) {
@@ -477,7 +463,3 @@ func (r Response) GetURL() string {
 	return r.Response.URL
 }
 
-//GetStatusCode return response status code
-func (r Response) GetStatusCode() int {
-	return r.Response.Status
-}

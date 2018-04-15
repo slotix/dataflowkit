@@ -56,47 +56,40 @@ const (
 // Note: Fetchers may or may not be safe to use concurrently.  Please read the
 // documentation for each fetcher for more details.
 type Fetcher interface {
-	// Prepare is called once at the beginning of the scrape.
+	//  Prepare is called once at the beginning of the scrape.
 	Prepare() error
-	//Response return response after fetch Request.
+	//  Response return response after fetch Request.
 	Response(request FetchRequester) (FetchResponser, error)
-	// Fetch is called to retrieve HTML content of a document from the remote server.
+	//  Fetch is called to retrieve HTML content of a document from the remote server.
 	Fetch(request FetchRequester) (io.ReadCloser, error)
-	// Close is called when the scrape is finished, and can be used to clean up
-	// allocated resources or perform other cleanup actions.
+	//  Close is called when the scrape is finished, and can be used to clean up
+	//  allocated resources or perform other cleanup actions.
 	Close()
 }
 
 //FetchResponser interface that must be satisfied the listed methods
 type FetchResponser interface {
-	//Returns expires value of response
+	//  GetExpires returns expires value of response
 	GetExpires() time.Time
-	//Returns an array of reasons why a response should not be cached if any.
+	//  GetReasonsNotToCache returns an array of reasons why a response should not be cached if any.
 	GetReasonsNotToCache() []cacheobject.Reason
-	//ReasonsNotToCache and Expires values are set here
+	//  ReasonsNotToCache and Expires values are set here
 	SetCacheInfo()
-	//GetURL returns final URL after all redirects
+	//  GetURL returns final URL after all redirects
 	GetURL() string
-	//GetStatusCode returns status code after document fetch
-	GetStatusCode() int
-	//GetHTML return html content of fetched document
+	//  GetHTML return html content of fetched document
 	GetHTML() (io.ReadCloser, error)
-	//GetHeaders returns Headers from response
-	GetHeaders() http.Header
 }
 
 //FetchRequester interface interface that must be satisfied the listed methods
 type FetchRequester interface {
-	//GetURL returns initial URL from Request
+	//  GetURL returns initial URL from Request
 	GetURL() string
-	// Host returns Host value from Request
+	//  Host returns Host value from Request
 	Host() (string, error)
-	SetCookies(string)
-	//SetURL initializes URL value of Request
-	SetURL(string)
-	//Returns Params (FormData)
-	GetParams() string
-	//Type
+	//  GetFormData Returns Form Data from FetchRequester
+	GetFormData() string
+	//  Type return type of request : base or splash
 	Type() string
 }
 
@@ -143,8 +136,6 @@ type BaseFetcher struct {
 // to fetch URLs. Splash is a javascript rendering service
 // Read more at https://github.com/scrapinghub/splash
 type SplashFetcher struct {
-	//client *http.Client
-
 	// PrepareSplash is called once at the beginning of the scrape. It is not used currently
 	PrepareSplash func() error
 
@@ -172,7 +163,7 @@ func (sf *SplashFetcher) Prepare() error {
 	return nil
 }
 
-//Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
+// Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (sf *SplashFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
 	r, err := sf.Response(request)
 	if err != nil {
@@ -181,7 +172,7 @@ func (sf *SplashFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
 	return r.GetHTML()
 }
 
-//Response return response from Splash server after document fetching
+// Response return response from Splash server after document fetching
 func (sf *SplashFetcher) Response(request FetchRequester) (FetchResponser, error) {
 	req := request.(splash.Request)
 	u, err := url.Parse(req.GetURL())
@@ -232,7 +223,7 @@ func (bf *BaseFetcher) Prepare() error {
 	return nil
 }
 
-//Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
+// Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (bf *BaseFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
 	r, err := bf.Response(request)
 	if err != nil {
@@ -241,10 +232,11 @@ func (bf *BaseFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
 	return r.GetHTML()
 }
 
-func parseParams(params string) url.Values {
+// parseFormData is used for converting formdata string to url.Values type
+func parseFormData(fd string) url.Values {
 	//"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=usr&ips_password=passw&rememberMe=0"
 	formData := url.Values{}
-	pairs := strings.Split(params, "&")
+	pairs := strings.Split(fd, "&")
 	for _, pair := range pairs {
 		kv := strings.Split(pair, "=")
 		formData.Add(kv[0], kv[1])
@@ -263,14 +255,16 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 	var err error
 	var req *http.Request
 	var resp *http.Response
-	if request.GetParams() == "" {
+
+	if request.GetFormData() == "" {		
 		req, err = http.NewRequest(r.Method, r.URL, nil)
 		if err != nil {
 			return nil, err
 		}
 	} else {
+		//if form data exists send POST request
 		r.Method = "POST"
-		formData := parseParams(r.GetParams())
+		formData := parseFormData(r.GetFormData())
 		req, err = http.NewRequest(r.Method, r.URL, strings.NewReader(formData.Encode()))
 		if err != nil {
 			return nil, err
@@ -306,6 +300,7 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 			return nil, &errs.Error{"Unknown Error"}
 		}
 	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -326,25 +321,6 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 			return nil, err
 		}
 	}
-	// gCurCookies = bf.client.Jar.Cookies(req.URL)
-	// cookieNum = len(gCurCookies)
-	// log.Printf("cookieNum=%d", cookieNum)
-	// for i := 0; i < cookieNum; i++ {
-	// 	var curCk *http.Cookie = gCurCookies[i]
-	// 	//log.Printf("curCk.Raw=%s", curCk.Raw)
-	// 	log.Printf("Cookie [%d]", i)
-	// 	log.Printf("Name\t=%s", curCk.Name)
-	// 	log.Printf("Value\t=%s", curCk.Value)
-	// 	log.Printf("Path\t=%s", curCk.Path)
-	// 	log.Printf("Domain\t=%s", curCk.Domain)
-	// 	log.Printf("Expires\t=%s", curCk.Expires)
-	// 	log.Printf("RawExpires=%s", curCk.RawExpires)
-	// 	log.Printf("MaxAge\t=%d", curCk.MaxAge)
-	// 	log.Printf("Secure\t=%t", curCk.Secure)
-	// 	log.Printf("HttpOnly=%t", curCk.HttpOnly)
-	// 	log.Printf("Raw\t=%s", curCk.Raw)
-	// 	log.Printf("Unparsed=%s", curCk.Unparsed)
-	// }
 	return &response, err
 }
 

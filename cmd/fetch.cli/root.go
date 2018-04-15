@@ -91,9 +91,9 @@ var RootCmd = &cobra.Command{
 				case "splash":
 					req = splash.Request{
 						URL:     URL,
-						Params:  Params,
-						Cookies: Cookies,
-						LUA:     LUA,
+					//	FormData:  Params,
+					//	Cookies: Cookies,
+					//	LUA:     LUA,
 					}
 				case "base":
 					req = fetch.BaseFetcherRequest{URL: URL}

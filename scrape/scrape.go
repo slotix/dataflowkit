@@ -313,7 +313,6 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 				//********* details
 				//part.Details = nil
 				if part.Details != nil {
-					//var requests []splash.Request
 					var requests []fetch.FetchRequester
 
 					switch extractedPartResults.(type) {
@@ -329,13 +328,10 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 							logger.Error(err.Error())
 							return nil, err
 						}
-
 						requests = append(requests, rq)
-						//requests = append(requests, part.Details.Request)
-
 					case []string:
 						for _, r := range extractedPartResults.([]string) {
-							
+
 							var rq fetch.FetchRequester
 							switch part.Details.Request.Type() {
 							case "base":
@@ -347,7 +343,9 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 								logger.Error(err.Error())
 								return nil, err
 							}
+
 							requests = append(requests, rq)
+
 						}
 					}
 					for _, r := range requests {
@@ -362,6 +360,7 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 							logger.Error(err)
 						}
 						if detailsHost == host {
+
 							//every time when getting a response the next request will be filled with updated cookie information
 							//headers := sResponse.Response.Headers.(http.Header)
 							/* headers := sResponse.GetHeaders()
