@@ -23,8 +23,8 @@ func fetchRobots(req BaseFetcherRequest) (*BaseFetcherResponse, error) {
 		logger.Error(err)
 	}
 	resp, err := svc.Response(req)
-	if err != nil  {
-	//	logger.Error(err)
+	if err != nil {
+		//	logger.Error(err)
 		return nil, err
 	}
 	return resp.(*BaseFetcherResponse), nil
@@ -57,7 +57,7 @@ func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
 	// From Google's spec:
 	// Server errors (5xx) are seen as temporary errors that result in a "full
 	// disallow" of crawling.
-	robotsData, err = robotstxt.FromStatusAndBytes(response.StatusCode, response.HTML)
+	robotsData, err = robotstxt.FromStatusAndBytes(response.StatusCode, []byte(response.HTML))
 	return
 }
 

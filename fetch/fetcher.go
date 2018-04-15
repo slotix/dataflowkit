@@ -311,7 +311,7 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 	response := BaseFetcherResponse{
 		Response:   resp,
 		URL:        resp.Request.URL.String(),
-		HTML:       body,
+		HTML:       string(body),
 		StatusCode: resp.StatusCode,
 		Status:     resp.Status,
 	}
