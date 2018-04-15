@@ -1,7 +1,6 @@
 package fetch
 
 import (
-	"bytes"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -17,11 +16,11 @@ import (
 //BaseFetcherRequest struct collects request information used by BaseFetcher
 type BaseFetcherRequest struct {
 	//	URL to be retrieved
-	URL string  `json:"url"`
+	URL string `json:"url"`
 	//	HTTP method : GET, POST
 	Method string
 	// Cookies contain cookies to be added to request  before sending it to browser.
-	Cookies string  `json:"cookie,omitempty"`
+	Cookies string `json:"cookie,omitempty"`
 	// Params is a string value for passing formdata parameters.
 	//
 	// For example it may be used for processing pages which require authentication
@@ -40,7 +39,7 @@ type BaseFetcherResponse struct {
 	//URL represents the final URL after all redirects. Response.Request.URL.String()
 	URL string
 	//HTML Content of fetched page
-	HTML []byte `json:"html"`
+	HTML string `json:"html"`
 	//ReasonsNotToCache is an array of reasons why a response should not be cached.
 	ReasonsNotToCache []cacheobject.Reason
 	//Expires - How long object stay in a cache before Splash fetcher forwards another request to an origin.
@@ -119,7 +118,7 @@ func (req BaseFetcherRequest) Host() (string, error) {
 	return u.Host, nil
 }
 
-func (req BaseFetcherRequest) GetParams() string{
+func (req BaseFetcherRequest) GetParams() string {
 	return req.Params
 }
 
@@ -136,12 +135,12 @@ func (r *BaseFetcherResponse) GetHTML() (io.ReadCloser, error) {
 	if r.StatusCode != 200 {
 		return nil, errors.New(r.Status)
 	}
-	readCloser := ioutil.NopCloser(bytes.NewReader(r.HTML))
+	readCloser := ioutil.NopCloser(strings.NewReader(r.HTML))
 	return readCloser, nil
 }
 
 //GetHeaders returns Headers from response
-func (r *BaseFetcherResponse) GetHeaders() http.Header{
+func (r *BaseFetcherResponse) GetHeaders() http.Header {
 	return r.Response.Header
 }
 
