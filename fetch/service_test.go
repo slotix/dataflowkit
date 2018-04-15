@@ -1,6 +1,7 @@
 package fetch
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/slotix/dataflowkit/splash"
@@ -18,21 +19,20 @@ func init() {
 func TestFetchService(t *testing.T) {
 	var svc Service
 	svc = FetchService{}
+	var cookies []*http.Cookie
 	response, err := svc.Response(splash.Request{
-		URL:    "http://example.com",
-		Params: "", Cookies: "", LUA: "",
+		URL:      "http://example.com",
+		FormData: "", Cookies: cookies, LUA: "",
 	})
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, 200, response.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
-
 
 	response, err = svc.Response(splash.Request{
 		URL:    "http://example.com",
-		Params: "", Cookies: "", LUA: "",
+		FormData: "", Cookies: cookies, LUA: "",
 	})
 	assert.Nil(t, err, "Expected no error")
 	assert.Equal(t, 200, response.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
-	
 
 	response, err = svc.Response(BaseFetcherRequest{
 		URL:    "http://example.com",

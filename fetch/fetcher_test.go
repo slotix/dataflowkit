@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -18,11 +19,12 @@ const addr = "localhost:12345"
 var (
 	indexContent = []byte(`<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`)
 
-	robotstxtData = []byte(`
-		User-agent: *
-		Allow: /allowed
-		Disallow: /disallowed
-		`)
+	robotstxtData = "\n\t\tUser-agent: *\n\t\tAllow: /allowed\n\t\tDisallow: /disallowed\n\t\t"
+	// robotstxtData = []byte(`
+	// 	User-agent: *
+	// 	Allow: /allowed
+	// 	Disallow: /disallowed
+	// 	`)
 )
 
 func robotstxtHandler(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +43,7 @@ func init() {
 	})
 	http.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Conent-Type", "text/html")
-		w.Write(robotstxtData)
+		w.Write([]byte(robotstxtData))
 	})
 	http.HandleFunc("/allowed", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -149,4 +151,15 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 func TestNewFetcher_invalid(t *testing.T) {
 	_, err := NewFetcher("Invalid")
 	assert.NotNil(t, err, "Expected Invalid Fetcher error")
+}
+
+func Test_parseFormData(t *testing.T) {
+	formData := "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=usr&ips_password=passw&rememberMe=0"
+	values := parseFormData(formData)
+	assert.Equal(t,
+		url.Values{"auth_key": []string{"880ea6a14ea49e853634fbdc5015a024"},
+			"referer": []string{"http%3A%2F%2Fexample.com%2F"}, "ips_username": []string{"usr"},
+			"ips_password": []string{"passw"},
+			"rememberMe":   []string{"0"}},
+		values)
 }
