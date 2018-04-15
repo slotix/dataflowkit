@@ -123,6 +123,11 @@ func (req BaseFetcherRequest) GetParams() string{
 	return req.Params
 }
 
+//Type return fetcher type
+func (req BaseFetcherRequest) Type() string {
+	return "base"
+} 
+
 func (req BaseFetcherRequest) SetCookies(cookies string) {
 	//req.Cookies = cookies
 	//!!!temp....
@@ -149,3 +154,4 @@ func (r *BaseFetcherResponse) GetHeaders() http.Header{
 func (r BaseFetcherResponse) GetStatusCode() int {
 	return r.StatusCode
 }
+

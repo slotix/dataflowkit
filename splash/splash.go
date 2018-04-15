@@ -337,6 +337,12 @@ func (req Request) Host() (string, error) {
 	return u.Host, nil
 }
 
+//Type return fetcher type
+func (req Request) Type() string {
+	return "splash"
+} 
+
+
 func (r Request) SetCookies(cookies string) {
 	//r.Cookies = GetSetCookie(cookies)
 	//r.Cookies = "TEST COOKIES"
