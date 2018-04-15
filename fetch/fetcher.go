@@ -96,6 +96,8 @@ type FetchRequester interface {
 	SetURL(string)
 	//Returns Params (FormData)
 	GetParams() string
+	//Type
+	Type() string
 }
 
 //NewFetcher creates instances of Fetcher for downloading a web page.

@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/slotix/dataflowkit/splash"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/PuerkitoBio/goquery"
@@ -22,7 +24,6 @@ import (
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/logger"
 	"github.com/slotix/dataflowkit/paginate"
-	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/utils"
 	"github.com/spf13/viper"
 	"github.com/temoto/robotstxt"
@@ -203,7 +204,6 @@ func (p Payload) fields2parts() ([]Part, error) {
 			}
 			//logger.Info(e)
 			parts = append(parts, part)
-
 		}
 	}
 	// Validate payload fields
@@ -313,19 +313,42 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 				//********* details
 				//part.Details = nil
 				if part.Details != nil {
-					var requests []splash.Request
+					//var requests []splash.Request
+					var requests []fetch.FetchRequester
+
 					switch extractedPartResults.(type) {
 					case string:
-						requests = append(requests, splash.Request{
-							URL: extractedPartResults.(string),
-						})
-					case []string:
-						for _, r := range extractedPartResults.([]string) {
-							requests = append(requests, splash.Request{
-								URL: r,
-							})
+						var rq fetch.FetchRequester
+						switch part.Details.Request.Type() {
+						case "base":
+							rq = &fetch.BaseFetcherRequest{URL: extractedPartResults.(string)}
+						case "splash":
+							rq = &splash.Request{URL: extractedPartResults.(string)}
+						default:
+							err := errors.New("invalid fetcher type specified")
+							logger.Error(err.Error())
+							return nil, err
 						}
 
+						requests = append(requests, rq)
+						//requests = append(requests, part.Details.Request)
+
+					case []string:
+						for _, r := range extractedPartResults.([]string) {
+							
+							var rq fetch.FetchRequester
+							switch part.Details.Request.Type() {
+							case "base":
+								rq = &fetch.BaseFetcherRequest{URL: r}
+							case "splash":
+								rq = &splash.Request{URL: r}
+							default:
+								err := errors.New("invalid fetcher type specified")
+								logger.Error(err.Error())
+								return nil, err
+							}
+							requests = append(requests, rq)
+						}
 					}
 					for _, r := range requests {
 						//part.Details.Request = splash.Request{
@@ -389,7 +412,20 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 			setCookie := headers.Get("Set-Cookie")
 			//req.Cookies = splash.GetSetCookie(setCookie)
 			req.SetCookies(setCookie) */
-			req.SetURL(url)
+			//req.SetURL(url)
+			var rq fetch.FetchRequester
+			switch req.Type() {
+			case "splash":
+				rq = &splash.Request{URL: url}
+			case "base":
+				rq = &fetch.BaseFetcherRequest{URL: url}
+			default:
+				err := errors.New("invalid fetcher type specified")
+				logger.Error(err.Error())
+				return nil, err
+			}
+			req = rq
+
 			if !viper.GetBool("IGNORE_FETCH_DELAY") {
 				if *t.Payload.RandomizeFetchDelay {
 					//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
@@ -427,7 +463,7 @@ func (p Payload) selectors() ([]string, error) {
 	return selectors, nil
 }
 
-//response sends request to fetch service and returns *splash.Response
+//response sends request to fetch service and returns fetch.FetchResponser
 func response(req fetch.FetchRequester) (fetch.FetchResponser, error) {
 	svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH"), gklog.NewNopLogger())
 	if err != nil {
