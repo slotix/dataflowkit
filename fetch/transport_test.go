@@ -3,6 +3,7 @@ package fetch
 import (
 	"bytes"
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -17,9 +18,10 @@ func TestDecodeSplashFetcherRequest(t *testing.T) {
 	req := httptest.NewRequest("GET", "http://example.com", r)
 	actual, err := DecodeSplashFetcherRequest(ctx, req)
 	assert.Nil(t, err, "Expected no error")
+	var cookies []*http.Cookie
 	expected := splash.Request{
-		URL:    "http://dbconvert.com",
-		Params: "", Cookies: "", LUA: "",
+		URL:      "http://dbconvert.com",
+		FormData: "", Cookies: cookies, LUA: "",
 	}
 	assert.Equal(t, expected, actual)
 }
