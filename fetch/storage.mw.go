@@ -112,7 +112,7 @@ func (mw storageMiddleware) Fetch(req FetchRequester) (io.ReadCloser, error) {
 //This middleware method is used by Parse service.
 func (mw storageMiddleware) Response(req FetchRequester) (FetchResponser, error) {
 	//if form Data is emtpy try to get cached data from storage first
-	if req.GetParams() == "" {
+	if req.GetFormData() == "" {
 		//loads content from a storage if any
 		fromStorage, err := mw.get(req)
 		if err == nil {

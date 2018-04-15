@@ -155,15 +155,18 @@ func (e Endpoints) Fetch(req FetchRequester) (io.ReadCloser, error) {
 
 func (e Endpoints) Response(req FetchRequester) (FetchResponser, error) {
 	ctx := context.Background()
-	switch req.(type) {
-	case  BaseFetcherRequest, *BaseFetcherRequest:
+	//switch req.(type) {
+	switch req.Type() {
+	//case  BaseFetcherRequest, *BaseFetcherRequest:
+	case  "base":
 		resp, err := e.BaseResponseEndpoint(ctx, req)
 		if err != nil {
 			return nil, err
 		}
 		response := resp.(BaseFetcherResponse)
 		return &response, nil
-	case splash.Request, *splash.Request:
+	//case splash.Request, *splash.Request:
+	case  "splash":
 		resp, err := e.SplashResponseEndpoint(ctx, req)
 		if err != nil {
 			return nil, err

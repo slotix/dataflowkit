@@ -13,7 +13,7 @@ import (
 	"github.com/pquerna/cachecontrol/cacheobject"
 )
 
-//BaseFetcherRequest struct collects request information used by BaseFetcher
+//BaseFetcherRequest struct contains request information used by BaseFetcher
 type BaseFetcherRequest struct {
 	//	URL to be retrieved
 	URL string `json:"url"`
@@ -21,7 +21,7 @@ type BaseFetcherRequest struct {
 	Method string
 	// Cookies contain cookies to be added to request  before sending it to browser.
 	Cookies string `json:"cookie,omitempty"`
-	// Params is a string value for passing formdata parameters.
+	// FormData is a string value for passing formdata parameters.
 	//
 	// For example it may be used for processing pages which require authentication
 	//
@@ -29,7 +29,7 @@ type BaseFetcherRequest struct {
 	//
 	// "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
 	//
-	Params string `json:"params,omitempty"`
+	FormData string `json:"params,omitempty"`
 }
 
 //BaseFetcherResponse struct groups Response data together after retrieving it by BaseFetcher
@@ -104,10 +104,6 @@ func (req BaseFetcherRequest) GetURL() string {
 	return strings.TrimRight(strings.TrimSpace(req.URL), "/")
 }
 
-//SetURL initializes URL value of Request
-func (req BaseFetcherRequest) SetURL(u string) {
-	req.URL = u
-}
 
 // Host returns Host value from Request
 func (req BaseFetcherRequest) Host() (string, error) {
@@ -118,18 +114,14 @@ func (req BaseFetcherRequest) Host() (string, error) {
 	return u.Host, nil
 }
 
-func (req BaseFetcherRequest) GetParams() string {
-	return req.Params
+//	GetFormData returns form data from BaseFetcherRequest
+func (req BaseFetcherRequest) GetFormData() string {
+	return req.FormData
 }
 
-//Type return fetcher type
+//Type returns fetcher type
 func (req BaseFetcherRequest) Type() string {
 	return "base"
-} 
-
-func (req BaseFetcherRequest) SetCookies(cookies string) {
-	//req.Cookies = cookies
-	//!!!temp....
 }
 
 //GetHTML return HTML content from BaseFetcherResponse
@@ -143,14 +135,3 @@ func (r *BaseFetcherResponse) GetHTML() (io.ReadCloser, error) {
 	readCloser := ioutil.NopCloser(strings.NewReader(r.HTML))
 	return readCloser, nil
 }
-
-//GetHeaders returns Headers from response
-func (r *BaseFetcherResponse) GetHeaders() http.Header {
-	return r.Response.Header
-}
-
-//GetStatusCode return response status code
-func (r BaseFetcherResponse) GetStatusCode() int {
-	return r.StatusCode
-}
-
