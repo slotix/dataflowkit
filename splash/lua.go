@@ -81,17 +81,6 @@ function main(splash, args)
 end
 `
 
-//LUA script for robots.txt files processing
-var robotsLUA = `
-function main(splash) 
-  local url = splash.args.url 
-  local response = splash:http_get(url)
-  return { 
-    request = response.request.info,
-    response = response.info,
-  } 
-end
-`
 
 func paramsToLuaTable(params string) string {
 	//"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=usr&ips_password=passw&rememberMe=0"

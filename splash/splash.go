@@ -38,33 +38,7 @@ type Options struct {
 	LUA  string
 }
 
-/* // Option represent parameters used for connection to Splash server
-type Option func(*Options)
 
-func host(h string) Option {
-	return func(args *Options) {
-		args.host = h
-	}
-}
-
-func timeout(t int) Option {
-	return func(args *Options) {
-		args.timeout = t
-	}
-}
-
-func resourceTimeout(t int) Option {
-	return func(args *Options) {
-		args.resourceTimeout = t
-	}
-}
-
-// Time in seconds to wait until java scripts loaded. Sometimes wait parameter should be set to more than default 0,5. It allows to finish js scripts execution on a web page.
-func wait(w float64) Option {
-	return func(args *Options) {
-		args.wait = w
-	}
-} */
 
 //NewSplash creates new connection to Splash Server
 //func NewSplash(req Request, setters ...Option) (splashURL string) {
@@ -82,16 +56,6 @@ func NewSplash(req Request) (splashURL string) {
 	args.resourceTimeout = 30
 	args.wait = 1.0
 	*/
-	/* args := &Options{
-		host:            viper.GetString("SPLASH"),
-		timeout:         viper.GetInt("SPLASH_TIMEOUT"),
-		resourceTimeout: viper.GetInt("SPLASH_RESOURCE_TIMEOUT"),
-		wait:            viper.GetFloat64("SPLASH_WAIT"),
-	}
-	//Default options will be overriden by opts parameters if any
-	 for _, opt := range opts {
-		opt(args)
-	 } */
 
 	//Generating Splash URL
 	/*

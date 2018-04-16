@@ -20,7 +20,7 @@ type Request struct {
 	//
 	// "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
 	//
-	FormData string `json:"params,omitempty"`
+	FormData string `json:"formData,omitempty"`
 	// Cookies contain cookies to be added to request  before sending it to browser.
 	//
 	// It may be used for processing pages after initial authentication. In the first step formdata with auth info is passed to a web page.
