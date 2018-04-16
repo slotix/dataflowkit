@@ -15,6 +15,7 @@ Here is a simple example for requesting Parse endpoint:
    "name":"collection",
    "request":{
       "url":"https://example.com"
+      "formData":"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
    },
    "fields":[
       {
@@ -71,19 +72,13 @@ Collection name
 Request
 
 Request parameters are passed to Fetch Endpoint for downloading html pages.
-URL holds the URL address of the web page to be downloaded. URL is required. All other fields including Params, Cookies, Func are optional.
+url holds the URL address of the web page to be downloaded. URL is required. All other fields including formData, lua (for splash fetcher) are optional.
 
-Params is a string value for passing formdata parameters.
+formData is a string value for passing form data parameters.
 For example it may be used for processing pages which require authentication.
-	"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
+  "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
 
-Cookies contain cookies to be added to request  before sending it to browser.
-It may be used for processing pages after initial authentication. In the first step formdata with auth info is passed to a web page.
-Response object headers may contain an Object like
-	name: "Set-Cookie"
-	value: "session_id=29d7b97879209ca89316181ed14eb01f; path=/; httponly"
-These cookies should be passed to the next pages on the same domain.
-	"session_id", "29d7b97879209ca89316181ed14eb01f", "/", domain="example.com"
+lua contains custom LUA script for passing to Splash server for extending Splash functionality. Example of LUA script currently used for making requests to Splash is avaiable at splash/lua.go file.
 
 Fields
 
