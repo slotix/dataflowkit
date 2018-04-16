@@ -19,8 +19,6 @@ type BaseFetcherRequest struct {
 	URL string `json:"url"`
 	//	HTTP method : GET, POST
 	Method string
-	// Cookies contain cookies to be added to request  before sending it to browser.
-	Cookies string `json:"cookie,omitempty"`
 	// FormData is a string value for passing formdata parameters.
 	//
 	// For example it may be used for processing pages which require authentication
@@ -29,7 +27,7 @@ type BaseFetcherRequest struct {
 	//
 	// "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
 	//
-	FormData string `json:"params,omitempty"`
+	FormData string `json:"formData,omitempty"`
 }
 
 //BaseFetcherResponse struct groups Response data together after retrieving it by BaseFetcher
