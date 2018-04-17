@@ -27,7 +27,8 @@ type BaseFetcherRequest struct {
 	//
 	// "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
 	//
-	FormData string `json:"formData,omitempty"`
+	FormData  string `json:"formData,omitempty"`
+	UserToken string `json:"userToken"`
 }
 
 //BaseFetcherResponse struct groups Response data together after retrieving it by BaseFetcher
@@ -102,7 +103,6 @@ func (req BaseFetcherRequest) GetURL() string {
 	return strings.TrimRight(strings.TrimSpace(req.URL), "/")
 }
 
-
 // Host returns Host value from Request
 func (req BaseFetcherRequest) Host() (string, error) {
 	u, err := url.Parse(req.GetURL())
@@ -132,4 +132,8 @@ func (r *BaseFetcherResponse) GetHTML() (io.ReadCloser, error) {
 	}
 	readCloser := ioutil.NopCloser(strings.NewReader(r.HTML))
 	return readCloser, nil
+}
+
+func (r BaseFetcherRequest) GetUserToken() string {
+	return r.UserToken
 }
