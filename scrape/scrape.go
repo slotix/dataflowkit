@@ -360,13 +360,6 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 							logger.Error(err)
 						}
 						if detailsHost == host {
-
-							//every time when getting a response the next request will be filled with updated cookie information
-							//headers := sResponse.Response.Headers.(http.Header)
-							/* headers := sResponse.GetHeaders()
-							setCookie := headers.Get("Set-Cookie")
-							part.Details.Request.SetCookies(setCookie) */
-							//part.Details.Request.Cookies = splash.GetSetCookie(headers)
 							if !viper.GetBool("IGNORE_FETCH_DELAY") {
 								if *t.Payload.RandomizeFetchDelay {
 									//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
@@ -405,13 +398,6 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 			return nil, err
 		}
 		if url != "" {
-			//every time when getting a response the next request will be filled with updated cookie information
-			//headers := sResponse.Response.Headers.(http.Header)
-			/* headers := sResponse.GetHeaders()
-			setCookie := headers.Get("Set-Cookie")
-			//req.Cookies = splash.GetSetCookie(setCookie)
-			req.SetCookies(setCookie) */
-			//req.SetURL(url)
 			var rq fetch.FetchRequester
 			switch req.Type() {
 			case "splash":
