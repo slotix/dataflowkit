@@ -38,8 +38,6 @@ type Options struct {
 	LUA  string
 }
 
-
-
 //NewSplash creates new connection to Splash Server
 //func NewSplash(req Request, setters ...Option) (splashURL string) {
 func NewSplash(req Request) (splashURL string) {
@@ -305,8 +303,7 @@ func (req Request) Host() (string, error) {
 //Type return fetcher type
 func (req Request) Type() string {
 	return "splash"
-} 
-
+}
 
 // UnmarshalJSON convert headers to http.Header type
 // http://choly.ca/post/go-json-marshalling/
@@ -330,7 +327,6 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
-
 
 //castHeaders serves for casting headers returned by Splash to standard http.Header type
 func castHeaders(splashHeaders interface{}) (header http.Header) {
@@ -427,3 +423,6 @@ func (r Response) GetURL() string {
 	return r.Response.URL
 }
 
+func (r Request) GetUserToken() string {
+	return r.UserToken
+}

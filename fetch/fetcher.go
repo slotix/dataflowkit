@@ -8,36 +8,16 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/juju/persistent-cookiejar"
 	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/splash"
-
-	"golang.org/x/net/publicsuffix"
 )
-
-type UserCookies struct {
-	jar *cookiejar.Jar
-}
-
-var uc UserCookies
-
-func init() {
-	uc = UserCookies{}
-	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
-	jar, err := cookiejar.New(jarOpts)
-	if err != nil {
-		logger.Error("Failed to create Cookie Jar")
-
-	} else {
-		uc.jar = jar
-	}
-}
 
 //Type represents types of fetcher
 type Type string
@@ -65,6 +45,9 @@ type Fetcher interface {
 	//  Close is called when the scrape is finished, and can be used to clean up
 	//  allocated resources or perform other cleanup actions.
 	Close()
+
+	GetCookieJar() *cookiejar.Jar
+	SetCookieJar(jar *cookiejar.Jar)
 }
 
 //FetchResponser interface that must be satisfied the listed methods
@@ -91,6 +74,7 @@ type FetchRequester interface {
 	GetFormData() string
 	//  Type return type of request : base or splash
 	Type() string
+	GetUserToken() string
 }
 
 //NewFetcher creates instances of Fetcher for downloading a web page.
@@ -130,6 +114,8 @@ type BaseFetcher struct {
 	// it is handled by the scraper.  If the function returns an error, then the
 	// scrape will be aborted.
 	ProcessResponse func(*http.Response) error
+
+	jar *cookiejar.Jar
 }
 
 // SplashFetcher is a Fetcher that uses Scrapinghub splash
@@ -147,6 +133,8 @@ type SplashFetcher struct {
 	// Note: this function does NOT apply to requests made during the
 	// PrepareClient function (above).
 	PrepareRequest func(*splash.Request) error
+
+	jar *cookiejar.Jar
 }
 
 // NewSplashFetcher creates instances of SplashFetcher{} to fetch a page content from remote Scrapinghub splash service.
@@ -179,7 +167,7 @@ func (sf *SplashFetcher) Response(request FetchRequester) (FetchResponser, error
 	if err != nil {
 		return nil, err
 	}
-	req.Cookies = uc.jar.Cookies(u)
+	req.Cookies = sf.jar.AllCookies()
 	r, err := req.GetResponse()
 	if err != nil {
 		return nil, err
@@ -190,7 +178,7 @@ func (sf *SplashFetcher) Response(request FetchRequester) (FetchResponser, error
 		cookie := c.Cookie
 		cArr = append(cArr, &cookie)
 	}
-	uc.jar.SetCookies(u, cArr)
+	sf.jar.SetCookies(u, cArr)
 	return r, nil
 }
 
@@ -200,6 +188,14 @@ func (sf *SplashFetcher) Close() {
 	return
 }
 
+func (sf *SplashFetcher) GetCookieJar() *cookiejar.Jar {
+	return sf.jar
+}
+
+func (sf *SplashFetcher) SetCookieJar(jar *cookiejar.Jar) {
+	sf.jar = jar
+}
+
 // Static type assertion
 var _ Fetcher = &SplashFetcher{}
 
@@ -207,7 +203,7 @@ var _ Fetcher = &SplashFetcher{}
 // a page content from regular websites as-is
 // without running js scripts on the page.
 func NewBaseFetcher() (*BaseFetcher, error) {
-	client := &http.Client{Jar: uc.jar}
+	client := &http.Client{}
 
 	bf := &BaseFetcher{
 		client: client,
@@ -251,12 +247,14 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 		return nil, &errs.BadRequest{err}
 	}
 
+	bf.client.Jar = bf.jar
+
 	r := request.(BaseFetcherRequest)
 	var err error
 	var req *http.Request
 	var resp *http.Response
 
-	if request.GetFormData() == "" {		
+	if request.GetFormData() == "" {
 		req, err = http.NewRequest(r.Method, r.URL, nil)
 		if err != nil {
 			return nil, err
@@ -328,6 +326,14 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 // allocated resources or perform other cleanup actions.
 func (bf *BaseFetcher) Close() {
 	return
+}
+
+func (bf *BaseFetcher) GetCookieJar() *cookiejar.Jar {
+	return bf.jar
+}
+
+func (bf *BaseFetcher) SetCookieJar(jar *cookiejar.Jar) {
+	bf.jar = jar
 }
 
 // Static type assertion
