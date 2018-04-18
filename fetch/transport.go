@@ -9,7 +9,7 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/log"
+	"github.com/sirupsen/logrus"
 
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
@@ -18,21 +18,10 @@ import (
 )
 
 // NewHttpHandler mounts all of the service endpoints into an http.Handler.
-func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger) http.Handler {
-	/*
-		router := httprouter.New()
-		var svc Service
-		fetchHandler := httptransport.NewServer(
-			MakeFetchEndpoint(svc),
-			decodeFetchRequest,
-			encodeFetchResponse,
-		)
-		router.Handler("POST", "/app/fetch", fetchHandler)
-		return router
-	*/
+func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logger) http.Handler {
 	r := mux.NewRouter()
 	options := []httptransport.ServerOption{
-		httptransport.ServerErrorLogger(logger),
+		//httptransport.ServerErrorLogger(logger),
 		httptransport.ServerErrorEncoder(encodeError),
 	}
 
@@ -65,6 +54,16 @@ func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger) 
 	r.Methods("GET").Path("/ping").HandlerFunc(healthCheckHandler)
 
 	return r
+}
+
+//DecodeSplashFetcherRequest decodes request sent to remote Splash service
+//if error occures, server returns 400 Bad Request
+func DecodeFetcherRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	var request splash.Request
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		return nil, &errs.BadRequest{err} //err
+	}
+	return request, nil
 }
 
 //DecodeSplashFetcherRequest decodes request sent to remote Splash service

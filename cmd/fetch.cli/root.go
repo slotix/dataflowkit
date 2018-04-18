@@ -29,7 +29,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-kit/kit/log"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/healthcheck"
@@ -80,7 +79,7 @@ var RootCmd = &cobra.Command{
 			ch := make(chan error)
 
 			go func() {
-				svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH"), log.NewNopLogger())
+				svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH"))
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %v\n", err)
 					os.Exit(1)

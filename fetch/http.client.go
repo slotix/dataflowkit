@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/slotix/dataflowkit/splash"
 )
@@ -21,7 +20,7 @@ import (
 // remote instance. We expect instance to come from a service discovery system,
 // so likely of the form "host:port". We bake-in certain middlewares,
 // implementing the client library pattern.
-func NewHTTPClient(instance string, logger log.Logger) (Service, error) {
+func NewHTTPClient(instance string /*, logger *logrus.Logger*/) (Service, error) {
 	// Quickly sanitize the instance string.
 	if !strings.HasPrefix(instance, "http") {
 		instance = "http://" + instance
@@ -158,7 +157,7 @@ func (e Endpoints) Response(req FetchRequester) (FetchResponser, error) {
 	//switch req.(type) {
 	switch req.Type() {
 	//case  BaseFetcherRequest, *BaseFetcherRequest:
-	case  "base":
+	case "base":
 		resp, err := e.BaseResponseEndpoint(ctx, req)
 		if err != nil {
 			return nil, err
@@ -166,7 +165,7 @@ func (e Endpoints) Response(req FetchRequester) (FetchResponser, error) {
 		response := resp.(BaseFetcherResponse)
 		return &response, nil
 	//case splash.Request, *splash.Request:
-	case  "splash":
+	case "splash":
 		resp, err := e.SplashResponseEndpoint(ctx, req)
 		if err != nil {
 			return nil, err

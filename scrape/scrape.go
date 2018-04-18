@@ -17,7 +17,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/PuerkitoBio/goquery"
-	gklog "github.com/go-kit/kit/log"
 	"github.com/segmentio/ksuid"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/extract"
@@ -32,7 +31,7 @@ import (
 var logger *logrus.Logger
 
 func init() {
-	logger = log.NewLogger()
+	logger = log.NewLogger(true)
 }
 
 // NewTask creates new task to parse fetched page following the rules from Payload.
@@ -450,7 +449,7 @@ func (p Payload) selectors() ([]string, error) {
 
 //response sends request to fetch service and returns fetch.FetchResponser
 func response(req fetch.FetchRequester) (fetch.FetchResponser, error) {
-	svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH"), gklog.NewNopLogger())
+	svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH") /*, gklog.NewNopLogger()*/)
 	if err != nil {
 		logger.Error(err)
 	}

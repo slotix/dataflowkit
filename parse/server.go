@@ -7,9 +7,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	"github.com/go-kit/kit/log"
+	"github.com/slotix/dataflowkit/logger"
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
 )
@@ -21,14 +20,7 @@ func Start(DFKParse string) {
 	ctx := context.Background()
 	errChan := make(chan error)
 
-	// Logging domain.
-	var logger log.Logger
-	{
-		logger = log.NewLogfmtLogger(os.Stdout)
-		//logger = log.With(logger, "ts", log.DefaultTimestampUTC)
-		logger = log.With(logger, "ts", time.Now().Format("Jan _2 15:04:05"))
-		//logger = log.With(logger, "caller", log.DefaultCaller)
-	}
+	logger := log.NewLogger(false)
 
 	var svc Service
 	svc = ParseService{}
@@ -47,7 +39,7 @@ func Start(DFKParse string) {
 		ParseEndpoint: MakeParseEndpoint(svc),
 	}
 
-	r := MakeHttpHandler(ctx, endpoints, logger)
+	r := NewHttpHandler(ctx, endpoints, logger)
 
 	// HTTP transport
 	go func() {
