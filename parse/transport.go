@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/log"
+	"github.com/sirupsen/logrus"
 
 	"context"
 
@@ -116,21 +116,10 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // MakeHttpHandler mounts all of the service endpoints into an http.Handler.
-func MakeHttpHandler(ctx context.Context, endpoint Endpoints, logger log.Logger) http.Handler {
-	/*
-		router := httprouter.New()
-		var svc Service
-		fetchHandler := httptransport.NewServer(
-			MakeFetchEndpoint(svc),
-			decodeFetchRequest,
-			encodeFetchResponse,
-		)
-		router.Handler("POST", "/app/fetch", fetchHandler)
-		return router
-	*/
+func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logger) http.Handler {
 	r := mux.NewRouter()
 	options := []httptransport.ServerOption{
-		httptransport.ServerErrorLogger(logger),
+		//httptransport.ServerErrorLogger(logger),
 		httptransport.ServerErrorEncoder(encodeError),
 	}
 

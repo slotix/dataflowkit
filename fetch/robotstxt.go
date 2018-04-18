@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-kit/kit/log"
 	"github.com/spf13/viper"
 	"github.com/temoto/robotstxt"
 )
@@ -18,7 +17,7 @@ func IsRobotsTxt(url string) bool {
 
 //fetchRobots is used for getting robots.txt files.
 func fetchRobots(req BaseFetcherRequest) (*BaseFetcherResponse, error) {
-	svc, err := NewHTTPClient(viper.GetString("DFK_FETCH"), log.NewNopLogger())
+	svc, err := NewHTTPClient(viper.GetString("DFK_FETCH") /*, log.NewNopLogger()*/)
 	if err != nil {
 		logger.Error(err)
 	}
@@ -30,14 +29,23 @@ func fetchRobots(req BaseFetcherRequest) (*BaseFetcherResponse, error) {
 	return resp.(*BaseFetcherResponse), nil
 }
 
+//assembleRobotstxtURL robots.txt URL from URL
+func assembleRobotstxtURL(url string) (string, error) {
+	parsedURL, err := neturl.Parse(url)
+	if err != nil {
+		return "", err
+	}
+	//assemble robotsURL from req.URL
+	robotsURL := fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
+	return robotsURL, nil
+}
+
 //RobotstxtData generates robots.txt url, retrieves its content through API fetch endpoint.
 func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
-	parsedURL, err := neturl.Parse(url)
+	robotsURL, err := assembleRobotstxtURL(url)
 	if err != nil {
 		return nil, err
 	}
-	//generate robotsURL from req.URL
-	robotsURL := fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
 	r := BaseFetcherRequest{URL: robotsURL, Method: "GET"}
 
 	//response, err := fetchRobots(r)
