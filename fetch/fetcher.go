@@ -247,7 +247,9 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 		return nil, &errs.BadRequest{err}
 	}
 
-	bf.client.Jar = bf.jar
+	if bf.jar != nil {
+		bf.client.Jar = bf.jar
+	}
 
 	r := request.(BaseFetcherRequest)
 	var err error
