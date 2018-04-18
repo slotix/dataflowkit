@@ -55,10 +55,11 @@ func Test_storageMiddleware(t *testing.T) {
 
 func Test_IGNORE_CACHE_INFO(t *testing.T) {
 	viper.Set("IGNORE_CACHE_INFO", true)
-	var cookies []*http.Cookie
+	viper.Set("STORAGE_TYPE","Diskv")
 	req := splash.Request{
 		URL:    "http://google.com",
-		FormData: "", Cookies: cookies, LUA: "",
+		FormData: "",  LUA: "",
+		UserToken: "12345",
 	}
 	//Loading from remote server
 	start := time.Now()
