@@ -88,6 +88,11 @@ var RootCmd = &cobra.Command{
 			}
 		}
 		if allAlive {
+			if skipStorageMW {
+				fmt.Printf("Storage %s\n", "None")
+			} else{
+				fmt.Printf("Storage %s\n", storageType)
+			}		
 			parseServer := viper.GetString("DFK_PARSE")
 			fmt.Printf("Starting Server %s\n", parseServer)
 			parse.Start(parseServer)
