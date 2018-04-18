@@ -43,55 +43,65 @@ func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 	if err != nil {
 		logger.Error(err)
 	}
-	storageType, err = storage.TypeString(viper.GetString("STORAGE_TYPE"))
-	if err != nil {
-		return nil, err
-	}
-	s := storage.NewStore(storageType)
-	cookies, _ := s.Read(req.GetUserToken())
-	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
-	jar, err := cookiejar.New(jarOpts)
-	if err != nil {
-		logger.Error("Failed to create Cookie Jar")
+	var (
+		jar     *cookiejar.Jar
+		cookies []byte
+		cArr    []*http.Cookie
+		s       storage.Store
+	)
+	if req.GetUserToken() != "" {
+		storageType, err = storage.TypeString(viper.GetString("STORAGE_TYPE"))
+		if err != nil {
+			return nil, err
+		}
+		s = storage.NewStore(storageType)
+		cookies, _ = s.Read(req.GetUserToken())
+		jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
+		jar, err = cookiejar.New(jarOpts)
+		if err != nil {
+			logger.Error("Failed to create Cookie Jar")
 
-	}
-	cArr := []*http.Cookie{}
-	if len(cookies) != 0 {
-		err = json.Unmarshal(cookies, &cArr)
-		if err != nil {
-			return nil, err
 		}
-		u, err := url.Parse(req.GetURL())
-		if err != nil {
-			return nil, err
-		}
-		tempCarr := []*http.Cookie{}
-		for i := 0; i < len(cArr); i++ {
-			c := cArr[i]
-			if u.Host == c.Domain {
-				tempCarr = append(tempCarr, c)
-				cArr = append(cArr[:i], cArr[i+1:]...)
-				i--
+		cArr = []*http.Cookie{}
+		if len(cookies) != 0 {
+			err = json.Unmarshal(cookies, &cArr)
+			if err != nil {
+				return nil, err
 			}
+			u, err := url.Parse(req.GetURL())
+			if err != nil {
+				return nil, err
+			}
+			tempCarr := []*http.Cookie{}
+			for i := 0; i < len(cArr); i++ {
+				c := cArr[i]
+				if u.Host == c.Domain {
+					tempCarr = append(tempCarr, c)
+					cArr = append(cArr[:i], cArr[i+1:]...)
+					i--
+				}
+			}
+			jar.SetCookies(u, tempCarr)
 		}
-		jar.SetCookies(u, tempCarr)
+		fetcher.SetCookieJar(jar)
 	}
-	fetcher.SetCookieJar(jar)
 	//res, err := fetcher.Fetch(req)
 	res, err := fetcher.Response(req)
 	if err != nil {
 		return nil, err
 	}
-	jar = fetcher.GetCookieJar()
-	cArr = append(cArr, jar.AllCookies()...)
-	cookies, err = json.Marshal(cArr)
-	logger.Info(string(cookies))
-	if err != nil {
-		return nil, err
-	}
-	err = s.Write(req.GetUserToken(), cookies, 0)
-	if err != nil {
-		return nil, err
+	if req.GetUserToken() != "" {
+		jar = fetcher.GetCookieJar()
+		cArr = append(cArr, jar.AllCookies()...)
+		cookies, err = json.Marshal(cArr)
+		logger.Info(string(cookies))
+		if err != nil {
+			return nil, err
+		}
+		err = s.Write(req.GetUserToken(), cookies, 0)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }
