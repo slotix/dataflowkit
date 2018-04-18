@@ -39,7 +39,8 @@ type Request struct {
 	Cookies []*http.Cookie `json:"cookie,omitempty"`
 	//LUA Splash custom script
 	LUA       string `json:"lua,omitempty"`
-	UserToken string
+	//UserToken identifies user to keep personal cookies information.
+	UserToken string `json:"userToken,omitempty"`
 }
 
 //Cookie - Custom Cookie struct is used to avoid problems with unmarshalling data with invalid Expires field which has time.Time type for original http.Cookie struct.
