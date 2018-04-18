@@ -167,7 +167,11 @@ func (sf *SplashFetcher) Response(request FetchRequester) (FetchResponser, error
 	if err != nil {
 		return nil, err
 	}
-	req.Cookies = sf.jar.AllCookies()
+
+	if sf.jar != nil {
+		req.Cookies = sf.jar.AllCookies()
+	}
+
 	r, err := req.GetResponse()
 	if err != nil {
 		return nil, err
