@@ -27,7 +27,8 @@ type BaseFetcherRequest struct {
 	//
 	// "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
 	//
-	FormData  string `json:"formData,omitempty"`
+	FormData string `json:"formData,omitempty"`
+	//UserToken identifies user to keep personal cookies information.
 	UserToken string `json:"userToken"`
 }
 
