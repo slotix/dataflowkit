@@ -24,7 +24,7 @@ var logger *logrus.Logger
 
 func init() {
 	viper.AutomaticEnv() // read in environment variables that match
-	logger = log.NewLogger()
+	logger = log.NewLogger(true)
 }
 
 // Options struct inclued parameters for Splash Connection

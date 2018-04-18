@@ -30,7 +30,7 @@ import (
 var logger *logrus.Logger
 
 func init() {
-	logger = log.NewLogger()
+	logger = log.NewLogger(true)
 }
 
 // GenerateMD5 returns MD5 hash of provided byte array.

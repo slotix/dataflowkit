@@ -38,7 +38,7 @@ func (hook ContextHook) Fire(entry *logrus.Entry) error {
 		if !strings.Contains(name, "github.com/sirupsen/logrus") {
 			file, line := fu.FileLine(pc[i] - 1)
 			entry.Data["file"] = path.Base(file)
-			entry.Data["func"] = path.Base(name)
+			//entry.Data["func"] = path.Base(name)
 			entry.Data["line"] = line
 			break
 		}
@@ -47,9 +47,11 @@ func (hook ContextHook) Fire(entry *logrus.Entry) error {
 }
 
 //NewLogger creates New Logger instance.
-func NewLogger() *logrus.Logger {
+func NewLogger(withContext bool) *logrus.Logger {
 	logger := logrus.New()
 	logrus.SetOutput(os.Stdout)
-	logger.AddHook(ContextHook{})
+	if withContext {
+		logger.AddHook(ContextHook{})
+	}
 	return logger
 }
