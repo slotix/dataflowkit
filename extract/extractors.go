@@ -20,7 +20,7 @@ import (
 var logger *logrus.Logger
 
 func init() {
-	logger = log.NewLogger()
+	logger = log.NewLogger(true)
 }
 
 // The Extractor interface represents something that can extract data from

@@ -12,7 +12,7 @@ import (
 var logger *logrus.Logger
 
 func init() {
-	logger = log.NewLogger()
+	logger = log.NewLogger(true)
 }
 
 //Type represent storage type
