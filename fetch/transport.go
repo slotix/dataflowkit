@@ -2,7 +2,6 @@ package fetch
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 
@@ -58,20 +57,10 @@ func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logg
 
 //DecodeSplashFetcherRequest decodes request sent to remote Splash service
 //if error occures, server returns 400 Bad Request
-func DecodeFetcherRequest(ctx context.Context, r *http.Request) (interface{}, error) {
-	var request splash.Request
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		return nil, &errs.BadRequest{err} //err
-	}
-	return request, nil
-}
-
-//DecodeSplashFetcherRequest decodes request sent to remote Splash service
-//if error occures, server returns 400 Bad Request
 func DecodeSplashFetcherRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var request splash.Request
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		return nil, &errs.BadRequest{err} //err
+		return nil, &errs.BadRequest{err}
 	}
 	return request, nil
 }
@@ -81,24 +70,19 @@ func DecodeSplashFetcherRequest(ctx context.Context, r *http.Request) (interface
 func DecodeBaseFetcherRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var request BaseFetcherRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		return nil, &errs.BadRequest{err} //err
+		return nil, &errs.BadRequest{err}
 	}
 	return request, nil
 }
 
-//EncodeFetcherContent encodes HTML Content returned by SplashFetcher/ BaseFetcher
+//EncodeFetcherContent encodes HTML Content returned by fetcher
 func EncodeFetcherContent(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	if e, ok := response.(errorer); ok && e.error() != nil {
-		// Not a Go kit transport error, but a business-logic error.
-		// Provide those as HTTP errors.
-		encodeError(ctx, e.error(), w)
-		return nil
-	}
 	fetcherContent, ok := response.(io.ReadCloser)
 	if !ok {
-		encodeError(ctx, errors.New("invalid Content from SplashFetcher"), w)
-		//return errors.New("invalid Splash Response")
+		e := errs.BadGateway{What: "content"}
+		encodeError(ctx, &e, w)
 		return nil
+		//encodeError(ctx, errors.New("invalid Content from Fetcher"), w)
 	}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, err := io.Copy(w, fetcherContent)
@@ -110,18 +94,14 @@ func EncodeFetcherContent(ctx context.Context, w http.ResponseWriter, response i
 	return nil
 }
 
-//EncodeSplashFetcherResponse encodes response returned by Splash server
+//EncodeFetcherResponse encodes response returned by fetcher
 func EncodeFetcherResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	if e, ok := response.(errorer); ok && e.error() != nil {
-		// Not a Go kit transport error, but a business-logic error.
-		// Provide those as HTTP errors.
-		encodeError(ctx, e.error(), w)
-		return nil
-	}
-	//	fetcherResponse, ok := response.(*splash.Response)
 	fetcherResponse, ok := response.(FetchResponser)
 	if !ok {
-		return errors.New("invalid Fetcher Response")
+		//return errors.New("invalid Fetcher Response")
+		e := errs.BadGateway{What: "response"}
+		encodeError(ctx, &e, w)
+		return nil
 	}
 	//statusCode := fetcherResponse.GetStatusCode()
 	//if statusCode != 200 {
@@ -133,22 +113,17 @@ func EncodeFetcherResponse(ctx context.Context, w http.ResponseWriter, response 
 
 	data, err := json.Marshal(fetcherResponse)
 	if err != nil {
-		return err
+		encodeError(ctx, err, w)
+		return nil
 	}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, err = w.Write(data)
 
 	if err != nil {
-		return err
+		encodeError(ctx, err, w)
+		return nil
 	}
 	return nil
-}
-
-// errorer is implemented by all concrete response types that may contain
-// errors. It allows us to change the HTTP response code without needing to
-// trigger an endpoint (transport-level) error.
-type errorer interface {
-	error() error
 }
 
 // encodeError encodes erroneous responses and writes http status header.
@@ -156,6 +131,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	if err == nil {
 		panic("encodeError with nil error")
 	}
+	
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	//	logger.Printf("Type: %T\n", err)
 
@@ -181,6 +157,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		//return 504 Status
 		httpStatus = http.StatusGatewayTimeout
 	}
+	logger.Error(err)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(httpStatus)
 	//AWS error payload should looks like
@@ -196,6 +173,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": err.Error(),
 	})
+	
 }
 
 // Endpoints wrapper

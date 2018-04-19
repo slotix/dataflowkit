@@ -42,13 +42,6 @@ func EncodeParseResponse(_ context.Context, w http.ResponseWriter, response inte
 	return nil
 }
 
-// errorer is implemented by all concrete response types that may contain
-// errors. It allows us to change the HTTP response code without needing to
-// trigger an endpoint (transport-level) error.
-type errorer interface {
-	error() error
-}
-
 // encodeError encodes erroneous responses and writes http status header.
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	if err == nil {
@@ -75,6 +68,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		//return 504 Status
 		httpStatus = http.StatusGatewayTimeout
 	}
+	logger.Error(err)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(httpStatus)
 	//AWS error payload should looks like
