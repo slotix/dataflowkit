@@ -135,6 +135,7 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 		"http://httpbin.org/status/400",
 		"http://httpbin.org/status/403",
 		//"http://httpbin.org/status/500",
+		"http://httpbin.org/status/502",
 		"http://httpbin.org/status/504",
 		"http://google",
 		"google.com",
