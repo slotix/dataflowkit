@@ -3,7 +3,6 @@ package fetch
 import (
 	"io"
 
-	"github.com/sirupsen/logrus"
 	"github.com/slotix/dataflowkit/errs"
 )
 
@@ -24,19 +23,21 @@ func (mw robotstxtMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err 
 	url := req.GetURL()
 	//to avoid recursion while retrieving robots.txt
 	if !IsRobotsTxt(url) {
-		robotsData, err := RobotstxtData(url)
-		if err != nil {
-			robotsURL, err1 := assembleRobotstxtURL(url)
-			if err1 != nil {
-				return nil, err1
-			}
-			//robots.txt may be empty but we have to continue processing the page
-			logger.WithFields(
-				logrus.Fields{
-					"err": err,
-				}).Warn("Robots.txt URL: ", robotsURL)
+		robotsData, _ := RobotstxtData(url)
+		//robots.txt may be empty but we have to continue processing the page
+		
+		//if err != nil {
+			// robotsURL, err1 := assembleRobotstxtURL(url)
+			// if err1 != nil {
+			// 	return nil, err1
+			// }
+			
+			// logger.WithFields(
+			// 	logrus.Fields{
+			// 		"err": err,
+			// 	}).Warn("Robots.txt URL: ", robotsURL)
 
-		}
+		//}
 		if !AllowedByRobots(url, robotsData) {
 			//no need a body retrieve to get information about redirects
 			r := BaseFetcherRequest{URL: url, Method: "HEAD"}
