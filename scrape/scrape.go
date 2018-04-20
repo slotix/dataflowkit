@@ -228,7 +228,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
 func (t *Task) scrape(scraper *Scraper) (*Results, error) {
-	logger.Info(time.Now())
+	//logger.Info(time.Now())
 	output := [][]map[string]interface{}{}
 
 	req := scraper.Request
@@ -245,8 +245,16 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 	if _, ok := t.Robots[host]; !ok {
 		robots, err := fetch.RobotstxtData(url)
 		if err != nil {
+			robotsURL, err1 := fetch.AssembleRobotstxtURL(url)
+			if err1 != nil {
+				return nil, err1
+			}
 			t.Visited[url] = err
-			logger.Error(err)
+			logger.WithFields(
+				logrus.Fields{
+					"err": err,
+				}).Warn("Robots.txt URL: ", robotsURL)
+			//logger.Warning(err)
 			//return err
 		}
 		t.Robots[host] = robots

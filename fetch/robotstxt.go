@@ -29,8 +29,8 @@ func fetchRobots(req BaseFetcherRequest) (*BaseFetcherResponse, error) {
 	return resp.(*BaseFetcherResponse), nil
 }
 
-//assembleRobotstxtURL robots.txt URL from URL
-func assembleRobotstxtURL(url string) (string, error) {
+//AssembleRobotstxtURL robots.txt URL from URL
+func AssembleRobotstxtURL(url string) (string, error) {
 	parsedURL, err := neturl.Parse(url)
 	if err != nil {
 		return "", err
@@ -42,7 +42,7 @@ func assembleRobotstxtURL(url string) (string, error) {
 
 //RobotstxtData generates robots.txt url, retrieves its content through API fetch endpoint.
 func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
-	robotsURL, err := assembleRobotstxtURL(url)
+	robotsURL, err := AssembleRobotstxtURL(url)
 	if err != nil {
 		return nil, err
 	}

@@ -35,11 +35,13 @@ func (mw loggingMiddleware) Parse(payload scrape.Payload) (output io.ReadCloser,
 			mw.logger.WithFields(
 				logrus.Fields{
 					"err":     err,
+					"fetcher": payload.FetcherType,
 					"took":    time.Since(begin),
 				}).Error("Parse URL: ", url)
 		} else {
 			mw.logger.WithFields(
 				logrus.Fields{
+					"fetcher": payload.FetcherType,
 					"took":    time.Since(begin),
 				}).Info("Fetch URL: ", url)
 		}
