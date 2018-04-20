@@ -64,8 +64,6 @@ func init() {
 func TestBaseFetcher_Fetch(t *testing.T) {
 	fetcher, err := NewFetcher(Base)
 	assert.Nil(t, err, "Expected no error")
-	err = fetcher.Prepare()
-	assert.Nil(t, err, "Expected no error")
 	req := BaseFetcherRequest{
 		URL:    "http://" + addr,
 		Method: "GET",
@@ -101,6 +99,22 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 		t.Log(err)
 		assert.Error(t, err, fmt.Sprintf("%T", err)+"error returned")
 	}
+	//Test Host()
+	req = BaseFetcherRequest{
+		URL: "http://httpbin.org/status/200",
+	}
+	host, err := req.Host()
+	assert.NoError(t, err)
+	assert.Equal(t, "httpbin.org", host, "Test BaseFetcherRequest Host()")
+	req = BaseFetcherRequest{
+		URL: "Invalid.%$^host",
+	}
+	host, err = req.Host()
+	assert.Error(t, err)
+
+	//Test Type()
+	assert.Equal(t, "base", req.Type(), "Test BaseFetcherRequest Type()")
+
 	//fetch robots.txt data
 	resp, err = fetcher.Response(BaseFetcherRequest{
 		URL:    "http://" + addr + "/robots.txt",
@@ -118,8 +132,6 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 	viper.Set("SPLASH_WAIT", 0.5)
 
 	fetcher, err := NewFetcher(Splash)
-	assert.Nil(t, err, "Expected no error")
-	err = fetcher.Prepare()
 	assert.Nil(t, err, "Expected no error")
 
 	req := splash.Request{
@@ -147,6 +159,22 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 		_, err := fetcher.Fetch(req)
 		assert.Error(t, err, "error returned")
 	}
+	//Test Host()
+	req = splash.Request{
+		URL: "http://httpbin.org/status/200",
+	}
+	host, err := req.Host()
+	assert.NoError(t, err)
+	assert.Equal(t, "httpbin.org", host)
+	req = splash.Request{
+		URL: "Invalid.%$^host",
+	}
+	host, err = req.Host()
+	assert.Error(t, err)
+
+	//Test Type()
+	assert.Equal(t, "splash", req.Type(), "Test splash.Request Type()")
+
 }
 
 func TestNewFetcher_invalid(t *testing.T) {
