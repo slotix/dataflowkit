@@ -36,16 +36,10 @@ const (
 // Note: Fetchers may or may not be safe to use concurrently.  Please read the
 // documentation for each fetcher for more details.
 type Fetcher interface {
-	//  Prepare is called once at the beginning of the scrape.
-	Prepare() error
 	//  Response return response after fetch Request.
 	Response(request FetchRequester) (FetchResponser, error)
 	//  Fetch is called to retrieve HTML content of a document from the remote server.
 	Fetch(request FetchRequester) (io.ReadCloser, error)
-	//  Close is called when the scrape is finished, and can be used to clean up
-	//  allocated resources or perform other cleanup actions.
-	Close()
-
 	GetCookieJar() *cookiejar.Jar
 	SetCookieJar(jar *cookiejar.Jar)
 }
@@ -95,26 +89,6 @@ func NewFetcher(t Type) (fetcher Fetcher, err error) {
 // client to fetch URLs.
 type BaseFetcher struct {
 	client *http.Client
-
-	// PrepareClient prepares this fetcher's http.Client for usage.  Use this
-	// function to do things like logging in.  If the function returns an error,
-	// the scrape is aborted.
-	PrepareClient func(*http.Client) error
-
-	// PrepareRequest prepares each request that will be sent, prior to sending.
-	// This is useful for, e.g. setting custom HTTP headers, changing the User-
-	// Agent, and so on.  If the function returns an error, then the scrape will
-	// be aborted.
-	//
-	// Note: this function does NOT apply to requests made during the
-	// PrepareClient function (above).
-	PrepareRequest func(*http.Request) error
-
-	// ProcessResponse modifies a response that is returned from the server before
-	// it is handled by the scraper.  If the function returns an error, then the
-	// scrape will be aborted.
-	ProcessResponse func(*http.Response) error
-
 	jar *cookiejar.Jar
 }
 
@@ -122,18 +96,6 @@ type BaseFetcher struct {
 // to fetch URLs. Splash is a javascript rendering service
 // Read more at https://github.com/scrapinghub/splash
 type SplashFetcher struct {
-	// PrepareSplash is called once at the beginning of the scrape. It is not used currently
-	PrepareSplash func() error
-
-	// PrepareRequest prepares each request that will be sent, prior to sending.
-	// This is useful for, e.g. setting custom HTTP headers, changing the User-
-	// Agent, and so on.  If the function returns an error, then the scrape will
-	// be aborted.
-	//
-	// Note: this function does NOT apply to requests made during the
-	// PrepareClient function (above).
-	PrepareRequest func(*splash.Request) error
-
 	jar *cookiejar.Jar
 }
 
@@ -143,13 +105,6 @@ func NewSplashFetcher() (*SplashFetcher, error) {
 	return sf, nil
 }
 
-// Prepare is called once at the beginning of the scrape.
-func (sf *SplashFetcher) Prepare() error {
-	if sf.PrepareSplash != nil {
-		return sf.PrepareSplash()
-	}
-	return nil
-}
 
 // Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (sf *SplashFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
@@ -186,11 +141,6 @@ func (sf *SplashFetcher) Response(request FetchRequester) (FetchResponser, error
 	return r, nil
 }
 
-// Close is called when the scrape is finished, and can be used to clean up
-// allocated resources or perform other cleanup actions.
-func (sf *SplashFetcher) Close() {
-	return
-}
 
 func (sf *SplashFetcher) GetCookieJar() *cookiejar.Jar {
 	return sf.jar
@@ -215,13 +165,6 @@ func NewBaseFetcher() (*BaseFetcher, error) {
 	return bf, nil
 }
 
-// Prepare is called once at the beginning of the scrape.
-func (bf *BaseFetcher) Prepare() error {
-	if bf.PrepareClient != nil {
-		return bf.PrepareClient(bf.client)
-	}
-	return nil
-}
 
 // Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (bf *BaseFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
@@ -276,11 +219,6 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Content-Length", strconv.Itoa(len(formData.Encode())))
 	}
-	if bf.PrepareRequest != nil {
-		if err = bf.PrepareRequest(req); err != nil {
-			return nil, err
-		}
-	}
 
 	resp, err = bf.client.Do(req)
 	if err != nil {
@@ -319,19 +257,7 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 
 	//set Cache control parameters
 	response.SetCacheInfo()
-
-	if bf.ProcessResponse != nil {
-		if err = bf.ProcessResponse(resp); err != nil {
-			return nil, err
-		}
-	}
 	return &response, err
-}
-
-// Close is called when the scrape is finished, and can be used to clean up
-// allocated resources or perform other cleanup actions.
-func (bf *BaseFetcher) Close() {
-	return
 }
 
 func (bf *BaseFetcher) GetCookieJar() *cookiejar.Jar {
