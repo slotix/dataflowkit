@@ -91,9 +91,8 @@ func fillStruct(m map[string]interface{}, s interface{}) error {
 }
 
 func setField(obj interface{}, name string, value interface{}) error {
-	//logger.Info("%T, %t", obj, obj)
 	structValue := reflect.ValueOf(obj).Elem()
-	//Value which come from json usually is in lowercase but outgoing structs may contain fields in Title Case or in UPPERCASE - f.e. URL. So we should check if there are fields in Title case or upper case before skipping non-existent fields.
+	//Outgoing structs may contain fields in Title Case or in UPPERCASE - f.e. URL. So we should check if there are fields in Title case or upper case before skipping non-existent fields.
 	//It is unlikely there is a situation when there are several fields like url, Url, URL in the same structure.
 	fValues := []reflect.Value{
 		structValue.FieldByName(name),
@@ -115,7 +114,7 @@ func setField(obj interface{}, name string, value interface{}) error {
 	//	}
 
 	if !structFieldValue.CanSet() {
-		return fmt.Errorf("Cannot set %s field value", name)
+		return fmt.Errorf("Cannot set field value: %s", name)
 	}
 
 	structFieldType := structFieldValue.Type()
