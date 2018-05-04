@@ -129,7 +129,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 	for _, f := range p.Fields {
 		params := make(map[string]interface{})
 		if f.Extractor.Params != nil {
-			params = f.Extractor.Params.(map[string]interface{})
+			params = f.Extractor.Params
 		}
 		var err error
 
@@ -177,6 +177,8 @@ func (p Payload) fields2parts() ([]Part, error) {
 				r := &extract.Regex{}
 				regExp := params["regexp"]
 				r.Regex = regexp.MustCompile(regExp.(string))
+				//it is obligatory parameter and we don't need to add it again in further fillStruct() func. So we can delete it here
+				delete(params, "regexp");
 				e = r
 			case "const":
 				//	c := &extract.Const{Val: params["value"]}

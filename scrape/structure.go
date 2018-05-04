@@ -18,7 +18,7 @@ import (
 type Extractor struct {
 	Types []string `json:"types"`
 	// Params are unique for each type
-	Params  interface{} `json:"params"`
+	Params  map[string]interface{} `json:"params"`
 	Filters []string    `json:"filters"`
 }
 
