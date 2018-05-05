@@ -29,24 +29,13 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	//fetcher type from Payload structure takes precedence over FETCHER_TYPE flag value
-	fetcherType := p.FetcherType
-	if fetcherType == ""{
-		fetcherType = viper.GetString("FETCHER_TYPE")
-	}
-
-	var request fetch.FetchRequester
-	switch strings.ToLower(fetcherType) {
-	case "splash":
-		request = &splash.Request{}
-	case "base":
-		request = &fetch.BaseFetcherRequest{}
-	default:
-		err := errors.New("invalid fetcher type specified")
-		logger.Error(err.Error())
+	request, err := p.initRequest()
+	if err != nil {
 		return err
 	}
-	err := fillStruct(aux.Request.(map[string]interface{}), request)
+
+	
+	err = fillStruct(aux.Request.(map[string]interface{}), request)
 		if err != nil {
 			return err
 		}
@@ -76,6 +65,41 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 		p.PaginateResults = &pag
 	}
 	return nil
+}
+
+func (p *Payload) initRequest() (fetch.FetchRequester, error) {
+	//fetcher type from Payload structure takes precedence over FETCHER_TYPE flag value
+	fetcherType := p.FetcherType
+	if fetcherType == "" {
+		fetcherType = viper.GetString("FETCHER_TYPE")
+	}
+
+	var request fetch.FetchRequester
+	switch strings.ToLower(fetcherType) {
+	case "splash":
+		if p.Request == nil {
+			request = &splash.Request{}
+		} else {
+			request = &splash.Request{
+				URL:       p.Request.GetURL(),
+				FormData:  p.Request.GetFormData(),
+				UserToken: p.Request.GetUserToken()}
+		}
+	case "base":
+		if p.Request == nil {
+			request = &fetch.BaseFetcherRequest{}
+		} else {
+			request = &fetch.BaseFetcherRequest{
+				URL:       p.Request.GetURL(),
+				FormData:  p.Request.GetFormData(),
+				UserToken: p.Request.GetUserToken()}
+		}
+	default:
+		err := errors.New("invalid fetcher type specified")
+		logger.Error(err.Error())
+		return nil, err
+	}
+	return request, nil
 }
 
 //fillStruct fills s Structure with values from m map
