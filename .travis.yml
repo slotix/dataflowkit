@@ -15,7 +15,7 @@ before_install:
   #- docker run -d -it -p 8000:8000 slotix/dfk-fetch
   - go get -v github.com/golang/lint/golint
   - go get -t -v ./...
-  - docker-compose up
+  - docker-compose up -d
 
 script: ./test.sh
  
