@@ -247,8 +247,8 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 	//logger.Info(time.Now())
 	output := [][]map[string]interface{}{}
 
-	//req := scraper.Request
-	req := t.Payload.Request
+	req := scraper.Request
+	//req := t.Payload.Request
 	url := req.GetURL()
 
 	var numPages int
