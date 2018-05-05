@@ -83,7 +83,7 @@ func TestPayload_UnmarshalJSON(t *testing.T) {
 				Selector: "#product-container img",
 				Extractor: Extractor{
 					Types:   []string{"alt", "src", "width", "height"},
-					Params:  interface{}(nil),
+					Params:  map[string]interface{}(nil),
 					Filters: []string{"trim", "upperCase"}},
 				Details: (*details)(nil)},
 			Field{
