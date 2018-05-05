@@ -57,7 +57,18 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	//scrape request and return results.
 	results, err := task.scrape(scraper)
 	if err != nil {
-		return nil, err
+		logger.Error(err)
+		task.Payload.FetcherType = "splash"
+		request, err := task.Payload.initRequest()
+		if err != nil {
+			return nil, err
+		}
+		task.Payload.Request = nil
+		task.Payload.Request = request
+		results, err = task.scrape(scraper)
+		if err != nil {
+			return nil, err
+		}
 	}
 	//logger.Info(task.Visited)
 
@@ -178,7 +189,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 				regExp := params["regexp"]
 				r.Regex = regexp.MustCompile(regExp.(string))
 				//it is obligatory parameter and we don't need to add it again in further fillStruct() func. So we can delete it here
-				delete(params, "regexp");
+				delete(params, "regexp")
 				e = r
 			case "const":
 				//	c := &extract.Const{Val: params["value"]}
@@ -233,7 +244,8 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 	//logger.Info(time.Now())
 	output := [][]map[string]interface{}{}
 
-	req := scraper.Request
+	//req := scraper.Request
+	req := t.Payload.Request
 	url := req.GetURL()
 
 	var numPages int
@@ -327,7 +339,7 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 					switch extractedPartResults.(type) {
 					case string:
 						var rq fetch.FetchRequester
-						switch part.Details.Request.Type() {
+						switch t.Payload.Request.Type() {
 						case "base":
 							rq = &fetch.BaseFetcherRequest{URL: extractedPartResults.(string)}
 						case "splash":
@@ -342,7 +354,7 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 						for _, r := range extractedPartResults.([]string) {
 
 							var rq fetch.FetchRequester
-							switch part.Details.Request.Type() {
+							switch t.Payload.Request.Type() {
 							case "base":
 								rq = &fetch.BaseFetcherRequest{URL: r}
 							case "splash":
@@ -396,9 +408,9 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 				results = append(results, blockResults)
 			}
 		}
-
-		output = append(output, results)
-
+		if len(results) != 0 {
+			output = append(output, results)
+		}
 		numPages++
 
 		// Get the next page. If empty URL is returned there is no Next Pages to proceed.
