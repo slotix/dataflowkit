@@ -9,10 +9,13 @@ go:
   - 1.9.x
 
 before_install:
-  - docker pull scrapinghub/splash
-  - docker run -d -it -p 5023:5023 -p 8050:8050 -p 8051:8051 scrapinghub/splash
+  #- docker pull scrapinghub/splash
+  #- docker run -d -it -p 5023:5023 -p 8050:8050 -p 8051:8051 scrapinghub/splash
+  #- docker pull slotix/dfk-fetch
+  #- docker run -d -it -p 8000:8000 slotix/dfk-fetch
   - go get -v github.com/golang/lint/golint
   - go get -t -v ./...
+  - docker-compose up
 
 script: ./test.sh
  
