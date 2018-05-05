@@ -94,7 +94,7 @@ func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 		jar = fetcher.GetCookieJar()
 		cArr = append(cArr, jar.AllCookies()...)
 		cookies, err = json.Marshal(cArr)
-		logger.Info(string(cookies))
+		//logger.Info(string(cookies))
 		if err != nil {
 			return nil, err
 		}
