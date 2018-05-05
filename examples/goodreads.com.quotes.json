@@ -64,7 +64,7 @@
     "paginator": {
         "selector": ".next_page",
         "attr": "href",
-        "maxPages": 100
+        "maxPages": 2
     },    
     "format": "csv"
 }

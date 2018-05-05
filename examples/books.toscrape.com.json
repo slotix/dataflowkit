@@ -53,8 +53,10 @@
     "paginator": {
         "selector": ".next a",
         "attr": "href",
-        "maxPages": 2
+        "maxPages": 10
     },
     "format": "json",
-    "paginatedResults": false
+    "paginatedResults": false,
+    "fetcherType": "base"
+
 }
