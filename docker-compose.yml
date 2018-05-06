@@ -10,6 +10,13 @@ services:
     volumes:
       - ./splash/filters:/etc/splash/filters:ro
 
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    
+
   fetch:
     image: slotix/dfk-fetch
     environment:
