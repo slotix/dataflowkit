@@ -21,7 +21,7 @@ It can be used in many ways for data mining, data processing or archiving.
 - Managing delays between requests per domain; 
 - Following robots.txt directives; 
 - Caching support. 
-The following storaga type are available Diskv, Redis, Amazon AWS S3, Digital Ocean Spaces;
+The following storage type are available Diskv, Redis, Amazon AWS S3, Digital Ocean Spaces;
 - Save results as CSV, JSON, XML;
 
 
