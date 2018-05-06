@@ -32,13 +32,20 @@ func TestGenerateCRC32(t *testing.T) {
 func TestRelURL(t *testing.T) {
 	r, err := RelUrl("http://books.toscrape.com", "catalogue/page-2.html")
 	assert.NoError(t, err)
-	t.Log(r)
+	assert.Equal(t, "http://books.toscrape.com/catalogue/page-2.html",
+		r)
 	r, err = RelUrl("http://books.toscrape.com/catalogue/", "page-2.html")
-	assert.NoError(t, err)
-	t.Log(r)
+	assert.Equal(t, "http://books.toscrape.com/catalogue/page-2.html",
+		r)
 	r, err = RelUrl("http://books.toscrape.com/catalogue/page-2.html", "in-her-wake_980/index.html")
-	assert.NoError(t, err)
-	t.Log(r)
+	assert.Equal(t, "http://books.toscrape.com/catalogue/in-her-wake_980/index.html",
+		r)
+	invBase := "Invalid.%$^base"
+	invRel := "Invalid.%$^rel"
+	r, err = RelUrl(invBase, invRel)
+	assert.Error(t, err)
+	r, err = RelUrl("http://validbase.com", invRel)
+	assert.Error(t, err)
 }
 
 func TestRandFloat(t *testing.T) {
@@ -70,7 +77,3 @@ func TestRandInt(t *testing.T) {
 	m := s * time.Duration(rand) / 1000
 	fmt.Println(s, rand, m)
 }
-
-// func TestGenerateCRC32(t *testing.T){
-// 	fmt.Println(string(GenerateCRC32([]byte("test test test"))))
-// }
