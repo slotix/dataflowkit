@@ -10,6 +10,11 @@ func TestType_String(t *testing.T) {
 		i    Type
 		want string
 	}{
+		{
+			name: "-1",
+			i: -1,
+			want: "Type(-1)",
+		},
 	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
