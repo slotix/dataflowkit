@@ -8,24 +8,40 @@
 [![codecov](https://codecov.io/gh/slotix/dataflowkit/branch/master/graph/badge.svg)](https://codecov.io/gh/slotix/dataflowkit)
 
 
-Dataflow kit extracts structured data from web pages, following the specified extractors.
+Dataflow kit is a Scraping framework for Gophers. DFK extracts structured data from web pages, following the specified extractors.
 
 It can be used in many ways for data mining, data processing or archiving.
 
-The actual use case can be grabbing list of products on several pages and follow each product’s details page to retrieve additional information. Parse endpoint returns information as a JSON, XML or CSV data.
+## Dataflow kit benefits:
+- Scraping of JavaScript generated pages;
+- Data extraction from paginated websites;
+- Sсraping of websites behind login form;
+- Cookies and sessions handling;
+- Following links and detailed pages processing;
+- Managing delays between requests per domain; 
+- Following robots.txt directives; 
+- Caching support. 
+The following storage type are available Diskv, Redis, Amazon AWS S3, Digital Ocean Spaces;
+- Save results as CSV, JSON, XML;
+
 
 DFK consists of two general services for fetching and parsing web pages content.
 
 ## Fetch service
-**fetch.d** is the server intended for html web pages content download. 
+**fetch.d** server is intended for html web pages content download. 
 Depending on Fetcher type, web page content is downloaded using either Base Fetcher or Splash fetcher. 
 
-Base fetcher uses standard golang http client to fetch pages as is. It works faster than Splash fetcher. But Base fetcher cannot render dynamic javascript driven web pages. 
+Base fetcher uses standard golang http client to fetch pages as is. 
+It works faster than Splash fetcher. But Base fetcher cannot render dynamic javascript driven web pages. 
 
-Splash fetcher is intended for rendering dynamic javascript based content.  It sends requests to [Splash javascript rendering service](https://github.com/scrapinghub/splash). Splash passes retrieved data to parse.d service. 
+Splash fetcher is intended for rendering dynamic javascript based content. It sends requests to [Splash javascript rendering service](https://github.com/scrapinghub/splash). 
+
+Splash passes retrieved data to parse.d service. 
 
 ## Parse service
 **parse.d** is the service that extracts data from downloaded web page following the rules described in configuration JSON file. Extracted data are returned in CSV, JSON or XML format.
+
+*Note: Sometimes Parse service cannot extract data from some pages retrieved by default Base fetcher. Empty results may be returned while parsing Java Script generated pages. Parse service then attempts to force Splash fetcher to render the same dynamic javascript driven content automatically. Have a look at http://quotes.toscrape.com/js/ which is a sampe of JavaScript driven web page.*   
 
 ## Installation
 Using [dep](https://github.com/golang/dep)
