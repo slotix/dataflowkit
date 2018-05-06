@@ -66,8 +66,8 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		if err != nil {
 			return nil, err
 		}
-		task.Payload.Request = nil
 		task.Payload.Request = request
+		scraper.Request = request
 		results, err = task.scrape(scraper)
 		if err != nil {
 			return nil, err
