@@ -150,7 +150,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
 	RootCmd.Flags().StringVarP(&fetcher, "FETCHER_TYPE", "t", "splash", "DFK Fetcher type: splash, base")
 	RootCmd.Flags().StringVarP(&URL, "URL", "u", "", "URL to be fetched")
-	RootCmd.Flags().StringVarP(&Params, "PARAMS", "", "", "Params is a string value for passing formdata parameters.")
+	RootCmd.Flags().StringVarP(&Params, "FORMDATA", "", "", "Params is a string value for passing formdata parameters.")
 	RootCmd.Flags().StringVarP(&Cookies, "COOKIES", "", "", "Cookies contain cookies to be added to request  before sending it to browser.")
 	RootCmd.Flags().StringVarP(&LUA, "LUA", "", "", "LUA Splash custom script")
 
