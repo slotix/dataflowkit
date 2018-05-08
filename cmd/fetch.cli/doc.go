@@ -29,7 +29,7 @@
 //		FETCHER_TYPE: DFK Fetcher type: splash, base (defaults to splash)
 //		URL: URL to be fetched
 // Request parameters for splash fetcher
-//		PARAMS: Params is a string value for passing formdata parameters.
+//		FORMDATA: string value for passing formdata parameters.
 //		For example the following string for processing pages which
 //		require authentication may be passed:
 //		"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
