@@ -1,0 +1,26 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"testing"
+	"time"
+)
+
+func TestFetch_d_root(t *testing.T) {
+	var gracefulStop = make(chan os.Signal)
+	signal.Notify(gracefulStop, syscall.SIGTERM)
+	signal.Notify(gracefulStop, syscall.SIGINT)
+	go func() {
+		sig := <-gracefulStop
+		fmt.Printf("caught sig: %+v", sig)
+		fmt.Println("Wait for 2 second to finish processing")
+		time.Sleep(2 * time.Second)
+		os.Exit(0)
+	}()
+
+	Execute("Test")
+	time.Sleep(3 * time.Second)
+}
