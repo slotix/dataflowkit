@@ -17,7 +17,7 @@ func IsRobotsTxt(url string) bool {
 
 //fetchRobots is used for getting robots.txt files.
 func fetchRobots(req BaseFetcherRequest) (*BaseFetcherResponse, error) {
-	svc, err := NewHTTPClient(viper.GetString("DFK_FETCH") /*, log.NewNopLogger()*/)
+	svc, err := NewHTTPClient(viper.GetString("DFK_FETCH"))
 	if err != nil {
 		logger.Error(err)
 	}
