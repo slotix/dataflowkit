@@ -6,9 +6,11 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"testing"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -27,33 +29,43 @@ var (
 	// 	`)
 )
 
-func robotstxtHandler(w http.ResponseWriter, r *http.Request) {
-
-}
-
 func init() {
+	r := mux.NewRouter()
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Conent-Type", "text/html")
+		w.Write(indexContent)
+	})
 	server := &http.Server{}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic(err)
 	}
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Conent-Type", "text/html")
-		w.Write(indexContent)
-	})
-	http.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+
+	r.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Conent-Type", "text/html")
 		w.Write([]byte(robotstxtData))
 	})
-	http.HandleFunc("/allowed", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/allowed", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Write([]byte("allowed"))
 	})
-	http.HandleFunc("/disallowed", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/disallowed", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Write([]byte("disallowed"))
 	})
 
+	r.HandleFunc("/status/{status}", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		st, err := strconv.Atoi(vars["status"])
+		if err != nil {
+			logger.Error(err)
+		}
+		w.WriteHeader(st)
+		w.Write([]byte(vars["status"]))
+	})
+
+	http.Handle("/", r)
+	//http.ListenAndServe(":12345", nil)
 	go func() {
 		if err := server.Serve(listener); err != nil {
 			logger.Error("Httpserver: ListenAndServe() error: %s", err)
@@ -62,15 +74,13 @@ func init() {
 }
 
 func TestBaseFetcher_Fetch(t *testing.T) {
-	fetcher, err := NewFetcher(Base)
-	assert.Nil(t, err, "Expected no error")
+	fetcher := NewFetcher(Base)
 	req := BaseFetcherRequest{
 		URL:    "http://" + addr,
 		Method: "GET",
 	}
 	resp, err := fetcher.Response(req)
 	assert.Nil(t, err, "Expected no error")
-	bfResponse := resp.(*BaseFetcherResponse)
 	html, err := resp.GetHTML()
 	assert.NoError(t, err, "Expected no error")
 	data, err := ioutil.ReadAll(html)
@@ -81,13 +91,14 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 
 	//Test invalid Response Status codes.
 	urls := []string{
-		"http://httpbin.org/status/404",
-		"http://httpbin.org/status/400",
-		"http://httpbin.org/status/unknown",
-		"http://httpbin.org/status/403",
-		"http://httpbin.org/status/500",
-		"http://httpbin.org/status/504",
-		"http://httpbin.org/status/600",
+		"http://" + addr + "/status/404",
+		"http://" + addr + "/status/400",
+		"http://" + addr + "/status/401",
+		"http://" + addr + "/status/unknown",
+		"http://" + addr + "/status/403",
+		"http://" + addr + "/status/500",
+		"http://" + addr + "/status/504",
+		"http://" + addr + "/status/600",
 		"http://google",
 		"google.com",
 	}
@@ -99,13 +110,32 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 		t.Log(err)
 		assert.Error(t, err, fmt.Sprintf("%T", err)+"error returned")
 	}
+	//Test 200 response
+	req = BaseFetcherRequest{
+		URL: "http://" + addr,
+	}
+
+	content, err := fetcher.Fetch(req)
+	assert.NoError(t, err)
+	assert.NotNil(t, content, "Expected content not nil")
+
+	//Test Form Data
+	req = BaseFetcherRequest{
+		URL: "http://" + addr,
+		FormData: "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1",
+	}
+
+	content, err = fetcher.Fetch(req)
+	assert.NoError(t, err)
+	assert.NotNil(t, content, "Expected content not nil")
+
 	//Test Host()
 	req = BaseFetcherRequest{
-		URL: "http://httpbin.org/status/200",
+		URL: "http://" + addr + "/index.html",
 	}
 	host, err := req.Host()
 	assert.NoError(t, err)
-	assert.Equal(t, "httpbin.org", host, "Test BaseFetcherRequest Host()")
+	assert.Equal(t, addr, host, "Test BaseFetcherRequest Host()")
 	req = BaseFetcherRequest{
 		URL: "Invalid.%$^host",
 	}
@@ -114,15 +144,15 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 
 	//Test Type()
 	assert.Equal(t, "base", req.Type(), "Test BaseFetcherRequest Type()")
-
 	//fetch robots.txt data
 	resp, err = fetcher.Response(BaseFetcherRequest{
 		URL:    "http://" + addr + "/robots.txt",
 		Method: "GET",
 	})
-	bfResponse = resp.(*BaseFetcherResponse)
+	bfResponse := resp.(*BaseFetcherResponse)
 	//t.Log(string(bfResponse.HTML))
 	assert.Equal(t, robotstxtData, bfResponse.HTML)
+
 }
 
 func TestSplashFetcher_Fetch(t *testing.T) {
@@ -131,8 +161,8 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 	viper.Set("SPLASH_RESOURCE_TIMEOUT", 30)
 	viper.Set("SPLASH_WAIT", 0.5)
 
-	fetcher, err := NewFetcher(Splash)
-	assert.Nil(t, err, "Expected no error")
+	fetcher := NewFetcher(Splash)
+	//assert.Nil(t, err, "Expected no error")
 
 	req := splash.Request{
 		URL: "http://example.com",
@@ -143,12 +173,14 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 
 	//Test invalid Response Status codes.
 	urls := []string{
-		"http://httpbin.org/status/404",
-		"http://httpbin.org/status/400",
-		"http://httpbin.org/status/403",
-		//"http://httpbin.org/status/500",
-		"http://httpbin.org/status/502",
-		"http://httpbin.org/status/504",
+		"http://" + addr + "/status/404",
+		"http://" + addr + "/status/400",
+		"http://" + addr + "/status/401",
+		"http://" + addr + "/status/unknown",
+		"http://" + addr + "/status/403",
+		"http://" + addr + "/status/500",
+		"http://" + addr + "/status/504",
+		"http://" + addr + "/status/600",
 		"http://google",
 		"google.com",
 	}
@@ -161,11 +193,12 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 	}
 	//Test Host()
 	req = splash.Request{
-		URL: "http://httpbin.org/status/200",
+		//URL: "http://httpbin.org/status/200",
+		URL: "http://" + addr + "/index.html",
 	}
 	host, err := req.Host()
 	assert.NoError(t, err)
-	assert.Equal(t, "httpbin.org", host)
+	assert.Equal(t, addr, host)
 	req = splash.Request{
 		URL: "Invalid.%$^host",
 	}
@@ -175,11 +208,6 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 	//Test Type()
 	assert.Equal(t, "splash", req.Type(), "Test splash.Request Type()")
 
-}
-
-func TestNewFetcher_invalid(t *testing.T) {
-	_, err := NewFetcher("Invalid")
-	assert.NotNil(t, err, "Expected Invalid Fetcher error")
 }
 
 func Test_parseFormData(t *testing.T) {

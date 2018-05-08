@@ -23,6 +23,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"time"
 
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/healthcheck"
@@ -34,7 +36,7 @@ import (
 var (
 	//VERSION               string // VERSION is set during build
 	//  DFKFetch represents address of DFK Fetch service
-	DFKFetch string //Fetch service address
+	DFKFetch              string //Fetch service address
 	splashHost            string
 	splashTimeout         int
 	splashResourceTimeout int
@@ -88,15 +90,26 @@ var RootCmd = &cobra.Command{
 			}
 		}
 		if allAlive {
-			
+
 			if skipStorageMW {
 				fmt.Printf("Storage %s\n", "None")
-			} else{
+			} else {
 				fmt.Printf("Storage %s\n", storageType)
-			}		
+			}
 			fetchServer := viper.GetString("DFK_FETCH")
-			fmt.Printf("Starting Server %s\n", fetchServer)
-			fetch.Start(fetchServer)
+			serverCfg := fetch.Config{
+				Host:         fetchServer, //"localhost:5000",
+				ReadTimeout:  5 * time.Second,
+				WriteTimeout: 5 * time.Second,
+			}
+			htmlServer := fetch.Start(serverCfg)
+			defer htmlServer.Stop()
+
+			sigChan := make(chan os.Signal, 1)
+			signal.Notify(sigChan, os.Interrupt)
+			<-sigChan
+
+			fmt.Println("main : shutting down")
 		}
 	},
 }
@@ -105,7 +118,6 @@ var RootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute(version string) {
 	VERSION = version
-
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -113,7 +125,6 @@ func Execute(version string) {
 }
 
 func init() {
-
 	//flags and configuration settings. They are global for the application.
 
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "a", "127.0.0.1:8000", "HTTP listen address")
@@ -148,14 +159,14 @@ func init() {
 	} else {
 		viper.BindPFlag("SPLASH", RootCmd.Flags().Lookup("SPLASH"))
 	}
-	
+
 	if os.Getenv("DFK_FETCH") != "" {
 		viper.Set("DFK_FETCH", os.Getenv("DFK_FETCH"))
 	} else {
 		viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
 		//os.Setenv("DFK_FETCH", DFKFetch)
 	}
-	
+
 	if os.Getenv("DISKV_BASE_DIR") != "" {
 		//viper.BindEnv("DISKV_BASE_DIR")
 		viper.Set("DISKV_BASE_DIR", os.Getenv("DISKV_BASE_DIR"))

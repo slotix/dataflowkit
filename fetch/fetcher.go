@@ -4,7 +4,6 @@ package fetch
 // https://github.com/andrew-d/goscrape package governed by MIT license.
 
 import (
-	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -72,24 +71,22 @@ type FetchRequester interface {
 }
 
 //NewFetcher creates instances of Fetcher for downloading a web page.
-func NewFetcher(t Type) (fetcher Fetcher, err error) {
+func NewFetcher(t Type) Fetcher {
+	var f Fetcher
 	switch t {
 	case Base:
-		fetcher, err = NewBaseFetcher()
-		return
+		f = NewBaseFetcher()
 	case Splash:
-		fetcher, err = NewSplashFetcher()
-		return
-	default:
-		return nil, errors.New("Can't create Fetcher")
+		f = NewSplashFetcher()
 	}
+	return f
 }
 
 // BaseFetcher is a Fetcher that uses the Go standard library's http
 // client to fetch URLs.
 type BaseFetcher struct {
 	client *http.Client
-	jar *cookiejar.Jar
+	jar    *cookiejar.Jar
 }
 
 // SplashFetcher is a Fetcher that uses Scrapinghub splash
@@ -100,11 +97,10 @@ type SplashFetcher struct {
 }
 
 // NewSplashFetcher creates instances of SplashFetcher{} to fetch a page content from remote Scrapinghub splash service.
-func NewSplashFetcher() (*SplashFetcher, error) {
+func NewSplashFetcher() *SplashFetcher {
 	sf := &SplashFetcher{}
-	return sf, nil
+	return sf
 }
-
 
 // Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (sf *SplashFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
@@ -141,7 +137,6 @@ func (sf *SplashFetcher) Response(request FetchRequester) (FetchResponser, error
 	return r, nil
 }
 
-
 func (sf *SplashFetcher) GetCookieJar() *cookiejar.Jar {
 	return sf.jar
 }
@@ -156,15 +151,13 @@ var _ Fetcher = &SplashFetcher{}
 // NewBaseFetcher creates instances of NewBaseFetcher{} to fetch
 // a page content from regular websites as-is
 // without running js scripts on the page.
-func NewBaseFetcher() (*BaseFetcher, error) {
+func NewBaseFetcher() *BaseFetcher {
 	client := &http.Client{}
-
 	bf := &BaseFetcher{
 		client: client,
 	}
-	return bf, nil
+	return bf
 }
-
 
 // Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (bf *BaseFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
