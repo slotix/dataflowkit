@@ -92,7 +92,7 @@ func (htmlServer *HTMLServer) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	fmt.Printf("\nnFetch Server : Service stopping\n")
+	fmt.Printf("\nFetch Server : Service stopping\n")
 
 	// Attempt the graceful shutdown by closing the listener
 	// and completing all inflight requests
@@ -105,6 +105,6 @@ func (htmlServer *HTMLServer) Stop() error {
 	}
 	// Wait for the listener to report that it is closed.
 	htmlServer.wg.Wait()
-	fmt.Printf("\nnFetch Server : Stopped\n")
+	fmt.Printf("\nFetch Server : Stopped\n")
 	return nil
 }
