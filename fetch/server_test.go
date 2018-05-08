@@ -46,7 +46,9 @@ func Test_server(t *testing.T) {
 	if err != nil {
 		logger.Error(err)
 	}
-	assert.Error(t, err, "Expected error")
+	data, err = ioutil.ReadAll(html)
+	assert.NoError(t, err, "Expected no error")
+	assert.Equal(t, indexContent, data, "Expected Hello World")
 	
 	
 	// //Test forbidden by robots
