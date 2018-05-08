@@ -28,7 +28,7 @@ func TestRobotstxtData(t *testing.T) {
 
 	viper.Set("DFK_FETCH", "http://127.0.0.1:8000")
 	//rd, err := RobotstxtData("http://" + addr)
-	rd, err := RobotstxtData("https://httpbin.org")
+	rd, err := RobotstxtData("https://google.com")
 	assert.NoError(t, err, "No error returned")
 	assert.NotNil(t, rd, "No error returned")
 
