@@ -28,20 +28,12 @@ type ServiceMiddleware func(Service) Service
 
 //Response returns splash.Response
 func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
-
-	var err error
 	var fetcher Fetcher
 	switch req.(type) {
 	case BaseFetcherRequest:
-		fetcher, err = NewFetcher(Base)
+		fetcher = NewFetcher(Base)
 	case splash.Request:
-		fetcher, err = NewFetcher(Splash)
-	default:
-		panic("invalid fetcher request")
-	}
-
-	if err != nil {
-		logger.Error(err)
+		fetcher = NewFetcher(Splash)
 	}
 	var (
 		jar     *cookiejar.Jar
@@ -50,7 +42,7 @@ func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 		s       storage.Store
 	)
 	if req.GetUserToken() != "" {
-		storageType, err = storage.TypeString(viper.GetString("STORAGE_TYPE"))
+		storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
 		if err != nil {
 			return nil, err
 		}
