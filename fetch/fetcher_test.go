@@ -27,10 +27,6 @@ var (
 	// 	`)
 )
 
-func robotstxtHandler(w http.ResponseWriter, r *http.Request) {
-
-}
-
 func init() {
 	server := &http.Server{}
 	listener, err := net.Listen("tcp", addr)
@@ -62,15 +58,13 @@ func init() {
 }
 
 func TestBaseFetcher_Fetch(t *testing.T) {
-	fetcher, err := NewFetcher(Base)
-	assert.Nil(t, err, "Expected no error")
+	fetcher := NewFetcher(Base)
 	req := BaseFetcherRequest{
 		URL:    "http://" + addr,
 		Method: "GET",
 	}
 	resp, err := fetcher.Response(req)
 	assert.Nil(t, err, "Expected no error")
-	bfResponse := resp.(*BaseFetcherResponse)
 	html, err := resp.GetHTML()
 	assert.NoError(t, err, "Expected no error")
 	data, err := ioutil.ReadAll(html)
@@ -99,6 +93,15 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 		t.Log(err)
 		assert.Error(t, err, fmt.Sprintf("%T", err)+"error returned")
 	}
+	//Test 200 response
+	req = BaseFetcherRequest{
+		URL: "http://" + addr,
+	}
+
+	content, err := fetcher.Fetch(req)
+	assert.NoError(t, err)
+	assert.NotNil(t, content, "Expected content not nil")
+
 	//Test Host()
 	req = BaseFetcherRequest{
 		URL: "http://httpbin.org/status/200",
@@ -114,15 +117,15 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 
 	//Test Type()
 	assert.Equal(t, "base", req.Type(), "Test BaseFetcherRequest Type()")
-
 	//fetch robots.txt data
 	resp, err = fetcher.Response(BaseFetcherRequest{
 		URL:    "http://" + addr + "/robots.txt",
 		Method: "GET",
 	})
-	bfResponse = resp.(*BaseFetcherResponse)
+	bfResponse := resp.(*BaseFetcherResponse)
 	//t.Log(string(bfResponse.HTML))
 	assert.Equal(t, robotstxtData, bfResponse.HTML)
+
 }
 
 func TestSplashFetcher_Fetch(t *testing.T) {
@@ -131,8 +134,8 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 	viper.Set("SPLASH_RESOURCE_TIMEOUT", 30)
 	viper.Set("SPLASH_WAIT", 0.5)
 
-	fetcher, err := NewFetcher(Splash)
-	assert.Nil(t, err, "Expected no error")
+	fetcher := NewFetcher(Splash)
+	//assert.Nil(t, err, "Expected no error")
 
 	req := splash.Request{
 		URL: "http://example.com",
@@ -175,11 +178,6 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 	//Test Type()
 	assert.Equal(t, "splash", req.Type(), "Test splash.Request Type()")
 
-}
-
-func TestNewFetcher_invalid(t *testing.T) {
-	_, err := NewFetcher("Invalid")
-	assert.NotNil(t, err, "Expected Invalid Fetcher error")
 }
 
 func Test_parseFormData(t *testing.T) {
