@@ -94,7 +94,7 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 		"http://" + addr + "/status/404",
 		"http://" + addr + "/status/400",
 		"http://" + addr + "/status/401",
-		"http://" + addr + "/status/unknown",
+		//"http://" + addr + "/status/unknown",
 		"http://" + addr + "/status/403",
 		"http://" + addr + "/status/500",
 		"http://" + addr + "/status/504",
