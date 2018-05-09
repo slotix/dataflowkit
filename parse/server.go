@@ -28,7 +28,7 @@ type HTMLServer struct {
 	wg     sync.WaitGroup
 }
 
-// Start func launches Parsing service at DFKParse address
+// Start func launches Parsing service
 func Start(cfg Config) *HTMLServer {
 	ctx := context.Background()
 	_, cancel := context.WithCancel(ctx)
