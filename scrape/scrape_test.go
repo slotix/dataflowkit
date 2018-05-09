@@ -263,7 +263,10 @@ func TestTask_ParseXML(t *testing.T) {
 			}
 			r, err := task.Parse()
 			buf := new(bytes.Buffer)
-			buf.ReadFrom(r)
+			_, err = buf.ReadFrom(r)
+			if err != nil {
+				t.Error(err)
+			}
 			got := buf.Bytes()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Task.Parse() error = %v, wantErr %v", err, tt.wantErr)
