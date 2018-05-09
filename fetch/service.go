@@ -41,6 +41,8 @@ func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 		cArr    []*http.Cookie
 		s       storage.Store
 	)
+	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
+	jar, err := cookiejar.New(jarOpts)
 	if req.GetUserToken() != "" {
 		storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
 		if err != nil {
@@ -48,8 +50,7 @@ func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 		}
 		s = storage.NewStore(storageType)
 		cookies, _ = s.Read(req.GetUserToken())
-		jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
-		jar, err = cookiejar.New(jarOpts)
+
 		if err != nil {
 			logger.Error("Failed to create Cookie Jar")
 
@@ -75,8 +76,8 @@ func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 			}
 			jar.SetCookies(u, tempCarr)
 		}
-		fetcher.SetCookieJar(jar)
 	}
+	fetcher.SetCookieJar(jar)
 	//res, err := fetcher.Fetch(req)
 	res, err := fetcher.Response(req)
 	if err != nil {
