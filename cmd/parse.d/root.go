@@ -23,6 +23,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"time"
 
 	"github.com/slotix/dataflowkit/healthcheck"
 	"github.com/slotix/dataflowkit/parse"
@@ -31,7 +33,7 @@ import (
 )
 
 var (
-	DFKParse string //DFKParse service address.
+	DFKParse           string //DFKParse service address.
 	DFKFetch           string //DFKFetch service address.
 	fetcherType        string //fetcher type: splash, base
 	storageType        string
@@ -90,12 +92,23 @@ var RootCmd = &cobra.Command{
 		if allAlive {
 			if skipStorageMW {
 				fmt.Printf("Storage %s\n", "None")
-			} else{
+			} else {
 				fmt.Printf("Storage %s\n", storageType)
-			}		
+			}
 			parseServer := viper.GetString("DFK_PARSE")
-			fmt.Printf("Starting Server %s\n", parseServer)
-			parse.Start(parseServer)
+			serverCfg := parse.Config{
+				Host:         parseServer, //"localhost:5000",
+				ReadTimeout:  5 * time.Second,
+				WriteTimeout: 5 * time.Second,
+			}
+			htmlServer := parse.Start(serverCfg)
+			defer htmlServer.Stop()
+
+			sigChan := make(chan os.Signal, 1)
+			signal.Notify(sigChan, os.Interrupt)
+			<-sigChan
+
+			fmt.Println("main : shutting down")
 		}
 	},
 }
