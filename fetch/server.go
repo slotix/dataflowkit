@@ -76,7 +76,6 @@ func Start(cfg Config) *HTMLServer {
 	// Add to the WaitGroup for the listener goroutine
 	htmlServer.wg.Add(1)
 
-	// HTTP transport
 	go func() {
 		fmt.Printf("Starting Fetch Server %s\n", htmlServer.server.Addr)
 		htmlServer.server.ListenAndServe()

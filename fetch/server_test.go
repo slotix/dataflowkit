@@ -12,7 +12,7 @@ import (
 
 func Test_server(t *testing.T) {
 	//start fetch server
-	fetchServer := "127.0.0.1:8002"
+	fetchServer := "127.0.0.1:8000"
 	serverCfg := Config{
 		Host:         fetchServer, //"localhost:5000",
 		ReadTimeout:  5 * time.Second,
