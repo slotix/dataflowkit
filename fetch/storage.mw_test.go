@@ -1,11 +1,9 @@
 package fetch
 
 import (
-	"net/http"
 	"testing"
 	"time"
 
-	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -27,16 +25,16 @@ func init() {
 }
 
 func Test_storageMiddleware(t *testing.T) {
-	var cookies []*http.Cookie
-	req := splash.Request{
-		URL:      "http://example.com",
-		FormData: "", Cookies: cookies, LUA: "",
+	req := BaseFetcherRequest{
+		//URL:      "http://example.com",
+		URL:      "http://" + addr,
+		FormData: "",
 	}
 	//Loading from remote server
 	start := time.Now()
 	resp, err := mw.Response(req)
 	assert.Nil(t, err, "Expected no error")
-	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
+	assert.Equal(t, 200, resp.(*BaseFetcherResponse).StatusCode, "Expected Fetcher returns 200 status code")
 	elapsed1 := time.Since(start)
 	t.Log("Loading from remote server... ", elapsed1)
 
@@ -44,7 +42,7 @@ func Test_storageMiddleware(t *testing.T) {
 	start = time.Now()
 	resp, err = mw.Response(req)
 	assert.Nil(t, err, "Expected no error")
-	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
+	assert.Equal(t, 200, resp.(*BaseFetcherResponse).StatusCode, "Expected Splash server returns 200 status code")
 	elapsed2 := time.Since(start)
 	t.Log("Loading from remote server... ", elapsed2)
 	assert.Equal(t, true, elapsed1 > elapsed2, "it takes longer to load a webpage from remote server")
@@ -55,17 +53,18 @@ func Test_storageMiddleware(t *testing.T) {
 
 func Test_IGNORE_CACHE_INFO(t *testing.T) {
 	viper.Set("IGNORE_CACHE_INFO", true)
-	viper.Set("STORAGE_TYPE","Diskv")
-	req := splash.Request{
-		URL:    "http://google.com",
-		FormData: "",  LUA: "",
+	viper.Set("STORAGE_TYPE", "Diskv")
+	req := BaseFetcherRequest{
+		//URL:      "http://google.com",
+		URL:       "http://" + addr,
+		FormData:  "",
 		UserToken: "12345",
 	}
 	//Loading from remote server
 	start := time.Now()
 	resp, err := mw.Response(req)
 	assert.Nil(t, err, "Expected no error")
-	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
+	assert.Equal(t, 200, resp.(*BaseFetcherResponse).StatusCode, "Expected Splash server returns 200 status code")
 	elapsed1 := time.Since(start)
 	t.Log("Loading from remote server... ", elapsed1)
 
@@ -73,7 +72,7 @@ func Test_IGNORE_CACHE_INFO(t *testing.T) {
 	start = time.Now()
 	resp, err = mw.Response(req)
 	assert.Nil(t, err, "Expected no error")
-	assert.Equal(t, 200, resp.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
+	assert.Equal(t, 200, resp.(*BaseFetcherResponse).StatusCode, "Expected Splash server returns 200 status code")
 	elapsed2 := time.Since(start)
 	t.Log("Loading from remote server... ", elapsed2)
 	assert.Equal(t, true, elapsed1 > elapsed2, "it takes longer to load a webpage from remote server")
