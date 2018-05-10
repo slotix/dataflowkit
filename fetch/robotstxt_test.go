@@ -30,8 +30,8 @@ func TestRobotstxtData(t *testing.T) {
 	//rd, err := RobotstxtData("http://" + addr)
 	rd, err := RobotstxtData("https://google.com")
 	assert.NoError(t, err, "No error returned")
-	assert.NotNil(t, rd, "No error returned")
+	assert.NotNil(t, rd, "Not nil returned")
 
 	rd, err = RobotstxtData("invalid_host")
-	assert.Error(t, err, "No error returned")
+	assert.Error(t, err, "error returned")
 }
