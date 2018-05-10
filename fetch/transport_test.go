@@ -2,6 +2,7 @@ package fetch
 
 import (
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -9,9 +10,17 @@ import (
 )
 
 func TestHealthCheckHandler(t *testing.T) {
-	req := httptest.NewRequest("GET", "http://127.0.0.1/ping", nil)
+	req := httptest.NewRequest("GET", "/ping", nil)
 	w := httptest.NewRecorder()
-	healthCheckHandler(w, req)
+	//healthCheckHandler(w, req)
+	handler := http.HandlerFunc(healthCheckHandler)
+	handler.ServeHTTP(w, req)
+
+	// Check the status code is what we expect.
+    if status := w.Code; status != http.StatusOK {
+        t.Errorf("handler returned wrong status code: got %v want %v",
+            status, http.StatusOK)
+    }
 	resp := w.Result()
 	body, _ := ioutil.ReadAll(resp.Body)
 	assert.Equal(t, []byte(`{"alive": true}`), body)

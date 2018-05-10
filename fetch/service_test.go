@@ -3,8 +3,10 @@ package fetch
 import (
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"github.com/gorilla/mux"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
@@ -47,19 +49,18 @@ func TestFetchService(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	//Splash Fetcher
-	response, err := svc.Response(splash.Request{
-		URL:       "http://example.com",
-		FormData:  "",
-		LUA:       "",
-		UserToken: userToken,
-	})
-	assert.Nil(t, err, "Expected no error")
-	assert.Equal(t, 200, response.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
 
 	//BaseFetcher
+	r := mux.NewRouter()
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Conent-Type", "text/html")
+		w.Write(IndexContent)
+	})
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+	
 	content, err := svc.Fetch(BaseFetcherRequest{
-		URL:       "http://" + addr,
+		URL:       ts.URL,
 		Method:    "GET",
 		UserToken: "123456",
 	})
@@ -72,6 +73,17 @@ func TestFetchService(t *testing.T) {
 	})
 
 	assert.Error(t, err, "Expected error")
+
+	//Splash Fetcher
+	response, err := svc.Response(splash.Request{
+		URL:       "http://example.com",
+		FormData:  "",
+		LUA:       "",
+		UserToken: userToken,
+	})
+	assert.Nil(t, err, "Expected no error")
+	assert.Equal(t, 200, response.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
+
 }
 
 /* func TestEncodeSplashFetcherContent(t *testing.T) {

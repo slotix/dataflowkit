@@ -1,16 +1,107 @@
 package fetch
 
 import (
+	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
+//const addr = "localhost:12345"
+
+var (
+	IndexContent = []byte(`<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`)
+
+	RobotsContent = "\n\t\tUser-agent: *\n\t\tAllow: /allowed\n\t\tDisallow: /disallowed\n\t\t"
+	// robotstxtData = []byte(`
+	// 	User-agent: *
+	// 	Allow: /allowed
+	// 	Disallow: /disallowed
+	// 	`)
+)
+
+// func init() {
+// 	r := mux.NewRouter()
+// 	server := &http.Server{}
+// 	listener, err := net.Listen("tcp", addr)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+// 		w.Header().Set("Conent-Type", "text/html")
+// 		w.Write(IndexContent)
+// 	})
+// 	r.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+// 		w.Header().Set("Conent-Type", "text/html")
+// 		w.Write([]byte(RobotsContent))
+// 	})
+// 	r.HandleFunc("/allowed", func(w http.ResponseWriter, r *http.Request) {
+// 		w.WriteHeader(200)
+// 		w.Write([]byte("allowed"))
+// 	})
+// 	r.HandleFunc("/disallowed", func(w http.ResponseWriter, r *http.Request) {
+// 		w.WriteHeader(200)
+// 		w.Write([]byte("disallowed"))
+// 	})
+
+// 	r.HandleFunc("/status/{status}", func(w http.ResponseWriter, r *http.Request) {
+// 		vars := mux.Vars(r)
+// 		st, err := strconv.Atoi(vars["status"])
+// 		if err != nil {
+// 			fmt.Println(err)
+// 		}
+// 		w.WriteHeader(st)
+// 		w.Write([]byte(vars["status"]))
+// 	})
+
+// 	http.Handle("/", r)
+// 	go func() {
+// 		if err := server.Serve(listener); err != nil {
+// 			fmt.Println("Httpserver: ListenAndServe() error: %s", err)
+// 		}
+// 	}()
+// }
+
 func Test_server_Base(t *testing.T) {
+	r := mux.NewRouter()
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Conent-Type", "text/html")
+		w.Write(IndexContent)
+	})
+	r.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Conent-Type", "text/html")
+		w.Write([]byte(RobotsContent))
+	})
+	r.HandleFunc("/allowed", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("allowed"))
+	})
+	r.HandleFunc("/disallowed", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("disallowed"))
+	})
+
+	r.HandleFunc("/status/{status}", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		st, err := strconv.Atoi(vars["status"])
+		if err != nil {
+			fmt.Println(err)
+		}
+		w.WriteHeader(st)
+		w.Write([]byte(vars["status"]))
+	})
+
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
 	//start fetch server
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	fetchServer := viper.GetString("DFK_FETCH")
@@ -31,10 +122,12 @@ func Test_server_Base(t *testing.T) {
 
 	//send request to base fetcher endpoint
 	req := BaseFetcherRequest{
-		URL: "http://" + addr,
+		URL: ts.URL,
+		//URL: "http://" + addr,
 		//URL: "http://example.com",
 		//URL: "http://github.com",
 	}
+	t.Log(ts.URL)
 	data, err := svc.Fetch(req)
 	if err != nil {
 		logger.Error(err)
@@ -43,19 +136,18 @@ func Test_server_Base(t *testing.T) {
 	//	assert.NotNil(t, html)
 	html, err := ioutil.ReadAll(data)
 	assert.NoError(t, err, "Expected no error")
-	assert.Equal(t, indexContent, html, "Expected Hello World")
-	
+	assert.Equal(t, IndexContent, html, "Expected Hello World")
+
 	//Test invalid Response Status codes.
 	urls := []string{
-		"http://" + addr + "/status/404",
-		"http://" + addr + "/status/400",
-		"http://" + addr + "/status/401",
-		//"http://" + addr + "/status/unknown",
-		"http://" + addr + "/status/403",
-		"http://" + addr + "/status/500",
-		"http://" + addr + "/status/502",
-		"http://" + addr + "/status/504",
-		"http://" + addr + "/status/600",
+		ts.URL + "/status/404",
+		ts.URL + "/status/400",
+		ts.URL + "/status/401",
+		ts.URL + "/status/403",
+		ts.URL + "/status/500",
+		ts.URL + "/status/502",
+		ts.URL + "/status/504",
+		ts.URL + "/status/600",
 		"http://google",
 		"google.com",
 	}
@@ -67,9 +159,6 @@ func Test_server_Base(t *testing.T) {
 		t.Log(err)
 		assert.Error(t, err)
 	}
-
-	
-
 	htmlServer.Stop()
 }
 
@@ -96,14 +185,14 @@ func Test_server_Splash(t *testing.T) {
 		//URL: "http://" + addr,
 		URL: "http://example.com",
 	}
-	r, err := svc.Response(sReq)
+	resp, err := svc.Response(sReq)
 	if err != nil {
 		logger.Error(err)
 	}
 	//data, err = ioutil.ReadAll(r)
 	assert.NoError(t, err, "Expected no error")
-	assert.NotNil(t, r)
-	//t.Log(string(data))
+	assert.NotNil(t, resp)
+
 	//assert.Equal(t, indexContent, data, "Expected Hello World")
 
 	data, err := svc.Fetch(sReq)
