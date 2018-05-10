@@ -1,9 +1,12 @@
 package fetch
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -25,9 +28,17 @@ func init() {
 }
 
 func Test_storageMiddleware(t *testing.T) {
+	r := mux.NewRouter()
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Conent-Type", "text/html")
+		w.Write(IndexContent)
+	})
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
 	req := BaseFetcherRequest{
 		//URL:      "http://example.com",
-		URL:      "http://" + addr,
+		URL:      ts.URL,
 		FormData: "",
 	}
 	//Loading from remote server
@@ -54,9 +65,17 @@ func Test_storageMiddleware(t *testing.T) {
 func Test_IGNORE_CACHE_INFO(t *testing.T) {
 	viper.Set("IGNORE_CACHE_INFO", true)
 	viper.Set("STORAGE_TYPE", "Diskv")
+
+	r := mux.NewRouter()
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Conent-Type", "text/html")
+		w.Write(IndexContent)
+	})
+	ts := httptest.NewServer(r)
+	defer ts.Close()
 	req := BaseFetcherRequest{
 		//URL:      "http://google.com",
-		URL:       "http://" + addr,
+		URL:       ts.URL,
 		FormData:  "",
 		UserToken: "12345",
 	}
