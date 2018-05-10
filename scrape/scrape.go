@@ -289,14 +289,11 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 			break
 		}
 		//call remote fetcher to download web page
-		sResponse, err := response(req)
+		content, err := fetchContent(req)
 		if err != nil {
 			return nil, err
 		}
-		content, err := sResponse.GetHTML()
-		if err != nil {
-			return nil, err
-		}
+
 		// Create a goquery document.
 		doc, err := goquery.NewDocumentFromReader(content)
 		if err != nil {
@@ -473,12 +470,12 @@ func (p Payload) selectors() ([]string, error) {
 }
 
 //response sends request to fetch service and returns fetch.FetchResponser
-func response(req fetch.FetchRequester) (fetch.FetchResponser, error) {
+func fetchContent(req fetch.FetchRequester) (io.ReadCloser, error) {
 	svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH") /*, gklog.NewNopLogger()*/)
 	if err != nil {
 		logger.Error(err)
 	}
-	resp, err := svc.Response(req)
+	resp, err := svc.Fetch(req)
 	if err != nil {
 		logger.Error(err)
 		return nil, err
