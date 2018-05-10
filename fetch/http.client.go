@@ -124,9 +124,11 @@ func decodeBaseFetcherContent(ctx context.Context, r *http.Response) (interface{
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
-	var resp BaseFetcherResponse
-	err := json.NewDecoder(r.Body).Decode(&resp)
-	return resp, err
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 func decodeBaseFetcherResponse(ctx context.Context, r *http.Response) (interface{}, error) {
@@ -145,25 +147,37 @@ func copyURL(base *url.URL, path string) *url.URL {
 }
 
 func (e Endpoints) Fetch(req FetchRequester) (io.ReadCloser, error) {
-	r, err := e.Response(req)
-	if err != nil {
-		return nil, err
+	ctx := context.Background()
+	var resp interface{}
+	var err error
+	switch req.Type() {
+	case "base":
+		resp, err = e.BaseFetchEndpoint(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+	case "splash":
+		resp, err = e.SplashFetchEndpoint(ctx, req)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return r.GetHTML()
+	readCloser := ioutil.NopCloser(bytes.NewReader(resp.([]byte)))
+	return readCloser, nil
 }
 
 func (e Endpoints) Response(req FetchRequester) (FetchResponser, error) {
 	ctx := context.Background()
-	//switch req.(type) {
+	var r FetchResponser
+	var err error
 	switch req.Type() {
-	//case  BaseFetcherRequest, *BaseFetcherRequest:
 	case "base":
 		resp, err := e.BaseResponseEndpoint(ctx, req)
 		if err != nil {
 			return nil, err
 		}
 		response := resp.(BaseFetcherResponse)
-		return &response, nil
+		r = &response
 	//case splash.Request, *splash.Request:
 	case "splash":
 		resp, err := e.SplashResponseEndpoint(ctx, req)
@@ -171,8 +185,7 @@ func (e Endpoints) Response(req FetchRequester) (FetchResponser, error) {
 			return nil, err
 		}
 		response := resp.(splash.Response)
-		return &response, nil
-	default:
-		return nil, errors.New("invalid fetcher request")
+		r = &response
 	}
+	return r, err
 }
