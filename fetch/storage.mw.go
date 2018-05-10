@@ -126,13 +126,11 @@ func (mw storageMiddleware) Response(req FetchRequester) (FetchResponser, error)
 		}
 
 		var fetchResponse FetchResponser
-		switch req.(type) {
-		case BaseFetcherRequest:
+		switch req.Type() {
+		case "base":
 			fetchResponse = resp.(*BaseFetcherResponse)
-		case splash.Request:
+		case "splash":
 			fetchResponse = resp.(*splash.Response)
-		default:
-			panic("invalid fetcher request")
 		}
 		//save fetched content to storage
 		err = mw.put(req, fetchResponse)
