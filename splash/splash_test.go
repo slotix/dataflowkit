@@ -96,6 +96,16 @@ func TestGetContent(t *testing.T) {
 	buf.ReadFrom(readCloser)
 	s := buf.String()
 	assert.Equal(t, `<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`, s)
+	resp = Response{Error: "error"}
+	readCloser, err := resp.GetHTML()
+	assert.Error(t, err, "Error returned")
+	resp = Response{}
+	nilResp := &resp
+	nilResp = nil
+	readCloser, err = nilResp.GetHTML()
+	assert.Error(t, err, "Resp is nil")
+
+
 }
 
 func TestReqGetURL(t *testing.T) {
