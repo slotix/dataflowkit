@@ -52,19 +52,30 @@ var pJSON = scrape.Payload{
 }
 
 func Test_server(t *testing.T) {
-	//start parse server
-	parseServer := "127.0.0.1:8001"
+	//start fetch server
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
-	serverCfg := Config{
-		Host:         parseServer,
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host:         fetchServerAddr,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
-	htmlServer := Start(serverCfg)
+	fetchServer := fetch.Start(fetchServerCfg)
+
+	////////
+	//start parse server
+	parseServerAddr := "127.0.0.1:8001"
+	serverCfg := Config{
+		Host:         parseServerAddr,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+	}
+	viper.Set("SKIP_STORAGE_MW", true)
+	parseServer := Start(serverCfg)
 
 	//create HTTPClient to send requests.
-	svc, err := NewHTTPClient(parseServer)
+	svc, err := NewHTTPClient(parseServerAddr)
 	if err != nil {
 		logger.Error(err)
 	}
@@ -77,6 +88,8 @@ func Test_server(t *testing.T) {
 	//buf.ReadFrom(result)
 	//t.Log(buf.String())
 
-	//Stop fetch server
-	htmlServer.Stop()
+	//Stop servers
+	fetchServer.Stop()
+	parseServer.Stop()
+
 }

@@ -124,7 +124,17 @@ func init() {
 }
 
 func TestTask_ParseJSON(t *testing.T) {
-
+	//start fetch server
+	viper.Set("DFK_FETCH", "127.0.0.1:8000")
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host:         fetchServerAddr,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+	}
+	viper.Set("SKIP_STORAGE_MW", true)
+	fetchServer := fetch.Start(fetchServerCfg)
+	///////
 	type fields struct {
 		ID      string
 		Payload Payload
@@ -175,10 +185,21 @@ func TestTask_ParseJSON(t *testing.T) {
 			}
 		})
 	}
+	fetchServer.Stop()
 }
 
 func TestTask_ParseCSV(t *testing.T) {
-
+	//start fetch server
+	viper.Set("DFK_FETCH", "127.0.0.1:8000")
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host:         fetchServerAddr,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+	}
+	viper.Set("SKIP_STORAGE_MW", true)
+	fetchServer := fetch.Start(fetchServerCfg)
+	///////
 	type fields struct {
 		ID      string
 		Payload Payload
@@ -224,9 +245,21 @@ func TestTask_ParseCSV(t *testing.T) {
 			}
 		})
 	}
+	fetchServer.Stop()
 }
 
 func TestTask_ParseXML(t *testing.T) {
+	//start fetch server
+	viper.Set("DFK_FETCH", "127.0.0.1:8000")
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host:         fetchServerAddr,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+	}
+	viper.Set("SKIP_STORAGE_MW", true)
+	fetchServer := fetch.Start(fetchServerCfg)
+	///////
 	pCSV_XML.Format = "XML"
 
 	type fields struct {
@@ -277,6 +310,7 @@ func TestTask_ParseXML(t *testing.T) {
 			}
 		})
 	}
+	fetchServer.Stop()
 }
 
 func TestScraper_partNames(t *testing.T) {
