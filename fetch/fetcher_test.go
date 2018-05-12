@@ -17,6 +17,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestAssembleRobotstxtURL(t *testing.T){
+	res, err := AssembleRobotstxtURL("http://example.com")
+	assert.NoError(t, err)
+	assert.Equal(t, "http://example.com/robots.txt", res,)
+}
+
 func TestBaseFetcher_Fetch(t *testing.T) {
 	r := mux.NewRouter()
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
