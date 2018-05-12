@@ -2,7 +2,6 @@ package fetch
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 
@@ -16,7 +15,7 @@ import (
 // Service defines Fetch service interface
 type Service interface {
 	Response(req FetchRequester) (FetchResponser, error)
-	Fetch(req FetchRequester) (io.ReadCloser, error)
+	//Fetch(req FetchRequester) (io.ReadCloser, error)
 }
 
 // FetchService implements service with empty struct
@@ -100,10 +99,10 @@ func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 }
 
 //Fetch downloads web page content and returns it
-func (fs FetchService) Fetch(req FetchRequester) (io.ReadCloser, error) {
-	res, err := fs.Response(req)
-	if err != nil {
-		return nil, err
-	}
-	return res.GetHTML()
-}
+// func (fs FetchService) Fetch(req FetchRequester) (io.ReadCloser, error) {
+// 	res, err := fs.Response(req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return res.GetHTML()
+// }

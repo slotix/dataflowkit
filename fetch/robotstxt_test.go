@@ -45,7 +45,7 @@ func TestRobotstxtData(t *testing.T) {
 
 	//rd, err := RobotstxtData("https://google.com")
 	//viper.Set("DFK_FETCH", ts.URL)
-	
+
 	//start fetch server
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	fetchServer := viper.GetString("DFK_FETCH")

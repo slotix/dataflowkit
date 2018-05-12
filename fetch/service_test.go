@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -58,16 +57,28 @@ func TestFetchService(t *testing.T) {
 	})
 	ts := httptest.NewServer(r)
 	defer ts.Close()
-	
-	content, err := svc.Fetch(BaseFetcherRequest{
+
+	resp, err := svc.Response(BaseFetcherRequest{
 		URL:       ts.URL,
 		Method:    "GET",
 		UserToken: "123456",
 	})
 
 	assert.Nil(t, err, "Expected no error")
-	assert.NotNil(t, content, "Expected content is not nill")
-	content, err = svc.Fetch(BaseFetcherRequest{
+	assert.NotNil(t, resp, "Expected response is not nil")
+
+	//read cookies
+	resp, err = svc.Response(BaseFetcherRequest{
+		URL:       ts.URL,
+		Method:    "GET",
+		UserToken: "123456",
+	})
+
+	assert.Nil(t, err, "Expected no error")
+	assert.NotNil(t, resp, "Expected response is not nil")
+
+	//invalid URL
+	resp, err = svc.Response(BaseFetcherRequest{
 		URL:    "invalid_addr",
 		Method: "GET",
 	})
@@ -75,14 +86,14 @@ func TestFetchService(t *testing.T) {
 	assert.Error(t, err, "Expected error")
 
 	//Splash Fetcher
-	response, err := svc.Response(splash.Request{
-		URL:       "http://example.com",
-		FormData:  "",
-		LUA:       "",
-		UserToken: userToken,
-	})
-	assert.Nil(t, err, "Expected no error")
-	assert.Equal(t, 200, response.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
+	// response, err := svc.Response(splash.Request{
+	// 	URL:       "http://example.com",
+	// 	FormData:  "",
+	// 	LUA:       "",
+	// 	UserToken: userToken,
+	// })
+	// assert.Nil(t, err, "Expected no error")
+	// assert.Equal(t, 200, response.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
 
 }
 
