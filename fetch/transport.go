@@ -188,11 +188,11 @@ type Endpoints struct {
 func MakeSplashFetchEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(splash.Request)
-		v, err := svc.Fetch(req)
+		resp, err := svc.Response(req)
 		if err != nil {
 			return nil, err
 		}
-		return v, nil
+		return resp.GetHTML()
 	}
 }
 
@@ -200,11 +200,11 @@ func MakeSplashFetchEndpoint(svc Service) endpoint.Endpoint {
 func MakeBaseFetchEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(BaseFetcherRequest)
-		v, err := svc.Fetch(req)
+		resp, err := svc.Response(req)
 		if err != nil {
 			return nil, err
 		}
-		return v, nil
+		return resp.GetHTML()
 	}
 }
 

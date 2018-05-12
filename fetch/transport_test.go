@@ -26,6 +26,7 @@ func TestHealthCheckHandler(t *testing.T) {
 	assert.Equal(t, []byte(`{"alive": true}`), body)
 }
 
+
 // func TestDecodeSplashFetcherRequest(t *testing.T) {
 // 	ctx := context.Background()
 // 	body := []byte(`{"url":"http://dbconvert.com"}`)

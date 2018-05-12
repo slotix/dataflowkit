@@ -1,7 +1,6 @@
 package fetch
 
 import (
-	"io"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -23,31 +22,31 @@ type loggingMiddleware struct {
 }
 
 // Fetch logs requests to Fetch endpoint
-func (mw loggingMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err error) {
-	defer func(begin time.Time) {
-		url := req.GetURL()
-		var fetcher string
-		switch req.(type) {
-		case BaseFetcherRequest:
-			fetcher = "base"
-		case splash.Request:
-			fetcher = "splash"
-		default:
-			panic("invalid fetcher request")
-		}
-		if err == nil {
-			mw.logger.WithFields(
-				logrus.Fields{
-					"fetcher": fetcher,
-					"func":    "Fetch",
-					"took":    time.Since(begin),
-				}).Info("Fetch URL: ", url)
-		}
-		//don't log errors here. They all will be reported at transport.go func encodeError()
-	}(time.Now())
-	out, err = mw.Service.Fetch(req)
-	return
-}
+// func (mw loggingMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err error) {
+// 	defer func(begin time.Time) {
+// 		url := req.GetURL()
+// 		var fetcher string
+// 		switch req.(type) {
+// 		case BaseFetcherRequest:
+// 			fetcher = "base"
+// 		case splash.Request:
+// 			fetcher = "splash"
+// 		default:
+// 			panic("invalid fetcher request")
+// 		}
+// 		if err == nil {
+// 			mw.logger.WithFields(
+// 				logrus.Fields{
+// 					"fetcher": fetcher,
+// 					"func":    "Fetch",
+// 					"took":    time.Since(begin),
+// 				}).Info("Fetch URL: ", url)
+// 		}
+// 		//don't log errors here. They all will be reported at transport.go func encodeError()
+// 	}(time.Now())
+// 	out, err = mw.Service.Fetch(req)
+// 	return
+// }
 
 // Fetch logs requests to Response endpoint
 func (mw loggingMiddleware) Response(req FetchRequester) (response FetchResponser, err error) {
