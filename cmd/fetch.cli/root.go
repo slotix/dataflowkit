@@ -102,13 +102,17 @@ var RootCmd = &cobra.Command{
 					os.Exit(1)
 				}
 				//	req := splash.Request{URL: URL}
-				resp, err := svc.Fetch(req)
+				resp, err := svc.Response(req)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %v\n", err)
 					os.Exit(1)
 				}
-				
-				b, err := ioutil.ReadAll(resp)
+				html,err  := resp.GetHTML()
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error: %v\n", err)
+					os.Exit(1)
+				}
+				b, err := ioutil.ReadAll(html)
 				fmt.Println(string(b))
 				select {
 				case <-cx.Done():

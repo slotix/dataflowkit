@@ -1,12 +1,10 @@
 package fetch
 
 import (
-	"fmt"
-	neturl "net/url"
+	"net/url"
 	"strings"
 	"time"
 
-	"github.com/spf13/viper"
 	"github.com/temoto/robotstxt"
 )
 
@@ -17,27 +15,34 @@ func IsRobotsTxt(url string) bool {
 
 //fetchRobots is used for getting robots.txt files.
 func fetchRobots(req BaseFetcherRequest) (*BaseFetcherResponse, error) {
-	svc, err := NewHTTPClient(viper.GetString("DFK_FETCH"))
+	fetcher := NewFetcher(Base)
+	resp, err := fetcher.Response(req)
 	if err != nil {
 		logger.Error(err)
-	}
-	resp, err := svc.Response(req)
-	if err != nil {
-		//	logger.Error(err)
 		return nil, err
 	}
 	return resp.(*BaseFetcherResponse), nil
+	// svc, err := NewHTTPClient(viper.GetString("DFK_FETCH"))
+	// if err != nil {
+	// 	logger.Error(err)
+	// }
+	// resp, err := svc.Response(req)
+	// if err != nil {
+	// 	//	logger.Error(err)
+	// 	return nil, err
+	// }
+	// return resp.(*BaseFetcherResponse), nil
 }
 
 //AssembleRobotstxtURL robots.txt URL from URL
-func AssembleRobotstxtURL(url string) (string, error) {
-	parsedURL, err := neturl.Parse(url)
+func AssembleRobotstxtURL(rawurl string) (string, error) {
+	var robotsTxtParsedPath, _ = url.Parse("/robots.txt")
+	u, err := url.Parse(rawurl)
 	if err != nil {
 		return "", err
 	}
-	//assemble robotsURL from req.URL
-	robotsURL := fmt.Sprintf("%s://%s/robots.txt", parsedURL.Scheme, parsedURL.Host)
-	return robotsURL, nil
+	rob := u.ResolveReference(robotsTxtParsedPath)
+	return rob.String(), nil
 }
 
 //RobotstxtData generates robots.txt url, retrieves its content through API fetch endpoint.
@@ -70,11 +75,11 @@ func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
 }
 
 //AllowedByRobots checks if scraping of specified URL is allowed by robots.txt
-func AllowedByRobots(url string, robotsData *robotstxt.RobotsData) bool {
+func AllowedByRobots(rawurl string, robotsData *robotstxt.RobotsData) bool {
 	if robotsData == nil {
 		return true
 	}
-	parsedURL, err := neturl.Parse(url)
+	parsedURL, err := url.Parse(rawurl)
 	if err != nil {
 		logger.Error("err")
 	}
