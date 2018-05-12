@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -34,15 +33,15 @@ func NewHTTPClient(instance string) (Service, error) {
 	// endpoint.Endpoint) that gets wrapped with various middlewares. If you
 	// made your own client library, you'd do this work there, so your server
 	// could rely on a consistent set of client behavior.
-	var splashFetchEndpoint endpoint.Endpoint
-	{
-		splashFetchEndpoint = httptransport.NewClient(
-			"POST",
-			copyURL(u, "/fetch/splash"),
-			encodeHTTPGenericRequest,
-			decodeSplashFetcherContent,
-		).Endpoint()
-	}
+	// var splashFetchEndpoint endpoint.Endpoint
+	// {
+	// 	splashFetchEndpoint = httptransport.NewClient(
+	// 		"POST",
+	// 		copyURL(u, "/fetch/splash"),
+	// 		encodeHTTPGenericRequest,
+	// 		decodeSplashFetcherContent,
+	// 	).Endpoint()
+	// }
 
 	var splashResponseEndpoint endpoint.Endpoint
 	{
@@ -54,15 +53,15 @@ func NewHTTPClient(instance string) (Service, error) {
 		).Endpoint()
 	}
 
-	var baseFetchEndpoint endpoint.Endpoint
-	{
-		baseFetchEndpoint = httptransport.NewClient(
-			"POST",
-			copyURL(u, "/fetch/base"),
-			encodeHTTPGenericRequest,
-			decodeBaseFetcherContent,
-		).Endpoint()
-	}
+	// var baseFetchEndpoint endpoint.Endpoint
+	// {
+	// 	baseFetchEndpoint = httptransport.NewClient(
+	// 		"POST",
+	// 		copyURL(u, "/fetch/base"),
+	// 		encodeHTTPGenericRequest,
+	// 		decodeBaseFetcherContent,
+	// 	).Endpoint()
+	// }
 
 	var baseResponseEndpoint endpoint.Endpoint
 	{
@@ -77,10 +76,10 @@ func NewHTTPClient(instance string) (Service, error) {
 	// endpoint.Set implementing the Service methods. That's just a simple bit
 	// of glue code.
 	return Endpoints{
-		SplashFetchEndpoint:    splashFetchEndpoint,
+		//SplashFetchEndpoint:    splashFetchEndpoint,
 		SplashResponseEndpoint: splashResponseEndpoint,
-		BaseFetchEndpoint:      baseFetchEndpoint,
-		BaseResponseEndpoint:   baseResponseEndpoint,
+		//BaseFetchEndpoint:      baseFetchEndpoint,
+		BaseResponseEndpoint: baseResponseEndpoint,
 	}, nil
 }
 
@@ -100,16 +99,16 @@ func encodeHTTPGenericRequest(ctx context.Context, r *http.Request, request inte
 // non-200 status code, we will interpret that as an error and attempt to decode
 // the specific error message from the response body. Primarily useful in a
 // client.
-func decodeSplashFetcherContent(ctx context.Context, r *http.Response) (interface{}, error) {
-	if r.StatusCode != http.StatusOK {
-		return nil, errors.New(r.Status)
-	}
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
+// func decodeSplashFetcherContent(ctx context.Context, r *http.Response) (interface{}, error) {
+// 	if r.StatusCode != http.StatusOK {
+// 		return nil, errors.New(r.Status)
+// 	}
+// 	data, err := ioutil.ReadAll(r.Body)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return data, nil
+// }
 
 func decodeSplashFetcherResponse(ctx context.Context, r *http.Response) (interface{}, error) {
 	if r.StatusCode != http.StatusOK {
@@ -120,16 +119,16 @@ func decodeSplashFetcherResponse(ctx context.Context, r *http.Response) (interfa
 	return resp, err
 }
 
-func decodeBaseFetcherContent(ctx context.Context, r *http.Response) (interface{}, error) {
-	if r.StatusCode != http.StatusOK {
-		return nil, errors.New(r.Status)
-	}
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
+// func decodeBaseFetcherContent(ctx context.Context, r *http.Response) (interface{}, error) {
+// 	if r.StatusCode != http.StatusOK {
+// 		return nil, errors.New(r.Status)
+// 	}
+// 	data, err := ioutil.ReadAll(r.Body)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return data, nil
+// }
 
 func decodeBaseFetcherResponse(ctx context.Context, r *http.Response) (interface{}, error) {
 	if r.StatusCode != http.StatusOK {
@@ -146,25 +145,30 @@ func copyURL(base *url.URL, path string) *url.URL {
 	return &next
 }
 
-func (e Endpoints) Fetch(req FetchRequester) (io.ReadCloser, error) {
-	ctx := context.Background()
-	var resp interface{}
-	var err error
-	switch req.Type() {
-	case "base":
-		resp, err = e.BaseFetchEndpoint(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-	case "splash":
-		resp, err = e.SplashFetchEndpoint(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-	}
-	readCloser := ioutil.NopCloser(bytes.NewReader(resp.([]byte)))
-	return readCloser, nil
-}
+// func (e Endpoints) Fetch(req FetchRequester) (io.ReadCloser, error) {
+// 	// ctx := context.Background()
+// 	// var resp interface{}
+// 	// var err error
+// 	// switch req.Type() {
+// 	// case "base":
+// 	// 	resp, err = e.BaseFetchEndpoint(ctx, req)
+// 	// 	if err != nil {
+// 	// 		return nil, err
+// 	// 	}
+// 	// case "splash":
+// 	// 	resp, err = e.SplashFetchEndpoint(ctx, req)
+// 	// 	if err != nil {
+// 	// 		return nil, err
+// 	// 	}
+// 	// }
+// 	// readCloser := ioutil.NopCloser(bytes.NewReader(resp.([]byte)))
+// 	// return readCloser, nil
+// 	resp, err := e.Response(req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return resp.GetHTML()
+// }
 
 func (e Endpoints) Response(req FetchRequester) (FetchResponser, error) {
 	ctx := context.Background()

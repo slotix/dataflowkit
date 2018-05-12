@@ -475,12 +475,13 @@ func fetchContent(req fetch.FetchRequester) (io.ReadCloser, error) {
 	if err != nil {
 		logger.Error(err)
 	}
-	resp, err := svc.Fetch(req)
+	resp, err := svc.Response(req)
 	if err != nil {
 		logger.Error(err)
 		return nil, err
 	}
-	return resp, nil
+	
+	return resp.GetHTML()
 }
 
 //partNames returns Part Names which are used as a header of output CSV

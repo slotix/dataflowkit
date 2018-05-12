@@ -4,7 +4,6 @@ import (
 	"encoding/base32"
 	"encoding/json"
 	"errors"
-	"io"
 	"time"
 
 	"github.com/slotix/dataflowkit/splash"
@@ -100,47 +99,44 @@ func (mw storageMiddleware) put(req FetchRequester, resp FetchResponser) error {
 }
 
 //Fetch returns content either from storage or directly from web.
-func (mw storageMiddleware) Fetch(req FetchRequester) (io.ReadCloser, error) {
-	resp, err := mw.Response(req)
-	if err != nil {
-		return nil, err
-	}
-	return resp.GetHTML()
-}
+// func (mw storageMiddleware) Fetch(req FetchRequester) (io.ReadCloser, error) {
+// 	resp, err := mw.Response(req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return resp.GetHTML()
+// }
 
 //Response returns Fetch Response either from storage or directly from web.
 //This middleware method is used by Parse service.
 func (mw storageMiddleware) Response(req FetchRequester) (FetchResponser, error) {
-	//if form Data is emtpy try to get cached data from storage first
-	if req.GetFormData() == "" {
-		//loads content from a storage if any
-		fromStorage, err := mw.get(req)
-		if err == nil {
-			return fromStorage, nil
-		}
-		//logger.Error(err)
-		//Get fetch response directly from web if there is nothing in storage
-		resp, err := mw.Service.Response(req)
-		if err != nil {
-			return nil, err
-		}
 
-		var fetchResponse FetchResponser
-		switch req.Type() {
-		case "base":
-			fetchResponse = resp.(*BaseFetcherResponse)
-		case "splash":
-			fetchResponse = resp.(*splash.Response)
-		}
-		//save fetched content to storage
-		err = mw.put(req, fetchResponse)
-		if err != nil {
-			return nil, err
-		}
-		return resp, nil
-	} 
-	//if form Data exists don't use storage!!!
+	//if form Data is emtpy try to get cached data from storage first
+	if req.GetFormData() != "" {
+		//if form Data exists don't use storage!!!
+		return mw.Service.Response(req)
+	}
+	//loads content from a storage if any
+	fromStorage, err := mw.get(req)
+	if err == nil {
+		return fromStorage, nil
+	}
+	//logger.Error(err)
+	//Get fetch response directly from web if there is nothing in storage
 	resp, err := mw.Service.Response(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var fetchResponse FetchResponser
+	switch req.Type() {
+	case "base":
+		fetchResponse = resp.(*BaseFetcherResponse)
+	case "splash":
+		fetchResponse = resp.(*splash.Response)
+	}
+	//save fetched content to storage
+	err = mw.put(req, fetchResponse)
 	if err != nil {
 		return nil, err
 	}

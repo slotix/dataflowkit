@@ -15,8 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//const addr = "localhost:12345"
-
 var (
 	IndexContent = []byte(`<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`)
 
@@ -27,48 +25,6 @@ var (
 	// 	Disallow: /disallowed
 	// 	`)
 )
-
-// func init() {
-// 	r := mux.NewRouter()
-// 	server := &http.Server{}
-// 	listener, err := net.Listen("tcp", addr)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-// 		w.Header().Set("Conent-Type", "text/html")
-// 		w.Write(IndexContent)
-// 	})
-// 	r.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
-// 		w.Header().Set("Conent-Type", "text/html")
-// 		w.Write([]byte(RobotsContent))
-// 	})
-// 	r.HandleFunc("/allowed", func(w http.ResponseWriter, r *http.Request) {
-// 		w.WriteHeader(200)
-// 		w.Write([]byte("allowed"))
-// 	})
-// 	r.HandleFunc("/disallowed", func(w http.ResponseWriter, r *http.Request) {
-// 		w.WriteHeader(200)
-// 		w.Write([]byte("disallowed"))
-// 	})
-
-// 	r.HandleFunc("/status/{status}", func(w http.ResponseWriter, r *http.Request) {
-// 		vars := mux.Vars(r)
-// 		st, err := strconv.Atoi(vars["status"])
-// 		if err != nil {
-// 			fmt.Println(err)
-// 		}
-// 		w.WriteHeader(st)
-// 		w.Write([]byte(vars["status"]))
-// 	})
-
-// 	http.Handle("/", r)
-// 	go func() {
-// 		if err := server.Serve(listener); err != nil {
-// 			fmt.Println("Httpserver: ListenAndServe() error: %s", err)
-// 		}
-// 	}()
-// }
 
 func Test_server_Base(t *testing.T) {
 	r := mux.NewRouter()
@@ -85,7 +41,7 @@ func Test_server_Base(t *testing.T) {
 		w.Write([]byte("allowed"))
 	})
 	r.HandleFunc("/disallowed", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(403)
 		w.Write([]byte("disallowed"))
 	})
 
@@ -123,20 +79,24 @@ func Test_server_Base(t *testing.T) {
 	//send request to base fetcher endpoint
 	req := BaseFetcherRequest{
 		URL: ts.URL,
-		//URL: "http://" + addr,
 		//URL: "http://example.com",
 		//URL: "http://github.com",
 	}
-	t.Log(ts.URL)
-	data, err := svc.Fetch(req)
-	if err != nil {
-		logger.Error(err)
-	}
+	resp, err := svc.Response(req)
 	assert.NoError(t, err, "error is nil")
+	data, err := resp.GetHTML()
+	assert.NoError(t, err)
 	//	assert.NotNil(t, html)
 	html, err := ioutil.ReadAll(data)
 	assert.NoError(t, err, "Expected no error")
 	assert.Equal(t, IndexContent, html, "Expected Hello World")
+	
+	//test forbidden 
+	req = BaseFetcherRequest{
+		URL: ts.URL + "/disallowed",
+	}
+	resp, err = svc.Response(req)
+	assert.Error(t, err, "returned error")
 
 	//Test invalid Response Status codes.
 	urls := []string{
@@ -155,10 +115,12 @@ func Test_server_Base(t *testing.T) {
 		req := BaseFetcherRequest{
 			URL: url,
 		}
-		_, err = svc.Fetch(req)
+		_, err = svc.Response(req)
 		t.Log(err)
 		assert.Error(t, err)
 	}
+
+	
 	htmlServer.Stop()
 }
 
@@ -195,13 +157,13 @@ func Test_server_Splash(t *testing.T) {
 
 	//assert.Equal(t, indexContent, data, "Expected Hello World")
 
-	data, err := svc.Fetch(sReq)
-	if err != nil {
-		logger.Error(err)
-	}
-	//data, err = ioutil.ReadAll(r)
-	assert.NoError(t, err, "Expected no error")
-	assert.NotNil(t, data)
+	// data, err := svc.Response(sReq)
+	// if err != nil {
+	// 	logger.Error(err)
+	// }
+	// //data, err = ioutil.ReadAll(r)
+	// assert.NoError(t, err, "Expected no error")
+	// assert.NotNil(t, data)
 
 	htmlServer.Stop()
 }
