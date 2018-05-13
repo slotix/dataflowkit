@@ -313,11 +313,14 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 					sel = sel.Find(part.Selector)
 				}
 				//update base URL to reflect attr relative URL change
-				if part.Extractor.GetType() == "attr" {
+				switch part.Extractor.(type){
+				case extract.Attr:
+				//	if part.Extractor.GetType() == "attr" {
 					attr := part.Extractor.(*extract.Attr)
 					if attr.Attr == "href" || attr.Attr == "src" {
 						attr.BaseURL = url
 					}
+			//	}
 				}
 				extractedPartResults, err := part.Extractor.Extract(sel)
 				if err != nil {
