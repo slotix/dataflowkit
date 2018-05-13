@@ -34,7 +34,7 @@ type Extractor interface {
 	// If this function returns an error, then the scrape is aborted.
 	Extract(*goquery.Selection) (interface{}, error)
 	//GetType returns Extractor type
-	GetType() string
+	//GetType() string
 }
 
 // Const is an Extractor that returns a constant value.
@@ -49,9 +49,9 @@ func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 //GetType returns Extractor type
-func (Const) GetType() string {
-	return "const"
-}
+// func (Const) GetType() string {
+// 	return "const"
+// }
 
 var _ Extractor = Const{}
 
@@ -93,9 +93,9 @@ func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 //GetType returns Extractor type
-func (Text) GetType() string {
-	return "text"
-}
+// func (Text) GetType() string {
+// 	return "text"
+// }
 
 var _ Extractor = Text{}
 
@@ -131,9 +131,9 @@ func (e Html) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 //GetType returns Extractor type
-func (Html) GetType() string {
-	return "html"
-}
+// func (Html) GetType() string {
+// 	return "html"
+// }
 
 var _ Extractor = Html{}
 
@@ -160,9 +160,9 @@ func (e OuterHtml) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 //GetType returns Extractor type
-func (OuterHtml) GetType() string {
-	return "outerHtml"
-}
+// func (OuterHtml) GetType() string {
+// 	return "outerHtml"
+// }
 
 var _ Extractor = OuterHtml{}
 
@@ -268,9 +268,9 @@ func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 //GetType returns Extractor type
-func (Regex) GetType() string {
-	return "regex"
-}
+// func (Regex) GetType() string {
+// 	return "regex"
+// }
 
 var _ Extractor = Regex{}
 
@@ -335,9 +335,9 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 //GetType returns Extractor type
-func (Attr) GetType() string {
-	return "attr"
-}
+// func (Attr) GetType() string {
+// 	return "attr"
+// }
 
 var _ Extractor = Attr{}
 
@@ -361,8 +361,8 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 }
 
 //GetType returns Extractor type
-func (Count) GetType() string {
-	return "count"
-}
+// func (Count) GetType() string {
+// 	return "count"
+// }
 
 var _ Extractor = Count{}
