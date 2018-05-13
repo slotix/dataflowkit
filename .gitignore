@@ -72,3 +72,4 @@ fetch/fetch.d/debug
 fetch/fetch.d/fetch.d
 parse/parse.d/debug
 parse/parse.d/parse.d
+testserver/testserver

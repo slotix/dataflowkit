@@ -2,6 +2,7 @@ package splash
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -46,46 +47,49 @@ func TestSplashRenderHTMLEndpoint(t *testing.T) {
 
 }
 
-// func TestGetResponse(t *testing.T) {
-// 	//Splash running inside Docker container cannot render a page on a localhost. It leads to rendering page errors https://github.com/scrapinghub/splash/issues/237 .
-// 	//Only URLs on the web are available for testing.
-// 	req := Request{URL: "http://example.com",}
-// 	resp, err := req.GetResponse()
-// 	assert.Nil(t, err, "Expected no error")
-// 	statusCode := resp.Response.Status
-// 	assert.Equal(t, statusCode, 200)
-// 	respURL := resp.GetURL()
-// 	assert.Equal(t, respURL, "http://example.com/")
-// 	expires := resp.GetExpires()
-// 	tp := fmt.Sprintf("%T", expires)
-// 	assert.Equal(t, "time.Time", tp)
-// 	reasons := resp.GetReasonsNotToCache()
-// 	logger.Info(reasons)
+func TestGC(t *testing.T) {
+	gcResponse, err := gc(viper.GetString("SPLASH"))
+	assert.NoError(t, err)
+	assert.Equal(t, "ok", gcResponse.Status)
 
-// 	req = Request{URL: "http://httpbin.org/status/400",}
-// 	resp, _ = req.GetResponse()
-// 	logger.Info(resp)
-// 	_, err = resp.GetHTML()
-// 	assert.Error(t, err, "error returned")
+}
 
-// 	urls := []string{
-// 		"http://httpbin.org/status/404",
-// 		"http://httpbin.org/status/400",
-// 		"http://httpbin.org/status/500",
-// 		"http://httpbin.org/status/403",
-// 		//"http://httpbin.org/status/504",
-// 		"http://google",
-// 		"google.com",
-// 	}
-// 	for _, url := range urls {
-// 		req := Request{
-// 			URL: url,
-// 		}
-// 		_, err := req.GetResponse()
-// 		assert.Error(t, err, "error returned")
-// 	}
+func TestGetResponse(t *testing.T) {
+	//Splash running inside Docker container cannot render a page on a localhost. It leads to rendering page errors https://github.com/scrapinghub/splash/issues/237 .
+	//Only URLs on the web are available for testing.
+	req := Request{
+		URL: "http://testserver:12345",
+	}
+	resp, err := req.GetResponse()
+	assert.Nil(t, err, "Expected no error")
+	statusCode := resp.Response.Status
+	assert.Equal(t, statusCode, 200)
+	u := resp.GetURL()
+	assert.Equal(t, u, "http://testserver:12345/")
+	expires := resp.GetExpires()
+	tp := fmt.Sprintf("%T", expires)
+	assert.Equal(t, "time.Time", tp)
+	reasons := resp.GetReasonsNotToCache()
+	logger.Info(reasons)
 
-// }
+	urls := []string{
+		"http://testserver:12345/status/404",
+		"http://testserver:12345/status/400",
+		"http://testserver:12345/status/500",
+		"http://testserver:12345/status/403",
+		"http://testserver:12345/status/504",
+		"http://google",
+		"google.com",
+	}
+	for _, url := range urls {
+		req := Request{
+			URL: url,
+		}
+		_, err := req.GetResponse()
+		assert.Error(t, err, "error returned")
+	}
+
+}
 
 func TestGetContent(t *testing.T) {
 	resp := Response{
@@ -105,7 +109,6 @@ func TestGetContent(t *testing.T) {
 	readCloser, err = nilResp.GetHTML()
 	assert.Error(t, err, "Resp is nil")
 
-
 }
 
 func TestReqGetURL(t *testing.T) {
@@ -113,6 +116,15 @@ func TestReqGetURL(t *testing.T) {
 		URL: "   http://example.com/	",
 	}
 	assert.Equal(t, "http://example.com", req.GetURL())
+}
+
+func TestGetUserToken(t *testing.T) {
+	req := Request{
+		URL: "   http://example.com/	",
+		UserToken :"12345",
+	}
+
+	assert.Equal(t, "12345", req.GetUserToken())
 }
 
 func TestHost(t *testing.T) {
