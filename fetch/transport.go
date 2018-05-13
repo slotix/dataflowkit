@@ -1,9 +1,11 @@
 package fetch
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
+	"path/filepath"
 
 	"context"
 
@@ -19,11 +21,14 @@ import (
 // NewHttpHandler mounts all of the service endpoints into an http.Handler.
 func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logger) http.Handler {
 	r := mux.NewRouter()
+	r.UseEncodedPath()
 	options := []httptransport.ServerOption{
 		//httptransport.ServerErrorLogger(logger),
 		httptransport.ServerErrorEncoder(encodeError),
 	}
 
+	r.Methods("GET").Path("/proxy").HandlerFunc(proxyHandler)
+	r.Methods("GET").Path("/ping").HandlerFunc(healthCheckHandler)
 	r.Methods("POST").Path("/fetch/splash").Handler(httptransport.NewServer(
 		endpoint.SplashFetchEndpoint,
 		DecodeSplashFetcherRequest,
@@ -50,8 +55,6 @@ func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logg
 		EncodeFetcherResponse,
 		options...,
 	))
-	r.Methods("GET").Path("/ping").HandlerFunc(healthCheckHandler)
-
 	return r
 }
 
@@ -131,7 +134,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	if err == nil {
 		panic("encodeError with nil error")
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	//	logger.Printf("Type: %T\n", err)
 
@@ -173,7 +176,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": err.Error(),
 	})
-	
+
 }
 
 // Endpoints wrapper
@@ -237,4 +240,59 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	io.WriteString(w, `{"alive": true}`)
+}
+
+//healthCheckHandler is used to check if Fetch service is alive.
+func proxyHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+	u := r.URL.Query().Get("url")
+	/* fetcher := NewFetcher(Base)
+	req := BaseFetcherRequest{
+		URL:    u,
+		Method: "GET",
+	}
+	resp, err := fetcher.Response(req)
+	if err != nil {
+		e := errs.BadGateway{What: "response"}
+		encodeError(ctx, &e, w)
+		return
+	} */
+	resp, err := http.Get(u)
+	if err != nil {
+		return
+	}
+
+	extension := filepath.Ext(u)
+
+	var mimetype string
+	switch extension {
+	case ".html":
+		mimetype = "text/html"
+	case ".ico":
+		mimetype = "image/x-icon"
+	case ".jpg":
+		mimetype = "image/jpeg"
+	case ".png":
+		mimetype = "image/png"
+	case ".gif":
+		mimetype = "image/gif"
+	case ".css":
+		mimetype = "text/css"
+	case ".js":
+		mimetype = "text/javascript"
+	default:
+		mimetype = "text/plain"
+	}
+	logger.Info("URL ", u, " Mime ", mimetype)
+	w.Header().Set("Content-Type", mimetype)
+	w.WriteHeader(http.StatusOK)
+	rc := resp.Body //GetHTML()
+	if err != nil {
+		e := errs.BadGateway{What: "content"}
+		encodeError(ctx, &e, w)
+		return
+	}
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(rc)
+	io.WriteString(w, buf.String())
 }
