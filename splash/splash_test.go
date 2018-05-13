@@ -16,7 +16,7 @@ func init() {
 	viper.Set("SPLASH", "127.0.0.1:8050")
 	viper.Set("SPLASH_TIMEOUT", 20)
 	viper.Set("SPLASH_RESOURCE_TIMEOUT", 30)
-	viper.Set("SPLASH_WAIT", 0.5)
+	viper.Set("SPLASH_WAIT", 0)
 }
 
 func TestSplashRenderHTMLEndpoint(t *testing.T) {
@@ -57,8 +57,23 @@ func TestGC(t *testing.T) {
 func TestGetResponse(t *testing.T) {
 	//Splash running inside Docker container cannot render a page on a localhost. It leads to rendering page errors https://github.com/scrapinghub/splash/issues/237 .
 	//Only URLs on the web are available for testing.
+	cArr := []*http.Cookie{
+		&http.Cookie{
+			Name:   "cookie1",
+			Value:  "cValue1",
+			Domain: "example.com",
+		},
+		&http.Cookie{
+			Name:   "cookie2",
+			Value:  "cValue2",
+			Domain: "example.com",
+		},
+	}
+
 	req := Request{
-		URL: "http://testserver:12345",
+		URL:     "http://testserver:12345",
+		Cookies: cArr,
+		UserToken: "12345",
 	}
 	resp, err := req.GetResponse()
 	assert.Nil(t, err, "Expected no error")
@@ -69,8 +84,7 @@ func TestGetResponse(t *testing.T) {
 	expires := resp.GetExpires()
 	tp := fmt.Sprintf("%T", expires)
 	assert.Equal(t, "time.Time", tp)
-	reasons := resp.GetReasonsNotToCache()
-	logger.Info(reasons)
+	resp.GetReasonsNotToCache()
 
 	urls := []string{
 		"http://testserver:12345/status/404",
@@ -121,7 +135,7 @@ func TestReqGetURL(t *testing.T) {
 func TestGetUserToken(t *testing.T) {
 	req := Request{
 		URL: "   http://example.com/	",
-		UserToken :"12345",
+		UserToken: "12345",
 	}
 
 	assert.Equal(t, "12345", req.GetUserToken())

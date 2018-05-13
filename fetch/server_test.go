@@ -145,7 +145,7 @@ func Test_server_Splash(t *testing.T) {
 	//send request to splash fetcher endpoint
 	sReq := splash.Request{
 		//URL: "http://" + addr,
-		URL: "http://example.com",
+		URL: "http://testserver:12345",
 	}
 	resp, err := svc.Response(sReq)
 	if err != nil {

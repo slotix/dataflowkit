@@ -155,7 +155,7 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 	//assert.Nil(t, err, "Expected no error")
 
 	req := splash.Request{
-		URL: "http://example.com",
+		URL: "http://testserver:12345",
 	}
 	resp, err := fetcher.Fetch(req)
 	assert.Nil(t, err, "Expected no error")
@@ -183,12 +183,12 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 	// }
 	//Test Host()
 	req = splash.Request{
-		URL: "http://httpbin.org/status/200",
+		URL: "http://testserver:12345/status/200",
 		//URL: ts.URL + "/index.html",
 	}
 	host, err := req.Host()
 	assert.NoError(t, err)
-	assert.Equal(t, "httpbin.org", host)
+	assert.Equal(t, "testserver:12345", host)
 	req = splash.Request{
 		URL: "Invalid.%$^host",
 	}
