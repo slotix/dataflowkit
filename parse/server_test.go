@@ -54,13 +54,14 @@ var pJSON = scrape.Payload{
 func Test_server(t *testing.T) {
 	//start fetch server
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
+	viper.Set("SKIP_STORAGE_MW", false)
+	viper.Set("STORAGE_TYPE", "Diskv")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
 	}
-	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
 
 	////////
@@ -71,7 +72,7 @@ func Test_server(t *testing.T) {
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
 	}
-	viper.Set("SKIP_STORAGE_MW", true)
+	//viper.Set("SKIP_STORAGE_MW", true)
 	parseServer := Start(serverCfg)
 
 	//create HTTPClient to send requests.
