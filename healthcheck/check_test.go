@@ -33,5 +33,6 @@ func TestHealthCheckHandler(t *testing.T) {
 	}
 	status1 := CheckServices(checkers...)
 	eq = reflect.DeepEqual(map[string]string{"Redis": "dial tcp: lookup invalidhost: no such host", "Splash": "Get http://invalidhost/_ping: dial tcp: lookup invalidhost: no such host"}, status1)
+	t.Log(status1)
 	assert.Equal(t, eq, true)
 }
