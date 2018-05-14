@@ -246,7 +246,7 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	u := r.URL.Query().Get("url")
-	/* fetcher := NewFetcher(Base)
+	fetcher := NewFetcher(Base)
 	req := BaseFetcherRequest{
 		URL:    u,
 		Method: "GET",
@@ -256,8 +256,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 		e := errs.BadGateway{What: "response"}
 		encodeError(ctx, &e, w)
 		return
-	} */
-	resp, err := http.Get(u)
+	}
 	if err != nil {
 		return
 	}
@@ -286,7 +285,7 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("URL ", u, " Mime ", mimetype)
 	w.Header().Set("Content-Type", mimetype)
 	w.WriteHeader(http.StatusOK)
-	rc := resp.Body //GetHTML()
+	rc, err := resp.GetHTML()
 	if err != nil {
 		e := errs.BadGateway{What: "content"}
 		encodeError(ctx, &e, w)
