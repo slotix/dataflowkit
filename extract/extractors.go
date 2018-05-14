@@ -33,8 +33,6 @@ type Extractor interface {
 	//
 	// If this function returns an error, then the scrape is aborted.
 	Extract(*goquery.Selection) (interface{}, error)
-	//GetType returns Extractor type
-	//GetType() string
 }
 
 // Const is an Extractor that returns a constant value.
@@ -48,10 +46,6 @@ func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
 	return e.Val, nil
 }
 
-//GetType returns Extractor type
-// func (Const) GetType() string {
-// 	return "const"
-// }
 
 var _ Extractor = Const{}
 
@@ -92,10 +86,6 @@ func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
-//GetType returns Extractor type
-// func (Text) GetType() string {
-// 	return "text"
-// }
 
 var _ Extractor = Text{}
 
@@ -130,11 +120,6 @@ func (e Html) Extract(sel *goquery.Selection) (interface{}, error) {
 	return ret, nil
 }
 
-//GetType returns Extractor type
-// func (Html) GetType() string {
-// 	return "html"
-// }
-
 var _ Extractor = Html{}
 
 // OuterHtml extracts and returns the HTML of each part of the
@@ -159,10 +144,6 @@ func (e OuterHtml) Extract(sel *goquery.Selection) (interface{}, error) {
 	return output.String(), nil
 }
 
-//GetType returns Extractor type
-// func (OuterHtml) GetType() string {
-// 	return "outerHtml"
-// }
 
 var _ Extractor = OuterHtml{}
 
@@ -267,10 +248,6 @@ func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
-//GetType returns Extractor type
-// func (Regex) GetType() string {
-// 	return "regex"
-// }
 
 var _ Extractor = Regex{}
 
@@ -334,10 +311,6 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
-//GetType returns Extractor type
-// func (Attr) GetType() string {
-// 	return "attr"
-// }
 
 var _ Extractor = Attr{}
 
@@ -359,10 +332,5 @@ func (e Count) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	return l, nil
 }
-
-//GetType returns Extractor type
-// func (Count) GetType() string {
-// 	return "count"
-// }
 
 var _ Extractor = Count{}
