@@ -155,7 +155,7 @@ func CheckServices(hc ...Checker) (status map[string]string) {
 		err := srv.isAlive()
 		if err != nil {
 			status[srv.String()] =
-				fmt.Sprintf("%s",  err.Error())
+				fmt.Sprintf("%s", err.Error())
 		} else {
 			status[srv.String()] = "Ok"
 		}
