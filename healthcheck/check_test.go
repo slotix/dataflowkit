@@ -25,6 +25,8 @@ func TestHealthCheckHandler(t *testing.T) {
 	assert.Equal(t, eq, true)
 
 	checkers = []Checker{
+		ParseConn{Host: invalidhost},
+		FetchConn{Host: invalidhost},
 		RedisConn{
 			Network: "tcp",
 			Host:    invalidhost + ":12345",
@@ -32,7 +34,7 @@ func TestHealthCheckHandler(t *testing.T) {
 		SplashConn{Host: invalidhost},
 	}
 	status1 := CheckServices(checkers...)
-	eq = reflect.DeepEqual(map[string]string{"Redis": "dial tcp: lookup invalidhost: no such host", "Splash": "Get http://invalidhost/_ping: dial tcp: lookup invalidhost: no such host"}, status1)
-	t.Log(status1)
-	assert.Equal(t, eq, true)
+	for _, v := range status1{
+		assert.NotEqual(t, "Ok", v)
+	}
 }
