@@ -25,11 +25,7 @@ type loggingMiddleware struct {
 // Logging Parse Service
 func (mw loggingMiddleware) Parse(payload scrape.Payload) (output io.ReadCloser, err error) {
 	defer func(begin time.Time) {
-		// mw.logger.Log(
-		// 	"parsed URL", payload.Request.GetURL(),
-		// 	"err", err,
-		// 	"took", time.Since(begin),
-		// )
+		output, err = mw.Service.Parse(payload)
 		url := payload.Request.GetURL()
 		if err != nil {
 			mw.logger.WithFields(
@@ -43,9 +39,8 @@ func (mw loggingMiddleware) Parse(payload scrape.Payload) (output io.ReadCloser,
 				logrus.Fields{
 					"fetcher": payload.FetcherType,
 					"took":    time.Since(begin),
-				}).Info("Fetch URL: ", url)
+				}).Info("Parse URL: ", url)
 		}
 	}(time.Now())
-	output, err = mw.Service.Parse(payload)
 	return
 }
