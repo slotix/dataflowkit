@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/utils"
@@ -33,12 +34,13 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-
-	
+	if aux.Request == nil {
+		return &errs.BadRequest{}
+	}
 	err = fillStruct(aux.Request.(map[string]interface{}), request)
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
 	p.Request = request
 
 	//init other fields

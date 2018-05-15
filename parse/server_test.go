@@ -1,6 +1,9 @@
 package parse
 
 import (
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -10,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var pJSON = scrape.Payload{
+var payload = scrape.Payload{
 	Name: "books-to-scrape",
 	// Request: splash.Request{
 	// 	URL: "http://books.toscrape.com",
@@ -56,6 +59,7 @@ func Test_server(t *testing.T) {
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	viper.Set("SKIP_STORAGE_MW", false)
 	viper.Set("STORAGE_TYPE", "Diskv")
+	viper.Set("FETCHER_TYPE", "base")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
@@ -63,6 +67,8 @@ func Test_server(t *testing.T) {
 		WriteTimeout: 5 * time.Second,
 	}
 	fetchServer := fetch.Start(fetchServerCfg)
+	//Stop server
+	defer fetchServer.Stop()
 
 	////////
 	//start parse server
@@ -74,23 +80,47 @@ func Test_server(t *testing.T) {
 	}
 	//viper.Set("SKIP_STORAGE_MW", true)
 	parseServer := Start(serverCfg)
+	defer parseServer.Stop()
 
 	//create HTTPClient to send requests.
 	svc, err := NewHTTPClient(parseServerAddr)
 	if err != nil {
 		logger.Error(err)
 	}
-	result, err := svc.Parse(pJSON)
-	if err != nil {
-		logger.Error(err)
-	}
+	result, err := svc.Parse(payload)
+	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	//buf := new(bytes.Buffer)
-	//buf.ReadFrom(result)
-	//t.Log(buf.String())
+	//Invalid request
+	invPayload := scrape.Payload{
+		Name: "invalid payload",
+	}
+	result, err = svc.Parse(invPayload)
+	assert.Error(t, err)
+	invPayload = scrape.Payload{
+		Name: "invalid payload",
+		Request: fetch.BaseFetcherRequest{
+			URL: "http://books.toscrape.com",
+		},
+	}
 
-	//Stop servers
-	fetchServer.Stop()
-	parseServer.Stop()
+	result, err = svc.Parse(invPayload)
+	assert.Error(t, err)
 
+}
+
+func TestHealthCheckHandler(t *testing.T) {
+	req := httptest.NewRequest("GET", "/ping", nil)
+	w := httptest.NewRecorder()
+	//healthCheckHandler(w, req)
+	handler := http.HandlerFunc(HealthCheckHandler)
+	handler.ServeHTTP(w, req)
+
+	// Check the status code is what we expect.
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+	resp := w.Result()
+	body, _ := ioutil.ReadAll(resp.Body)
+	assert.Equal(t, []byte(`{"alive": true}`), body)
 }
