@@ -62,6 +62,12 @@ func Start(cfg Config) *HTMLServer {
 		w.Write([]byte("disallowed"))
 	})
 
+	r.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"alive": true}`))
+	})
+
 	r.HandleFunc("/status/{status}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		st, err := strconv.Atoi(vars["status"])

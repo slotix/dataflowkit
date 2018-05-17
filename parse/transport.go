@@ -29,15 +29,18 @@ func DecodeParseRequest(ctx context.Context, r *http.Request) (interface{}, erro
 
 //EncodeParseResponse encodes response returned by Parser
 func EncodeParseResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	ctx := context.Background()
 	data, err := ioutil.ReadAll(response.(io.Reader))
 	if err != nil {
-		return err
+		encodeError(ctx, err, w)
+		return nil
 	}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, err = w.Write(data)
 
 	if err != nil {
-		return err
+		encodeError(ctx, err, w)
+		return nil
 	}
 	return nil
 }
