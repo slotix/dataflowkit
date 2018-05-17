@@ -68,7 +68,8 @@ func Test_server_Base(t *testing.T) {
 	}
 	//viper.Set("SKIP_STORAGE_MW", true)
 	htmlServer := Start(serverCfg)
-
+	defer htmlServer.Stop()
+	time.Sleep(1*time.Second)
 	//create HTTPClient to send requests.
 	svc, err := NewHTTPClient(fetchServer)
 	if err != nil {
@@ -120,8 +121,6 @@ func Test_server_Base(t *testing.T) {
 		assert.Error(t, err)
 	}
 
-	
-	htmlServer.Stop()
 }
 
 func Test_server_Splash(t *testing.T) {
@@ -135,7 +134,9 @@ func Test_server_Splash(t *testing.T) {
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	htmlServer := Start(serverCfg)
+	defer htmlServer.Stop()
 
+	time.Sleep(1*time.Second)
 	//create HTTPClient to send requests.
 	svc, err := NewHTTPClient(fetchServer)
 	if err != nil {
@@ -145,8 +146,8 @@ func Test_server_Splash(t *testing.T) {
 	//send request to splash fetcher endpoint
 	sReq := splash.Request{
 		//URL: "http://" + addr,
-		//URL: "http://testserver:12345",
-		URL: "http://example.com",
+		URL: "http://testserver:12345",
+		//URL: "http://example.com",
 	}
 	resp, err := svc.Response(sReq)
 	if err != nil {
@@ -166,5 +167,5 @@ func Test_server_Splash(t *testing.T) {
 	// assert.NoError(t, err, "Expected no error")
 	// assert.NotNil(t, data)
 
-	htmlServer.Stop()
+	
 }

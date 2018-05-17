@@ -51,6 +51,7 @@ type loggingMiddleware struct {
 // Fetch logs requests to Response endpoint
 func (mw loggingMiddleware) Response(req FetchRequester) (response FetchResponser, err error) {
 	defer func(begin time.Time) {
+		response, err = mw.Service.Response(req)
 		url := req.GetURL()
 		var fetcher string
 		switch req.(type) {
@@ -68,9 +69,16 @@ func (mw loggingMiddleware) Response(req FetchRequester) (response FetchResponse
 					"func":    "Response",
 					"took":    time.Since(begin),
 				}).Info("Fetch URL: ", url)
+		} else {
+			mw.logger.WithFields(
+				logrus.Fields{
+					"err":   err,
+					"fetcher": fetcher,
+					"func":    "Response",
+					"took":    time.Since(begin),
+				}).Error("Fetch URL: ", url)
 		}
-		//don't log errors here. They all will be reported at transport.go func encodeError()
 	}(time.Now())
-	response, err = mw.Service.Response(req)
+
 	return
 }
