@@ -87,7 +87,7 @@ func NewSplash(req Request) (splashURL string) {
 		cookies = `{"Cookie":"`
 		for _, c := range req.Cookies {
 			cookies += fmt.Sprintf(`%s=%s;`,
-				c.Name, c.Value)
+				c.Name, strings.Replace(c.Value, `"`, `\"`, -1))
 		}
 		cookies = strings.TrimSuffix(cookies, ";") + `"}`
 	}
