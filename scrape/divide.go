@@ -5,6 +5,7 @@ package scrape
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -152,7 +153,12 @@ func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Sel
 	fullPath := goquery.NodeName(selectorAncestor)
 	parents := selectorAncestor.ParentsUntilSelection(doc.Find("body"))
 	parents.Each(func(i int, s *goquery.Selection) {
-		fullPath = attrOrDataValue(s) + " > " + fullPath
+		//avoid antiscrapin' tech like twitter
+		selector := attrOrDataValue(s)
+		var re = regexp.MustCompile(`\n\.+`)
+		selector = re.ReplaceAllString(selector, `.`)
+
+		fullPath = selector + " > " + fullPath
 	})
 	items := doc.Find(fullPath)
 
