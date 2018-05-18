@@ -83,9 +83,10 @@ func (p *Payload) initRequest() (fetch.FetchRequester, error) {
 			request = &splash.Request{}
 		} else {
 			request = &splash.Request{
-				URL:       p.Request.GetURL(),
-				FormData:  p.Request.GetFormData(),
-				UserToken: p.Request.GetUserToken()}
+				URL:            p.Request.GetURL(),
+				FormData:       p.Request.GetFormData(),
+				UserToken:      p.Request.GetUserToken(),
+				InfiniteScroll: p.Paginator.InfiniteScroll}
 		}
 	case "base":
 		if p.Request == nil {

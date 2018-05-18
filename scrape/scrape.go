@@ -418,10 +418,13 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 		numPages++
 
 		// Get the next page. If empty URL is returned there is no Next Pages to proceed.
-		url, err = scraper.Paginator.NextPage(url, doc.Selection)
-		if err != nil {
-			return nil, err
+		if !t.Payload.Paginator.InfiniteScroll {
+			url, err = scraper.Paginator.NextPage(url, doc.Selection)
+			if err != nil {
+				return nil, err
+			}
 		}
+
 		if url != "" {
 			var rq fetch.FetchRequester
 			switch req.Type() {

@@ -92,8 +92,15 @@ func NewSplash(req Request) (splashURL string) {
 		cookies = strings.TrimSuffix(cookies, ";") + `"}`
 	}
 
+	var infiniteScroll string
+	if req.InfiniteScroll {
+		infiniteScroll = "true"
+	} else {
+		infiniteScroll = "false"
+	}
+
 	splashURL = fmt.Sprintf(
-		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&headers=%s&formdata=%s&lua_source=%s",
+		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&headers=%s&formdata=%s&lua_source=%s&scroll2bottom=%s",
 		args.host,
 		neturl.QueryEscape(req.URL),
 		args.timeout,
@@ -102,7 +109,8 @@ func NewSplash(req Request) (splashURL string) {
 		//neturl.QueryEscape(req.Cookies),
 		neturl.QueryEscape(cookies),
 		neturl.QueryEscape(paramsToLuaTable(req.FormData)),
-		LUAScript)
+		LUAScript,
+		infiniteScroll)
 
 	return
 }

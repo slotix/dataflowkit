@@ -19,7 +19,7 @@ type Extractor struct {
 	Types []string `json:"types"`
 	// Params are unique for each type
 	Params  map[string]interface{} `json:"params"`
-	Filters []string    `json:"filters"`
+	Filters []string               `json:"filters"`
 }
 
 //A Field corresponds to a given chunk of data to be extracted from every block in each page of a scrape.
@@ -51,7 +51,8 @@ type paginator struct {
 	// Default value is 1.
 	// Set this value to 0 to indicate an unlimited number of pages to be scraped.
 	//
-	MaxPages int `json:"maxPages"`
+	MaxPages       int  `json:"maxPages"`
+	InfiniteScroll bool `json:"infiniteScroll"`
 }
 
 // Payload structure contain information and rules to be passed to a scraper
@@ -66,7 +67,7 @@ type Payload struct {
 	Fields []Field `json:"fields"`
 	//PayloadMD5 encodes payload content to MD5. It is used for generating file name to be stored.
 	PayloadMD5 []byte `json:"payloadMD5"`
-	//FetcherType represent fetcher which is used for document download. 
+	//FetcherType represent fetcher which is used for document download.
 	//Set up it to either `base` or `splash` values
 	//If FetcherType is omited the value of FETCHER_TYPE of parse.d service is used by default.
 	FetcherType string `json:"fetcherType"`
