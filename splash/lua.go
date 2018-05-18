@@ -31,10 +31,34 @@ import (
 
 var baseLUA = `
 json = require("json")
+function scroll2bottom(waitInterval, splash)
+  local docHeight = 0
+  local intervalFound = false
+  while docHeight < splash:evaljs([[window.document.body.scrollHeight;]]) do
+    docHeight = splash:evaljs([[window.document.body.scrollHeight]])
+    local js = string.format(
+        [[window.scrollTo(0, %s);]],
+        tonumber(docHeight)
+    )
+    splash:runjs(js)
+    splash:wait(waitInterval)
+    if waitInterval < 5 and docHeight == splash:evaljs([[window.document.body.scrollHeight]]) then
+      return intervalFound
+    end
+    if waitInterval < 5 and docHeight ~= splash:evaljs([[window.document.body.scrollHeight]]) then
+      intervalFound = true
+    end
+    if waitInterval == 5 then
+      return true
+    end
+  end
+  return true
+end
+
 function main(splash, args)
   cookies = ""
-  formdata = args.formdata
-  headers = nil
+  formdata = ""--args.formdata
+headers = nil
   decoded = nil
   http_method = "GET"
   if formdata ~= "" then
@@ -45,10 +69,9 @@ function main(splash, args)
     cookies_array = json.decode(cookies)
     splash:init_cookies(cookies_array)
   end
-  if args.headers ~= "" then
-    headers = json.decode(args.headers)
-  end
-  splash:autoload{url="http://scrape.dataflowkit.org/static/app/selectorgadget/loader.js"}
+if args.headers ~= "" then
+	--headers = json.decode(args.headers)
+end
 
   local ok, reason = splash:go{
     args.url,
@@ -70,17 +93,24 @@ function main(splash, args)
     	request = last_entry.request
     	response = last_entry.response
     end
-  splash:runjs("load()")
+  if args.scroll2bottom == "true" then
+    waitInterval = 0.5
+    while scroll2bottom(waitInterval, splash)==false do
+      waitInterval = waitInterval + 0.5
+    end
+  end
   return {
     url = splash:url(),
     request = request,
     response = response,
     cookies = splash:get_cookies(),
     html = splash:html(),
+    png = splash:png{width=640},
+    har = splash:har(),
+    waitInterval = waitInterval,
   }
 end
 `
-
 
 func paramsToLuaTable(params string) string {
 	//"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=usr&ips_password=passw&rememberMe=0"
