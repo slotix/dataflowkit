@@ -98,8 +98,8 @@ var RootCmd = &cobra.Command{
 			parseServer := viper.GetString("DFK_PARSE")
 			serverCfg := parse.Config{
 				Host:         parseServer, //"localhost:5000",
-				ReadTimeout:  5 * time.Second,
-				WriteTimeout: 5 * time.Second,
+				ReadTimeout:  60 * time.Second,
+				WriteTimeout: 60 * time.Second,
 			}
 			htmlServer := parse.Start(serverCfg)
 			defer htmlServer.Stop()
