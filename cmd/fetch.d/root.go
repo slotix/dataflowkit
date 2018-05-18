@@ -99,8 +99,8 @@ var RootCmd = &cobra.Command{
 			fetchServer := viper.GetString("DFK_FETCH")
 			serverCfg := fetch.Config{
 				Host:         fetchServer, //"localhost:5000",
-				ReadTimeout:  5 * time.Second,
-				WriteTimeout: 5 * time.Second,
+				ReadTimeout:  60 * time.Second,
+				WriteTimeout: 60 * time.Second,
 			}
 			htmlServer := fetch.Start(serverCfg)
 			defer htmlServer.Stop()
