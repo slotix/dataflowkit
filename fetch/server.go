@@ -51,7 +51,6 @@ func Start(cfg Config) *HTMLServer {
 	}
 	svc = RobotsTxtMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
-	svc = ProxyJSCSSMiddleware()(svc)
 
 	endpoints := Endpoints{
 		SplashFetchEndpoint:    MakeSplashFetchEndpoint(svc),

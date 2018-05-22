@@ -44,7 +44,6 @@ var (
 
 	storageType     string
 	skipStorageMW   bool
-	proxyHost       string
 	ignoreCacheInfo bool
 	diskvBaseDir    string
 
@@ -130,10 +129,9 @@ func init() {
 
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "a", "127.0.0.1:8000", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&splashHost, "SPLASH", "s", "127.0.0.1:8050", "Splash host address")
-	RootCmd.Flags().IntVarP(&splashTimeout, "SPLASH_TIMEOUT", "", 20, "Timeout (in seconds) for the render.")
-	RootCmd.Flags().IntVarP(&splashResourceTimeout, "SPLASH_RESOURCE_TIMEOUT", "", 30, "A timeout (in seconds) for individual network requests.")
+	RootCmd.Flags().IntVarP(&splashTimeout, "SPLASH_TIMEOUT", "", 3400, "Timeout (in seconds) for the render.")
+	RootCmd.Flags().IntVarP(&splashResourceTimeout, "SPLASH_RESOURCE_TIMEOUT", "", 3600, "A timeout (in seconds) for individual network requests.")
 	RootCmd.Flags().Float64VarP(&splashWait, "SPLASH_WAIT", "", 0.5, "Time in seconds to wait until js scripts loaded.")
-	RootCmd.Flags().StringVarP(&proxyHost, "DFK_PROXY_HOST", "p", "http://127.0.0.1:8000", "DFK proxy host address")
 
 	//set here default type of storage
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
@@ -195,7 +193,6 @@ func init() {
 	viper.BindPFlag("REDIS_PASSWORD", RootCmd.Flags().Lookup("REDIS_PASSWORD"))
 	viper.BindPFlag("REDIS_DB", RootCmd.Flags().Lookup("REDIS_DB"))
 	viper.BindPFlag("REDIS_SOCKET_PATH", RootCmd.Flags().Lookup("REDIS_SOCKET_PATH"))
-	viper.BindPFlag("DFK_PROXY_HOST", RootCmd.Flags().Lookup("DFK_PROXY_HOST"))
 
 	//viper.SetConfigType("yaml")
 	//viper.SetConfigName("conf")
