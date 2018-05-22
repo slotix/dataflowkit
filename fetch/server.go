@@ -28,7 +28,7 @@ type HTMLServer struct {
 	wg     sync.WaitGroup
 }
 
-// Start func launches Parsing service 
+// Start func launches Parsing service
 func Start(cfg Config) *HTMLServer {
 	// Setup Context
 	ctx := context.Background()
@@ -51,6 +51,7 @@ func Start(cfg Config) *HTMLServer {
 	}
 	svc = RobotsTxtMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
+	svc = ProxyJSCSSMiddleware()(svc)
 
 	endpoints := Endpoints{
 		SplashFetchEndpoint:    MakeSplashFetchEndpoint(svc),
