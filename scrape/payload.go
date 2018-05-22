@@ -82,11 +82,15 @@ func (p *Payload) initRequest() (fetch.FetchRequester, error) {
 		if p.Request == nil {
 			request = &splash.Request{}
 		} else {
+			var infiniteScroll bool
+			if infiniteScroll = false; p.Paginator != nil && p.Paginator.InfiniteScroll {
+				infiniteScroll = true
+			}
 			request = &splash.Request{
 				URL:            p.Request.GetURL(),
 				FormData:       p.Request.GetFormData(),
 				UserToken:      p.Request.GetUserToken(),
-				InfiniteScroll: p.Paginator.InfiniteScroll}
+				InfiniteScroll: infiniteScroll}
 		}
 	case "base":
 		if p.Request == nil {
