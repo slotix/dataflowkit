@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/utils"
 	"github.com/spf13/viper"
@@ -59,54 +60,63 @@ func TestPayload_UnmarshalJSON(t *testing.T) {
 			   "attr":"href",
 			   "maxPages":3
 			},
-			"format":"json",
 			"paginateResults":false
 		   }
 		`)
-	viper.Set("FETCHER_TYPE", "splash")
-	p := &Payload{}
-	err := p.UnmarshalJSON(data)
-	assert.NoError(t, err)
-	assert.Equal(t, p.Name, "collection")
-	assert.Equal(t, p.Request, &splash.Request{URL: "https://example.com"})
-	assert.Equal(t, p.Fields,
-		[]Field{
-			Field{
-				Name:     "Title",
-				Selector: ".product-container a",
-				Extractor: Extractor{
-					Types:  []string{"text", "href"},
-					Params: map[string]interface{}{"includeIfEmpty": false}, Filters: []string{"trim", "lowerCase"}},
-				Details: (*details)(nil)},
-			Field{
-				Name:     "Image",
-				Selector: "#product-container img",
-				Extractor: Extractor{
-					Types:   []string{"alt", "src", "width", "height"},
-					Params:  map[string]interface{}(nil),
-					Filters: []string{"trim", "upperCase"}},
-				Details: (*details)(nil)},
-			Field{
-				Name:     "Buyinfo",
-				Selector: ".buy-info",
-				Extractor: Extractor{
-					Types:  []string{"text"},
-					Params: map[string]interface{}{"includeIfEmpty": false}, Filters: []string(nil)},
-				Details: (*details)(nil)}},
-	)
-	assert.Equal(t, p.Paginator,
-		&paginator{
-			Selector:  ".next",
-			Attribute: "href",
-			MaxPages:  3,
-		})
-	assert.Equal(t, p.Format, "json")
-	pr := false
-	assert.Equal(t, p.PaginateResults, &pr)
-	assert.Equal(t, p.PayloadMD5, utils.GenerateMD5(data))
-	td := time.Duration(0)
-	assert.Equal(t, p.FetchDelay, &td)
-	rfd := false
-	assert.Equal(t, p.PaginateResults, &rfd)
+	for _, fType := range []string{
+		"splash",
+		"base",
+	} {
 
+		viper.Set("FETCHER_TYPE", fType)
+		p := &Payload{}
+		err := p.UnmarshalJSON(data)
+		assert.NoError(t, err)
+		assert.Equal(t, p.Name, "collection")
+		switch fType{
+		case "splash":
+			assert.Equal(t, p.Request, &splash.Request{URL: "https://example.com"})
+		case "base":
+			assert.Equal(t, p.Request, &fetch.BaseFetcherRequest{URL: "https://example.com"})
+		}
+		assert.Equal(t, p.Fields,
+			[]Field{
+				Field{
+					Name:     "Title",
+					Selector: ".product-container a",
+					Extractor: Extractor{
+						Types:  []string{"text", "href"},
+						Params: map[string]interface{}{"includeIfEmpty": false}, Filters: []string{"trim", "lowerCase"}},
+					Details: (*details)(nil)},
+				Field{
+					Name:     "Image",
+					Selector: "#product-container img",
+					Extractor: Extractor{
+						Types:   []string{"alt", "src", "width", "height"},
+						Params:  map[string]interface{}(nil),
+						Filters: []string{"trim", "upperCase"}},
+					Details: (*details)(nil)},
+				Field{
+					Name:     "Buyinfo",
+					Selector: ".buy-info",
+					Extractor: Extractor{
+						Types:  []string{"text"},
+						Params: map[string]interface{}{"includeIfEmpty": false}, Filters: []string(nil)},
+					Details: (*details)(nil)}},
+		)
+		assert.Equal(t, p.Paginator,
+			&paginator{
+				Selector:  ".next",
+				Attribute: "href",
+				MaxPages:  3,
+			})
+		//assert.Equal(t, p.Format, "json")
+		pr := false
+		assert.Equal(t, p.PaginateResults, &pr)
+		assert.Equal(t, p.PayloadMD5, utils.GenerateMD5(data))
+		td := time.Duration(0)
+		assert.Equal(t, p.FetchDelay, &td)
+		rfd := false
+		assert.Equal(t, p.PaginateResults, &rfd)
+	}
 }
