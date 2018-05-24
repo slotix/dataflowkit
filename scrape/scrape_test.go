@@ -134,7 +134,7 @@ func TestTask_ParseJSON(t *testing.T) {
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
-	///////
+	/////////
 	type fields struct {
 		ID      string
 		Payload Payload
