@@ -418,14 +418,17 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 		numPages++
 
 		// Get the next page. If empty URL is returned there is no Next Pages to proceed.
+		if t.Payload.Paginator == nil {
+			url = ""
+		}
 		if t.Payload.Paginator != nil {
-			if t.Payload.Paginator.InfiniteScroll {
-				url = ""
-			} else {
+			if !t.Payload.Paginator.InfiniteScroll {
 				url, err = scraper.Paginator.NextPage(url, doc.Selection)
 				if err != nil {
 					return nil, err
 				}
+			} else {
+				url = ""
 			}
 		}
 
