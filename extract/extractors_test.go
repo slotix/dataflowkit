@@ -177,7 +177,7 @@ func TestImgAttr(t *testing.T) {
 	<img src="smiley.gif" alt="Smiley face" height="42" width="42">
 	`)
 	baseURL := "http://www.google.com/"
-	ret, err := Attr{Attr: "src",  BaseURL: baseURL}.Extract(sel.Find("img"))
+	ret, err := Attr{Attr: "src", BaseURL: baseURL}.Extract(sel.Find("img"))
 	assert.NoError(t, err)
 	assert.Equal(t, string("http://www.google.com/smiley.gif"), ret, "Test img attr")
 
@@ -218,4 +218,15 @@ func TestCount(t *testing.T) {
 	ret, err = Count{IncludeIfEmpty: false}.Extract(sel.Find(".bad"))
 	assert.NoError(t, err)
 	assert.Nil(t, ret)
+}
+
+func TestExtract(t *testing.T) {
+	sel := selFrom(`
+		<div>One</div>
+		<div class="foo">Two</div>
+		<div>Three</div>
+		`)
+	ret, err := Const{Val:"1"}.Extract(sel)
+	assert.NoError(t, err)
+	assert.Equal(t, ret, "1")
 }

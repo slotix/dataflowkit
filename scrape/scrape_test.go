@@ -362,7 +362,7 @@ func TestNewTask(t *testing.T) {
 	//t.Log(start)
 }
 
-func TestParseTestServer(t *testing.T) {
+func TestParseTestServer12345(t *testing.T) {
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
@@ -382,24 +382,34 @@ func TestParseTestServer(t *testing.T) {
 		},
 		Fields: []Field{
 			Field{
-				Name:     "P",
-				Selector: "p",
+				Name:     "Header",
+				Selector: "h1",
 				Extractor: Extractor{
-					Types:   []string{"text"},
+					Types: []string{"const", "outerHtml"},
+					Params: map[string]interface{}{
+						"value": "1",
+					},
 				},
 			},
 			Field{
-				Name:     "H1",
-				Selector: "h1",
+				Name:     "Warning",
+				Selector: "p",
 				Extractor: Extractor{
-					Types:   []string{"text"},
+					Types: []string{"html"},
+				},
+			},
+			Field{
+				Name:     "Count",
+				Selector: "td:nth-child(1)",
+				Extractor: Extractor{
+					Types: []string{"count","unknown"},
 				},
 			},
 		},
 		PaginateResults: &paginateResults,
 		Format:          "json",
 	}
-	expected := []byte(`[{"H1_text":"Persons","P_text":"Warning! This is a demo website for web scraping purposes. The data on this page has been randomly generated."}]` + "\n")
+	expected := []byte(`[{"Count_count":10,"Header_const":"1","Header_outerHtml":"\u003ch1\u003ePersons\u003c/h1\u003e","Warning_html":"\u003cstrong\u003eWarning!\u003c/strong\u003e This is a demo website for web scraping purposes. \u003cbr/\u003eThe data on this page has been randomly generated."}]` + "\n")
 	task := &Task{
 		ID:      "12345",
 		Payload: p,
@@ -430,4 +440,70 @@ func TestParseTestServer(t *testing.T) {
 	}
 	r, err = task.Parse()
 	assert.Error(t, err, "400: no parts found")
+	//Bad output format
+	badOF := Payload{
+		Name: "No Selectors",
+		Request: fetch.BaseFetcherRequest{
+			URL: "http://127.0.0.1:12345",
+		},
+		Fields: []Field{
+			Field{
+				Name:     "P",
+				Selector: "p",
+				Extractor: Extractor{
+					Types: []string{"text"},
+				},
+			},
+		},
+		PaginateResults: &paginateResults,
+		Format:          "BadOutputFormat",
+	}
+	task = &Task{
+		ID:      "12345",
+		Payload: badOF,
+		Visited: map[string]error{},
+		Robots:  map[string]*robotstxt.RobotsData{},
+	}
+	r, err = task.Parse()
+	assert.Error(t, err, "invalid output format specified")
+}
+func TestParseSwitchFetchers(t *testing.T) {
+	viper.Set("DFK_FETCH", "127.0.0.1:8000")
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host:         fetchServerAddr,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
+	}
+	viper.Set("SKIP_STORAGE_MW", true)
+	fetchServer := fetch.Start(fetchServerCfg)
+	defer fetchServer.Stop()
+
+	paginateResults = false
+	p := Payload{
+		Name: "quotes",
+		Request: fetch.BaseFetcherRequest{
+			URL: "http://quotes.toscrape.com/js/",
+		},
+		Fields: []Field{
+			Field{
+				Name:     "quotes",
+				Selector: ".text",
+				Extractor: Extractor{
+					Types: []string{"text"},
+				},
+			},
+		},
+		PaginateResults: &paginateResults,
+		Format:          "json",
+	}
+	task := &Task{
+		ID:      "12345",
+		Payload: p,
+		Visited: map[string]error{},
+		Robots:  map[string]*robotstxt.RobotsData{},
+	}
+	r, err := task.Parse()
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
 }
