@@ -8,18 +8,6 @@
   version = "v1.3.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/alicebob/gopher-json"
-  packages = ["."]
-  revision = "5a6b3ba71ee69b77cf64febf8b5a7526ca5eaef0"
-
-[[projects]]
-  name = "github.com/alicebob/miniredis"
-  packages = [".","server"]
-  revision = "9d52b1fc8da9c42dae29127fdc6f795ddcd4810f"
-  version = "2.3.2"
-
-[[projects]]
   name = "github.com/andybalholm/cascadia"
   packages = ["."]
   revision = "901648c87902174f774fac311d7f176f8647bdaa"
@@ -242,12 +230,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/yuin/gopher-lua"
-  packages = [".","ast","parse","pm"]
-  revision = "7d7bc8747e3f614c5c587729a341fe7d8903cdb8"
-
-[[projects]]
-  branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   revision = "7effd64e1180aa386cd36da9ca55a1e9fc7cf7cb"
@@ -297,6 +279,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3cc46d3570ad892566af622e86afbd0b9b21dae317c391cf6b307e6d1b345c42"
+  inputs-digest = "5f73922a44763e91a3807438eebd9b175bc6976e0ffbc8cadba611cadccecfba"
   solver-name = "gps-cdcl"
   solver-version = 1
