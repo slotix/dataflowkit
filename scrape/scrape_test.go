@@ -361,3 +361,73 @@ func TestNewTask(t *testing.T) {
 	assert.NotNil(t, start, "task start time is not nil")
 	//t.Log(start)
 }
+
+func TestParseTestServer(t *testing.T) {
+	viper.Set("DFK_FETCH", "127.0.0.1:8000")
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host:         fetchServerAddr,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
+	}
+	viper.Set("SKIP_STORAGE_MW", true)
+	fetchServer := fetch.Start(fetchServerCfg)
+	defer fetchServer.Stop()
+
+	paginateResults = false
+	p := Payload{
+		Name: "persons",
+		Request: fetch.BaseFetcherRequest{
+			URL: "http://127.0.0.1:12345",
+		},
+		Fields: []Field{
+			Field{
+				Name:     "P",
+				Selector: "p",
+				Extractor: Extractor{
+					Types:   []string{"text"},
+				},
+			},
+			Field{
+				Name:     "H1",
+				Selector: "h1",
+				Extractor: Extractor{
+					Types:   []string{"text"},
+				},
+			},
+		},
+		PaginateResults: &paginateResults,
+		Format:          "json",
+	}
+	expected := []byte(`[{"H1_text":"Persons","P_text":"Warning! This is a demo website for web scraping purposes. The data on this page has been randomly generated."}]` + "\n")
+	task := &Task{
+		ID:      "12345",
+		Payload: p,
+		Visited: map[string]error{},
+		Robots:  map[string]*robotstxt.RobotsData{},
+	}
+	r, err := task.Parse()
+	assert.NoError(t, err)
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+	got := buf.Bytes()
+	t.Log(string(got))
+	assert.Equal(t, expected, got)
+	///// No selectors
+	badP := Payload{
+		Name: "No Selectors",
+		Request: fetch.BaseFetcherRequest{
+			URL: "http://127.0.0.1:12345",
+		},
+		PaginateResults: &paginateResults,
+		Format:          "json",
+	}
+	task = &Task{
+		ID:      "12345",
+		Payload: badP,
+		Visited: map[string]error{},
+		Robots:  map[string]*robotstxt.RobotsData{},
+	}
+	r, err = task.Parse()
+	assert.Error(t, err, "400: no parts found")
+}
