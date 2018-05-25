@@ -117,7 +117,7 @@ func (p Payload) newScraper() (*Scraper, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var dividePageFunc DividePageFunc
 	// if len(selectors) == 0 {
 	// 	dividePageFunc = DividePageBySelector("body")
@@ -196,14 +196,12 @@ func (p Payload) fields2parts() ([]Part, error) {
 				delete(params, "regexp")
 				e = r
 			case "const":
-				//	c := &extract.Const{Val: params["value"]}
-				//	e = c
-				e = &extract.Const{}
+				e = &extract.Const{Val: params["value"]}
 			case "count":
 				e = &extract.Count{}
 			case "html":
 				e = &extract.Html{}
-			case "outerHtml":
+			case "outerhtml":
 				e = &extract.OuterHtml{}
 
 			default:
