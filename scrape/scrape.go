@@ -117,13 +117,14 @@ func (p Payload) newScraper() (*Scraper, error) {
 	if err != nil {
 		return nil, err
 	}
-	//TODO: need to test the case when there are no selectors found in payload.
+	
 	var dividePageFunc DividePageFunc
-	if len(selectors) == 0 {
-		dividePageFunc = DividePageBySelector("body")
-	} else {
-		dividePageFunc = DividePageByIntersection(selectors)
-	}
+	// if len(selectors) == 0 {
+	// 	dividePageFunc = DividePageBySelector("body")
+	// } else {
+	// 	dividePageFunc = DividePageByIntersection(selectors)
+	// }
+	dividePageFunc = DividePageByIntersection(selectors)
 
 	scraper := &Scraper{
 		Request:    p.Request,
