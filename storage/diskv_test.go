@@ -17,7 +17,6 @@ func Test_diskv(t *testing.T) {
 
 	err = d.Write("", testValue, 0)
 	assert.Error(t, err, "Expected empty key error")
-	
 	value, err := d.Read("NonExistent key")
 	assert.Error(t, err, "Expected error")
 	
