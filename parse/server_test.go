@@ -21,6 +21,7 @@ var payload = scrape.Payload{
 	FetcherType: "base",
 	Request: fetch.BaseFetcherRequest{
 		URL: "http://books.toscrape.com",
+		UserToken: "12345",
 	},
 	Fields: []scrape.Field{
 		scrape.Field{
@@ -63,8 +64,8 @@ func Test_server(t *testing.T) {
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
 	}
 	fetchServer := fetch.Start(fetchServerCfg)
 	//Stop server
@@ -75,8 +76,8 @@ func Test_server(t *testing.T) {
 	parseServerAddr := "127.0.0.1:8001"
 	serverCfg := Config{
 		Host:         parseServerAddr,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
+		ReadTimeout:  60 * time.Second,
+		WriteTimeout: 60 * time.Second,
 	}
 	//viper.Set("SKIP_STORAGE_MW", true)
 	parseServer := Start(serverCfg)
