@@ -19,27 +19,7 @@ func (p dummyPaginator) NextPage(uri string, doc *goquery.Selection) (string, er
 	return "", nil
 }
 
-// DividePageBySelector returns a function that divides a page into blocks by
-// CSS selector.  Each element in the page with the given selector is treated
-// as a new block.
-func DividePageBySelector(sel string) DividePageFunc {
-	ret := func(doc *goquery.Selection) []*goquery.Selection {
-		sels := []*goquery.Selection{}
-		doc.Find(sel).Each(func(i int, s *goquery.Selection) {
-			sels = append(sels, s)
-		})
 
-		return sels
-	}
-	return ret
-}
-
-func intersectionFL(sel *goquery.Selection) *goquery.Selection {
-	first := sel.First()
-	last := sel.Last()
-	intersection := first.Parents().Intersection(last.Parents())
-	return intersection
-}
 
 func attrOrDataValue(s *goquery.Selection) (value string) {
 	if s.Length() == 0 {
@@ -59,47 +39,70 @@ func attrOrDataValue(s *goquery.Selection) (value string) {
 	//}
 }
 
-func findIntersection(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
-	var intersection *goquery.Selection
-	for i, f := range selectors {
-		sel := doc.Find(f)
-		//logger.Info(f, sel.Length())
-		//col.genAttrFieldName(f.Name, sel)
-		if sel.Length() > 0 { //don't add selectors to intersection if length is 0. Otherwise the whole intersection returns No selectors error
-			if i == 0 {
-				intersection = intersectionFL(sel)
-			} else {
-				intersection = intersection.Intersection(intersectionFL(sel))
-			}
-		}
-	}
-	//logger.Info(attrOrDataValue(intersection))
-	if intersection == nil || intersection.Length() == 0 {
-		return nil, &errs.BadPayload{errs.ErrNoSelectors}
-	}
-	intersectionWithParent := fmt.Sprintf("%s>%s",
-		attrOrDataValue(intersection.Parent()),
-		attrOrDataValue(intersection))
-	//logger.Info(intersectionWithParent)
-	items := doc.Find(intersectionWithParent)
-	//return intersectionWithParent, nil
-	//logger.Info(items.Length())
+// func intersectionFL(sel *goquery.Selection) *goquery.Selection {
+// 	first := sel.First()
+// 	last := sel.Last()
+// 	intersection := first.Parents().Intersection(last.Parents())
+// 	return intersection
+// }
 
-	var inter1 *goquery.Selection
-	if items.Length() == 1 {
-		inter1 = items.Children()
-		//sel = fmt.Sprintf("%s>%s>%s",
-		//	attrOrDataValue(intersection.Parent()),
-		//	attrOrDataValue(intersection),
-		//	attrOrDataValue(intersection.Children()))
+// func findIntersection(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
+// 	var intersection *goquery.Selection
+// 	for i, f := range selectors {
+// 		sel := doc.Find(f)
+// 		//logger.Info(f, sel.Length())
+// 		//col.genAttrFieldName(f.Name, sel)
+// 		if sel.Length() > 0 { //don't add selectors to intersection if length is 0. Otherwise the whole intersection returns No selectors error
+// 			if i == 0 {
+// 				intersection = intersectionFL(sel)
+// 			} else {
+// 				intersection = intersection.Intersection(intersectionFL(sel))
+// 			}
+// 		}
+// 	}
+// 	//logger.Info(attrOrDataValue(intersection))
+// 	if intersection == nil || intersection.Length() == 0 {
+// 		return nil, &errs.BadPayload{errs.ErrNoSelectors}
+// 	}
+// 	intersectionWithParent := fmt.Sprintf("%s>%s",
+// 		attrOrDataValue(intersection.Parent()),
+// 		attrOrDataValue(intersection))
+// 	//logger.Info(intersectionWithParent)
+// 	items := doc.Find(intersectionWithParent)
+// 	//return intersectionWithParent, nil
+// 	//logger.Info(items.Length())
 
-	}
-	if items.Length() > 1 {
-		inter1 = items
-		//sel = intersectionWithParent
-	}
-	return inter1, nil
-}
+// 	var inter1 *goquery.Selection
+// 	if items.Length() == 1 {
+// 		inter1 = items.Children()
+// 		//sel = fmt.Sprintf("%s>%s>%s",
+// 		//	attrOrDataValue(intersection.Parent()),
+// 		//	attrOrDataValue(intersection),
+// 		//	attrOrDataValue(intersection.Children()))
+
+// 	}
+// 	if items.Length() > 1 {
+// 		inter1 = items
+// 		//sel = intersectionWithParent
+// 	}
+// 	return inter1, nil
+// }
+
+// DividePageBySelector returns a function that divides a page into blocks by
+// CSS selector.  Each element in the page with the given selector is treated
+// as a new block.
+// func DividePageBySelector(sel string) DividePageFunc {
+// 	ret := func(doc *goquery.Selection) []*goquery.Selection {
+// 		sels := []*goquery.Selection{}
+// 		doc.Find(sel).Each(func(i int, s *goquery.Selection) {
+// 			sels = append(sels, s)
+// 		})
+
+// 		return sels
+// 	}
+// 	return ret
+// }
+
 
 // DividePageByIntersection returns DividePageFunc function
 // which determines common ancestor of specified selectors.
@@ -125,9 +128,9 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 }
 
 func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
-	if len(selectors) == 0 {
-		return nil, &errs.BadPayload{errs.ErrNoSelectors}
-	}
+	// if len(selectors) == 0 {
+	// 	return nil, &errs.BadPayload{errs.ErrNoSelectors}
+	// }
 	selectorAncestor := doc.Find(selectors[0]).First().Parent()
 	if len(selectors) > 1 {
 		bFound := false
@@ -161,13 +164,5 @@ func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Sel
 		fullPath = selector + " > " + fullPath
 	})
 	items := doc.Find(fullPath)
-
-	/*var inter1 *goquery.Selection
-	if items.Length() == 1 {
-		inter1 = items.Children()
-	}
-	if items.Length() > 1 {
-		inter1 = items
-	}*/
 	return items, nil
 }
