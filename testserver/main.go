@@ -17,6 +17,95 @@ import (
 var (
 	port        = flag.String("p", ":12345", "HTTP listen address")
 	fetcherPort = flag.String("f", ":8000", "DFK Fetcher port")
+	indexContent = `
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<style type="text/css">
+	body { margin: 10px; }
+	table, th, td, li, dl { font-family: "lucida grande", arial; font-size: 14pt; }
+	dt { font-weight: bold; }
+	table { background-color: #efefef; border: 2px solid #dddddd; width: 100%; }
+	th { background-color: #efefef; }
+	td { background-color: #ffffff; }
+	</style>
+</head>
+<body>
+<h1>Persons</h1>
+<p>Warning! This is a demo website for web scraping purposes. The data on this page has been randomly generated.</p>
+<table cellspacing="0" cellpadding="1">
+<tr>
+	<th>Name</th>
+	<th>Phone</th>
+	<th>Email</th>
+	<th>Company</th>
+</tr>
+<tr>
+	<td>Eagan C. Higgins</td>
+	<td>158-9502</td>
+	<td>sed.pede@sapien.ca</td>
+	<td>Commodo At Company</td>
+</tr>
+<tr>
+	<td>Ethan Wong</td>
+	<td>740-7719</td>
+	<td>at@et.edu</td>
+	<td>Metus Inc.</td>
+</tr>
+<tr>
+	<td>Quinn Haynes</td>
+	<td>372-4289</td>
+	<td>Sed.nulla@metusfacilisis.net</td>
+	<td>Enim LLP</td>
+</tr>
+<tr>
+	<td>Steel Frederick</td>
+	<td>1-260-805-4413</td>
+	<td>luctus@idnunc.co.uk</td>
+	<td>Ante Nunc Mauris LLP</td>
+</tr>
+<tr>
+	<td>Kasper Anthony</td>
+	<td>611-8201</td>
+	<td>sit.amet.nulla@non.edu</td>
+	<td>Mus Limited</td>
+</tr>
+<tr>
+	<td>Tallulah Nieves</td>
+	<td>165-3303</td>
+	<td>nascetur@inceptoshymenaeosMauris.net</td>
+	<td>Duis Associates</td>
+</tr>
+<tr>
+	<td>Lydia Whitfield</td>
+	<td>1-249-695-8401</td>
+	<td>sit.amet.orci@semperduilectus.ca</td>
+	<td>Praesent Consulting</td>
+</tr>
+<tr>
+	<td>Raven C. Gaines</td>
+	<td>100-9381</td>
+	<td>Pellentesque@egestasadui.com</td>
+	<td>Aliquet Sem Associates</td>
+</tr>
+<tr>
+	<td>Julie Zimmerman</td>
+	<td>1-380-382-8144</td>
+	<td>lectus.justo@Integer.org</td>
+	<td>Eu Consulting</td>
+</tr>
+<tr>
+	<td>Moses D. Hubbard</td>
+	<td>1-474-770-2793</td>
+	<td>sagittis.semper.Nam@cursusluctus.net</td>
+	<td>Vivamus Corp.</td>
+</tr>
+
+</table>
+
+</body>
+</html>`
 )
 
 func init() {
@@ -36,6 +125,7 @@ type HTMLServer struct {
 	wg     sync.WaitGroup
 }
 
+
 // Start launches the HTML Server
 func Start(cfg Config) *HTMLServer {
 	flag.Parse()
@@ -47,7 +137,7 @@ func Start(cfg Config) *HTMLServer {
 	r := mux.NewRouter()
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Conent-Type", "text/html")
-		w.Write([]byte(`<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`))
+		w.Write([]byte(indexContent))
 	})
 	r.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Conent-Type", "text/html")
