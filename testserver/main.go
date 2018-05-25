@@ -33,7 +33,7 @@ var (
 </head>
 <body>
 <h1>Persons</h1>
-<p>Warning! This is a demo website for web scraping purposes. The data on this page has been randomly generated.</p>
+<p><strong>Warning!</strong> This is a demo website for web scraping purposes. </br>The data on this page has been randomly generated.</p>
 <table cellspacing="0" cellpadding="1">
 <tr>
 	<th>Name</th>
