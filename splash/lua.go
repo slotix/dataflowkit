@@ -31,28 +31,22 @@ import (
 
 var baseLUA = `
 json = require("json")
-function scroll2bottom(waitInterval, splash)
-  local docHeight = 0
-  local intervalFound = false
-  while docHeight < splash:evaljs([[window.document.body.scrollHeight;]]) do
-    docHeight = splash:evaljs([[window.document.body.scrollHeight]])
+function scroll2bottom(splash)
+  splash:wait(0.5)
+  local bottom = splash:evaljs([[window.document.body.scrollHeight]])
+  local current = splash:evaljs([[window.innerHeight + window.document.body.scrollTop;]])
+  if (bottom - current) > 0 then
     local js = string.format(
         [[window.scrollTo(0, %s);]],
-        tonumber(docHeight)
+        tonumber(bottom)
     )
-    splash:runjs(js)
-    splash:wait(waitInterval)
-    if waitInterval < 5 and docHeight == splash:evaljs([[window.document.body.scrollHeight]]) then
-      return intervalFound
-    end
-    if waitInterval < 5 and docHeight ~= splash:evaljs([[window.document.body.scrollHeight]]) then
-      intervalFound = true
-    end
-    if waitInterval == 5 then
-      return true
-    end
+    splash:evaljs(js)
+    return false
   end
-  return true
+  splash:wait(1)
+  bottom = splash:evaljs([[window.document.body.scrollHeight]])
+  current = splash:evaljs([[window.innerHeight + window.document.body.scrollTop;]])
+  return (bottom - current) <= 0
 end
 
 function main(splash, args)
@@ -94,9 +88,9 @@ end
     	response = last_entry.response
     end
   if args.scroll2bottom == "true" then
-    waitInterval = 0.5
-    while scroll2bottom(waitInterval, splash)==false do
-      waitInterval = waitInterval + 0.5
+    local gotBottom = false
+    while gotBottom == false do
+      gotBottom = scroll2bottom(splash)
     end
   end
   return {
@@ -105,8 +99,6 @@ end
     response = response,
     cookies = splash:get_cookies(),
     html = splash:html(),
-    png = splash:png{width=640},
-    har = splash:har(),
     waitInterval = waitInterval,
   }
 end
