@@ -17,9 +17,9 @@ var storageType storage.Type
 
 // Config provides basic configuration
 type Config struct {
-	Host         string
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
+	Host string
+	/* ReadTimeout  time.Duration
+	WriteTimeout time.Duration */
 }
 
 // HTMLServer represents the web service that serves up HTML
@@ -66,8 +66,6 @@ func Start(cfg Config) *HTMLServer {
 		server: &http.Server{
 			Addr:           cfg.Host,
 			Handler:        r,
-			ReadTimeout:    cfg.ReadTimeout,
-			WriteTimeout:   cfg.WriteTimeout,
 			MaxHeaderBytes: 1 << 20,
 		},
 	}
