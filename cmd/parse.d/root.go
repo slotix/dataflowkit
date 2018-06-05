@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/slotix/dataflowkit/healthcheck"
 	"github.com/slotix/dataflowkit/parse"
@@ -97,9 +96,7 @@ var RootCmd = &cobra.Command{
 			}
 			parseServer := viper.GetString("DFK_PARSE")
 			serverCfg := parse.Config{
-				Host:         parseServer, //"localhost:5000",
-				ReadTimeout:  60 * time.Second,
-				WriteTimeout: 60 * time.Second,
+				Host: parseServer, //"localhost:5000",
 			}
 			htmlServer := parse.Start(serverCfg)
 			defer htmlServer.Stop()
