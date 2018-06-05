@@ -1,6 +1,7 @@
 package scrape
 
 import (
+	"sync"
 	"time"
 
 	"github.com/slotix/dataflowkit/fetch"
@@ -174,4 +175,9 @@ type Task struct {
 	//TaskQueue chan *Scraper
 	Robots map[string]*robotstxt.RobotsData
 	//Results
+}
+
+type worker struct {
+	wg      *sync.WaitGroup
+	scraper *Scraper
 }

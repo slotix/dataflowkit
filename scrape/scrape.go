@@ -10,6 +10,7 @@ import (
 	"io"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/slotix/dataflowkit/splash"
@@ -301,116 +302,33 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 
 		t.Visited[url] = nil
 
-		// Divide this page into blocks
-		for _, block := range scraper.DividePage(doc.Selection) {
-			blockResults := map[string]interface{}{}
+		blocks := make(chan *goquery.Selection)
+		workersResult := make(chan map[string]interface{})
 
-			// Process each part of this block
-			for _, part := range scraper.Parts {
-				sel := block
-				if part.Selector != "." {
-					sel = sel.Find(part.Selector)
-				}
-				//update base URL to reflect attr relative URL change
-				//fmt.Println(reflect.TypeOf(part.Extractor))
-				switch part.Extractor.(type) {
-				case *extract.Attr:
-					//	if part.Extractor.GetType() == "attr" {
-					attr := part.Extractor.(*extract.Attr)
-					if attr.Attr == "href" || attr.Attr == "src" {
-						attr.BaseURL = url
-					}
-					//	}
-				}
-				extractedPartResults, err := part.Extractor.Extract(sel)
-				if err != nil {
-					return nil, err
-				}
-
-				// A nil response from an extractor means that we don't even include it in
-				// the results.
-				if extractedPartResults == nil {
-					continue
-				}
-				blockResults[part.Name] = extractedPartResults
-
-				//********* details
-				//part.Details = nil
-				if part.Details != nil {
-					var requests []fetch.FetchRequester
-
-					switch extractedPartResults.(type) {
-					case string:
-						var rq fetch.FetchRequester
-						switch t.Payload.Request.Type() {
-						case "base":
-							rq = &fetch.BaseFetcherRequest{URL: extractedPartResults.(string)}
-						case "splash":
-							rq = &splash.Request{URL: extractedPartResults.(string)}
-						default:
-							err := errors.New("invalid fetcher type specified")
-							logger.Error(err.Error())
-							return nil, err
-						}
-						requests = append(requests, rq)
-					case []string:
-						for _, r := range extractedPartResults.([]string) {
-
-							var rq fetch.FetchRequester
-							switch t.Payload.Request.Type() {
-							case "base":
-								rq = &fetch.BaseFetcherRequest{URL: r}
-							case "splash":
-								rq = &splash.Request{URL: r}
-							default:
-								err := errors.New("invalid fetcher type specified")
-								logger.Error(err.Error())
-								return nil, err
-							}
-
-							requests = append(requests, rq)
-
-						}
-					}
-					for _, r := range requests {
-						//part.Details.Request = splash.Request{
-						//	URL: extractedPartResults.(string),
-						//}
-						part.Details.Request = r
-						//check if domain is the same for initial URL and details' URLs
-						//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
-						detailsHost, err := part.Details.Request.Host()
-						if err != nil {
-							logger.Error(err)
-						}
-						if detailsHost == host {
-							if !viper.GetBool("IGNORE_FETCH_DELAY") {
-								if *t.Payload.RandomizeFetchDelay {
-									//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-									rand := utils.Random(500, 1500)
-									delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
-									logger.Infof("%s -> %v", delay, part.Details.Request.GetURL())
-									time.Sleep(delay)
-								} else {
-									time.Sleep(*t.Payload.FetchDelay)
-								}
-							}
-						}
-
-						resDetails, err := t.scrape(part.Details)
-						if err != nil {
-							return nil, err
-						}
-						blockResults[part.Name+"_details"] = resDetails.AllBlocks()
-					}
-				}
-				//********* end details
-			}
-			if len(blockResults) > 0 {
-				// Append the results from this block.
-				results = append(results, blockResults)
-			}
+		wg := sync.WaitGroup{}
+		wrk := &worker{
+			wg:      &wg,
+			scraper: scraper,
 		}
+
+		go func() {
+			for {
+				results = append(results, <-workersResult)
+			}
+		}()
+
+		blks := scraper.DividePage(doc.Selection)
+		blocksCount := len(blks)
+		wg.Add(blocksCount)
+		for i := 0; i < blocksCount; i++ {
+			go t.blockWorker(blocks, workersResult, wrk)
+		}
+		// Divide this page into blocks
+		for _, block := range blks {
+			blocks <- block
+		}
+		close(blocks)
+		wg.Wait()
 		if len(results) != 0 {
 			output = append(output, results)
 		}
@@ -540,4 +458,122 @@ func (t Task) startTime() (*time.Time, error) {
 	}
 	idTime := id.Time()
 	return &idTime, nil
+}
+
+func (task *Task) blockWorker(blocks <-chan *goquery.Selection, output chan<- map[string]interface{}, wrk *worker) {
+	defer wrk.wg.Done()
+	url := wrk.scraper.Request.GetURL()
+	host, err := wrk.scraper.Request.Host()
+	if err != nil {
+		logger.Error(err)
+		//return err
+	}
+	for block := range blocks {
+		blockResults := map[string]interface{}{}
+
+		// Process each part of this block
+		for _, part := range wrk.scraper.Parts {
+			sel := block
+			if part.Selector != "." {
+				sel = sel.Find(part.Selector)
+			}
+			//update base URL to reflect attr relative URL change
+			//fmt.Println(reflect.TypeOf(part.Extractor))
+			switch part.Extractor.(type) {
+			case *extract.Attr:
+				//	if part.Extractor.GetType() == "attr" {
+				attr := part.Extractor.(*extract.Attr)
+				if attr.Attr == "href" || attr.Attr == "src" {
+					attr.BaseURL = url
+				}
+				//	}
+			}
+			extractedPartResults, err := part.Extractor.Extract(sel)
+			if err != nil {
+				//return nil, err
+				logger.Error(err)
+			}
+
+			// A nil response from an extractor means that we don't even include it in
+			// the results.
+			if extractedPartResults == nil {
+				continue
+			}
+			blockResults[part.Name] = extractedPartResults
+
+			//********* details
+			//part.Details = nil
+			if part.Details != nil {
+				var requests []fetch.FetchRequester
+
+				switch extractedPartResults.(type) {
+				case string:
+					var rq fetch.FetchRequester
+					switch task.Payload.Request.Type() {
+					case "base":
+						rq = &fetch.BaseFetcherRequest{URL: extractedPartResults.(string)}
+					case "splash":
+						rq = &splash.Request{URL: extractedPartResults.(string)}
+					default:
+						err := errors.New("invalid fetcher type specified")
+						logger.Error(err.Error())
+						//return nil, err
+					}
+					requests = append(requests, rq)
+				case []string:
+					for _, r := range extractedPartResults.([]string) {
+
+						var rq fetch.FetchRequester
+						switch task.Payload.Request.Type() {
+						case "base":
+							rq = &fetch.BaseFetcherRequest{URL: r}
+						case "splash":
+							rq = &splash.Request{URL: r}
+						default:
+							err := errors.New("invalid fetcher type specified")
+							logger.Error(err.Error())
+							//return nil, err
+						}
+
+						requests = append(requests, rq)
+
+					}
+				}
+				for _, r := range requests {
+					//part.Details.Request = splash.Request{
+					//	URL: extractedPartResults.(string),
+					//}
+					part.Details.Request = r
+					//check if domain is the same for initial URL and details' URLs
+					//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
+					detailsHost, err := part.Details.Request.Host()
+					if err != nil {
+						logger.Error(err)
+					}
+					if detailsHost == host {
+						if !viper.GetBool("IGNORE_FETCH_DELAY") {
+							if *task.Payload.RandomizeFetchDelay {
+								//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
+								rand := utils.Random(500, 1500)
+								delay := *task.Payload.FetchDelay * time.Duration(rand) / 1000
+								logger.Infof("%s -> %v", delay, part.Details.Request.GetURL())
+								time.Sleep(delay)
+							} else {
+								time.Sleep(*task.Payload.FetchDelay)
+							}
+						}
+					}
+
+					resDetails, err := task.scrape(part.Details)
+					if err != nil {
+						//return nil, err
+						logger.Error(err)
+					}
+					blockResults[part.Name+"_details"] = resDetails.AllBlocks()
+				}
+			}
+			//********* end details
+		}
+		output <- blockResults
+	}
 }
