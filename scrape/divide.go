@@ -19,15 +19,16 @@ func (p dummyPaginator) NextPage(uri string, doc *goquery.Selection) (string, er
 	return "", nil
 }
 
-
-
 func attrOrDataValue(s *goquery.Selection) (value string) {
 	if s.Length() == 0 {
 		return ""
 	}
 	attr, exists := s.Attr("class")
 	if exists && attr != "" { //in some cases tag is invalid f.e. <tr class>
-		return fmt.Sprintf(".%s", strings.Replace(strings.TrimSpace(attr), " ", ".", -1))
+		attr = strings.TrimSpace(attr)
+		var re = regexp.MustCompile(`\n?\s{1,}`)
+		attr = "." + re.ReplaceAllString(attr, `.`)
+		return attr
 	}
 	attr, exists = s.Attr("id")
 
@@ -103,7 +104,6 @@ func attrOrDataValue(s *goquery.Selection) (value string) {
 // 	return ret
 // }
 
-
 // DividePageByIntersection returns DividePageFunc function
 // which determines common ancestor of specified selectors.
 func DividePageByIntersection(selectors []string) DividePageFunc {
@@ -158,9 +158,6 @@ func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Sel
 	parents.Each(func(i int, s *goquery.Selection) {
 		//avoid antiscrapin' tech like twitter
 		selector := attrOrDataValue(s)
-		var re = regexp.MustCompile(`\n\.+`)
-		selector = re.ReplaceAllString(selector, `.`)
-
 		fullPath = selector + " > " + fullPath
 	})
 	items := doc.Find(fullPath)

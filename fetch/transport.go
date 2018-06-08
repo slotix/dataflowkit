@@ -282,7 +282,6 @@ func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		mimetype = "text/plain"
 	}
-	logger.Info("URL ", u, " Mime ", mimetype)
 	w.Header().Set("Content-Type", mimetype)
 	w.WriteHeader(http.StatusOK)
 	rc, err := resp.GetHTML()
