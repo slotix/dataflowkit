@@ -311,16 +311,19 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 			scraper: scraper,
 		}
 
-		go func() {
-			for {
-				results = append(results, <-workersResult)
-			}
-		}()
-
 		blks := scraper.DividePage(doc.Selection)
 		blocksCount := len(blks)
-		wg.Add(blocksCount)
+
+		wg.Add(1)
+		go func() {
+			for i := 0; i < blocksCount; i++ {
+				results = append(results, <-workersResult)
+			}
+			wg.Done()
+		}()
+
 		for i := 0; i < blocksCount; i++ {
+			wg.Add(1)
 			go t.blockWorker(blocks, workersResult, wrk)
 		}
 		// Divide this page into blocks
