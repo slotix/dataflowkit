@@ -129,8 +129,8 @@ func TestTask_ParseJSON(t *testing.T) {
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+	//	ReadTimeout:  60 * time.Second,
+	//	WriteTimeout: 60 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
@@ -194,8 +194,8 @@ func TestTask_ParseCSV(t *testing.T) {
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+	//	ReadTimeout:  60 * time.Second,
+	//	WriteTimeout: 60 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
@@ -254,8 +254,8 @@ func TestTask_ParseXML(t *testing.T) {
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+	//	ReadTimeout:  60 * time.Second,
+	//	WriteTimeout: 60 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
@@ -367,8 +367,8 @@ func TestParseTestServer12345(t *testing.T) {
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+		//ReadTimeout:  60 * time.Second,
+		//WriteTimeout: 60 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
@@ -382,13 +382,13 @@ func TestParseTestServer12345(t *testing.T) {
 		},
 		Fields: []Field{
 			Field{
-				Name:     "Header",
-				Selector: "h1",
+				Name:     "Names",
+				Selector: "td:nth-child(1)",
 				Extractor: Extractor{
-					Types: []string{"const", "outerHtml"},
-					Params: map[string]interface{}{
-						"value": "1",
-					},
+					Types: []string{"count"},//"const", "outerHtml"},
+					//Params: map[string]interface{}{
+					//	"value": "2",
+					//},
 				},
 			},
 			// Field{
