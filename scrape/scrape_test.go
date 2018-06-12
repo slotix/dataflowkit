@@ -376,9 +376,9 @@ func TestParseTestServer12345(t *testing.T) {
 
 	paginateResults = false
 	p := Payload{
-		Name: "persons",
+		Name: "persons Table",
 		Request: fetch.BaseFetcherRequest{
-			URL: "http://127.0.0.1:12345",
+			URL: "http://127.0.0.1:12345/persons-table",
 		},
 		Fields: []Field{
 			Field{
@@ -391,20 +391,20 @@ func TestParseTestServer12345(t *testing.T) {
 					},
 				},
 			},
-			Field{
-				Name:     "Warning",
-				Selector: "p",
-				Extractor: Extractor{
-					Types: []string{"html"},
-				},
-			},
-			Field{
-				Name:     "Count",
-				Selector: "td:nth-child(1)",
-				Extractor: Extractor{
-					Types: []string{"count","unknown"},
-				},
-			},
+			// Field{
+			// 	Name:     "Warning",
+			// 	Selector: ".alert-info",
+			// 	Extractor: Extractor{
+			// 		Types: []string{"html"},
+			// 	},
+			// },
+			// Field{
+			// 	Name:     "Count",
+			// 	Selector: "td:nth-child(1)",
+			// 	Extractor: Extractor{
+			// 		Types: []string{"count", "unknown"},
+			// 	},
+			// },
 		},
 		PaginateResults: &paginateResults,
 		Format:          "json",
@@ -467,6 +467,7 @@ func TestParseTestServer12345(t *testing.T) {
 	r, err = task.Parse()
 	assert.Error(t, err, "invalid output format specified")
 }
+
 func TestParseSwitchFetchers(t *testing.T) {
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
