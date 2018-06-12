@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,112 +16,64 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alecthomas/template"
 	"github.com/gorilla/mux"
 )
 
 var (
-	port        = flag.String("p", ":12345", "HTTP listen address")
-	fetcherPort = flag.String("f", ":8000", "DFK Fetcher port")
-	indexContent = `
-<!DOCTYPE html>
-<html>
-<head>
-	<meta charset="utf-8">
-	<style type="text/css">
-	body { margin: 10px; }
-	table, th, td, li, dl { font-family: "lucida grande", arial; font-size: 14pt; }
-	dt { font-weight: bold; }
-	table { background-color: #efefef; border: 2px solid #dddddd; width: 100%; }
-	th { background-color: #efefef; }
-	td { background-color: #ffffff; }
-	</style>
-</head>
-<body>
-<h1>Persons</h1>
-<p><strong>Warning!</strong> This is a demo website for web scraping purposes. </br>The data on this page has been randomly generated.</p>
-<table cellspacing="0" cellpadding="1">
-<tr>
-	<th>Name</th>
-	<th>Phone</th>
-	<th>Email</th>
-	<th>Company</th>
-</tr>
-<tr>
-	<td>Eagan C. Higgins</td>
-	<td>158-9502</td>
-	<td>sed.pede@sapien.ca</td>
-	<td>Commodo At Company</td>
-</tr>
-<tr>
-	<td>Ethan Wong</td>
-	<td>740-7719</td>
-	<td>at@et.edu</td>
-	<td>Metus Inc.</td>
-</tr>
-<tr>
-	<td>Quinn Haynes</td>
-	<td>372-4289</td>
-	<td>Sed.nulla@metusfacilisis.net</td>
-	<td>Enim LLP</td>
-</tr>
-<tr>
-	<td>Steel Frederick</td>
-	<td>1-260-805-4413</td>
-	<td>luctus@idnunc.co.uk</td>
-	<td>Ante Nunc Mauris LLP</td>
-</tr>
-<tr>
-	<td>Kasper Anthony</td>
-	<td>611-8201</td>
-	<td>sit.amet.nulla@non.edu</td>
-	<td>Mus Limited</td>
-</tr>
-<tr>
-	<td>Tallulah Nieves</td>
-	<td>165-3303</td>
-	<td>nascetur@inceptoshymenaeosMauris.net</td>
-	<td>Duis Associates</td>
-</tr>
-<tr>
-	<td>Lydia Whitfield</td>
-	<td>1-249-695-8401</td>
-	<td>sit.amet.orci@semperduilectus.ca</td>
-	<td>Praesent Consulting</td>
-</tr>
-<tr>
-	<td>Raven C. Gaines</td>
-	<td>100-9381</td>
-	<td>Pellentesque@egestasadui.com</td>
-	<td>Aliquet Sem Associates</td>
-</tr>
-<tr>
-	<td>Julie Zimmerman</td>
-	<td>1-380-382-8144</td>
-	<td>lectus.justo@Integer.org</td>
-	<td>Eu Consulting</td>
-</tr>
-<tr>
-	<td>Moses D. Hubbard</td>
-	<td>1-474-770-2793</td>
-	<td>sagittis.semper.Nam@cursusluctus.net</td>
-	<td>Vivamus Corp.</td>
-</tr>
-
-</table>
-
-</body>
-</html>`
+	personsTpl      *template.Template
+	indexTpl        *template.Template
+	personDetailTpl *template.Template
+	personTableTpl  *template.Template
+	personsJSON     string
+	persons         []Person
+	port            = flag.String("p", ":12345", "HTTP(S) listen address")
+	https           = flag.Bool("s", false, "expect HTTPS connections")
+	certFile        = flag.String("c", "", "certificate file path")
+	keyFile         = flag.String("k", "", "private key file path")
+	fetcherPort     = flag.String("f", ":8000", "DFK Fetcher port")
+	baseDir         = flag.String("b", "./web", "HTML files location.")
+	personCount     int
 )
+
+type Person struct {
+	Name    string `json:"Name"`
+	Phone   string `json:"Phone"`
+	Email   string `json:"Email"`
+	Company string `json:"Company"`
+	Counter string `json:"Counter"`
+	Bio     string `json:"Bio"`
+}
 
 func init() {
 	flag.Parse()
+	// personsTpl = template.Must(template.ParseFiles(*baseDir+"/persons.html", *baseDir+"/base.html"))
+	// personsTpl = personsTpl.Funcs(funcMap)
+	personsTpl = template.Must(template.New(*baseDir+"/base.html").Funcs(funcMap).ParseFiles(*baseDir+"/persons.html", *baseDir+"/base.html"))
+	personTableTpl = template.Must(template.ParseFiles(*baseDir+"/persons-table.html", *baseDir+"/base.html"))
+	indexTpl = template.Must(template.ParseFiles(*baseDir+"/index.html", *baseDir+"/base.html"))
+	personDetailTpl = template.Must(template.New(*baseDir+"/base.html").Funcs(funcMap).ParseFiles(*baseDir+"/p_detail.html", *baseDir+"/base.html"))
+
+	dat, err := ioutil.ReadFile(*baseDir + "/data/persons.json")
+	if err != nil {
+		fmt.Println(err)
+	}
+	personsJSON = string(dat)
+
+	if err := json.Unmarshal(dat, &persons); err != nil {
+		panic(err)
+	}
+	personCount = len(persons)
 }
 
 // Config provides basic configuration
 type Config struct {
-	Host         string
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
+	Host     string
+	HTTPS    bool //expect HTTPS connections
+	KeyFile  string
+	CertFile string
+	// ReadTimeout  time.Duration
+	// WriteTimeout time.Duration
 }
 
 // HTMLServer represents the web service that serves up HTML
@@ -124,7 +81,6 @@ type HTMLServer struct {
 	server *http.Server
 	wg     sync.WaitGroup
 }
-
 
 // Start launches the HTML Server
 func Start(cfg Config) *HTMLServer {
@@ -137,8 +93,14 @@ func Start(cfg Config) *HTMLServer {
 	r := mux.NewRouter()
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Conent-Type", "text/html")
-		w.Write([]byte(indexContent))
+		vars := map[string]interface{}{
+			"Header": "Web Scraping Playground",
+		}
+		render(w, r, indexTpl, "base", vars)
 	})
+	r.HandleFunc("/persons/page-{page}", personsHandler)
+	r.HandleFunc("/persons/{id}", personDetailsHandler)
+	r.HandleFunc("/persons-table", personTableHandler)
 	r.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Conent-Type", "text/html")
 		w.Write([]byte("\n\t\tUser-agent: *\n\t\tAllow: /allowed\n\t\tDisallow: /disallowed\n\t\t"))
@@ -167,14 +129,15 @@ func Start(cfg Config) *HTMLServer {
 		w.WriteHeader(st)
 		w.Write([]byte(vars["status"]))
 	})
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(*baseDir+"/static"))))
 
 	// Create the HTML Server
 	htmlServer := HTMLServer{
 		server: &http.Server{
-			Addr:           cfg.Host,
-			Handler:        r,
-			ReadTimeout:    cfg.ReadTimeout,
-			WriteTimeout:   cfg.WriteTimeout,
+			Addr:    cfg.Host,
+			Handler: r,
+			// ReadTimeout:    cfg.ReadTimeout,
+			// WriteTimeout:   cfg.WriteTimeout,
 			MaxHeaderBytes: 1 << 20,
 		},
 	}
@@ -182,21 +145,29 @@ func Start(cfg Config) *HTMLServer {
 	// Add to the WaitGroup for the listener goroutine
 	htmlServer.wg.Add(1)
 
-	// Start the listener
-	go func() {
-		// fmt.Printf("\nProxy Server : Service started : Host=%v\n", htmlServer.server.Addr)
-		// htmlServer.server.ListenAndServeTLS(
-		// 	"/etc/letsencrypt/live/dataflowkit.org/fullchain.pem",
-		// 	"/etc/letsencrypt/live/dataflowkit.org/privkey.pem",
-		// )
-		fmt.Printf("\nProxy Server : Service started : Host=%v\n", htmlServer.server.Addr)
-		htmlServer.server.ListenAndServe()
-		htmlServer.wg.Done()
-	}()
-	//redirect all requests from http to https
-	// go http.ListenAndServe(":80", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	http.Redirect(w, r, "https://"+r.Host+r.URL.String(), http.StatusMovedPermanently)
-	// }))
+	if !cfg.HTTPS {
+		// Start HTTP listener
+		go func() {
+			fmt.Printf("\nTest Server : Service started : Host=%v\n", htmlServer.server.Addr)
+			htmlServer.server.ListenAndServe()
+			htmlServer.wg.Done()
+		}()
+	} else {
+		// Start HTTPS listener
+		go func() {
+			fmt.Printf("\nTest Server : Service started : Host=%v\n", htmlServer.server.Addr)
+			htmlServer.server.ListenAndServeTLS(
+				*certFile,
+				*keyFile,
+			)
+			htmlServer.wg.Done()
+		}()
+
+		//redirect all requests from http to https
+		go http.ListenAndServe(":80", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "https://"+r.Host+r.URL.String(), http.StatusMovedPermanently)
+		}))
+	}
 	return &htmlServer
 }
 
@@ -226,9 +197,17 @@ func (htmlServer *HTMLServer) Stop() error {
 
 func main() {
 	serverCfg := Config{
-		Host:         *port, //"localhost:5000",
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
+		Host: *port, //"localhost:12345",
+		// ReadTimeout:  60 * time.Second,
+		// WriteTimeout: 60 * time.Second,
+		HTTPS: *https,
+	}
+	if serverCfg.HTTPS {
+		serverCfg.Host = ":443"
+		if len(*certFile) == 0 || len(*keyFile) == 0 {
+			log.Fatal(errors.New("No certificate file or private key file specified"))
+		}
+
 	}
 	htmlServer := Start(serverCfg)
 	defer htmlServer.Stop()
@@ -238,4 +217,99 @@ func main() {
 	<-sigChan
 
 	fmt.Println("main : shutting down")
+}
+
+var funcMap = template.FuncMap{
+	"inc":    Inc,
+	"dec":    Dec,
+	"mult":   Mult,
+	"divide": Div,
+}
+
+func Dec(a int) string {
+	return strconv.Itoa(a - 1)
+}
+
+func Inc(a int) string {
+	return strconv.Itoa(a + 1)
+}
+
+func Mult(a, b int) string {
+	return strconv.Itoa(a * b)
+}
+
+func Div(a, b string) string {
+	intA, err := strconv.Atoi(a)
+	if err != nil {
+		return ""
+	}
+	intB, err := strconv.Atoi(b)
+	if err != nil {
+		return ""
+	}
+
+	return strconv.Itoa(intA / intB)
+}
+
+func personsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Conent-Type", "text/html")
+	v := mux.Vars(r)
+	page, err := strconv.Atoi(v["page"])
+	if err != nil {
+		fmt.Println(err)
+	}
+	//fmt.Print(string(dat))
+	vars := map[string]interface{}{
+		"Header":       "Person Cards",
+		"Data":         string(personsJSON),
+		"Page":         page,
+		"PersonsCount": personCount,
+		"ItemsPerPage": 10,
+	}
+	render(w, r, personsTpl, "base", vars)
+}
+
+func personTableHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Conent-Type", "text/html")
+	//v := mux.Vars(r)
+	// page, err := strconv.Atoi(v["page"])
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	vars := map[string]interface{}{
+		"Header": "Persons Table",
+		//"Data":         string(personsJSON),
+		//"Page":         page,
+		//"PersonsCount": personCount,
+		//"ItemsPerPage": 10,
+	}
+	render(w, r, personTableTpl, "base", vars)
+}
+
+func personDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Conent-Type", "text/html")
+	v := mux.Vars(r)
+	id, err := strconv.Atoi(v["id"])
+	if err != nil {
+		fmt.Println(err)
+	}
+	//fmt.Print(string(dat))
+	vars := map[string]interface{}{
+		"Header":       "Person Details: " + persons[id].Name,
+		"Person":       persons[id],
+		"PersonsCount": personCount,
+		"ItemsPerPage": "10",
+	}
+	render(w, r, personDetailTpl, "base", vars)
+
+}
+
+// Render a template, or server error.
+func render(w http.ResponseWriter, r *http.Request, tpl *template.Template, name string, data interface{}) {
+	buf := new(bytes.Buffer)
+	if err := tpl.ExecuteTemplate(buf, name, data); err != nil {
+		fmt.Printf("\nRender Error: %v\n", err)
+		return
+	}
+	w.Write(buf.Bytes())
 }
