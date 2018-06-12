@@ -129,8 +129,8 @@ func TestTask_ParseJSON(t *testing.T) {
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+	//	ReadTimeout:  60 * time.Second,
+	//	WriteTimeout: 60 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
@@ -194,8 +194,8 @@ func TestTask_ParseCSV(t *testing.T) {
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+	//	ReadTimeout:  60 * time.Second,
+	//	WriteTimeout: 60 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
@@ -254,8 +254,8 @@ func TestTask_ParseXML(t *testing.T) {
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+	//	ReadTimeout:  60 * time.Second,
+	//	WriteTimeout: 60 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
@@ -367,8 +367,8 @@ func TestParseTestServer12345(t *testing.T) {
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+		//ReadTimeout:  60 * time.Second,
+		//WriteTimeout: 60 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
@@ -376,35 +376,35 @@ func TestParseTestServer12345(t *testing.T) {
 
 	paginateResults = false
 	p := Payload{
-		Name: "persons",
+		Name: "persons Table",
 		Request: fetch.BaseFetcherRequest{
-			URL: "http://127.0.0.1:12345",
+			URL: "http://127.0.0.1:12345/persons-table",
 		},
 		Fields: []Field{
 			Field{
-				Name:     "Header",
-				Selector: "h1",
-				Extractor: Extractor{
-					Types: []string{"const", "outerHtml"},
-					Params: map[string]interface{}{
-						"value": "1",
-					},
-				},
-			},
-			Field{
-				Name:     "Warning",
-				Selector: "p",
-				Extractor: Extractor{
-					Types: []string{"html"},
-				},
-			},
-			Field{
-				Name:     "Count",
+				Name:     "Names",
 				Selector: "td:nth-child(1)",
 				Extractor: Extractor{
-					Types: []string{"count","unknown"},
+					Types: []string{"count"},//"const", "outerHtml"},
+					//Params: map[string]interface{}{
+					//	"value": "2",
+					//},
 				},
 			},
+			// Field{
+			// 	Name:     "Warning",
+			// 	Selector: ".alert-info",
+			// 	Extractor: Extractor{
+			// 		Types: []string{"html"},
+			// 	},
+			// },
+			// Field{
+			// 	Name:     "Count",
+			// 	Selector: "td:nth-child(1)",
+			// 	Extractor: Extractor{
+			// 		Types: []string{"count", "unknown"},
+			// 	},
+			// },
 		},
 		PaginateResults: &paginateResults,
 		Format:          "json",
@@ -467,6 +467,7 @@ func TestParseTestServer12345(t *testing.T) {
 	r, err = task.Parse()
 	assert.Error(t, err, "invalid output format specified")
 }
+
 func TestParseSwitchFetchers(t *testing.T) {
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
