@@ -150,7 +150,7 @@ func init() {
 	RootCmd.Flags().BoolVarP(&paginateResults, "PAGINATE_RESULTS", "", false, "Paginated results are returned. Single list of combined results from every block on all pages is returned by default.")
 	RootCmd.Flags().IntVarP(&fetchDelay, "FETCH_DELAY", "", 500, "Specifies sleep time in milliseconds for multiple requests for the same domain.")
 	RootCmd.Flags().BoolVarP(&randomizeFetchDelay, "RANDOMIZE_FETCH_DELAY", "", true, "RandomizeFetchDelay setting decreases the chance of a crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay to 1.5 * FetchDelay seconds is used between consecutive requests to the same domain. If FetchDelay is zero this option has no effect.")
-	RootCmd.Flags().BoolVarP(&ignoreFetchDelay, "IGNORE_FETCH_DELAY", "", true, "Ignores fetchDelay setting intended for debug purpose. Please set it to false in Production")
+	RootCmd.Flags().BoolVarP(&ignoreFetchDelay, "IGNORE_FETCH_DELAY", "", false, "Ignores fetchDelay setting intended for debug purpose. Please set it to false in Production")
 
 	//viper.AutomaticEnv() // read in environment variables that match
 

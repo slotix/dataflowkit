@@ -171,13 +171,37 @@ type Task struct {
 	// Always contains at least one element - the initial URL.
 	//Failed pages should be rescheduled for download at the end if during a scrape one of the following statuses returned [500, 502, 503, 504, 408]
 	//once the spider has finished crawling all other (non failed) pages.
-	Visited map[string]error
+	Errors []error
 	//TaskQueue chan *Scraper
 	Robots map[string]*robotstxt.RobotsData
 	//Results
+	Parsed bool
 }
 
 type worker struct {
 	wg      *sync.WaitGroup
 	scraper *Scraper
 }
+
+type taskWorker struct {
+	wg             *sync.WaitGroup
+	UID            string
+	currentPageNum int
+	keys           *map[int][]int
+	scraper        *Scraper
+}
+
+type blockStruct struct {
+	blockSelection *goquery.Selection
+	key            string
+}
+
+type extractorResult struct {
+	value map[string]interface{}
+}
+
+type partResult map[string]interface{}
+
+// [payload md5hash]={[page1, page2, page3]}
+// [page1]= {[block1, block2]}
+// [block1] = {[]map[string]interface}

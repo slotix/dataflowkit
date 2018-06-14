@@ -74,3 +74,4 @@ parse/parse.d/debug
 parse/parse.d/parse.d
 testserver/testserver
 profile.out
+output/

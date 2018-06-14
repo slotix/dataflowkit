@@ -39,7 +39,7 @@ type ForbiddenByRobots struct {
 	URL string
 }
 
-func (e *ForbiddenByRobots) Error() string { return "403 Forbidden by robots.txt: "+ e.URL}
+func (e *ForbiddenByRobots) Error() string { return "403 Forbidden by robots.txt: " + e.URL }
 
 // Forbidden 403
 //
@@ -48,7 +48,7 @@ type Forbidden struct {
 	URL string
 }
 
-func (e *Forbidden) Error() string { return "403 Forbidden: "+ e.URL}
+func (e *Forbidden) Error() string { return "403 Forbidden: " + e.URL }
 
 // NotFound 404
 //
@@ -78,7 +78,7 @@ type BadGateway struct {
 }
 
 func (e *BadGateway) Error() string {
-	return "502 Invalid "+ e.What + " from server"
+	return "502 Invalid " + e.What + " from server"
 }
 
 // GatewayTimeout Gateway Time-out 504
@@ -110,6 +110,21 @@ type BadPayload struct {
 
 func (e *BadPayload) Error() string {
 	return "400: " + string(e.ParserError)
+}
+
+// ErrStorageResult represent storage results reader errors
+type ErrStorageResult struct {
+	Err string
+}
+
+// Exported Storage Result errors
+const (
+	EOF      = "End of payload results"
+	NextPage = "Next page results"
+)
+
+func (e *ErrStorageResult) Error() string {
+	return e.Err
 }
 
 // Error represents all the rest (unspecified errors).
