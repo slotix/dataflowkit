@@ -30,7 +30,7 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	request, err := p.initRequest()
+	request, err := p.initRequest("")
 	if err != nil {
 		return err
 	}
@@ -69,11 +69,16 @@ func (p *Payload) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (p *Payload) initRequest() (fetch.FetchRequester, error) {
+func (p *Payload) initRequest(newURL string) (fetch.FetchRequester, error) {
 	//fetcher type from Payload structure takes precedence over FETCHER_TYPE flag value
 	fetcherType := p.FetcherType
 	if fetcherType == "" {
 		fetcherType = viper.GetString("FETCHER_TYPE")
+	}
+
+	var URL string
+	if URL = newURL; URL == "" && p.Request != nil {
+		URL = p.Request.GetURL()
 	}
 
 	var request fetch.FetchRequester
@@ -87,7 +92,7 @@ func (p *Payload) initRequest() (fetch.FetchRequester, error) {
 				infiniteScroll = true
 			}
 			request = &splash.Request{
-				URL:            p.Request.GetURL(),
+				URL:            URL,
 				FormData:       p.Request.GetFormData(),
 				UserToken:      p.Request.GetUserToken(),
 				InfiniteScroll: infiniteScroll}
@@ -97,7 +102,7 @@ func (p *Payload) initRequest() (fetch.FetchRequester, error) {
 			request = &fetch.BaseFetcherRequest{}
 		} else {
 			request = &fetch.BaseFetcherRequest{
-				URL:       p.Request.GetURL(),
+				URL:       URL,
 				FormData:  p.Request.GetFormData(),
 				UserToken: p.Request.GetUserToken()}
 		}
