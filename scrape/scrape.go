@@ -33,6 +33,8 @@ import (
 
 var logger *logrus.Logger
 
+var fetchCannel chan *fetchInfo
+
 func init() {
 	logger = log.NewLogger(true)
 }
@@ -62,6 +64,10 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	}
 	//scrape request and return results.
 
+	fetchCannel = make(chan *fetchInfo, 20)
+	for i := 0; i < 20; i++ {
+		go task.fetchWorker()
+	}
 	// Array of page keys
 	k := make(map[int][]int)
 	wg := sync.WaitGroup{}
@@ -76,6 +82,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	wg.Add(1)
 	results, err := task.scrape(&tw)
 	wg.Wait()
+	close(fetchCannel)
 	if !task.Parsed {
 		if task.Payload.Request.Type() == "splash" {
 			return nil, err
@@ -89,9 +96,11 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		task.Payload.Request = request
 		scraper.Request = request
 		// TODO: check if request has been changed accordintly in &tw
+		fetchCannel = make(chan *fetchInfo, 100)
 		wg.Add(1)
 		results, err = task.scrape(&tw)
 		wg.Wait()
+		close(fetchCannel)
 		if !task.Parsed {
 			return nil, err
 		}
@@ -314,10 +323,26 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	}
 
 	//call remote fetcher to download web page
-	content, err := fetchContent(req)
-	if err != nil {
-		return nil, err
+	//content, err := fetchContent(req)
+	errorChan := make(chan error)
+	resultChan := make(chan io.ReadCloser)
+	fi := fetchInfo{
+		request: req,
+		result:  resultChan,
+		err:     errorChan,
 	}
+	fetchCannel <- &fi
+	var content io.ReadCloser
+	select {
+	case err := <-errorChan:
+		logger.Error(err)
+		return nil, err
+	case content = <-resultChan:
+	}
+
+	/* if err != nil {
+		return nil, err
+	} */
 
 	// Create a goquery document.
 	doc, err := goquery.NewDocumentFromReader(content)
@@ -335,7 +360,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 			if len(url) != 0 &&
 				(t.Payload.Paginator != nil && (t.Payload.Paginator.MaxPages > 0 && tw.currentPageNum < t.Payload.Paginator.MaxPages)) {
 				logger.Info(fmt.Sprintf("Current page %d; Max page %d", tw.currentPageNum, t.Payload.Paginator.MaxPages))
-				if !viper.GetBool("IGNORE_FETCH_DELAY") {
+				/* if !viper.GetBool("IGNORE_FETCH_DELAY") {
 					if *t.Payload.RandomizeFetchDelay {
 						//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 						rand := utils.Random(500, 1500)
@@ -345,7 +370,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 					} else {
 						time.Sleep(*t.Payload.FetchDelay)
 					}
-				}
+				} */
 				paginatorPayload := t.Payload
 				paginatorPayload.Request, err = paginatorPayload.initRequest(url)
 				if err != nil {
@@ -587,7 +612,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 						logger.Error(err)
 					}
 					if detailsHost == host {
-						if !viper.GetBool("IGNORE_FETCH_DELAY") {
+						/* if !viper.GetBool("IGNORE_FETCH_DELAY") {
 							if *task.Payload.RandomizeFetchDelay {
 								//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 								rand := utils.Random(500, 1500)
@@ -597,7 +622,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 							} else {
 								time.Sleep(*task.Payload.FetchDelay)
 							}
-						}
+						} */
 					}
 					wg := sync.WaitGroup{}
 					k := make(map[int][]int)
@@ -642,6 +667,28 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 				logger.Error(err)
 			}
 			s.Write(block.key, output, 0)
+		}
+	}
+}
+
+func (task *Task) fetchWorker() {
+	for fetch := range fetchCannel {
+		if !viper.GetBool("IGNORE_FETCH_DELAY") {
+			if *task.Payload.RandomizeFetchDelay {
+				//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
+				rand := utils.Random(500, 1500)
+				delay := *task.Payload.FetchDelay * time.Duration(rand) / 1000
+				logger.Infof("%s -> %v", delay, fetch.request.GetURL())
+				time.Sleep(delay)
+			} else {
+				time.Sleep(*task.Payload.FetchDelay)
+			}
+		}
+		content, err := fetchContent(fetch.request)
+		if err != nil {
+			fetch.err <- err
+		} else {
+			fetch.result <- content
 		}
 	}
 }

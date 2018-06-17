@@ -1,6 +1,7 @@
 package scrape
 
 import (
+	"io"
 	"sync"
 	"time"
 
@@ -201,6 +202,12 @@ type extractorResult struct {
 }
 
 type partResult map[string]interface{}
+
+type fetchInfo struct {
+	result  chan<- io.ReadCloser
+	request fetch.FetchRequester
+	err     chan<- error
+}
 
 // [payload md5hash]={[page1, page2, page3]}
 // [page1]= {[block1, block2]}
