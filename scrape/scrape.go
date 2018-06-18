@@ -64,8 +64,8 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	}
 	//scrape request and return results.
 
-	fetchCannel = make(chan *fetchInfo, 20)
-	for i := 0; i < 20; i++ {
+	fetchCannel = make(chan *fetchInfo, 100)
+	for i := 0; i < 50; i++ {
 		go task.fetchWorker()
 	}
 	// Array of page keys
