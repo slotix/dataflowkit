@@ -12,6 +12,7 @@
 package log
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -50,6 +51,20 @@ func (hook ContextHook) Fire(entry *logrus.Entry) error {
 func NewLogger(withContext bool) *logrus.Logger {
 	logger := logrus.New()
 	logrus.SetOutput(os.Stdout)
+	if withContext {
+		logger.AddHook(ContextHook{})
+	}
+	return logger
+}
+
+func NewFileLogger(withContext bool, fileName string) *logrus.Logger {
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 755)
+	if err != nil {
+		fmt.Printf("Failed to create %s file", fileName)
+	}
+	logger := logrus.New()
+	logger.Out = file
+
 	if withContext {
 		logger.AddHook(ContextHook{})
 	}
