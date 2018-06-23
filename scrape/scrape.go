@@ -36,7 +36,7 @@ var logger *logrus.Logger
 var fetchCannel chan *fetchInfo
 
 func init() {
-	logger = log.NewLogger(true)
+	logger = log.NewFileLogger(true, "error.log")
 }
 
 // NewTask creates new task to parse fetched page following the rules from Payload.
@@ -80,31 +80,31 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		UID:            uid,
 	}
 	wg.Add(1)
-	results, err := task.scrape(&tw)
+	_, err = task.scrape(&tw)
 	wg.Wait()
-	close(fetchCannel)
 	if !task.Parsed {
+		logger.Info("Failed to scrape with base fetcher. Reinitializing to scrape with Splash fetcher.")
 		if task.Payload.Request.Type() == "splash" {
+			close(fetchCannel)
 			return nil, err
 		}
-		logger.Error(err)
 		task.Payload.FetcherType = "splash"
 		request, err := task.Payload.initRequest("")
 		if err != nil {
+			close(fetchCannel)
 			return nil, err
 		}
 		task.Payload.Request = request
 		scraper.Request = request
-		// TODO: check if request has been changed accordintly in &tw
-		fetchCannel = make(chan *fetchInfo, 100)
 		wg.Add(1)
-		results, err = task.scrape(&tw)
+		_, err = task.scrape(&tw)
 		wg.Wait()
-		close(fetchCannel)
 		if !task.Parsed {
+			close(fetchCannel)
 			return nil, err
 		}
 	}
+	close(fetchCannel)
 	//logger.Info(task.Visited)
 	storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
 	if err != nil {
@@ -130,14 +130,18 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	default:
 		return nil, errors.New("invalid output format specified")
 	}
-	e.EncodeFromStorage(string(uid))
-	t := time.Now()
-	elapsed := t.Sub(start)
-	logger.Info(elapsed)
-	r, err := e.Encode(results)
+	r, err := e.EncodeFromStorage(string(uid))
 	if err != nil {
 		return nil, err
 	}
+	t := time.Now()
+	elapsed := t.Sub(start)
+	logger.Info(elapsed)
+	/* r, err := e.Encode(results)
+	if err != nil {
+		return nil, err
+	} */
+	//have to return link to result file?
 	return r, err
 }
 
@@ -286,7 +290,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
 func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	//logger.Info(time.Now())
-	output := [][]map[string]interface{}{}
+	//output := [][]map[string]interface{}{}
 
 	req := tw.scraper.Request
 	//req := t.Payload.Request
@@ -335,7 +339,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	var content io.ReadCloser
 	select {
 	case err := <-errorChan:
-		logger.Error(err)
+		tw.wg.Done()
 		return nil, err
 	case content = <-resultChan:
 	}
@@ -347,6 +351,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	// Create a goquery document.
 	doc, err := goquery.NewDocumentFromReader(content)
 	if err != nil {
+		tw.wg.Done()
 		return nil, err
 	}
 
@@ -354,6 +359,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 		if !t.Payload.Paginator.InfiniteScroll {
 			url, err = tw.scraper.Paginator.NextPage(url, doc.Selection)
 			if err != nil {
+				tw.wg.Done()
 				return nil, err
 			}
 			// Repeat until we don't have any more URLs, or until we hit our page limit.
@@ -374,10 +380,12 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 				paginatorPayload := t.Payload
 				paginatorPayload.Request, err = paginatorPayload.initRequest(url)
 				if err != nil {
+					tw.wg.Done()
 					return nil, err
 				}
 				paginatorScraper, err := paginatorPayload.newScraper()
 				if err != nil {
+					tw.wg.Done()
 					return nil, err
 				}
 				paginatorTW := taskWorker{
@@ -404,7 +412,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	}
 
 	blockSelections := tw.scraper.DividePage(doc.Selection)
-	blocksCount := len(blockSelections)
+	//blocksCount := len(blockSelections)
 
 	/*wg.Add(1)
 	go func() {
@@ -416,7 +424,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 
 	(*tw.keys)[tw.currentPageNum] = []int{}
 
-	for i := 0; i < blocksCount; i++ {
+	for i := 0; i < 25; i++ {
 		wg.Add(1)
 		go t.blockWorker(blocks, wrk)
 	}
@@ -438,9 +446,9 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	//tw.keys.pages = append(tw.keys.pages, fmt.Sprintf("%s-d", t.Payload.PayloadMD5, tw.numPages))
 	tw.wg.Done()
 
-	if len(output) == 0 {
+	/* if len(output) == 0 {
 		return nil, &errs.BadPayload{errs.ErrEmptyResults}
-	}
+	} */
 
 	// All good!
 	//return &Results{output}, err
@@ -534,7 +542,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 		blockResults := map[string]interface{}{}
 
 		// Process each part of this block
-		for _, part := range wrk.scraper.Parts {
+		for _, part := range wrk.scraper.Parts { // ->task.Payload.Fields
 			sel := block.blockSelection
 			if part.Selector != "." {
 				sel = sel.Find(part.Selector)
@@ -639,6 +647,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 					if err != nil {
 						//return nil, err
 						logger.Error(err)
+						continue
 					}
 					blockResults[part.Name+"_details"] = uid //generate uid resDetails.AllBlocks()
 					storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
@@ -678,7 +687,7 @@ func (task *Task) fetchWorker() {
 				//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 				rand := utils.Random(500, 1500)
 				delay := *task.Payload.FetchDelay * time.Duration(rand) / 1000
-				logger.Infof("%s -> %v", delay, fetch.request.GetURL())
+				//logger.Infof("%s -> %v", delay, fetch.request.GetURL())
 				time.Sleep(delay)
 			} else {
 				time.Sleep(*task.Payload.FetchDelay)
