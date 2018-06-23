@@ -121,6 +121,7 @@ type ErrStorageResult struct {
 const (
 	EOF      = "End of payload results"
 	NextPage = "Next page results"
+	NoKey    = "Key %s not found"
 )
 
 func (e *ErrStorageResult) Error() string {

@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/clbanning/mxj"
 	"github.com/slotix/dataflowkit/errs"
@@ -23,7 +24,7 @@ import (
 
 type encoder interface {
 	Encode(*Results) (io.ReadCloser, error)
-	EncodeFromStorage(payloadMD5 string)
+	EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error)
 }
 
 // CSVEncoder transforms parsed data to CSV format.
@@ -53,18 +54,17 @@ func (e JSONEncoder) Encode(results *Results) (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
-func (e JSONEncoder) EncodeFromStorage(payloadMD5 string) {
+func (e JSONEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) {
 	storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
 	if err != nil {
-		logger.Error(err)
+		return nil, err
 	}
 	s := storage.NewStore(storageType)
-
 	// open output file
-	sFileName := "/media/sleeper/DATA/output/" + payloadMD5 + ".json"
-	fo, err := os.Create(sFileName)
+	sFileName := payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".json"
+	fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	// close fo on exit and check for its returned error
 	defer func() {
@@ -92,6 +92,9 @@ func (e JSONEncoder) EncodeFromStorage(payloadMD5 string) {
 				if e.paginateResults {
 					w.WriteString("],[")
 				}
+			} else {
+				logger.Error(err)
+				continue
 			}
 		}
 		if writeComma {
@@ -110,8 +113,10 @@ func (e JSONEncoder) EncodeFromStorage(payloadMD5 string) {
 		w.WriteString("]")
 	}
 	if err = w.Flush(); err != nil {
-		panic(err)
+		return nil, err
 	}
+	readCloser := ioutil.NopCloser(strings.NewReader(sFileName))
+	return readCloser, nil
 }
 
 type storageResultReader struct {
@@ -166,7 +171,12 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 			return nil, &errs.ErrStorageResult{Err: errs.EOF}
 		}
 	}
-	blockMap = r.getValue()
+	blockMap, err = r.getValue()
+	if err != nil {
+		// have to try get next block value
+		r.block++
+		return nil, err
+	}
 	for field, value := range blockMap {
 		if strings.Contains(field, "details") {
 			details := []map[string]interface{}{}
@@ -178,6 +188,13 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 
 					} else if detailsErr.Error() == errs.EOF {
 						break
+					} else {
+						// in a case of details "no such file or directory" error means, that
+						// detail's selector(s) has not be found in a block
+						// these can happens when there are few coresponding blocks within a page
+						// but only some of them contains wanted selector(s)
+						// so just go ahead
+						continue
 					}
 				}
 				details = append(details, detailsBlock)
@@ -191,18 +208,18 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 	return blockMap, err
 }
 
-func (r *storageResultReader) getValue() map[string]interface{} {
+func (r *storageResultReader) getValue() (map[string]interface{}, error) {
 	key := fmt.Sprintf("%s-%d-%d", r.payloadMD5, r.page, r.block)
 	blockJSON, err := r.storage.Read(key)
 	if err != nil {
-		logger.Error(err)
+		return nil, err //&errs.ErrStorageResult{Err: fmt.Sprintf(errs.NoKey, key)}
 	}
 	blockMap := make(map[string]interface{})
 	err = json.Unmarshal(blockJSON, &blockMap)
 	if err != nil {
-		logger.Error(err)
+		return nil, err
 	}
-	return blockMap
+	return blockMap, nil
 }
 
 //Encode method implementation for CSVEncoder
@@ -233,17 +250,17 @@ func (e CSVEncoder) Encode(results *Results) (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
-func (e CSVEncoder) EncodeFromStorage(payloadMD5 string) {
-	/* storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
+func (e CSVEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) {
+	storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
 	if err != nil {
-		logger.Error(err)
+		return nil, err
 	}
 	s := storage.NewStore(storageType)
-
 	// open output file
-	fo, err := os.Create("output.txt")
+	sFileName := payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".csv"
+	fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	// close fo on exit and check for its returned error
 	defer func() {
@@ -254,22 +271,79 @@ func (e CSVEncoder) EncodeFromStorage(payloadMD5 string) {
 	// make a write buffer
 	w := bufio.NewWriter(fo)
 
+	//write csv headers
+	sString := ""
+	for _, headerName := range e.partNames {
+		sString += fmt.Sprintf("%s,", headerName)
+	}
+	sString = strings.TrimSuffix(sString, ",") + "\n"
+	_, err = w.WriteString(sString)
+	if err != nil {
+		logger.Error(err)
+	}
+	err = w.Flush()
+	if err != nil {
+		logger.Error(err)
+	}
+
+	reader := newStorageReader(s, payloadMD5)
+
 	for {
 		block, err := reader.Read()
 		if err != nil {
 			if err.Error() == errs.EOF {
-				w.WriteString("]")
 				break
 			} else if err.Error() == errs.NextPage {
 				//next page
+			} else {
+				logger.Error(err)
+				//we have to continue 'cause we still have other records
+				continue
 			}
 		}
-
+		sString = ""
+		for _, fieldName := range e.partNames {
+			formatedString := ""
+			switch v := block[fieldName].(type) {
+			case string:
+				formatedString = v
+			case []string:
+				formatedString = strings.Join(v, ";")
+			case int:
+				formatedString = strconv.FormatInt(int64(v), 10)
+			case []int:
+				formatedString = intArrayToString(v, ";")
+			case []float64:
+				formatedString = floatArrayToString(v, ";")
+			case float64:
+				formatedString = strconv.FormatFloat(v, 'f', -1, 64)
+			case nil:
+				formatedString = ""
+			case []interface{}:
+				values := make([]string, len(v))
+				for i, value := range v {
+					values[i] = fmt.Sprint(value)
+				}
+				formatedString = strings.Join(values, ";")
+			}
+			sString += fmt.Sprintf("%s,", formatedString)
+		}
+		sString = strings.TrimSuffix(sString, ",") + "\n"
+		_, err = w.WriteString(sString)
+		if err != nil {
+			logger.Error(err)
+		}
+		err = w.Flush()
+		if err != nil {
+			logger.Error(err)
+		}
 	}
 
 	if err = w.Flush(); err != nil {
 		panic(err)
-	} */
+	}
+	readCloser := ioutil.NopCloser(strings.NewReader(sFileName))
+	return readCloser, nil
 }
 
 //Encode method implementation for XMLEncoder
@@ -298,8 +372,96 @@ func (e XMLEncoder) Encode(results *Results) (io.ReadCloser, error) {
 	return readCloser, nil
 }
 
-func (e XMLEncoder) EncodeFromStorage(payloadMD5 string) {
+func (e XMLEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) {
+	/* storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
+	if err != nil {
+		return nil, err
+	}
+	s := storage.NewStore(storageType) */
+	// open output file
+	sFileName := payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".xml"
+	/* fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
+	if err != nil {
+		return nil, err
+	}
+	// close fo on exit and check for its returned error
+	defer func() {
+		if err := fo.Close(); err != nil {
+			panic(err)
+		}
+	}()
+	// make a write buffer
+	w := bufio.NewWriter(fo)
 
+	//write xml headers
+	_, err = w.WriteString(`<?xml version="1.0" encoding="UTF-8"?><root>`)
+	if err != nil {
+		logger.Error(err)
+	}
+	err = w.Flush()
+	if err != nil {
+		logger.Error(err)
+	}
+
+	reader := newStorageReader(s, payloadMD5)
+
+	for {
+		block, err := reader.Read()
+		if err != nil {
+			if err.Error() == errs.EOF {
+				break
+			} else if err.Error() == errs.NextPage {
+				//next page
+			} else {
+				logger.Error(err)
+				//we have to continue 'cause we still have other records
+				continue
+			}
+		}
+		sString = ""
+		for _, fieldName := range e.partNames {
+			formatedString := ""
+			switch v := block[fieldName].(type) {
+			case string:
+				formatedString = v
+			case []string:
+				formatedString = strings.Join(v, ";")
+			case int:
+				formatedString = strconv.FormatInt(int64(v), 10)
+			case []int:
+				formatedString = intArrayToString(v, ";")
+			case []float64:
+				formatedString = floatArrayToString(v, ";")
+			case float64:
+				formatedString = strconv.FormatFloat(v, 'f', -1, 64)
+			case nil:
+				formatedString = ""
+			case []interface{}:
+				values := make([]string, len(v))
+				for i, value := range v {
+					values[i] = fmt.Sprint(value)
+				}
+				formatedString = strings.Join(values, ";")
+			}
+			sString += fmt.Sprintf("%s,", formatedString)
+		}
+		sString = strings.TrimSuffix(sString, ",") + "\n"
+		_, err = w.WriteString(sString)
+		if err != nil {
+			logger.Error(err)
+		}
+		err = w.Flush()
+		if err != nil {
+			logger.Error(err)
+		}
+	}
+
+	w.WriteString("</root>")
+	if err = w.Flush(); err != nil {
+		panic(err)
+	} */
+	readCloser := ioutil.NopCloser(strings.NewReader(sFileName))
+	return readCloser, nil
 }
 
 func intArrayToString(a []int, delim string) string {

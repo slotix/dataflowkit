@@ -119,6 +119,10 @@ func fillStruct(m map[string]interface{}, s interface{}) error {
 	for k, v := range m {
 		err := setField(s, k, v)
 		if err != nil {
+			//белать фиксить надо
+			if k == "regexp" {
+				return nil
+			}
 			return err
 		}
 	}

@@ -58,7 +58,7 @@ func NewLogger(withContext bool) *logrus.Logger {
 }
 
 func NewFileLogger(withContext bool, fileName string) *logrus.Logger {
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 755)
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0660)
 	if err != nil {
 		fmt.Printf("Failed to create %s file", fileName)
 	}
