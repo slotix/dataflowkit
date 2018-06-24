@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/csv"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -140,6 +141,7 @@ func newStorageReader(store storage.Store, md5Hash string) *storageResultReader 
 	return reader
 }
 
+// have return error
 func (r *storageResultReader) init() {
 	keysJSON, err := r.storage.Read(r.payloadMD5)
 	if err != nil {
@@ -179,7 +181,7 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 	}
 	for field, value := range blockMap {
 		if strings.Contains(field, "details") {
-			details := []map[string]interface{}{}
+			details := map[string]interface{}{}
 			detailsReader := newStorageReader(r.storage, value.(string))
 			for {
 				detailsBlock, detailsErr := detailsReader.Read()
@@ -197,7 +199,11 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 						continue
 					}
 				}
-				details = append(details, detailsBlock)
+				details = detailsBlock
+				// we are just breaking here because we got all details recursively
+				// if we will continue to read storage, next iteration will returns EOF
+				// just to save a time break loop manualy
+				break
 			}
 			if len(details) > 0 {
 				blockMap[field] = details
@@ -373,14 +379,14 @@ func (e XMLEncoder) Encode(results *Results) (io.ReadCloser, error) {
 }
 
 func (e XMLEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) {
-	/* storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
+	storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
 	if err != nil {
 		return nil, err
 	}
-	s := storage.NewStore(storageType) */
+	s := storage.NewStore(storageType)
 	// open output file
 	sFileName := payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".xml"
-	/* fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
+	fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
 	if err != nil {
 		return nil, err
 	}
@@ -418,38 +424,7 @@ func (e XMLEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) 
 				continue
 			}
 		}
-		sString = ""
-		for _, fieldName := range e.partNames {
-			formatedString := ""
-			switch v := block[fieldName].(type) {
-			case string:
-				formatedString = v
-			case []string:
-				formatedString = strings.Join(v, ";")
-			case int:
-				formatedString = strconv.FormatInt(int64(v), 10)
-			case []int:
-				formatedString = intArrayToString(v, ";")
-			case []float64:
-				formatedString = floatArrayToString(v, ";")
-			case float64:
-				formatedString = strconv.FormatFloat(v, 'f', -1, 64)
-			case nil:
-				formatedString = ""
-			case []interface{}:
-				values := make([]string, len(v))
-				for i, value := range v {
-					values[i] = fmt.Sprint(value)
-				}
-				formatedString = strings.Join(values, ";")
-			}
-			sString += fmt.Sprintf("%s,", formatedString)
-		}
-		sString = strings.TrimSuffix(sString, ",") + "\n"
-		_, err = w.WriteString(sString)
-		if err != nil {
-			logger.Error(err)
-		}
+		e.writeXML(w, &block)
 		err = w.Flush()
 		if err != nil {
 			logger.Error(err)
@@ -459,9 +434,27 @@ func (e XMLEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) 
 	w.WriteString("</root>")
 	if err = w.Flush(); err != nil {
 		panic(err)
-	} */
+	}
 	readCloser := ioutil.NopCloser(strings.NewReader(sFileName))
 	return readCloser, nil
+}
+
+func (e XMLEncoder) writeXML(w io.Writer, block *map[string]interface{}) {
+	for field, value := range *block {
+		if strings.Contains(field, "details") {
+			v := value.(map[string]interface{})
+			w.Write([]byte(fmt.Sprintf("<%s>", field)))
+			e.writeXML(w, &v)
+			w.Write([]byte(fmt.Sprintf("</%s>", field)))
+		} else {
+			nodeName := fmt.Sprintf("<%s>", field)
+			w.Write([]byte(nodeName))
+			// have to escape predefined entities to obtain valid xml
+			xml.Escape(w, []byte(value.(string)))
+			nodeName = fmt.Sprintf("</%s>", field)
+			w.Write([]byte(nodeName))
+		}
+	}
 }
 
 func intArrayToString(a []int, delim string) string {
