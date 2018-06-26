@@ -378,26 +378,26 @@ func TestParseTestServer12345(t *testing.T) {
 	p := Payload{
 		Name: "persons Table",
 		Request: fetch.BaseFetcherRequest{
-			URL: "http://127.0.0.1:12345/persons-table",
+			URL: "http://127.0.0.1:12345/persons/page-0",
 		},
 		Fields: []Field{
 			Field{
 				Name:     "Names",
-				Selector: "td:nth-child(1)",
+				Selector: "#cards a",
 				Extractor: Extractor{
-					Types: []string{"count"},//"const", "outerHtml"},
+					Types: []string{"text"},//"const", "outerHtml"},
 					//Params: map[string]interface{}{
 					//	"value": "2",
 					//},
 				},
 			},
-			// Field{
-			// 	Name:     "Warning",
-			// 	Selector: ".alert-info",
-			// 	Extractor: Extractor{
-			// 		Types: []string{"html"},
-			// 	},
-			// },
+			Field{
+				Name:     "IDs",
+				Selector: ".badge-primary",
+				Extractor: Extractor{
+					Types: []string{"html"},
+				},
+			},
 			// Field{
 			// 	Name:     "Count",
 			// 	Selector: "td:nth-child(1)",
@@ -473,8 +473,8 @@ func TestParseSwitchFetchers(t *testing.T) {
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+		//ReadTimeout:  60 * time.Second,
+		//WriteTimeout: 60 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
