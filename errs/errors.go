@@ -114,6 +114,22 @@ func (e *BadPayload) Error() string {
 	return "400: " + string(e.ParserError)
 }
 
+// ErrStorageResult represent storage results reader errors
+type ErrStorageResult struct {
+	Err string
+}
+
+// Exported Storage Result errors
+const (
+	EOF      = "End of payload results"
+	NextPage = "Next page results"
+	NoKey    = "Key %s not found"
+)
+
+func (e *ErrStorageResult) Error() string {
+	return e.Err
+}
+
 // Error represents all the rest (unspecified errors).
 type Error struct {
 	Err string
