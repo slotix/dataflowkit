@@ -5,14 +5,17 @@ package scrape
 
 //TODO: add paginator to details
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/slotix/dataflowkit/splash"
+	"github.com/slotix/dataflowkit/storage"
 
 	"github.com/sirupsen/logrus"
 
@@ -30,8 +33,10 @@ import (
 
 var logger *logrus.Logger
 
+var fetchCannel chan *fetchInfo
+
 func init() {
-	logger = log.NewLogger(true)
+	logger = log.NewFileLogger(true, "error.log")
 }
 
 // NewTask creates new task to parse fetched page following the rules from Payload.
@@ -42,38 +47,72 @@ func NewTask(p Payload) *Task {
 	return &Task{
 		ID:      id.String(),
 		Payload: p,
-		Visited: make(map[string]error),
+		Errors:  []error{},
 		Robots:  make(map[string]*robotstxt.RobotsData),
+		Parsed:  false,
 	}
 
 }
 
 // Parse processes specified task which parses fetched page.
 func (task *Task) Parse() (io.ReadCloser, error) {
+	start := time.Now()
+
 	scraper, err := task.Payload.newScraper()
 	if err != nil {
 		return nil, err
 	}
 	//scrape request and return results.
-	results, err := task.scrape(scraper)
-	if err != nil {
+
+	fetchCannel = make(chan *fetchInfo, 100)
+	for i := 0; i < 50; i++ {
+		go task.fetchWorker()
+	}
+	// Array of page keys
+	k := make(map[int][]int)
+	wg := sync.WaitGroup{}
+	uid := string(utils.GenerateCRC32([]byte(task.Payload.PayloadMD5)))
+	tw := taskWorker{
+		wg:             &wg,
+		currentPageNum: 0,
+		scraper:        scraper,
+		keys:           &k,
+		UID:            uid,
+	}
+	wg.Add(1)
+	_, err = task.scrape(&tw)
+	wg.Wait()
+	if !task.Parsed {
+		logger.Info("Failed to scrape with base fetcher. Reinitializing to scrape with Splash fetcher.")
 		if task.Payload.Request.Type() == "splash" {
+			close(fetchCannel)
 			return nil, err
 		}
-		logger.Error(err)
 		task.Payload.FetcherType = "splash"
-		request, err := task.Payload.initRequest()
+		request, err := task.Payload.initRequest("")
 		if err != nil {
+			close(fetchCannel)
 			return nil, err
 		}
 		task.Payload.Request = request
 		scraper.Request = request
-		results, err = task.scrape(scraper)
-		if err != nil {
+		wg.Add(1)
+		_, err = task.scrape(&tw)
+		wg.Wait()
+		if !task.Parsed {
+			close(fetchCannel)
 			return nil, err
 		}
 	}
+	close(fetchCannel)
 	//logger.Info(task.Visited)
+	storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
+	if err != nil {
+		logger.Error(err)
+	}
+	s := storage.NewStore(storageType)
+	j, err := json.Marshal(tw.keys)
+	s.Write(string(uid), j, 0)
 
 	var e encoder
 	switch strings.ToLower(task.Payload.Format) {
@@ -91,11 +130,18 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	default:
 		return nil, errors.New("invalid output format specified")
 	}
-	//logger.Info(results)
-	r, err := e.Encode(results)
+	r, err := e.EncodeFromStorage(string(uid))
 	if err != nil {
 		return nil, err
 	}
+	t := time.Now()
+	elapsed := t.Sub(start)
+	logger.Info(elapsed)
+	/* r, err := e.Encode(results)
+	if err != nil {
+		return nil, err
+	} */
+	//have to return link to result file?
 	return r, err
 }
 
@@ -241,19 +287,18 @@ func (p Payload) fields2parts() ([]Part, error) {
 }
 
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
-func (t *Task) scrape(scraper *Scraper) (*Results, error) {
+func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	//logger.Info(time.Now())
-	output := [][]map[string]interface{}{}
+	//output := [][]map[string]interface{}{}
 
-	req := scraper.Request
+	req := tw.scraper.Request
 	//req := t.Payload.Request
 	url := req.GetURL()
 
-	var numPages int
 	//get Robotstxt Data
 	host, err := req.Host()
 	if err != nil {
-		t.Visited[url] = err
+		t.Errors = append(t.Errors, err)
 		logger.Error(err)
 		//return err
 	}
@@ -264,7 +309,7 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 			if err1 != nil {
 				return nil, err1
 			}
-			t.Visited[url] = err
+			t.Errors = append(t.Errors, err)
 			logger.WithFields(
 				logrus.Fields{
 					"err": err,
@@ -275,195 +320,138 @@ func (t *Task) scrape(scraper *Scraper) (*Results, error) {
 		t.Robots[host] = robots
 	}
 
-	for {
-		results := []map[string]interface{}{}
-		//check if scraping of current url is not forbidden
-		if !fetch.AllowedByRobots(url, t.Robots[host]) {
-			t.Visited[url] = &errs.ForbiddenByRobots{url}
-		}
-		// Repeat until we don't have any more URLs, or until we hit our page limit.
-		if len(url) == 0 ||
-			(t.Payload.Paginator != nil && (t.Payload.Paginator.MaxPages > 0 && numPages >= t.Payload.Paginator.MaxPages)) {
-			break
-		}
-		//call remote fetcher to download web page
-		content, err := fetchContent(req)
-		if err != nil {
-			return nil, err
-		}
+	//check if scraping of current url is not forbidden
+	if !fetch.AllowedByRobots(url, t.Robots[host]) {
+		t.Errors = append(t.Errors, &errs.ForbiddenByRobots{url})
+	}
 
-		// Create a goquery document.
-		doc, err := goquery.NewDocumentFromReader(content)
-		if err != nil {
-			return nil, err
-		}
+	//call remote fetcher to download web page
+	//content, err := fetchContent(req)
+	errorChan := make(chan error)
+	resultChan := make(chan io.ReadCloser)
+	fi := fetchInfo{
+		request: req,
+		result:  resultChan,
+		err:     errorChan,
+	}
+	fetchCannel <- &fi
+	var content io.ReadCloser
+	select {
+	case err := <-errorChan:
+		tw.wg.Done()
+		return nil, err
+	case content = <-resultChan:
+	}
 
-		t.Visited[url] = nil
+	/* if err != nil {
+		return nil, err
+	} */
 
-		// Divide this page into blocks
-		for _, block := range scraper.DividePage(doc.Selection) {
-			blockResults := map[string]interface{}{}
+	// Create a goquery document.
+	doc, err := goquery.NewDocumentFromReader(content)
+	if err != nil {
+		tw.wg.Done()
+		return nil, err
+	}
 
-			// Process each part of this block
-			for _, part := range scraper.Parts {
-				sel := block
-				if part.Selector != "." {
-					sel = sel.Find(part.Selector)
-				}
-				//update base URL to reflect attr relative URL change
-				//fmt.Println(reflect.TypeOf(part.Extractor))
-				switch part.Extractor.(type) {
-				case *extract.Attr:
-					//	if part.Extractor.GetType() == "attr" {
-					attr := part.Extractor.(*extract.Attr)
-					if attr.Attr == "href" || attr.Attr == "src" {
-						attr.BaseURL = url
-					}
-					//	}
-				}
-				extractedPartResults, err := part.Extractor.Extract(sel)
-				if err != nil {
-					return nil, err
-				}
-
-				// A nil response from an extractor means that we don't even include it in
-				// the results.
-				if extractedPartResults == nil {
-					continue
-				}
-				blockResults[part.Name] = extractedPartResults
-
-				//********* details
-				//part.Details = nil
-				if part.Details != nil {
-					var requests []fetch.FetchRequester
-
-					switch extractedPartResults.(type) {
-					case string:
-						var rq fetch.FetchRequester
-						switch t.Payload.Request.Type() {
-						case "base":
-							rq = &fetch.BaseFetcherRequest{URL: extractedPartResults.(string)}
-						case "splash":
-							rq = &splash.Request{URL: extractedPartResults.(string)}
-						default:
-							err := errors.New("invalid fetcher type specified")
-							logger.Error(err.Error())
-							return nil, err
-						}
-						requests = append(requests, rq)
-					case []string:
-						for _, r := range extractedPartResults.([]string) {
-
-							var rq fetch.FetchRequester
-							switch t.Payload.Request.Type() {
-							case "base":
-								rq = &fetch.BaseFetcherRequest{URL: r}
-							case "splash":
-								rq = &splash.Request{URL: r}
-							default:
-								err := errors.New("invalid fetcher type specified")
-								logger.Error(err.Error())
-								return nil, err
-							}
-
-							requests = append(requests, rq)
-
-						}
-					}
-					for _, r := range requests {
-						//part.Details.Request = splash.Request{
-						//	URL: extractedPartResults.(string),
-						//}
-						part.Details.Request = r
-						//check if domain is the same for initial URL and details' URLs
-						//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
-						detailsHost, err := part.Details.Request.Host()
-						if err != nil {
-							logger.Error(err)
-						}
-						if detailsHost == host {
-							if !viper.GetBool("IGNORE_FETCH_DELAY") {
-								if *t.Payload.RandomizeFetchDelay {
-									//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-									rand := utils.Random(500, 1500)
-									delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
-									logger.Infof("%s -> %v", delay, part.Details.Request.GetURL())
-									time.Sleep(delay)
-								} else {
-									time.Sleep(*t.Payload.FetchDelay)
-								}
-							}
-						}
-
-						resDetails, err := t.scrape(part.Details)
-						if err != nil {
-							return nil, err
-						}
-						blockResults[part.Name+"_details"] = resDetails.AllBlocks()
-					}
-				}
-				//********* end details
-			}
-			if len(blockResults) > 0 {
-				// Append the results from this block.
-				results = append(results, blockResults)
-			}
-		}
-		if len(results) != 0 {
-			output = append(output, results)
-		}
-		numPages++
-
-		// Get the next page. If empty URL is returned there is no Next Pages to proceed.
-		if t.Payload.Paginator == nil {
-			url = ""
-		}
-		if t.Payload.Paginator != nil {
-			if !t.Payload.Paginator.InfiniteScroll {
-				url, err = scraper.Paginator.NextPage(url, doc.Selection)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				url = ""
-			}
-		}
-
-		if url != "" {
-			var rq fetch.FetchRequester
-			switch req.Type() {
-			case "splash":
-				rq = &splash.Request{URL: url}
-			case "base":
-				rq = &fetch.BaseFetcherRequest{URL: url}
-			default:
-				err := errors.New("invalid fetcher type specified")
-				logger.Error(err.Error())
+	if t.Payload.Paginator != nil {
+		if !t.Payload.Paginator.InfiniteScroll {
+			url, err = tw.scraper.Paginator.NextPage(url, doc.Selection)
+			if err != nil {
+				tw.wg.Done()
 				return nil, err
 			}
-			req = rq
-
-			if !viper.GetBool("IGNORE_FETCH_DELAY") {
-				if *t.Payload.RandomizeFetchDelay {
-					//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-					rand := utils.Random(500, 1500)
-					delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
-					logger.Infof("%s -> %v", delay, req.GetURL())
-					time.Sleep(delay)
-				} else {
-					time.Sleep(*t.Payload.FetchDelay)
+			// Repeat until we don't have any more URLs, or until we hit our page limit.
+			if len(url) != 0 &&
+				(t.Payload.Paginator != nil && (t.Payload.Paginator.MaxPages > 0 && tw.currentPageNum < t.Payload.Paginator.MaxPages)) {
+				logger.Info(fmt.Sprintf("Current page %d; Max page %d", tw.currentPageNum, t.Payload.Paginator.MaxPages))
+				/* if !viper.GetBool("IGNORE_FETCH_DELAY") {
+					if *t.Payload.RandomizeFetchDelay {
+						//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
+						rand := utils.Random(500, 1500)
+						delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
+						logger.Infof("%s -> %v", delay, req.GetURL())
+						time.Sleep(delay)
+					} else {
+						time.Sleep(*t.Payload.FetchDelay)
+					}
+				} */
+				paginatorPayload := t.Payload
+				paginatorPayload.Request, err = paginatorPayload.initRequest(url)
+				if err != nil {
+					tw.wg.Done()
+					return nil, err
 				}
+				paginatorScraper, err := paginatorPayload.newScraper()
+				if err != nil {
+					tw.wg.Done()
+					return nil, err
+				}
+				paginatorTW := taskWorker{
+					wg:             tw.wg,
+					currentPageNum: tw.currentPageNum + 1,
+					scraper:        paginatorScraper,
+					keys:           tw.keys,
+					UID:            tw.UID,
+				}
+				tw.wg.Add(1)
+				go t.scrape(&paginatorTW)
 			}
+		} else {
+			url = ""
 		}
+	}
 
+	blocks := make(chan *blockStruct)
+
+	wg := sync.WaitGroup{}
+	wrk := &worker{
+		wg:      &wg,
+		scraper: tw.scraper,
 	}
-	if len(output) == 0 {
+
+	blockSelections := tw.scraper.DividePage(doc.Selection)
+	//blocksCount := len(blockSelections)
+
+	/*wg.Add(1)
+	go func() {
+		for i := 0; i < blocksCount; i++ {
+			results = append(results, <-workersResult)
+		}
+		wg.Done()
+	}()*/
+
+	(*tw.keys)[tw.currentPageNum] = []int{}
+
+	for i := 0; i < 25; i++ {
+		wg.Add(1)
+		go t.blockWorker(blocks, wrk)
+	}
+	// Divide this page into blocks
+	for i, blockSel := range blockSelections {
+		ref := fmt.Sprintf("%s-%d-%d", tw.UID, tw.currentPageNum, i)
+		if tw.currentPageNum == 1 {
+			logger.Info(tw.currentPageNum)
+		}
+		(*tw.keys)[tw.currentPageNum] = append((*tw.keys)[tw.currentPageNum], i)
+		block := blockStruct{
+			blockSelection: blockSel,
+			key:            ref,
+		}
+		blocks <- &block
+	}
+	close(blocks)
+	wg.Wait()
+	//tw.keys.pages = append(tw.keys.pages, fmt.Sprintf("%s-d", t.Payload.PayloadMD5, tw.numPages))
+	tw.wg.Done()
+
+	/* if len(output) == 0 {
 		return nil, &errs.BadPayload{errs.ErrEmptyResults}
-	}
+	} */
 
 	// All good!
-	return &Results{output}, err
+	//return &Results{output}, err
+	return nil, err
 
 }
 
@@ -539,4 +527,176 @@ func (t Task) startTime() (*time.Time, error) {
 	}
 	idTime := id.Time()
 	return &idTime, nil
+}
+
+func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
+	defer wrk.wg.Done()
+	url := wrk.scraper.Request.GetURL()
+	host, err := wrk.scraper.Request.Host()
+	if err != nil {
+		logger.Error(err)
+		//return err
+	}
+	for block := range blocks {
+		blockResults := map[string]interface{}{}
+
+		// Process each part of this block
+		for _, part := range wrk.scraper.Parts { // ->task.Payload.Fields
+			sel := block.blockSelection
+			if part.Selector != "." {
+				sel = sel.Find(part.Selector)
+			}
+			//update base URL to reflect attr relative URL change
+			//fmt.Println(reflect.TypeOf(part.Extractor))
+			switch part.Extractor.(type) {
+			case *extract.Attr:
+				//	if part.Extractor.GetType() == "attr" {
+				attr := part.Extractor.(*extract.Attr)
+				if attr.Attr == "href" || attr.Attr == "src" {
+					attr.BaseURL = url
+				}
+				//	}
+			}
+			extractedPartResults, err := part.Extractor.Extract(sel)
+			if err != nil {
+				//return nil, err
+				logger.Error(err)
+			}
+
+			// A nil response from an extractor means that we don't even include it in
+			// the results.
+			if extractedPartResults == nil {
+				continue
+			}
+			blockResults[part.Name] = extractedPartResults
+			//********* details
+			//part.Details = nil
+			if part.Details != nil {
+				var requests []fetch.FetchRequester
+
+				switch extractedPartResults.(type) {
+				case string:
+					var rq fetch.FetchRequester
+					switch task.Payload.Request.Type() {
+					case "base":
+						rq = &fetch.BaseFetcherRequest{URL: extractedPartResults.(string)}
+					case "splash":
+						rq = &splash.Request{URL: extractedPartResults.(string)}
+					default:
+						err := errors.New("invalid fetcher type specified")
+						logger.Error(err.Error())
+						//return nil, err
+					}
+					requests = append(requests, rq)
+				case []string:
+					for _, r := range extractedPartResults.([]string) {
+
+						var rq fetch.FetchRequester
+						switch task.Payload.Request.Type() {
+						case "base":
+							rq = &fetch.BaseFetcherRequest{URL: r}
+						case "splash":
+							rq = &splash.Request{URL: r}
+						default:
+							err := errors.New("invalid fetcher type specified")
+							logger.Error(err.Error())
+							//return nil, err
+						}
+
+						requests = append(requests, rq)
+
+					}
+				}
+				for _, r := range requests {
+					//part.Details.Request = splash.Request{
+					//	URL: extractedPartResults.(string),
+					//}
+					part.Details.Request = r
+					//check if domain is the same for initial URL and details' URLs
+					//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
+					detailsHost, err := part.Details.Request.Host()
+					if err != nil {
+						logger.Error(err)
+					}
+					if detailsHost == host {
+						/* if !viper.GetBool("IGNORE_FETCH_DELAY") {
+							if *task.Payload.RandomizeFetchDelay {
+								//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
+								rand := utils.Random(500, 1500)
+								delay := *task.Payload.FetchDelay * time.Duration(rand) / 1000
+								logger.Infof("%s -> %v", delay, part.Details.Request.GetURL())
+								time.Sleep(delay)
+							} else {
+								time.Sleep(*task.Payload.FetchDelay)
+							}
+						} */
+					}
+					wg := sync.WaitGroup{}
+					k := make(map[int][]int)
+					uid := string(utils.GenerateCRC32([]byte(block.key + part.Name)))
+					tw := taskWorker{
+						wg:             &wg,
+						currentPageNum: 0,
+						scraper:        part.Details,
+						keys:           &k,
+						UID:            uid,
+					}
+					wg.Add(1)
+					_, err = task.scrape(&tw)
+					if err != nil {
+						//return nil, err
+						logger.Error(err)
+						continue
+					}
+					blockResults[part.Name+"_details"] = uid //generate uid resDetails.AllBlocks()
+					storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
+					if err != nil {
+						logger.Error(err)
+					}
+					s := storage.NewStore(storageType)
+					j, err := json.Marshal(tw.keys)
+					s.Write(string(uid), j, 0)
+				}
+			}
+			//********* end details
+		}
+		if len(blockResults) > 0 {
+			if !task.Parsed {
+				task.Parsed = true
+			}
+			storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
+			if err != nil {
+				logger.Error(err)
+			}
+			s := storage.NewStore(storageType)
+
+			output, err := json.Marshal(blockResults)
+			if err != nil {
+				logger.Error(err)
+			}
+			s.Write(block.key, output, 0)
+		}
+	}
+}
+
+func (task *Task) fetchWorker() {
+	for fetch := range fetchCannel {
+		if !viper.GetBool("IGNORE_FETCH_DELAY") {
+			if *task.Payload.RandomizeFetchDelay {
+				//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
+				rand := utils.Random(500, 1500)
+				delay := *task.Payload.FetchDelay * time.Duration(rand) / 1000
+				//logger.Infof("%s -> %v", delay, fetch.request.GetURL())
+				time.Sleep(delay)
+			} else {
+				time.Sleep(*task.Payload.FetchDelay)
+			}
+		}
+		content, err := fetchContent(fetch.request)
+		if err != nil {
+			fetch.err <- err
+		} else {
+			fetch.result <- content
+		}
+	}
 }

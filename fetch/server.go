@@ -49,7 +49,7 @@ func Start(cfg Config) *HTMLServer {
 		}
 		svc = StorageMiddleware(storage.NewStore(storageType))(svc)
 	}
-	svc = RobotsTxtMiddleware()(svc)
+	//svc = RobotsTxtMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{
