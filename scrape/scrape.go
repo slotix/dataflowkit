@@ -270,19 +270,18 @@ func (p Payload) fields2parts() ([]Part, error) {
 	if len(parts) == 0 {
 		return nil, &errs.BadPayload{errs.ErrNoParts}
 	}
-	seenNames := map[string]struct{}{}
-	for i, part := range parts {
-		if len(part.Name) == 0 {
-			return nil, fmt.Errorf("no name provided for part %d", i)
-		}
-		if _, seen := seenNames[part.Name]; seen {
-			return nil, fmt.Errorf("part %s has a duplicate name", part.Name)
-		}
-		seenNames[part.Name] = struct{}{}
+	// seenNames := map[string]struct{}{}
 
-		if len(part.Selector) == 0 {
-			return nil, fmt.Errorf("no selector provided for part %d", i)
+	for _, part := range parts {
+		if len(part.Name) == 0 || len(part.Selector) == 0{	
+			e := fmt.Sprintf(errs.ErrNoPartOrSelectorProvided, part.Name + part.Selector)
+			return nil, &errs.BadPayload{e}
 		}
+		// if _, seen := seenNames[part.Name]; seen {
+		// 	return nil, fmt.Errorf("part %s has a duplicate name", part.Name)
+		// }
+		// seenNames[part.Name] = struct{}{}
+
 	}
 	return parts, nil
 }
