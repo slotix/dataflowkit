@@ -43,6 +43,12 @@
         }
 
     ],
+    "paginator": {
+        "selector": ".next a",
+        "attr": "href",
+        "maxPages": 2
+    },
     "format": "json",
-    "fetcherType": "splash"
+    "fetcherType": "splash",
+    "paginatedResults": true
 }
