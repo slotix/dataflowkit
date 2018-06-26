@@ -1,0 +1,66 @@
+{{define "content"}}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="/">Home</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="/persons/page-{{divide .Person.Counter .ItemsPerPage}}">Cards</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">Person details</li>
+    </ol>
+</nav>
+
+<div class="card mb-5">
+    <div class="card-header">
+        <h3 class="card-title text-center display-4">
+            <span class="badge badge-pill badge-primary">{{.Person.Counter}} of {{.PersonsCount}}</span>&nbsp;&nbsp;{{ .Person.Name}}</h3>
+    </div>
+    <img src="/static/img/avataaars-{{.Person.Counter}}.svg" class="card-img-top" width="264" height="280" alt="">
+    <div class="card-body">
+        <div class="card-text">
+            <div class="row lead">
+                <div class="col-2">
+                    <strong>Phone:</strong>
+                </div>
+                <div class="col-5">
+                    {{ .Person.Phone}}
+                </div>
+            </div>
+        </div>
+        <div class="card-text">
+            <div class="row lead">
+                <div class="col-2">
+                    <strong>Email:</strong>
+                </div>
+                <div class="col-5">
+                    {{ .Person.Email}}
+                </div>
+            </div>
+        </div>
+        <div class="card-text">
+            <div class="row lead">
+                <div class="col-2">
+                    <strong>Company:</strong>
+                </div>
+                <div class="col-5">
+                    {{ .Person.Company}}
+                </div>
+            </div>
+        </div>
+
+        <div class="card-footer bg-transparent">
+            <div class="row lead">
+                <div class="col-2">
+                    <strong>Bio:</strong>
+                </div>
+                <div class="col-8">
+                    {{ .Person.Bio}}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{{end}}
