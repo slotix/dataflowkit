@@ -36,6 +36,7 @@ var (
 	//VERSION               string // VERSION is set during build
 	//  DFKFetch represents address of DFK Fetch service
 	DFKFetch              string //Fetch service address
+	fetchProxy            string //Proxy address http://username:password@proxy-host:port
 	splashHost            string
 	splashTimeout         int
 	splashResourceTimeout int
@@ -125,6 +126,8 @@ func init() {
 	//flags and configuration settings. They are global for the application.
 
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "a", "127.0.0.1:8000", "HTTP listen address")
+	RootCmd.Flags().StringVarP(&fetchProxy, "PROXY", "p", "", "Proxy address http://username:password@proxy-host:port")
+
 	RootCmd.Flags().StringVarP(&splashHost, "SPLASH", "s", "127.0.0.1:8050", "Splash host address")
 	RootCmd.Flags().IntVarP(&splashTimeout, "SPLASH_TIMEOUT", "", 90, "Timeout (in seconds) for the render.")
 	RootCmd.Flags().IntVarP(&splashResourceTimeout, "SPLASH_RESOURCE_TIMEOUT", "", 90, "A timeout (in seconds) for individual network requests.")
@@ -171,6 +174,7 @@ func init() {
 		viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	}
 
+	viper.BindPFlag("PROXY", RootCmd.Flags().Lookup("PROXY"))
 	viper.BindPFlag("SPLASH_TIMEOUT", RootCmd.Flags().Lookup("SPLASH_TIMEOUT"))
 	viper.BindPFlag("SPLASH_RESOURCE_TIMEOUT", RootCmd.Flags().Lookup("SPLASH_RESOURCE_TIMEOUT"))
 	viper.BindPFlag("SPLASH_WAIT", RootCmd.Flags().Lookup("SPLASH_WAIT"))
