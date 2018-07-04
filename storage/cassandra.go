@@ -15,9 +15,9 @@ type cassandra struct {
 
 const (
 	readQuery                      = "SELECT value from %s WHERE key='%s'"
-	writeQuery                     = "INSERT INTO %s (key, value) VALUES ('%s', '%s')"
-	writeIntermediateQuery         = "INSERT INTO Intermediate (payloadHash, pageID, blockID, fields) VALUES(?, ?, ?, ?)"
-	writeIntermediateMapQuery      = "INSERT INTO intermediatemaps (payloadHash, map) VALUES(?, ?)"
+	writeQuery                     = "INSERT INTO %s (key, value) VALUES ('%s', '%s') USING TTL 86400"
+	writeIntermediateQuery         = "INSERT INTO Intermediate (payloadHash, pageID, blockID, fields) VALUES(?, ?, ?, ?) USING TTL 86400"
+	writeIntermediateMapQuery      = "INSERT INTO intermediatemaps (payloadHash, map) VALUES(?, ?) USING TTL 86400"
 	readIntermediateResultQuery    = "SELECT fields FROM Intermediate WHERE payloadhash=? AND pageID=? AND blockID=?"
 	readIntermediateMapQuery       = "SELECT map FROM intermediatemaps WHERE payloadhash=?"
 	truncateTableQuery             = "TRUNCATE %s"
