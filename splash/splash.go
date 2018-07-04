@@ -29,7 +29,8 @@ func init() {
 
 // Options struct inclued parameters for Splash Connection
 type Options struct {
-	host string //splash host address
+	host  string //splash host address
+	proxy string
 	//Splash connection parameters:
 	timeout         int
 	resourceTimeout int
@@ -48,6 +49,7 @@ func NewSplash(req Request) (splashURL string) {
 		timeout:         viper.GetInt("SPLASH_TIMEOUT"),
 		resourceTimeout: viper.GetInt("SPLASH_RESOURCE_TIMEOUT"),
 		wait:            viper.GetFloat64("SPLASH_WAIT"),
+		proxy:           viper.GetString("PROXY"),
 	}
 	/*args.host = "127.0.0.1:8050"
 	args.timeout = 20
@@ -100,9 +102,10 @@ func NewSplash(req Request) (splashURL string) {
 	}
 
 	splashURL = fmt.Sprintf(
-		"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&headers=%s&formdata=%s&lua_source=%s&scroll2bottom=%s",
+		"http://%s/execute?url=%s&proxy=%s&timeout=%d&resource_timeout=%d&wait=%.1f&headers=%s&formdata=%s&lua_source=%s&scroll2bottom=%s",
 		args.host,
 		neturl.QueryEscape(req.URL),
+		neturl.QueryEscape(args.proxy),
 		args.timeout,
 		args.resourceTimeout,
 		args.wait,

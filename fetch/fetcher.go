@@ -16,6 +16,7 @@ import (
 	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/splash"
+	"github.com/spf13/viper"
 )
 
 //Type represents types of fetcher
@@ -152,7 +153,19 @@ var _ Fetcher = &SplashFetcher{}
 // a page content from regular websites as-is
 // without running js scripts on the page.
 func NewBaseFetcher() *BaseFetcher {
-	client := &http.Client{}
+	var client *http.Client
+	proxy := viper.GetString("PROXY")
+	if len(proxy) > 0 {
+		proxyURL, err := url.Parse(proxy)
+		if err != nil {
+			logger.Error(err)
+			return nil
+		}
+		transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+		client = &http.Client{Transport: transport}
+	} else {
+		client = &http.Client{}
+	}
 	bf := &BaseFetcher{
 		client: client,
 	}
@@ -213,6 +226,7 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 		req.Header.Add("Content-Length", strconv.Itoa(len(formData.Encode())))
 	}
 
+
 	resp, err = bf.client.Do(req)
 	if err != nil {
 		return nil, &errs.BadRequest{err}
@@ -225,12 +239,14 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 			return nil, &errs.Forbidden{r.URL}
 		case 400:
 			return nil, &errs.BadRequest{err}
+		case 401:
+			return nil, &errs.Unauthorized{}
+		case 407:
+			return nil, &errs.ProxyAuthenticationRequired{}
 		case 500:
 			return nil, &errs.InternalServerError{}
 		case 504:
 			return nil, &errs.GatewayTimeout{}
-		case 401:
-			return nil, &errs.Unauthorized{}
 		default:
 			return nil, &errs.Error{"Unknown Error"}
 		}

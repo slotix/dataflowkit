@@ -32,6 +32,12 @@ type Unauthorized struct {
 
 func (e *Unauthorized) Error() string { return "401 Unauthorized" }
 
+//Proxy Authentication Required 407
+type ProxyAuthenticationRequired struct {
+}
+
+func (e *ProxyAuthenticationRequired) Error() string { return "407 Proxy Authentication Required" }
+
 // ForbiddenByRobots 403
 //
 // Client does not have access rights to the content caused by robots.txt restrictions.
@@ -97,12 +103,11 @@ func (e *GatewayTimeout) Error() string {
 //type ParserError string
 
 var (
-	ErrNoParts = "no parts found"
-	ErrNoSelectors                    = "no selectors found"
-	ErrEmptyResults                   = "empty results"
-	ErrNoCommonAncestor               = "no common ancestor for selectors found"
-	ErrNoPartOrSelectorProvided             = "no selector/name provided for %s"
-	
+	ErrNoParts                  = "no parts found"
+	ErrNoSelectors              = "no selectors found"
+	ErrEmptyResults             = "empty results"
+	ErrNoCommonAncestor         = "no common ancestor for selectors found"
+	ErrNoPartOrSelectorProvided = "no selector/name provided for %s"
 )
 
 //BadPayload error is returned if Payload is invalid 400
