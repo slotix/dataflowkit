@@ -72,12 +72,18 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	k := make(map[int][]int)
 	wg := sync.WaitGroup{}
 	uid := string(utils.GenerateCRC32([]byte(task.Payload.PayloadMD5)))
+	storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
+	if err != nil {
+		logger.Error(err)
+	}
+	s := storage.NewStore(storageType)
 	tw := taskWorker{
 		wg:             &wg,
 		currentPageNum: 0,
 		scraper:        scraper,
 		keys:           &k,
 		UID:            uid,
+		storage:        &s,
 	}
 	wg.Add(1)
 	_, err = task.scrape(&tw)
@@ -106,13 +112,17 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	}
 	close(fetchCannel)
 	//logger.Info(task.Visited)
-	storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
-	if err != nil {
-		logger.Error(err)
-	}
-	s := storage.NewStore(storageType)
+
 	j, err := json.Marshal(tw.keys)
-	s.Write(string(uid), j, 0)
+	if err != nil {
+		return nil, err
+	}
+	err = s.Write(string(uid), &storage.Record{RecordType: storage.INTERMEDIATE, Value: j}, 0)
+	if err != nil {
+		return nil, fmt.Errorf("Cannot write parse results key map. %s", err.Error())
+	}
+
+	s.Close()
 
 	var e encoder
 	switch strings.ToLower(task.Payload.Format) {
@@ -273,8 +283,8 @@ func (p Payload) fields2parts() ([]Part, error) {
 	// seenNames := map[string]struct{}{}
 
 	for _, part := range parts {
-		if len(part.Name) == 0 || len(part.Selector) == 0{	
-			e := fmt.Sprintf(errs.ErrNoPartOrSelectorProvided, part.Name + part.Selector)
+		if len(part.Name) == 0 || len(part.Selector) == 0 {
+			e := fmt.Sprintf(errs.ErrNoPartOrSelectorProvided, part.Name+part.Selector)
 			return nil, &errs.BadPayload{e}
 		}
 		// if _, seen := seenNames[part.Name]; seen {
@@ -393,6 +403,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 					scraper:        paginatorScraper,
 					keys:           tw.keys,
 					UID:            tw.UID,
+					storage:        tw.storage,
 				}
 				tw.wg.Add(1)
 				go t.scrape(&paginatorTW)
@@ -408,6 +419,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	wrk := &worker{
 		wg:      &wg,
 		scraper: tw.scraper,
+		storage: tw.storage,
 	}
 
 	blockSelections := tw.scraper.DividePage(doc.Selection)
@@ -640,6 +652,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 						scraper:        part.Details,
 						keys:           &k,
 						UID:            uid,
+						storage:        wrk.storage,
 					}
 					wg.Add(1)
 					_, err = task.scrape(&tw)
@@ -649,13 +662,8 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 						continue
 					}
 					blockResults[part.Name+"_details"] = uid //generate uid resDetails.AllBlocks()
-					storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
-					if err != nil {
-						logger.Error(err)
-					}
-					s := storage.NewStore(storageType)
 					j, err := json.Marshal(tw.keys)
-					s.Write(string(uid), j, 0)
+					(*wrk.storage).Write(string(uid), &storage.Record{RecordType: storage.INTERMEDIATE, Value: j}, 0)
 				}
 			}
 			//********* end details
@@ -664,17 +672,12 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 			if !task.Parsed {
 				task.Parsed = true
 			}
-			storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
-			if err != nil {
-				logger.Error(err)
-			}
-			s := storage.NewStore(storageType)
 
 			output, err := json.Marshal(blockResults)
 			if err != nil {
 				logger.Error(err)
 			}
-			s.Write(block.key, output, 0)
+			(*wrk.storage).Write(block.key, &storage.Record{RecordType: storage.INTERMEDIATE, Value: output}, 0)
 		}
 	}
 }

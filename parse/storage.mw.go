@@ -34,7 +34,7 @@ func (mw storageMiddleware) Parse(p scrape.Payload) (output io.ReadCloser, err e
 	//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
 	sKey := base32.StdEncoding.EncodeToString([]byte(storageKey))
 
-	value, err := mw.storage.Read(sKey)
+	value, err := mw.storage.Read(sKey, storage.CACHE)
 	//check if item is expired.
 	if err == nil && !mw.storage.Expired(sKey) {
 		readCloser := ioutil.NopCloser(bytes.NewReader(value))
@@ -57,7 +57,7 @@ func (mw storageMiddleware) Parse(p scrape.Payload) (output io.ReadCloser, err e
 	expiry := time.Now().UTC().Add(exp)
 	//logger.Info("Cache lifespan is %+v\n", expiry.Sub(time.Now().UTC()))
 
-	err = mw.storage.Write(sKey, buf.Bytes(), expiry.Unix())
+	err = mw.storage.Write(sKey, &storage.Record{RecordType: storage.CACHE, Value: buf.Bytes()}, expiry.Unix())
 	if err != nil {
 		logger.Error(err.Error())
 	}

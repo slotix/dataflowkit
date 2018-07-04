@@ -6,9 +6,9 @@ import (
 	"fmt"
 )
 
-const _Type_name = "DiskvS3SpacesRedis"
+const _Type_name = "DiskvS3SpacesRedisCassandra"
 
-var _Type_index = [...]uint8{0, 5, 7, 13, 18}
+var _Type_index = [...]uint8{0, 5, 7, 13, 18, 27}
 
 func (i Type) String() string {
 	if i < 0 || i >= Type(len(_Type_index)-1) {
@@ -22,6 +22,7 @@ var _TypeNameToValue_map = map[string]Type{
 	_Type_name[5:7]:   1,
 	_Type_name[7:13]:  2,
 	_Type_name[13:18]: 3,
+	_Type_name[18:27]: 4,
 }
 
 func TypeString(s string) (Type, error) {

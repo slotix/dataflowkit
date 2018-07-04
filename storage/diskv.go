@@ -28,7 +28,7 @@ func newDiskvConn(baseDir string, cacheSizeMax uint64) DiskvConn {
 }
 
 // Read loads value according to the specified key from DiskV KV storage.
-func (d DiskvConn) Read(key string) (value []byte, err error) {
+func (d DiskvConn) Read(key string, recType string) (value []byte, err error) {
 	value, err = d.diskv.Read(key)
 	if err != nil {
 		return nil, err
@@ -37,8 +37,8 @@ func (d DiskvConn) Read(key string) (value []byte, err error) {
 }
 
 // Write stores key/ value pair along with Expiration time to DiskV KV storage.
-func (d DiskvConn) Write(key string, value []byte, expTime int64) error {
-	err := d.diskv.Write(key, value)
+func (d DiskvConn) Write(key string, rec *Record, expTime int64) error {
+	err := d.diskv.Write(key, rec.Value)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (d DiskvConn) Expired(key string) bool {
 	fStat, err := os.Stat(fullPath)
 	if err != nil {
 		logger.Error(err)
-		return true 
+		return true
 	}
 	mTime := fStat.ModTime().UTC()
 	//mTime, err := mTime(fullPath)
@@ -80,8 +80,6 @@ func (d DiskvConn) Expired(key string) bool {
 	return diff < 0
 }
 
-
-
 //Delete deletes specified key from Diskv storage.
 func (d DiskvConn) Delete(key string) error {
 	err := d.diskv.Erase(key)
@@ -90,7 +88,6 @@ func (d DiskvConn) Delete(key string) error {
 	}
 	return nil
 }
-
 
 //DeleteAll deletes everything from Diskv storage.
 func (d DiskvConn) DeleteAll() error {
@@ -101,4 +98,6 @@ func (d DiskvConn) DeleteAll() error {
 	return nil
 }
 
-
+// Close storage connection
+func (d DiskvConn) Close() {
+}

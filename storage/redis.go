@@ -87,7 +87,7 @@ func val(conn redis.Conn, key string) (value []byte, err error) {
 }
 
 // Read retrieves value from the specified key.
-func (c RedisConn) Read(key string) (value []byte, err error) {
+func (c RedisConn) Read(key string, rectType string) (value []byte, err error) {
 	//Get a key
 	conn := c.open()
 	defer conn.Close()
@@ -129,8 +129,8 @@ func (b *RedisConn) SetValue(key string, value interface{}) error {
 }
 
 // Write saves key/ value pair along with Expiration time to Redis storage.
-func (s RedisConn) Write(key string, value []byte, expTime int64) error {
-	err := s.SetValue(key, value)
+func (s RedisConn) Write(key string, rec *Record, expTime int64) error {
+	err := s.SetValue(key, rec.Value)
 	if err != nil {
 		return err
 	}
@@ -206,10 +206,10 @@ func (b *RedisConn) SetTTL(key string, ttl int) error {
 	conn := b.open()
 	defer conn.Close()
 	err := setTTL(conn, key, ttl)
-	return err 
+	return err
 }
 
-func  deleteKey(conn redis.Conn, key string) error {
+func deleteKey(conn redis.Conn, key string) error {
 	_, err := conn.Do("DEL", key)
 	return err
 }
@@ -222,7 +222,7 @@ func (b RedisConn) Delete(key string) error {
 	return err
 }
 
-func  deleteAllKeys(conn redis.Conn) error {
+func deleteAllKeys(conn redis.Conn) error {
 	_, err := conn.Do("FLUSHDB")
 	return err
 }
@@ -233,4 +233,9 @@ func (b RedisConn) DeleteAll() error {
 	defer conn.Close()
 	err := deleteAllKeys(conn)
 	return err
+}
+
+// Close storage connection
+func (rc RedisConn) Close() {
+	rc.Close()
 }

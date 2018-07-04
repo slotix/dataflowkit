@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/slotix/dataflowkit/storage"
+
 	"github.com/slotix/dataflowkit/fetch"
 
 	"github.com/PuerkitoBio/goquery"
@@ -182,6 +184,7 @@ type Task struct {
 type worker struct {
 	wg      *sync.WaitGroup
 	scraper *Scraper
+	storage *storage.Store
 }
 
 type taskWorker struct {
@@ -190,6 +193,7 @@ type taskWorker struct {
 	currentPageNum int
 	keys           *map[int][]int
 	scraper        *Scraper
+	storage        *storage.Store
 }
 
 type blockStruct struct {
@@ -197,18 +201,8 @@ type blockStruct struct {
 	key            string
 }
 
-type extractorResult struct {
-	value map[string]interface{}
-}
-
-type partResult map[string]interface{}
-
 type fetchInfo struct {
 	result  chan<- io.ReadCloser
 	request fetch.FetchRequester
 	err     chan<- error
 }
-
-// [payload md5hash]={[page1, page2, page3]}
-// [page1]= {[block1, block2]}
-// [block1] = {[]map[string]interface}
