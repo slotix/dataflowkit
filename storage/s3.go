@@ -33,7 +33,7 @@ func newS3Conn(config *aws.Config, bucket string) S3Conn {
 }
 
 // Read returns a value of specified key from AWS S3/ DO Spaces
-func (c S3Conn) Read(key string) (value []byte, err error) {
+func (c S3Conn) Read(key string, recType string) (value []byte, err error) {
 	sess := session.Must(session.NewSession(c.config))
 	//svc := s3.New(sess)
 	downloader := s3manager.NewDownloader(sess)
@@ -77,10 +77,10 @@ func upload(u s3manageriface.UploaderAPI, bucket, key string, value []byte, expT
 }
 
 // Write uploads key/ value pair along with Expiration time information to  AWS S3 Storage/ Digital Ocean Spaces.
-func (c S3Conn) Write(key string, value []byte, expTime int64) error {
+func (c S3Conn) Write(key string, rec *Record, expTime int64) error {
 	sess := session.Must(session.NewSession(c.config))
 	uploader := s3manager.NewUploader(sess)
-	err := upload(uploader, c.bucket, key, value, expTime)
+	err := upload(uploader, c.bucket, key, rec.Value, expTime)
 	return err
 }
 
@@ -112,7 +112,7 @@ func expiredKey(obj *s3.GetObjectOutput, storageExpire int64) bool {
 	exp := time.Duration(storageExpire) * time.Second
 	expiry := lastModified.Add(exp)
 	diff := expiry.Sub(currentTime)
-	//logger.Infof("cache lifespan is %+v", diff)	
+	//logger.Infof("cache lifespan is %+v", diff)
 	//Expired?
 	return diff < 0
 }
@@ -164,7 +164,7 @@ func (c S3Conn) Delete(key string) error {
 	return err
 }
 
-func deleteAll(svc s3iface.S3API, bucket string) error{
+func deleteAll(svc s3iface.S3API, bucket string) error {
 	// Get the list of objects
 	// Note that if the bucket has more than 1000 objects,
 	// we have to run this multiple times
@@ -203,10 +203,15 @@ func deleteAll(svc s3iface.S3API, bucket string) error{
 	}
 	return nil
 }
+
 //DeleteAll deletes all objects from S3 bucket
 func (c S3Conn) DeleteAll() error {
 	sess := session.Must(session.NewSession(c.config))
 	svc := s3.New(sess)
 	err := deleteAll(svc, c.bucket)
 	return err
+}
+
+// Close storage connection
+func (c S3Conn) Close() {
 }

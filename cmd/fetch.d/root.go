@@ -61,6 +61,8 @@ var (
 	redisPassword   string
 	redisDB         int
 	redisSocketPath string
+
+	cassandraHost string
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -150,6 +152,8 @@ func init() {
 	RootCmd.Flags().IntVarP(&redisDB, "REDIS_DB", "", 0, "Redis DB")
 	RootCmd.Flags().StringVarP(&redisSocketPath, "REDIS_SOCKET_PATH", "", "", "Redis Socket Path")
 
+	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "c", "127.0.0.1", "Cassandra host address")
+
 	//viper.AutomaticEnv() // read in environment variables that match
 
 	//Environmoent variable takes precedence over flag value
@@ -194,6 +198,8 @@ func init() {
 	viper.BindPFlag("REDIS_PASSWORD", RootCmd.Flags().Lookup("REDIS_PASSWORD"))
 	viper.BindPFlag("REDIS_DB", RootCmd.Flags().Lookup("REDIS_DB"))
 	viper.BindPFlag("REDIS_SOCKET_PATH", RootCmd.Flags().Lookup("REDIS_SOCKET_PATH"))
+
+	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
 
 	//viper.SetConfigType("yaml")
 	//viper.SetConfigName("conf")

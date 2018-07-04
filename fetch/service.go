@@ -42,17 +42,19 @@ func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 	)
 	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
 	jar, err := cookiejar.New(jarOpts)
+	if err != nil {
+		logger.Error("Failed to create Cookie Jar")
+
+	}
 	if req.GetUserToken() != "" {
 		storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
 		if err != nil {
 			return nil, err
 		}
 		s = storage.NewStore(storageType)
-		cookies, _ = s.Read(req.GetUserToken())
-
+		cookies, err = s.Read(req.GetUserToken(), storage.COOKIES)
 		if err != nil {
-			logger.Error("Failed to create Cookie Jar")
-
+			logger.Warningf("Failed to read cookie for %s. %s", req.GetUserToken(), err.Error())
 		}
 		cArr = []*http.Cookie{}
 		if len(cookies) != 0 {
@@ -90,10 +92,11 @@ func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = s.Write(req.GetUserToken(), cookies, 0)
+		err = s.Write(req.GetUserToken(), &storage.Record{RecordType: storage.COOKIES, Value: cookies}, 0)
 		if err != nil {
-			return nil, err
+			logger.Warningf("Failed to write cookie for %s. %s", req.GetUserToken(), err.Error())
 		}
+		s.Close()
 	}
 	return res, nil
 }
