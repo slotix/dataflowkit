@@ -80,7 +80,7 @@ func (e JSONEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error)
 	}
 	w.WriteString("[")
 
-	reader := newStorageReader(s, payloadMD5)
+	reader := newStorageReader(&s, payloadMD5)
 	writeComma := false
 	for {
 		block, err := reader.Read()
@@ -113,6 +113,7 @@ func (e JSONEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error)
 	if e.paginateResults {
 		w.WriteString("]")
 	}
+	s.Close()
 	if err = w.Flush(); err != nil {
 		return nil, err
 	}
@@ -121,7 +122,7 @@ func (e JSONEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error)
 }
 
 type storageResultReader struct {
-	storage    storage.Store
+	storage    *storage.Store
 	payloadMD5 string
 	page       int
 	keys       []int
@@ -129,7 +130,7 @@ type storageResultReader struct {
 	payloadMap map[int][]int
 }
 
-func newStorageReader(store storage.Store, md5Hash string) *storageResultReader {
+func newStorageReader(store *storage.Store, md5Hash string) *storageResultReader {
 	reader := &storageResultReader{
 		storage:    store,
 		payloadMD5: md5Hash,
@@ -143,7 +144,7 @@ func newStorageReader(store storage.Store, md5Hash string) *storageResultReader 
 
 // have return error
 func (r *storageResultReader) init() {
-	keysJSON, err := r.storage.Read(r.payloadMD5)
+	keysJSON, err := (*r.storage).Read(r.payloadMD5, storage.INTERMEDIATE)
 	if err != nil {
 		logger.Error(err)
 	}
@@ -216,7 +217,7 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 
 func (r *storageResultReader) getValue() (map[string]interface{}, error) {
 	key := fmt.Sprintf("%s-%d-%d", r.payloadMD5, r.page, r.block)
-	blockJSON, err := r.storage.Read(key)
+	blockJSON, err := (*r.storage).Read(key, storage.INTERMEDIATE)
 	if err != nil {
 		return nil, err //&errs.ErrStorageResult{Err: fmt.Sprintf(errs.NoKey, key)}
 	}
@@ -292,7 +293,7 @@ func (e CSVEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) 
 		logger.Error(err)
 	}
 
-	reader := newStorageReader(s, payloadMD5)
+	reader := newStorageReader(&s, payloadMD5)
 
 	for {
 		block, err := reader.Read()
@@ -344,6 +345,8 @@ func (e CSVEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) 
 			logger.Error(err)
 		}
 	}
+
+	s.Close()
 
 	if err = w.Flush(); err != nil {
 		panic(err)
@@ -409,7 +412,7 @@ func (e XMLEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) 
 		logger.Error(err)
 	}
 
-	reader := newStorageReader(s, payloadMD5)
+	reader := newStorageReader(&s, payloadMD5)
 
 	for {
 		block, err := reader.Read()
@@ -430,6 +433,8 @@ func (e XMLEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) 
 			logger.Error(err)
 		}
 	}
+
+	s.Close()
 
 	w.WriteString("</root>")
 	if err = w.Flush(); err != nil {

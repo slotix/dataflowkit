@@ -51,6 +51,8 @@ var (
 	redisDB         int
 	redisSocketPath string
 
+	cassandraHost string
+
 	maxPages            int
 	format              string
 	paginateResults     bool
@@ -145,6 +147,8 @@ func init() {
 	RootCmd.Flags().IntVarP(&redisDB, "REDIS_DB", "", 0, "Redis DB")
 	RootCmd.Flags().StringVarP(&redisSocketPath, "REDIS_SOCKET_PATH", "", "", "Redis Socket Path")
 
+	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "c", "127.0.0.1", "Cassandra host address")
+
 	RootCmd.Flags().IntVarP(&maxPages, "MAX_PAGES", "", 1, "The maximum number of pages to scrape")
 	RootCmd.Flags().StringVarP(&format, "FORMAT", "", "json", "Output format (CSV, JSON, XML)")
 	RootCmd.Flags().BoolVarP(&paginateResults, "PAGINATE_RESULTS", "", false, "Paginated results are returned. Single list of combined results from every block on all pages is returned by default.")
@@ -194,6 +198,8 @@ func init() {
 	viper.BindPFlag("REDIS_PASSWORD", RootCmd.Flags().Lookup("REDIS_PASSWORD"))
 	viper.BindPFlag("REDIS_DB", RootCmd.Flags().Lookup("REDIS_DB"))
 	viper.BindPFlag("REDIS_SOCKET_PATH", RootCmd.Flags().Lookup("REDIS_SOCKET_PATH"))
+
+	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
 
 	viper.BindPFlag("MAX_PAGES", RootCmd.Flags().Lookup("MAX_PAGES"))
 	viper.BindPFlag("FORMAT", RootCmd.Flags().Lookup("FORMAT"))
