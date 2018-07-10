@@ -56,7 +56,8 @@ services:
     
 
   testserver:
-    build: ./testserver
+    #build: ./testserver
+    image: slotix/dfk-testserver
     environment:
       - SPLASH=splash:8050
       - DFK_TEST=testserver:12345
