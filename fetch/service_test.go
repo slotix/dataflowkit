@@ -44,7 +44,11 @@ func TestFetchService(t *testing.T) {
 	}
 	userToken := "12345"
 	cookies, err := json.Marshal(cArr)
-	err = st.Write(userToken, cookies, 0)
+	rec := storage.Record{
+		RecordType: "Cookies",
+		Value : cookies,
+	}
+	err = st.Write(userToken, &rec, 0)
 	if err != nil {
 		t.Log(err)
 	}

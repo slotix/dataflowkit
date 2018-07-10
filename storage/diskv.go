@@ -28,8 +28,8 @@ func newDiskvConn(baseDir string, cacheSizeMax uint64) DiskvConn {
 }
 
 // Read loads value according to the specified key from DiskV KV storage.
-func (d DiskvConn) Read(key string, recType string) (value []byte, err error) {
-	value, err = d.diskv.Read(key)
+func (d DiskvConn) Read(rec Record) (value []byte, err error) {
+	value, err = d.diskv.Read(rec.Key)
 	if err != nil {
 		return nil, err
 	}
@@ -37,8 +37,8 @@ func (d DiskvConn) Read(key string, recType string) (value []byte, err error) {
 }
 
 // Write stores key/ value pair along with Expiration time to DiskV KV storage.
-func (d DiskvConn) Write(key string, rec *Record, expTime int64) error {
-	err := d.diskv.Write(key, rec.Value)
+func (d DiskvConn) Write(rec Record) error {
+	err := d.diskv.Write(rec.Key, rec.Value)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (d DiskvConn) Write(key string, rec *Record, expTime int64) error {
 }
 
 // Expired returns Expired value of specified key from DiskV.
-func (d DiskvConn) Expired(key string) bool {
+func (d DiskvConn) Expired(rec Record) bool {
 	//pwd
 	//ex, err := os.Executable()
 	//if err != nil {
@@ -55,7 +55,7 @@ func (d DiskvConn) Expired(key string) bool {
 	//	exPath := filepath.Dir(ex)
 	//filename
 	//	fullPath := exPath + "/" + d.diskv.BasePath + "/" + key
-	fullPath := d.diskv.BasePath + "/" + key
+	fullPath := d.diskv.BasePath + "/" + rec.Key
 	//file last modification time
 	fStat, err := os.Stat(fullPath)
 	if err != nil {
@@ -81,8 +81,8 @@ func (d DiskvConn) Expired(key string) bool {
 }
 
 //Delete deletes specified key from Diskv storage.
-func (d DiskvConn) Delete(key string) error {
-	err := d.diskv.Erase(key)
+func (d DiskvConn) Delete(rec Record) error {
+	err := d.diskv.Erase(rec.Key)
 	if err != nil {
 		return err
 	}
