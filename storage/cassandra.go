@@ -15,14 +15,17 @@ type cassandra struct {
 
 const (
 	readQuery                      = "SELECT value from %s WHERE key='%s'"
-	writeQuery                     = "INSERT INTO %s (key, value) VALUES ('%s', '%s') USING TTL 86400"
-	writeIntermediateQuery         = "INSERT INTO Intermediate (payloadHash, pageID, blockID, fields) VALUES(?, ?, ?, ?) USING TTL 86400"
-	writeIntermediateMapQuery      = "INSERT INTO intermediatemaps (payloadHash, map) VALUES(?, ?) USING TTL 86400"
+	writeQuery                     = "INSERT INTO %s (key, value) VALUES ('%s', '%s') USING TTL %d"
+	writeIntermediateQuery         = "INSERT INTO Intermediate (payloadHash, pageID, blockID, fields) VALUES(?, ?, ?, ?) USING TTL %d"
+	writeIntermediateMapQuery      = "INSERT INTO intermediatemaps (payloadHash, map) VALUES(?, ?) USING TTL %d"
 	readIntermediateResultQuery    = "SELECT fields FROM Intermediate WHERE payloadhash=? AND pageID=? AND blockID=?"
 	readIntermediateMapQuery       = "SELECT map FROM intermediatemaps WHERE payloadhash=?"
 	truncateTableQuery             = "TRUNCATE %s"
 	deleteIntermediateRowQuery     = "DELETE FROM intermediate WHERE payloadhash=? AND pageID=? AND blockID=?"
 	deleteIntermediateMapsRowQuery = "DELETE FROM intermediatemaps WHERE payloadhash=?"
+	deleteCacheRowQuery            = "DELETE FROM cache WHERE key=?"
+	deleteCookiesRowQuery          = "DELETE FROM cookies WHERE key=?"
+	getTTLQuery                    = "SELECT TTL(%s) from %s"
 )
 
 func newCassandra(host string) *cassandra {
@@ -37,27 +40,27 @@ func newCassandra(host string) *cassandra {
 }
 
 // Read loads value according to the specified key from Cassandra storage.
-func (c cassandra) Read(key string, recType string) (value []byte, err error) {
-	if recType == INTERMEDIATE {
-		return c.readIntermediate(key)
+func (c cassandra) Read(rec Record) (value []byte, err error) {
+	if rec.Type == INTERMEDIATE {
+		return c.readIntermediate(rec.Key)
 	}
 	var val string
-	query := fmt.Sprintf(readQuery, recType, key)
+	query := fmt.Sprintf(readQuery, rec.Type, rec.Key)
 	err = c.session.Query(query).Scan(&val)
 	return []byte(val), err
 }
 
 // Write stores key/ value pair along with Expiration time to Cassandra storage.
-func (c cassandra) Write(key string, rec *Record, expTime int64) error {
-	if rec.RecordType == INTERMEDIATE {
-		return c.writeIntermediate(key, rec.Value)
+func (c cassandra) Write(rec Record) error {
+	if rec.Type == INTERMEDIATE {
+		return c.writeIntermediate(rec.Key, rec.Value, rec.ExpTime)
 	}
-	query := fmt.Sprintf(writeQuery, rec.RecordType, key, string(rec.Value))
+	query := fmt.Sprintf(writeQuery, rec.Type, rec.Key, string(rec.Value), rec.ExpTime)
 	err := c.session.Query(query).Exec()
 	return err
 }
 
-func (c cassandra) writeIntermediate(key string, value []byte) error {
+func (c cassandra) writeIntermediate(key string, value []byte, expTime int64) error {
 	//payload-page.no-block.no
 	keys := strings.Split(string(key), "-")
 	if len(keys) > 1 {
@@ -66,9 +69,11 @@ func (c cassandra) writeIntermediate(key string, value []byte) error {
 		if err != nil {
 			return fmt.Errorf("Failed unmarshal parse results. %s", err.Error())
 		}
-		return c.session.Query(writeIntermediateQuery, keys[0], keys[1], keys[2], results).Exec()
+		q := fmt.Sprintf(writeIntermediateQuery, expTime)
+		return c.session.Query(q, keys[0], keys[1], keys[2], results).Exec()
 	}
-	return c.session.Query(writeIntermediateMapQuery, key, string(value)).Exec()
+	q := fmt.Sprintf(writeIntermediateMapQuery, expTime)
+	return c.session.Query(q, key, string(value)).Exec()
 }
 
 func (c cassandra) readIntermediate(key string) ([]byte, error) {
@@ -91,25 +96,46 @@ func (c cassandra) readIntermediate(key string) ([]byte, error) {
 }
 
 // Expired returns Expired value of specified key from Cassandra.
-func (c cassandra) Expired(key string) bool {
-	//There is no need implement TTL with Cassandra 'cause it implements it natively
-	return true
+func (c cassandra) Expired(rec Record) bool {
+	//Expired = Non Existant
+	return false
 }
 
 //Delete deletes specified key from Cassandra storage.
-func (c cassandra) Delete(key string) error {
-	keys := strings.Split(key, "-")
-	var err error
-	if len(keys) > 1 {
-		err = c.session.Query(deleteIntermediateRowQuery, keys[0], keys[1], keys[2]).Exec()
-		if err != nil {
-			logger.Warningf("Failed delete intermediate row: payload %s, page %s, block %s. %s", keys[0], keys[1], keys[2], err.Error())
+func (c cassandra) Delete(rec Record) error {
+	keys := strings.Split(rec.Key, "-")
+	//var err error
+	switch rec.Type {
+	case INTERMEDIATE:
+		if len(keys) > 1 {
+			_ = c.session.Query(deleteIntermediateRowQuery, keys[0], keys[1], keys[2]).Exec()
+			//the code below will never be executed
+
+			// if err != nil {
+			// 	logger.Warningf("Failed delete intermediate row: payload %s, page %s, block %s. %s", keys[0], keys[1], keys[2], err.Error())
+			// }
+		} else {
+
+			_ = c.session.Query(deleteIntermediateMapsRowQuery, keys[0]).Exec()
+
+			//the code below will never be executed
+			// if err != nil {
+			// 	logger.Warningf("Failed delete intermediate maps row: payload %s. %s", keys[0], err.Error())
+			// }
 		}
-	} else {
-		err = c.session.Query(deleteIntermediateMapsRowQuery, keys[0]).Exec()
-		if err != nil {
-			logger.Warningf("Failed delete intermediate maps row: payload %s. %s", keys[0], err.Error())
-		}
+	case CACHE:
+		_ = c.session.Query(deleteCacheRowQuery, keys[0]).Exec()
+		//the code below will never be executed
+		// if err != nil {
+		// 	logger.Warningf("Failed delete cache row: key %s. %s", keys[0], err.Error())
+		// }
+
+	case COOKIES:
+		_ = c.session.Query(deleteCookiesRowQuery, keys[0]).Exec()
+		//the code below will never be executed
+		// if err != nil {
+		// 	logger.Warningf("Failed delete cookies row: key %s. %s", keys[0], err.Error())
+		// }
 	}
 	return nil
 }
@@ -117,15 +143,26 @@ func (c cassandra) Delete(key string) error {
 //DeleteAll deletes everything from Cassandra storage.
 func (c cassandra) DeleteAll() error {
 	query := fmt.Sprintf(truncateTableQuery, "intermediate")
-	err := c.session.Query(query).Exec()
-	if err != nil {
-		logger.Warningf("Failed truncate Intermediate table. %s", err.Error())
-	}
+	_ = c.session.Query(query).Exec()
+	//No need to check the error here as the code below will never be executed
+	// if err != nil {
+	// 	logger.Warningf("Failed truncate Intermediate table. %s", err.Error())
+	// }
 	query = fmt.Sprintf(truncateTableQuery, "intermediatemaps")
-	err = c.session.Query(query).Exec()
-	if err != nil {
-		logger.Warningf("Failed truncate IntermediateMaps table. %s", err.Error())
-	}
+	_ = c.session.Query(query).Exec()
+	// if err != nil {
+	// 	logger.Warningf("Failed truncate IntermediateMaps table. %s", err.Error())
+	// }
+	query = fmt.Sprintf(truncateTableQuery, "cache")
+	_ = c.session.Query(query).Exec()
+	// if err != nil {
+	// 	logger.Warningf("Failed truncate cache table. %s", err.Error())
+	// }
+	query = fmt.Sprintf(truncateTableQuery, "cookies")
+	_ = c.session.Query(query).Exec()
+	// if err != nil {
+	// 	logger.Warningf("Failed truncate cookies table. %s", err.Error())
+	// }
 	return nil
 }
 

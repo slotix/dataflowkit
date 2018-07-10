@@ -56,10 +56,7 @@ func (e JSONEncoder) Encode(results *Results) (io.ReadCloser, error) {
 }
 
 func (e JSONEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) {
-	storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
-	if err != nil {
-		return nil, err
-	}
+	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	// open output file
 	sFileName := payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".json"
@@ -144,7 +141,10 @@ func newStorageReader(store *storage.Store, md5Hash string) *storageResultReader
 
 // have return error
 func (r *storageResultReader) init() {
-	keysJSON, err := (*r.storage).Read(r.payloadMD5, storage.INTERMEDIATE)
+	keysJSON, err := (*r.storage).Read(storage.Record{
+		Type: storage.INTERMEDIATE,
+		Key:  r.payloadMD5,
+	})
 	if err != nil {
 		logger.Error(err)
 	}
@@ -217,7 +217,11 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 
 func (r *storageResultReader) getValue() (map[string]interface{}, error) {
 	key := fmt.Sprintf("%s-%d-%d", r.payloadMD5, r.page, r.block)
-	blockJSON, err := (*r.storage).Read(key, storage.INTERMEDIATE)
+	blockJSON, err := (*r.storage).Read(storage.Record{
+		Type: storage.INTERMEDIATE,
+		Key:  key,
+	})
+
 	if err != nil {
 		return nil, err //&errs.ErrStorageResult{Err: fmt.Sprintf(errs.NoKey, key)}
 	}
@@ -258,10 +262,7 @@ func (e CSVEncoder) Encode(results *Results) (io.ReadCloser, error) {
 }
 
 func (e CSVEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) {
-	storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
-	if err != nil {
-		return nil, err
-	}
+	storageType:= viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	// open output file
 	sFileName := payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".csv"
@@ -382,10 +383,7 @@ func (e XMLEncoder) Encode(results *Results) (io.ReadCloser, error) {
 }
 
 func (e XMLEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) {
-	storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
-	if err != nil {
-		return nil, err
-	}
+	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	// open output file
 	sFileName := payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".xml"

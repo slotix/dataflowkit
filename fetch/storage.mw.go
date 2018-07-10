@@ -43,7 +43,10 @@ func (mw storageMiddleware) get(req FetchRequester) (resp FetchResponser, err er
 	storageKey := string(utils.GenerateMD5([]byte(url)))
 	//Base32 encoded values are 100% safe for file/uri usage without replacing any characters and guarantees 1-to-1 mapping
 	sKey := base32.StdEncoding.EncodeToString([]byte(storageKey))
-	value, err := mw.storage.Read(sKey, storage.CACHE)
+	value, err := mw.storage.Read(storage.Record{
+		Type: storage.CACHE,
+		Key:  sKey,
+	})
 	if err == nil {
 		if err := json.Unmarshal(value, &fetchResponse); err != nil {
 			logger.Error(err)
@@ -90,7 +93,12 @@ func (mw storageMiddleware) put(req FetchRequester, resp FetchResponser) error {
 	}
 	//calculate expiration time. This is actual for Redis only.
 	expTime := expired.Unix()
-	err = mw.storage.Write(sKey, &storage.Record{RecordType: storage.CACHE, Value: r}, expTime)
+	err = mw.storage.Write(storage.Record{
+		Type: storage.CACHE,
+		Key: sKey,
+		Value: r,
+		ExpTime: expTime,
+	})
 	if err != nil {
 		logger.Error(err.Error())
 		return err
