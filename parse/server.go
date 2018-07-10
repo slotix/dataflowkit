@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -12,8 +11,6 @@ import (
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
 )
-
-var storageType storage.Type
 
 // Config provides basic configuration
 type Config struct {
@@ -39,12 +36,7 @@ func Start(cfg Config) *HTMLServer {
 	svc = ParseService{}
 	//svc = StatsMiddleware("18")(svc)
 	if !viper.GetBool("SKIP_STORAGE_MW") {
-		var err error
-		storageType, err = storage.TypeString(viper.GetString("STORAGE_TYPE"))
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
-		}
+		storageType := viper.GetString("STORAGE_TYPE")
 		svc = StorageMiddleware(storage.NewStore(storageType))(svc)
 	}
 	svc = LoggingMiddleware(logger)(svc)
