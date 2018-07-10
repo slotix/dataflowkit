@@ -100,21 +100,34 @@ func NewSplash(req Request) (splashURL string) {
 	} else {
 		infiniteScroll = "false"
 	}
-
-	splashURL = fmt.Sprintf(
-		"http://%s/execute?url=%s&proxy=%s&timeout=%d&resource_timeout=%d&wait=%.1f&headers=%s&formdata=%s&lua_source=%s&scroll2bottom=%s",
-		args.host,
-		neturl.QueryEscape(req.URL),
-		neturl.QueryEscape(args.proxy),
-		args.timeout,
-		args.resourceTimeout,
-		args.wait,
-		//neturl.QueryEscape(req.Cookies),
-		neturl.QueryEscape(cookies),
-		neturl.QueryEscape(paramsToLuaTable(req.FormData)),
-		LUAScript,
-		infiniteScroll)
-
+	if len(args.proxy) > 0 {
+		splashURL = fmt.Sprintf(
+			"http://%s/execute?url=%s&proxy=%s&timeout=%d&resource_timeout=%d&wait=%.1f&headers=%s&formdata=%s&lua_source=%s&scroll2bottom=%s",
+			args.host,
+			neturl.QueryEscape(req.URL),
+			neturl.QueryEscape(args.proxy),
+			args.timeout,
+			args.resourceTimeout,
+			args.wait,
+			//neturl.QueryEscape(req.Cookies),
+			neturl.QueryEscape(cookies),
+			neturl.QueryEscape(paramsToLuaTable(req.FormData)),
+			LUAScript,
+			infiniteScroll)
+	} else {
+		splashURL = fmt.Sprintf(
+			"http://%s/execute?url=%s&timeout=%d&resource_timeout=%d&wait=%.1f&headers=%s&formdata=%s&lua_source=%s&scroll2bottom=%s",
+			args.host,
+			neturl.QueryEscape(req.URL),
+			args.timeout,
+			args.resourceTimeout,
+			args.wait,
+			//neturl.QueryEscape(req.Cookies),
+			neturl.QueryEscape(cookies),
+			neturl.QueryEscape(paramsToLuaTable(req.FormData)),
+			LUAScript,
+			infiniteScroll)
+	}
 	return
 }
 
