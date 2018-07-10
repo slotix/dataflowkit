@@ -242,7 +242,7 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, `{"alive": true}`)
 }
 
-//healthCheckHandler is used to check if Fetch service is alive.
+
 func proxyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	u := r.URL.Query().Get("url")
