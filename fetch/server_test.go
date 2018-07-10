@@ -63,8 +63,6 @@ func Test_server_Base(t *testing.T) {
 	fetchServer := viper.GetString("DFK_FETCH")
 	serverCfg := Config{
 		Host:         fetchServer,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
 	}
 	//viper.Set("SKIP_STORAGE_MW", true)
 	htmlServer := Start(serverCfg)
@@ -129,8 +127,6 @@ func Test_server_Splash(t *testing.T) {
 	fetchServer := viper.GetString("DFK_FETCH")
 	serverCfg := Config{
 		Host:         fetchServer, //"localhost:5000",
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	htmlServer := Start(serverCfg)
