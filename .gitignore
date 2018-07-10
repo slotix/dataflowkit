@@ -54,6 +54,8 @@ coverage.out
 
 testdata
 
+storage/cassandra/db
+
 webserver
 examples/diesel*
 examples/najnakup.sk.json
