@@ -77,7 +77,7 @@ func (c cassandra) readIntermediate(key string) ([]byte, error) {
 		value := map[string]string{}
 		err := c.session.Query(readIntermediateResultQuery, keys[0], keys[1], keys[2]).Scan(&value)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to read key: %s. %s", keys[0], err.Error())
+			return nil, fmt.Errorf("Failed to read key: %s. %s", key, err.Error())
 		}
 		val, err := json.Marshal(value)
 		if err != nil {
