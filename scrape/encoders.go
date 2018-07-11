@@ -163,7 +163,7 @@ func (r *storageResultReader) init() {
 func (r *storageResultReader) Read() (map[string]interface{}, error) {
 	blockMap := make(map[string]interface{})
 	var err error
-	if r.block > r.payloadMap[r.page] {
+	if r.block >= r.payloadMap[r.page] {
 		if r.page+1 < len(r.keys) {
 			//achieve next page
 			r.page++

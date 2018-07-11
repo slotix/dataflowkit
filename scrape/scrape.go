@@ -36,7 +36,7 @@ var logger *logrus.Logger
 var fetchCannel chan *fetchInfo
 
 func init() {
-	logger = log.NewFileLogger(true, "error.log")
+	logger = log.NewLogger(true)
 }
 
 // NewTask creates new task to parse fetched page following the rules from Payload.
@@ -45,18 +45,18 @@ func NewTask(p Payload) *Task {
 	id := ksuid.New()
 	//tQueue := make(chan *Scraper, 100)
 	return &Task{
-		ID:      id.String(),
-		Payload: p,
-		Errors:  []error{},
-		Robots:  make(map[string]*robotstxt.RobotsData),
-		Parsed:  false,
+		ID:           id.String(),
+		Payload:      p,
+		Errors:       []error{},
+		Robots:       make(map[string]*robotstxt.RobotsData),
+		Parsed:       false,
+		BlockCounter: 0,
 	}
 
 }
 
 // Parse processes specified task which parses fetched page.
 func (task *Task) Parse() (io.ReadCloser, error) {
-	start := time.Now()
 
 	scraper, err := task.Payload.newScraper()
 	if err != nil {
@@ -69,21 +69,24 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		go task.fetchWorker()
 	}
 	// Array of page keys
-	k := make(map[int][]int)
+	k := make(map[int]uint32)
 	wg := sync.WaitGroup{}
 	uid := string(utils.GenerateCRC32([]byte(task.Payload.PayloadMD5)))
+	mx := sync.Mutex{}
 	storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
 	if err != nil {
 		logger.Error(err)
 	}
 	s := storage.NewStore(storageType)
 	tw := taskWorker{
-		wg:             &wg,
-		currentPageNum: 0,
-		scraper:        scraper,
-		keys:           &k,
-		UID:            uid,
-		storage:        &s,
+		wg:              &wg,
+		currentPageNum:  0,
+		scraper:         scraper,
+		keys:            &k,
+		UID:             uid,
+		storage:         &s,
+		mx:              &mx,
+		useBlockCounter: false,
 	}
 	wg.Add(1)
 	_, err = task.scrape(&tw)
@@ -111,7 +114,10 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		}
 	}
 	close(fetchCannel)
-	//logger.Info(task.Visited)
+
+	if task.BlockCounter > 0 {
+		(*tw.keys)[0] = task.BlockCounter
+	}
 
 	j, err := json.Marshal(tw.keys)
 	if err != nil {
@@ -144,14 +150,6 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	t := time.Now()
-	elapsed := t.Sub(start)
-	logger.Info(elapsed)
-	/* r, err := e.Encode(results)
-	if err != nil {
-		return nil, err
-	} */
-	//have to return link to result file?
 	return r, err
 }
 
@@ -175,11 +173,7 @@ func (p Payload) newScraper() (*Scraper, error) {
 	}
 
 	var dividePageFunc DividePageFunc
-	// if len(selectors) == 0 {
-	// 	dividePageFunc = DividePageBySelector("body")
-	// } else {
-	// 	dividePageFunc = DividePageByIntersection(selectors)
-	// }
+
 	dividePageFunc = DividePageByIntersection(selectors)
 
 	scraper := &Scraper{
@@ -187,6 +181,7 @@ func (p Payload) newScraper() (*Scraper, error) {
 		DividePage: dividePageFunc,
 		Parts:      parts,
 		Paginator:  paginator,
+		IsPath:     p.IsPath,
 	}
 
 	// All set!
@@ -198,11 +193,13 @@ func (p Payload) fields2parts() ([]Part, error) {
 	parts := []Part{}
 	//Payload fields
 	for _, f := range p.Fields {
+		if p.IsPath && !utils.ArrayContains(f.Extractor.Types, "path") {
+			continue
+		}
 		params := make(map[string]interface{})
 		if f.Extractor.Params != nil {
 			params = f.Extractor.Params
 		}
-		var err error
 
 		for _, t := range f.Extractor.Types {
 			part := Part{
@@ -216,27 +213,30 @@ func (p Payload) fields2parts() ([]Part, error) {
 				e = &extract.Text{
 					Filters: f.Extractor.Filters,
 				}
-			case "href", "src":
+			case "href", "src", "path":
+				extrAttr := t
+				if t == "path" {
+					extrAttr = "href"
+				}
 				e = &extract.Attr{
-					Attr: t,
+					Attr: extrAttr,
 					//BaseURL: p.Request.URL,
 				}
-				scraper := &Scraper{}
 				//******* details
 				if f.Details != nil {
 					detailsPayload := p
 					detailsPayload.Name = f.Name + "Details"
 					detailsPayload.Fields = f.Details.Fields
 					detailsPayload.Paginator = f.Details.Paginator
+					detailsPayload.IsPath = f.Details.IsPath
 					//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
-					scraper, err = detailsPayload.newScraper()
+					scraper, err := detailsPayload.newScraper()
 					if err != nil {
 						return nil, err
 					}
-				} else {
-					scraper = nil
+					part.Details = *scraper
 				}
-				part.Details = scraper
+
 			case "alt":
 				e = &extract.Attr{
 					Attr:    t,
@@ -280,17 +280,12 @@ func (p Payload) fields2parts() ([]Part, error) {
 	if len(parts) == 0 {
 		return nil, &errs.BadPayload{errs.ErrNoParts}
 	}
-	// seenNames := map[string]struct{}{}
 
 	for _, part := range parts {
 		if len(part.Name) == 0 || len(part.Selector) == 0 {
 			e := fmt.Sprintf(errs.ErrNoPartOrSelectorProvided, part.Name+part.Selector)
 			return nil, &errs.BadPayload{e}
 		}
-		// if _, seen := seenNames[part.Name]; seen {
-		// 	return nil, fmt.Errorf("part %s has a duplicate name", part.Name)
-		// }
-		// seenNames[part.Name] = struct{}{}
 
 	}
 	return parts, nil
@@ -298,11 +293,8 @@ func (p Payload) fields2parts() ([]Part, error) {
 
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
 func (t *Task) scrape(tw *taskWorker) (*Results, error) {
-	//logger.Info(time.Now())
-	//output := [][]map[string]interface{}{}
 
 	req := tw.scraper.Request
-	//req := t.Payload.Request
 	url := req.GetURL()
 
 	//get Robotstxt Data
@@ -353,10 +345,6 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	case content = <-resultChan:
 	}
 
-	/* if err != nil {
-		return nil, err
-	} */
-
 	// Create a goquery document.
 	doc, err := goquery.NewDocumentFromReader(content)
 	if err != nil {
@@ -374,18 +362,6 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 			// Repeat until we don't have any more URLs, or until we hit our page limit.
 			if len(url) != 0 &&
 				(t.Payload.Paginator != nil && (t.Payload.Paginator.MaxPages > 0 && tw.currentPageNum < t.Payload.Paginator.MaxPages)) {
-				logger.Info(fmt.Sprintf("Current page %d; Max page %d", tw.currentPageNum, t.Payload.Paginator.MaxPages))
-				/* if !viper.GetBool("IGNORE_FETCH_DELAY") {
-					if *t.Payload.RandomizeFetchDelay {
-						//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-						rand := utils.Random(500, 1500)
-						delay := *t.Payload.FetchDelay * time.Duration(rand) / 1000
-						logger.Infof("%s -> %v", delay, req.GetURL())
-						time.Sleep(delay)
-					} else {
-						time.Sleep(*t.Payload.FetchDelay)
-					}
-				} */
 				paginatorPayload := t.Payload
 				paginatorPayload.Request, err = paginatorPayload.initRequest(url)
 				if err != nil {
@@ -397,13 +373,18 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 					tw.wg.Done()
 					return nil, err
 				}
+				curPageNum := tw.currentPageNum + 1
+				if tw.scraper.IsPath {
+					curPageNum = 0
+				}
 				paginatorTW := taskWorker{
 					wg:             tw.wg,
-					currentPageNum: tw.currentPageNum + 1,
+					currentPageNum: curPageNum,
 					scraper:        paginatorScraper,
 					keys:           tw.keys,
 					UID:            tw.UID,
 					storage:        tw.storage,
+					mx:             tw.mx,
 				}
 				tw.wg.Add(1)
 				go t.scrape(&paginatorTW)
@@ -420,20 +401,10 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 		wg:      &wg,
 		scraper: tw.scraper,
 		storage: tw.storage,
+		mx:      tw.mx,
 	}
 
 	blockSelections := tw.scraper.DividePage(doc.Selection)
-	//blocksCount := len(blockSelections)
-
-	/*wg.Add(1)
-	go func() {
-		for i := 0; i < blocksCount; i++ {
-			results = append(results, <-workersResult)
-		}
-		wg.Done()
-	}()*/
-
-	(*tw.keys)[tw.currentPageNum] = []int{}
 
 	for i := 0; i < 25; i++ {
 		wg.Add(1)
@@ -442,27 +413,20 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	// Divide this page into blocks
 	for i, blockSel := range blockSelections {
 		ref := fmt.Sprintf("%s-%d-%d", tw.UID, tw.currentPageNum, i)
-		if tw.currentPageNum == 1 {
-			logger.Info(tw.currentPageNum)
-		}
-		(*tw.keys)[tw.currentPageNum] = append((*tw.keys)[tw.currentPageNum], i)
+		tw.mx.Lock()
+		(*tw.keys)[tw.currentPageNum]++
+		tw.mx.Unlock()
 		block := blockStruct{
-			blockSelection: blockSel,
-			key:            ref,
+			blockSelection:  blockSel,
+			key:             ref,
+			hash:            tw.UID,
+			useBlockCounter: tw.useBlockCounter,
 		}
 		blocks <- &block
 	}
 	close(blocks)
 	wg.Wait()
-	//tw.keys.pages = append(tw.keys.pages, fmt.Sprintf("%s-d", t.Payload.PayloadMD5, tw.numPages))
 	tw.wg.Done()
-
-	/* if len(output) == 0 {
-		return nil, &errs.BadPayload{errs.ErrEmptyResults}
-	} */
-
-	// All good!
-	//return &Results{output}, err
 	return nil, err
 
 }
@@ -544,35 +508,27 @@ func (t Task) startTime() (*time.Time, error) {
 func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 	defer wrk.wg.Done()
 	url := wrk.scraper.Request.GetURL()
-	host, err := wrk.scraper.Request.Host()
-	if err != nil {
-		logger.Error(err)
-		//return err
-	}
 	for block := range blocks {
 		blockResults := map[string]interface{}{}
 
 		// Process each part of this block
-		for _, part := range wrk.scraper.Parts { // ->task.Payload.Fields
+		for _, part := range wrk.scraper.Parts {
 			sel := block.blockSelection
 			if part.Selector != "." {
 				sel = sel.Find(part.Selector)
 			}
 			//update base URL to reflect attr relative URL change
-			//fmt.Println(reflect.TypeOf(part.Extractor))
 			switch part.Extractor.(type) {
 			case *extract.Attr:
-				//	if part.Extractor.GetType() == "attr" {
 				attr := part.Extractor.(*extract.Attr)
 				if attr.Attr == "href" || attr.Attr == "src" {
 					attr.BaseURL = url
 				}
-				//	}
 			}
 			extractedPartResults, err := part.Extractor.Extract(sel)
 			if err != nil {
-				//return nil, err
 				logger.Error(err)
+				return
 			}
 
 			// A nil response from an extractor means that we don't even include it in
@@ -580,10 +536,11 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 			if extractedPartResults == nil {
 				continue
 			}
-			blockResults[part.Name] = extractedPartResults
+			if !wrk.scraper.IsPath {
+				blockResults[part.Name] = extractedPartResults
+			}
 			//********* details
-			//part.Details = nil
-			if part.Details != nil {
+			if len(part.Details.Parts) > 0 {
 				var requests []fetch.FetchRequester
 
 				switch extractedPartResults.(type) {
@@ -597,7 +554,6 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 					default:
 						err := errors.New("invalid fetcher type specified")
 						logger.Error(err.Error())
-						//return nil, err
 					}
 					requests = append(requests, rq)
 				case []string:
@@ -612,7 +568,6 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 						default:
 							err := errors.New("invalid fetcher type specified")
 							logger.Error(err.Error())
-							//return nil, err
 						}
 
 						requests = append(requests, rq)
@@ -620,49 +575,53 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 					}
 				}
 				for _, r := range requests {
-					//part.Details.Request = splash.Request{
-					//	URL: extractedPartResults.(string),
-					//}
 					part.Details.Request = r
+					var log1 []string
+					log1 = append(log1, part.Details.Request.GetURL())
 					//check if domain is the same for initial URL and details' URLs
 					//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
-					detailsHost, err := part.Details.Request.Host()
-					if err != nil {
-						logger.Error(err)
-					}
-					if detailsHost == host {
-						/* if !viper.GetBool("IGNORE_FETCH_DELAY") {
-							if *task.Payload.RandomizeFetchDelay {
-								//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
-								rand := utils.Random(500, 1500)
-								delay := *task.Payload.FetchDelay * time.Duration(rand) / 1000
-								logger.Infof("%s -> %v", delay, part.Details.Request.GetURL())
-								time.Sleep(delay)
-							} else {
-								time.Sleep(*task.Payload.FetchDelay)
-							}
-						} */
-					}
+
 					wg := sync.WaitGroup{}
-					k := make(map[int][]int)
-					uid := string(utils.GenerateCRC32([]byte(block.key + part.Name)))
+					k := make(map[int]uint32)
+					var uid string
+					pKeys := &k
+					ubc := false
+					if wrk.scraper.IsPath {
+						uid = block.hash
+						ubc = true
+					} else {
+						uid = string(utils.GenerateCRC32([]byte(r.GetURL())))
+					}
+
 					tw := taskWorker{
-						wg:             &wg,
-						currentPageNum: 0,
-						scraper:        part.Details,
-						keys:           &k,
-						UID:            uid,
-						storage:        wrk.storage,
+						wg:              &wg,
+						currentPageNum:  0,
+						scraper:         &part.Details,
+						keys:            pKeys,
+						UID:             uid,
+						storage:         wrk.storage,
+						mx:              wrk.mx,
+						useBlockCounter: ubc,
 					}
 					wg.Add(1)
+					log1 = append(log1, part.Details.Request.GetURL())
+					if log1[0] != log1[1] {
+						logger.Infof("Orig: %s \r\n Details: %s", log1[0], log1[1])
+					}
 					_, err = task.scrape(&tw)
 					if err != nil {
-						//return nil, err
 						logger.Error(err)
+						continue
+					}
+					if wrk.scraper.IsPath {
 						continue
 					}
 					blockResults[part.Name+"_details"] = uid //generate uid resDetails.AllBlocks()
 					j, err := json.Marshal(tw.keys)
+					if err != nil {
+						logger.Error(fmt.Errorf("Failed to marshal details key. %s", err.Error()))
+						continue
+					}
 					(*wrk.storage).Write(string(uid), &storage.Record{RecordType: storage.INTERMEDIATE, Value: j}, 0)
 				}
 			}
@@ -677,7 +636,19 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 			if err != nil {
 				logger.Error(err)
 			}
-			(*wrk.storage).Write(block.key, &storage.Record{RecordType: storage.INTERMEDIATE, Value: output}, 0)
+			if !wrk.scraper.IsPath {
+				wrk.mx.Lock()
+				key := block.key
+				if block.useBlockCounter {
+					key = fmt.Sprintf("%s-0-%d", block.hash, task.BlockCounter)
+					task.BlockCounter++
+				}
+				err = (*wrk.storage).Write(key, &storage.Record{RecordType: storage.INTERMEDIATE, Value: output}, 0)
+				if err != nil {
+					logger.Error(fmt.Errorf("Failed to write %s. %s", key, err.Error()))
+				}
+				wrk.mx.Unlock()
+			}
 		}
 	}
 }
@@ -689,7 +660,6 @@ func (task *Task) fetchWorker() {
 				//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
 				rand := utils.Random(500, 1500)
 				delay := *task.Payload.FetchDelay * time.Duration(rand) / 1000
-				//logger.Infof("%s -> %v", delay, fetch.request.GetURL())
 				time.Sleep(delay)
 			} else {
 				time.Sleep(*task.Payload.FetchDelay)
