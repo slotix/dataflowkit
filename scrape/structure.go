@@ -41,6 +41,7 @@ type Field struct {
 type details struct {
 	Fields    []Field    `json:"fields"`
 	Paginator *paginator `json:"paginator"`
+	IsPath    bool       `json:"path"`
 }
 
 // paginator is used to scrape multiple pages.
@@ -98,6 +99,9 @@ type Payload struct {
 	//Default: [500, 502, 503, 504, 408]
 	//Failed pages should be rescheduled for download at the end. once the spider has finished crawling all other (non failed) pages.
 	RetryTimes int `json:"retryTimes"`
+	// ContainPath means that one of the field just a path and we have to ignore all other fields (if present)
+	// that are not a path
+	IsPath bool `json:"path"`
 }
 
 // The DividePageFunc type is used to extract a page's blocks during a scrape.
@@ -118,7 +122,7 @@ type Part struct {
 	// selector that is provided to this Piece.
 	Extractor extract.Extractor
 	//Details is an optional field strictly for Link extractor type. It guides scraper to parse additional pages following the links according to the set of fields specified inside "details"
-	Details *Scraper
+	Details Scraper
 }
 
 //Scraper struct consolidates settings for scraping task.
@@ -152,6 +156,7 @@ type Scraper struct {
 	//Opts contains options that are used during the progress of a
 	// scrape.
 	//Opts ScrapeOptions
+	IsPath bool
 }
 
 // Results describes the results of a scrape.  It contains a list of all
@@ -179,26 +184,33 @@ type Task struct {
 	Robots map[string]*robotstxt.RobotsData
 	//Results
 	Parsed bool
+	// Block counter
+	BlockCounter uint32
 }
 
 type worker struct {
 	wg      *sync.WaitGroup
 	scraper *Scraper
 	storage *storage.Store
+	mx      *sync.Mutex
 }
 
 type taskWorker struct {
-	wg             *sync.WaitGroup
-	UID            string
-	currentPageNum int
-	keys           *map[int][]int
-	scraper        *Scraper
-	storage        *storage.Store
+	wg              *sync.WaitGroup
+	UID             string
+	currentPageNum  int
+	keys            *map[int]uint32
+	scraper         *Scraper
+	storage         *storage.Store
+	mx              *sync.Mutex
+	useBlockCounter bool
 }
 
 type blockStruct struct {
-	blockSelection *goquery.Selection
-	key            string
+	blockSelection  *goquery.Selection
+	key             string
+	hash            string
+	useBlockCounter bool
 }
 
 type fetchInfo struct {

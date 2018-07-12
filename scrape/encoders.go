@@ -124,14 +124,14 @@ type storageResultReader struct {
 	page       int
 	keys       []int
 	block      int
-	payloadMap map[int][]int
+	payloadMap map[int]int
 }
 
 func newStorageReader(store *storage.Store, md5Hash string) *storageResultReader {
 	reader := &storageResultReader{
 		storage:    store,
 		payloadMD5: md5Hash,
-		payloadMap: make(map[int][]int),
+		payloadMap: make(map[int]int),
 		block:      0,
 		page:       0,
 	}
@@ -163,7 +163,7 @@ func (r *storageResultReader) init() {
 func (r *storageResultReader) Read() (map[string]interface{}, error) {
 	blockMap := make(map[string]interface{})
 	var err error
-	if r.block == len(r.payloadMap[r.keys[r.page]]) {
+	if r.block >= r.payloadMap[r.page] {
 		if r.page+1 < len(r.keys) {
 			//achieve next page
 			r.page++
@@ -182,7 +182,7 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 	}
 	for field, value := range blockMap {
 		if strings.Contains(field, "details") {
-			details := map[string]interface{}{}
+			details := []map[string]interface{}{}
 			detailsReader := newStorageReader(r.storage, value.(string))
 			for {
 				detailsBlock, detailsErr := detailsReader.Read()
@@ -200,14 +200,18 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 						continue
 					}
 				}
-				details = detailsBlock
+				details = append(details, detailsBlock)
 				// we are just breaking here because we got all details recursively
 				// if we will continue to read storage, next iteration will returns EOF
 				// just to save a time break loop manualy
-				break
+				//break
 			}
 			if len(details) > 0 {
-				blockMap[field] = details
+				if len(details) == 1 {
+					blockMap[field] = details[0]
+				} else {
+					blockMap[field] = details
+				}
 			}
 		}
 	}
