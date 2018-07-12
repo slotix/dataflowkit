@@ -1,0 +1,10 @@
+FROM golang:latest as builder
+WORKDIR /go/src/github.com/slotix/dataflowkit/cmd/fetch.d
+ADD . /go/src/github.com/slotix/dataflowkit
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o fetch.d .
+
+FROM alpine:latest as fetch.d
+RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
+COPY --from=builder /go/src/github.com/slotix/dataflowkit/cmd/fetch.d/fetch.d .
+EXPOSE 8000
+ENTRYPOINT fetch.d
