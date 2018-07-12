@@ -64,8 +64,8 @@ func Test_server(t *testing.T) {
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host:         fetchServerAddr,
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
+		//ReadTimeout:  60 * time.Second,
+		//WriteTimeout: 60 * time.Second,
 	}
 	fetchServer := fetch.Start(fetchServerCfg)
 	//Stop server

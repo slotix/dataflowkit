@@ -73,10 +73,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	wg := sync.WaitGroup{}
 	uid := string(utils.GenerateCRC32([]byte(task.Payload.PayloadMD5)))
 	mx := sync.Mutex{}
-	storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
-	if err != nil {
-		logger.Error(err)
-	}
+	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	tw := taskWorker{
 		wg:              &wg,
@@ -123,7 +120,12 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = s.Write(string(uid), &storage.Record{RecordType: storage.INTERMEDIATE, Value: j}, 0)
+	err = s.Write(storage.Record{
+		Type:    storage.INTERMEDIATE,
+		Key:     string(uid),
+		Value:   j,
+		ExpTime: 0,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("Cannot write parse results key map. %s", err.Error())
 	}
@@ -619,10 +621,20 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 					blockResults[part.Name+"_details"] = uid //generate uid resDetails.AllBlocks()
 					j, err := json.Marshal(tw.keys)
 					if err != nil {
-						logger.Error(fmt.Errorf("Failed to marshal details key. %s", err.Error()))
+						//return nil, err
+						logger.Warning(fmt.Errorf("Failed to marshal details key. %s", err.Error()))
 						continue
 					}
-					(*wrk.storage).Write(string(uid), &storage.Record{RecordType: storage.INTERMEDIATE, Value: j}, 0)
+					err = (*wrk.storage).Write(storage.Record{
+						Type:    storage.INTERMEDIATE,
+						Key:     string(uid),
+						Value:   j,
+						ExpTime: 0,
+					})
+					if err != nil {
+						logger.Warning(fmt.Errorf("Failed to write %s. %s", string(uid), err.Error()))
+						continue
+					}
 				}
 			}
 			//********* end details
@@ -643,7 +655,12 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 					key = fmt.Sprintf("%s-0-%d", block.hash, task.BlockCounter)
 					task.BlockCounter++
 				}
-				err = (*wrk.storage).Write(key, &storage.Record{RecordType: storage.INTERMEDIATE, Value: output}, 0)
+				err = (*wrk.storage).Write(storage.Record{
+					Type:    storage.INTERMEDIATE,
+					Key:     key,
+					Value:   output,
+					ExpTime: 0,
+				})
 				if err != nil {
 					logger.Error(fmt.Errorf("Failed to write %s. %s", key, err.Error()))
 				}

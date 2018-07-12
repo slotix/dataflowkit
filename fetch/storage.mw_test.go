@@ -20,7 +20,7 @@ var (
 func init() {
 	var svc Service
 	svc = FetchService{}
-	s = storage.NewStore(storage.Diskv)
+	s = storage.NewStore("diskv")
 	mw = storageMiddleware{
 		storage: s,
 		Service: svc,
@@ -31,7 +31,7 @@ func Test_storageMiddleware(t *testing.T) {
 	r := mux.NewRouter()
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Conent-Type", "text/html")
-		w.Write(IndexContent)
+		w.Write(helloContent)
 	})
 	ts := httptest.NewServer(r)
 	defer ts.Close()
@@ -69,7 +69,7 @@ func Test_IGNORE_CACHE_INFO(t *testing.T) {
 	r := mux.NewRouter()
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Conent-Type", "text/html")
-		w.Write(IndexContent)
+		w.Write(helloContent)
 	})
 	ts := httptest.NewServer(r)
 	defer ts.Close()

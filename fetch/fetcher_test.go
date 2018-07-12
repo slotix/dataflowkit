@@ -3,61 +3,67 @@ package fetch
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
 	"net/url"
-	"strconv"
 	"testing"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/slotix/dataflowkit/splash"
-
 	"github.com/spf13/viper"
+
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAssembleRobotstxtURL(t *testing.T){
-	res, err := AssembleRobotstxtURL("http://example.com")
-	assert.NoError(t, err)
-	assert.Equal(t, "http://example.com/robots.txt", res,)
+// func TestAssembleRobotstxtURL(t *testing.T) {
+// 	res, err := AssembleRobotstxtURL("http://example.com")
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, "http://example.com/robots.txt", res)
+// }
+func TestBaseFetcher_Proxy(t *testing.T) {
+	viper.Set("PROXY", "http://127.0.0.1:3128")
+	//viper.Set("PROXY", "")
+	fetcher := NewFetcher(Base)
+	assert.NotNil(t, fetcher)
 }
 
+
 func TestBaseFetcher_Fetch(t *testing.T) {
-	r := mux.NewRouter()
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Conent-Type", "text/html")
-		w.Write(IndexContent)
-	})
-	r.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Conent-Type", "text/html")
-		w.Write([]byte(RobotsContent))
-	})
-	r.HandleFunc("/allowed", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		w.Write([]byte("allowed"))
-	})
-	r.HandleFunc("/disallowed", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		w.Write([]byte("disallowed"))
-	})
+	// r := mux.NewRouter()
+	// r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	w.Header().Set("Conent-Type", "text/html")
+	// 	w.Write(IndexContent)
+	// })
+	// r.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+	// 	w.Header().Set("Conent-Type", "text/html")
+	// 	w.Write([]byte(RobotsContent))
+	// })
+	// r.HandleFunc("/allowed", func(w http.ResponseWriter, r *http.Request) {
+	// 	w.WriteHeader(200)
+	// 	w.Write([]byte("allowed"))
+	// })
+	// r.HandleFunc("/disallowed", func(w http.ResponseWriter, r *http.Request) {
+	// 	w.WriteHeader(200)
+	// 	w.Write([]byte("disallowed"))
+	// })
 
-	r.HandleFunc("/status/{status}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		st, err := strconv.Atoi(vars["status"])
-		if err != nil {
-			fmt.Println(err)
-		}
-		w.WriteHeader(st)
-		w.Write([]byte(vars["status"]))
-	})
+	// r.HandleFunc("/status/{status}", func(w http.ResponseWriter, r *http.Request) {
+	// 	vars := mux.Vars(r)
+	// 	st, err := strconv.Atoi(vars["status"])
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 	}
+	// 	w.WriteHeader(st)
+	// 	w.Write([]byte(vars["status"]))
+	// })
 
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-	/////
+	// ts := httptest.NewServer(r)
+	// defer ts.Close()
+	// /////
+	//tsURL := "http://localhost:12345"
+	viper.Set("PROXY", "")
 	fetcher := NewFetcher(Base)
 	req := BaseFetcherRequest{
-		URL:   ts.URL,
+		//URL:    ts.URL,
+		URL:    tsURL + "/hello",
 		Method: "GET",
 	}
 	resp, err := fetcher.Response(req)
@@ -66,20 +72,20 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 	assert.NoError(t, err, "Expected no error")
 	data, err := ioutil.ReadAll(html)
 	assert.NoError(t, err, "Expected no error")
-	assert.Equal(t, IndexContent, data)
+	assert.Equal(t, helloContent, data)
 	assert.Equal(t, req.GetURL(), resp.GetURL())
 	assert.Equal(t, time.Now().UTC().Add(24*time.Hour).Truncate(1*time.Minute), resp.GetExpires().Truncate(1*time.Minute), "Expires default value is 24 hours")
 
 	//Test invalid Response Status codes.
 	urls := []string{
-		ts.URL + "/status/404",
-		ts.URL + "/status/400",
-		ts.URL + "/status/401",
-		ts.URL + "/status/403",
-		ts.URL + "/status/500",
-		ts.URL + "/status/502",
-		ts.URL + "/status/504",
-		ts.URL + "/status/600",
+		tsURL + "/status/404",
+		tsURL + "/status/400",
+		tsURL + "/status/401",
+		tsURL + "/status/403",
+		tsURL + "/status/500",
+		tsURL + "/status/502",
+		tsURL + "/status/504",
+		tsURL + "/status/600",
 		"http://google",
 		"google.com",
 	}
@@ -93,7 +99,7 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 	}
 	//Test 200 response
 	req = BaseFetcherRequest{
-		URL: ts.URL,
+		URL: tsURL,
 	}
 	content, err := fetcher.Fetch(req)
 	assert.NoError(t, err)
@@ -101,7 +107,7 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 
 	//Test Form Data
 	req = BaseFetcherRequest{
-		URL:      ts.URL,
+		URL:      tsURL,
 		FormData: "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1",
 	}
 
@@ -126,34 +132,33 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 	assert.Equal(t, "base", req.Type(), "Test BaseFetcherRequest Type()")
 	//fetch robots.txt data
 	resp, err = fetcher.Response(BaseFetcherRequest{
-		URL:    ts.URL + "/robots.txt",
+		URL:    tsURL + "/robots.txt",
 		Method: "GET",
 	})
 	bfResponse := resp.(*BaseFetcherResponse)
 	//t.Log(string(bfResponse.HTML))
-	assert.Equal(t, RobotsContent, bfResponse.HTML)
+	assert.Equal(t, robotsContent, bfResponse.HTML)
 
 }
 
-func TestSplashFetcher_Fetch(t *testing.T) {
-	r := mux.NewRouter()
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Conent-Type", "text/html")
-		w.Write(IndexContent)
-	})
 
-	ts := httptest.NewServer(r)
-	defer ts.Close()
+func TestSplashFetcher_Fetch(t *testing.T) {
+	// r := mux.NewRouter()
+	// r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	w.Header().Set("Conent-Type", "text/html")
+	// 	w.Write(IndexContent)
+	// })
+
+	// ts := httptest.NewServer(r)
+	// defer ts.Close()
 	//////
 
-	viper.Set("SPLASH", "127.0.0.1:8050")
-	viper.Set("SPLASH_TIMEOUT", 20)
-	viper.Set("SPLASH_RESOURCE_TIMEOUT", 30)
-	viper.Set("SPLASH_WAIT", 0.5)
-
+	// viper.Set("SPLASH", "127.0.0.1:8050")
+	// viper.Set("SPLASH_TIMEOUT", 20)
+	// viper.Set("SPLASH_RESOURCE_TIMEOUT", 30)
+	// viper.Set("SPLASH_WAIT", 0.5)
+	viper.Set("PROXY", "")
 	fetcher := NewFetcher(Splash)
-	//assert.Nil(t, err, "Expected no error")
-
 	req := splash.Request{
 		URL: "http://testserver:12345",
 	}
@@ -182,6 +187,7 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 	// 	assert.Error(t, err, "error returned")
 	// }
 	//Test Host()
+	
 	req = splash.Request{
 		URL: "http://testserver:12345/status/200",
 		//URL: ts.URL + "/index.html",

@@ -14,15 +14,18 @@ func TestHealthCheckHandler(t *testing.T) {
 	checkers := []Checker{
 		ParseConn{Host: host},
 		FetchConn{Host: host},
-		RedisConn{
-			Network: "tcp",
-			Host:    "127.0.0.1:6379",
-		},
+		// RedisConn{
+		// 	Network: "tcp",
+		// 	Host:    "127.0.0.1:6379",
+		// },
 		SplashConn{Host: "127.0.0.1:8050"},
 	}
 	status := CheckServices(checkers...)
-	eq := reflect.DeepEqual(map[string]string{"DFK Parse Service": "Ok", "DFK Fetch Service": "Ok", "Redis": "Ok", "Splash": "Ok"}, status)
+	//eq := reflect.DeepEqual(map[string]string{"DFK Parse Service": "Ok", "DFK Fetch Service": "Ok", "Redis": "Ok", "Splash": "Ok"}, status)
+	t.Log(status)
+	eq := reflect.DeepEqual(map[string]string{"DFK Parse Service": "Ok", "DFK Fetch Service": "Ok", "Splash": "Ok"}, status)
 	assert.Equal(t, eq, true)
+
 
 	checkers = []Checker{
 		ParseConn{Host: invalidhost},
