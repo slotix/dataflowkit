@@ -73,3 +73,12 @@ func RandomF() float64 {
 	rand.Seed(time.Now().Unix())
 	return rand.Float64() + 0.5
 }
+
+func ArrayContains(a []string, x string) bool {
+	for _, n := range a {
+		if x == n {
+			return true
+		}
+	}
+	return false
+}
