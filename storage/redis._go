@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/garyburd/redigo/redis"
-	"github.com/spf13/viper"
 	"gopkg.in/redsync.v1"
 )
 
@@ -21,13 +20,22 @@ type RedisConn struct {
 }
 
 // NewRedisConn initializes parameters for new Redis Connection
-func NewRedisConn() RedisConn {
+// func NewRedisConn() RedisConn {
+// 	return RedisConn{
+// 		host:       viper.GetString("REDIS"),
+// 		network:    viper.GetString("REDIS_NETWORK"),
+// 		password:   viper.GetString("REDIS_PASSWORD"),
+// 		db:         viper.GetInt("REDIS_DB"),
+// 		socketPath: viper.GetString("REDIS_SOCKET_PATH"),
+// 	}
+// }
+
+func NewRedisConn(host, network, password string, db int) RedisConn {
 	return RedisConn{
-		host:       viper.GetString("REDIS"),
-		network:    viper.GetString("REDIS_NETWORK"),
-		password:   viper.GetString("REDIS_PASSWORD"),
-		db:         viper.GetInt("REDIS_DB"),
-		socketPath: viper.GetString("REDIS_SOCKET_PATH"),
+		host:       host,
+		network:    network,
+		password:   password,
+		db:         db,
 	}
 }
 
@@ -87,11 +95,11 @@ func val(conn redis.Conn, key string) (value []byte, err error) {
 }
 
 // Read retrieves value from the specified key.
-func (c RedisConn) Read(key string, rectType string) (value []byte, err error) {
+func (c RedisConn) Read(rec Record) (value []byte, err error) {
 	//Get a key
 	conn := c.open()
 	defer conn.Close()
-	value, err = val(conn, key)
+	value, err = val(conn, rec.Key)
 	return
 }
 
@@ -129,12 +137,12 @@ func (b *RedisConn) SetValue(key string, value interface{}) error {
 }
 
 // Write saves key/ value pair along with Expiration time to Redis storage.
-func (s RedisConn) Write(key string, rec *Record, expTime int64) error {
-	err := s.SetValue(key, rec.Value)
+func (s RedisConn) Write(rec Record) error {
+	err := s.SetValue(rec.Key, rec.Value)
 	if err != nil {
 		return err
 	}
-	err = s.SetExpireAt(key, expTime)
+	err = s.SetExpireAt(rec.Key, rec.ExpTime)
 	if err != nil {
 		return err
 	}
@@ -177,10 +185,10 @@ func expired(conn redis.Conn, key string) bool {
 }
 
 // Expired returns either specified key is expired or not.
-func (s RedisConn) Expired(key string) bool {
+func (s RedisConn) Expired(rec Record) bool {
 	conn := s.open()
 	defer conn.Close()
-	return expired(conn, key)
+	return expired(conn, rec.Key)
 }
 
 func ttl(conn redis.Conn, key string) (int64, error) {
@@ -215,10 +223,10 @@ func deleteKey(conn redis.Conn, key string) error {
 }
 
 //Delete deletes an object from Redis storage with specified key
-func (b RedisConn) Delete(key string) error {
+func (b RedisConn) Delete(rec Record) error {
 	conn := b.open()
 	defer conn.Close()
-	err := deleteKey(conn, key)
+	err := deleteKey(conn, rec.Key)
 	return err
 }
 

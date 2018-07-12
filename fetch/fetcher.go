@@ -226,7 +226,6 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 		req.Header.Add("Content-Length", strconv.Itoa(len(formData.Encode())))
 	}
 
-
 	resp, err = bf.client.Do(req)
 	if err != nil {
 		return nil, &errs.BadRequest{err}

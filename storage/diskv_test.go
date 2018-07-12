@@ -8,36 +8,60 @@ import (
 )
 
 func Test_diskv(t *testing.T) {
+	viper.Set("ITEM_EXPIRE_IN", 3600)
 	d := newDiskvConn("", 1024*1024)
 	testValue := []byte("testValue")
-	viper.Set("ITEM_EXPIRE_IN", 3600)
 	testKey := "testKey"
-	err := d.Write(testKey, testValue, 0)
+	rec := Record{
+		Key:     testKey,
+		Value:   testValue,
+		ExpTime: 100,
+	}
+
+	err := d.Write(rec)
 	assert.NoError(t, err, "Expected no error")
 
-	err = d.Write("", testValue, 0)
-	assert.Error(t, err, "Expected empty key error")
-	value, err := d.Read("NonExistent key")
-	assert.Error(t, err, "Expected error")
-	
-	value, err = d.Read(testKey)
+	value, err := d.Read(Record{
+		Type: rec.Type,
+		Key:  rec.Key,
+	})
 	assert.Equal(t, testValue, value, "Expected equal")
 
-	expired := d.Expired(testKey)
+	//Write record with Empty key
+	recEmptyKey := Record{
+		Key:     "",
+		Value:   testValue,
+		ExpTime: 0,
+	}
+	err = d.Write(recEmptyKey)
+	assert.Error(t, err, "Expected empty key error")
+
+	nonExistentRec := Record{
+		Key: "NonExistent key",
+	}
+	// Read NonExistent key
+	value, err = d.Read(nonExistentRec)
+	assert.Error(t, err, "Expected error")
+
+	expired := d.Expired(rec)
 	assert.Equal(t, expired, false, "Expected non expired value")
 
-	expired = d.Expired("nonExistentKey")
+	expired = d.Expired(nonExistentRec)
 	assert.Equal(t, expired, true, "Expected true for non NonExistentKey")
 
-
-	err = d.Delete(testKey)
+	err = d.Delete(rec)
 	assert.NoError(t, err, "Expected no error")
-	err = d.Delete("NonExistedKey")
+	err = d.Delete(nonExistentRec)
 	assert.Error(t, err, "Expected error")
 
 	//Add two values to storage
-	err = d.Write(testKey, testValue, 0)
-	err = d.Write("secondKey", []byte("testValue"), 0)
+	err = d.Write(rec)
+
+	err = d.Write(Record{
+		Key:     "OneMoreKey",
+		Value:   []byte("OneMoreValue"),
+		ExpTime: 100,
+	})
 	//erase all items
 	err = d.DeleteAll()
 	assert.NoError(t, err, "Expected no error")

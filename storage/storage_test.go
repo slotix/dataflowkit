@@ -8,14 +8,10 @@ import (
 
 func TestNewStore(t *testing.T) {
 	var store Store
-	st, err := TypeString("unknownStorage")
-	assert.Error(t, err)
-	store = NewStore(st)
-	for _, storeType := range []string{"S3", "Spaces", "Diskv", "Redis"} {
-		st, err := TypeString(storeType)
-		assert.NoError(t, err)
-		store = NewStore(st)
+	sType := "unknownStorage"
+	store = NewStore(sType)
+	for _, sType := range []string{ /*"S3", "Spaces",*/ "Diskv", "Cassandra"} {
+		store = NewStore(sType)
 		assert.NotNil(t, store)
 	}
-
 }

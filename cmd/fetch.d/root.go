@@ -136,23 +136,22 @@ func init() {
 	RootCmd.Flags().Float64VarP(&splashWait, "SPLASH_WAIT", "", 0.5, "Time in seconds to wait until js scripts loaded.")
 
 	//set here default type of storage
-	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: S3, Spaces, Redis, Diskv")
+	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: Diskv, Cassandra")
 	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", true, "If true no data will be saved to storage. This flag forces fetcher to bypass storage middleware.")
 	RootCmd.Flags().BoolVarP(&ignoreCacheInfo, "IGNORE_CACHE_INFO", "", false, "If a website is not cachable by some reason, ignore this and use cached copy if any. Please don't set it to true in production")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
-	RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", "$HOME/.spaces/credentials", "Digital Ocean Spaces Configuration file")
-	RootCmd.Flags().StringVarP(&spacesEndpoint, "SPACES_ENDPOINT", "", "https://ams3.digitaloceanspaces.com", "Digital Ocean Spaces Endpoint Address")
-	RootCmd.Flags().StringVarP(&s3Region, "S3_REGION", "", "us-east-1", "AWS S3 or Digital Ocean Spaces region")
-	RootCmd.Flags().StringVarP(&DFKBucket, "DFK_BUCKET", "", "dfk-storage", "AWS S3 or Digital Ocean Spaces bucket name for storing fetch results")
-
-	RootCmd.Flags().StringVarP(&redisHost, "REDIS", "r", "127.0.0.1:6379", "Redis host address")
-	RootCmd.Flags().IntVarP(&redisExpire, "REDIS_EXPIRE", "", 3600, "Default Redis expire value in seconds")
-	RootCmd.Flags().StringVarP(&redisNetwork, "REDIS_NETWORK", "", "tcp", "Redis Network")
-	RootCmd.Flags().StringVarP(&redisPassword, "REDIS_PASSWORD", "", "", "Redis Password")
-	RootCmd.Flags().IntVarP(&redisDB, "REDIS_DB", "", 0, "Redis DB")
-	RootCmd.Flags().StringVarP(&redisSocketPath, "REDIS_SOCKET_PATH", "", "", "Redis Socket Path")
-
 	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "c", "127.0.0.1", "Cassandra host address")
+	// RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", "$HOME/.spaces/credentials", "Digital Ocean Spaces Configuration file")
+	// RootCmd.Flags().StringVarP(&spacesEndpoint, "SPACES_ENDPOINT", "", "https://ams3.digitaloceanspaces.com", "Digital Ocean Spaces Endpoint Address")
+	// RootCmd.Flags().StringVarP(&s3Region, "S3_REGION", "", "us-east-1", "AWS S3 or Digital Ocean Spaces region")
+	// RootCmd.Flags().StringVarP(&DFKBucket, "DFK_BUCKET", "", "dfk-storage", "AWS S3 or Digital Ocean Spaces bucket name for storing fetch results")
+
+	// RootCmd.Flags().StringVarP(&redisHost, "REDIS", "r", "127.0.0.1:6379", "Redis host address")
+	// RootCmd.Flags().IntVarP(&redisExpire, "REDIS_EXPIRE", "", 3600, "Default Redis expire value in seconds")
+	// RootCmd.Flags().StringVarP(&redisNetwork, "REDIS_NETWORK", "", "tcp", "Redis Network")
+	// RootCmd.Flags().StringVarP(&redisPassword, "REDIS_PASSWORD", "", "", "Redis Password")
+	// RootCmd.Flags().IntVarP(&redisDB, "REDIS_DB", "", 0, "Redis DB")
+	// RootCmd.Flags().StringVarP(&redisSocketPath, "REDIS_SOCKET_PATH", "", "", "Redis Socket Path")
 
 	//viper.AutomaticEnv() // read in environment variables that match
 
@@ -187,29 +186,16 @@ func init() {
 	//viper.BindPFlag("ITEM_EXPIRE_IN", RootCmd.Flags().Lookup("ITEM_EXPIRE_IN"))
 	viper.BindPFlag("SKIP_STORAGE_MW", RootCmd.Flags().Lookup("SKIP_STORAGE_MW"))
 	viper.BindPFlag("IGNORE_CACHE_INFO", RootCmd.Flags().Lookup("IGNORE_CACHE_INFO"))
-	viper.BindPFlag("SPACES_CONFIG", RootCmd.Flags().Lookup("SPACES_CONFIG"))
-	viper.BindPFlag("SPACES_ENDPOINT", RootCmd.Flags().Lookup("SPACES_ENDPOINT"))
+	// viper.BindPFlag("SPACES_CONFIG", RootCmd.Flags().Lookup("SPACES_CONFIG"))
+	// viper.BindPFlag("SPACES_ENDPOINT", RootCmd.Flags().Lookup("SPACES_ENDPOINT"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
-	viper.BindPFlag("S3_REGION", RootCmd.Flags().Lookup("S3_REGION"))
-	viper.BindPFlag("DFK_BUCKET", RootCmd.Flags().Lookup("DFK_BUCKET"))
-	viper.BindPFlag("REDIS", RootCmd.Flags().Lookup("REDIS"))
-	viper.BindPFlag("REDIS_EXPIRE", RootCmd.Flags().Lookup("REDIS_EXPIRE"))
-	viper.BindPFlag("REDIS_NETWORK", RootCmd.Flags().Lookup("REDIS_NETWORK"))
-	viper.BindPFlag("REDIS_PASSWORD", RootCmd.Flags().Lookup("REDIS_PASSWORD"))
-	viper.BindPFlag("REDIS_DB", RootCmd.Flags().Lookup("REDIS_DB"))
-	viper.BindPFlag("REDIS_SOCKET_PATH", RootCmd.Flags().Lookup("REDIS_SOCKET_PATH"))
-
 	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
-
-	//viper.SetConfigType("yaml")
-	//viper.SetConfigName("conf")
-	//viper.AddConfigPath("$HOME/go/src/github.com/slotix/dataflowkit/fetch/fetch.d/")
-	//err := viper.ReadInConfig() // Find and read the config file
-	//if err != nil {             // Handle errors reading the config file
-	//	panic(fmt.Errorf("Fatal error config file: %s \n", err))
-	//}
-	//err := viper.WriteConfig()
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
+	// viper.BindPFlag("S3_REGION", RootCmd.Flags().Lookup("S3_REGION"))
+	// viper.BindPFlag("DFK_BUCKET", RootCmd.Flags().Lookup("DFK_BUCKET"))
+	// viper.BindPFlag("REDIS", RootCmd.Flags().Lookup("REDIS"))
+	// viper.BindPFlag("REDIS_EXPIRE", RootCmd.Flags().Lookup("REDIS_EXPIRE"))
+	// viper.BindPFlag("REDIS_NETWORK", RootCmd.Flags().Lookup("REDIS_NETWORK"))
+	// viper.BindPFlag("REDIS_PASSWORD", RootCmd.Flags().Lookup("REDIS_PASSWORD"))
+	// viper.BindPFlag("REDIS_DB", RootCmd.Flags().Lookup("REDIS_DB"))
+	// viper.BindPFlag("REDIS_SOCKET_PATH", RootCmd.Flags().Lookup("REDIS_SOCKET_PATH"))
 }

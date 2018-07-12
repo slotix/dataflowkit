@@ -98,12 +98,16 @@ func Start(cfg Config) *HTMLServer {
 		}
 		render(w, r, indexTpl, "base", vars)
 	})
+	r.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Conent-Type", "text/html")
+		w.Write([]byte(`<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`))
+	})
 	r.HandleFunc("/persons/page-{page}", personsHandler)
 	r.HandleFunc("/persons/{id}", personDetailsHandler)
 	r.HandleFunc("/persons-table", personTableHandler)
 	r.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Conent-Type", "text/html")
-		w.Write([]byte("\n\t\tUser-agent: *\n\t\tAllow: /allowed\n\t\tDisallow: /disallowed\n\t\t"))
+		w.Write([]byte("\n\t\tUser-agent: *\n\t\tAllow: /allowed\n\t\tDisallow: /disallowed\n\t\tDisallow: /redirect\n\t\t"))
 	})
 	r.HandleFunc("/allowed", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -112,6 +116,16 @@ func Start(cfg Config) *HTMLServer {
 	r.HandleFunc("/disallowed", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(403)
 		w.Write([]byte("disallowed"))
+	})
+
+	//handle redirects
+	r.HandleFunc("/redirect", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/redirected", http.StatusMovedPermanently)
+	})
+
+	r.HandleFunc("/redirected", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("Redirected"))
 	})
 
 	r.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {

@@ -47,12 +47,13 @@ func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 
 	}
 	if req.GetUserToken() != "" {
-		storageType, err := storage.TypeString(viper.GetString("STORAGE_TYPE"))
-		if err != nil {
-			return nil, err
-		}
+		storageType := viper.GetString("STORAGE_TYPE")
 		s = storage.NewStore(storageType)
-		cookies, err = s.Read(req.GetUserToken(), storage.COOKIES)
+		//cookies, err = s.Read(req.GetUserToken(), storage.COOKIES)
+		cookies, err = s.Read(storage.Record{
+			Type:storage.COOKIES,
+			Key:req.GetUserToken(),
+			})
 		if err != nil {
 			logger.Warningf("Failed to read cookie for %s. %s", req.GetUserToken(), err.Error())
 		}
@@ -92,7 +93,14 @@ func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = s.Write(req.GetUserToken(), &storage.Record{RecordType: storage.COOKIES, Value: cookies}, 0)
+		//err = s.Write(req.GetUserToken(), &storage.Record{RecordType: storage.COOKIES, Value: cookies}, 0)
+		err = s.Write(storage.Record{
+			Type: storage.COOKIES,
+			Key: req.GetUserToken(),
+			Value: cookies,
+			ExpTime: 0,
+		})
+		
 		if err != nil {
 			logger.Warningf("Failed to write cookie for %s. %s", req.GetUserToken(), err.Error())
 		}

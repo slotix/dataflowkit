@@ -33,11 +33,11 @@ func newS3Conn(config *aws.Config, bucket string) S3Conn {
 }
 
 // Read returns a value of specified key from AWS S3/ DO Spaces
-func (c S3Conn) Read(key string, recType string) (value []byte, err error) {
+func (c S3Conn) Read(rec Record) (value []byte, err error) {
 	sess := session.Must(session.NewSession(c.config))
 	//svc := s3.New(sess)
 	downloader := s3manager.NewDownloader(sess)
-	value, err = download(downloader, c.bucket, key)
+	value, err = download(downloader, c.bucket, rec.Key)
 
 	return
 }
@@ -77,10 +77,10 @@ func upload(u s3manageriface.UploaderAPI, bucket, key string, value []byte, expT
 }
 
 // Write uploads key/ value pair along with Expiration time information to  AWS S3 Storage/ Digital Ocean Spaces.
-func (c S3Conn) Write(key string, rec *Record, expTime int64) error {
+func (c S3Conn) Write(rec Record) error {
 	sess := session.Must(session.NewSession(c.config))
 	uploader := s3manager.NewUploader(sess)
-	err := upload(uploader, c.bucket, key, rec.Value, expTime)
+	err := upload(uploader, c.bucket, rec.Key, rec.Value, rec.ExpTime)
 	return err
 }
 
@@ -118,10 +118,10 @@ func expiredKey(obj *s3.GetObjectOutput, storageExpire int64) bool {
 }
 
 // Expired returns Expired value of specified key from AWS S3 Storage/ Digital Ocean Spaces.
-func (c S3Conn) Expired(key string) bool {
+func (c S3Conn) Expired(rec Record) bool {
 	sess := session.Must(session.NewSession(c.config))
 	svc := s3.New(sess)
-	obj, err := getObject(svc, c.bucket, key)
+	obj, err := getObject(svc, c.bucket, rec.Key)
 	if err != nil {
 		logger.Warn("error getting object")
 		return true
@@ -157,10 +157,10 @@ func delete(svc s3iface.S3API, bucket, key string) (result *s3.DeleteObjectOutpu
 }
 
 //Delete deletes an object from S3 bucket with specified key
-func (c S3Conn) Delete(key string) error {
+func (c S3Conn) Delete(rec Record) error {
 	sess := session.Must(session.NewSession(c.config))
 	svc := s3.New(sess)
-	_, err := delete(svc, c.bucket, key)
+	_, err := delete(svc, c.bucket, rec.Key)
 	return err
 }
 
