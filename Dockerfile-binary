@@ -1,0 +1,13 @@
+# go build dfk binary files
+FROM golang:latest as builder
+ADD . /go/src/github.com/slotix/dataflowkit
+WORKDIR /go/src/github.com/slotix/dataflowkit/cmd/fetch.d
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o fetch.d .
+WORKDIR /go/src/github.com/slotix/dataflowkit/cmd/parse.d
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o parse.d .
+WORKDIR /go/src/github.com/slotix/dataflowkit/testserver
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o testserver .
+#WORKDIR /go/src/github.com/slotix/dataflowkit/webserver
+#RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o webserver .
+
+
