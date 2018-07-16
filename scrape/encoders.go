@@ -59,7 +59,11 @@ func (e JSONEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error)
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	// open output file
-	sFileName := payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".json"
+	path := viper.GetString("RESULTS_DIR")
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, os.ModeDir)
+	}
+	sFileName := viper.GetString("RESULTS_DIR") + "/" + payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".json"
 	fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
 	if err != nil {
 		return nil, err
@@ -269,7 +273,11 @@ func (e CSVEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) 
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	// open output file
-	sFileName := payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".csv"
+	path := viper.GetString("RESULTS_DIR")
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, os.ModeDir)
+	}
+	sFileName := viper.GetString("RESULTS_DIR") + "/" + payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".csv"
 	fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
 	if err != nil {
 		return nil, err
@@ -390,7 +398,12 @@ func (e XMLEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) 
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	// open output file
-	sFileName := payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".xml"
+	path := viper.GetString("RESULTS_DIR")
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, os.ModeDir)
+	}
+	sFileName := viper.GetString("RESULTS_DIR") + "/" + payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".xml"
+
 	fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
 	if err != nil {
 		return nil, err
