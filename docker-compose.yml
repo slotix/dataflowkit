@@ -24,7 +24,7 @@ services:
       - DFK_FETCH=fetch:8000
       - DISKV_BASE_DIR=./diskv
     volumes:
-      - diskv:/diskv
+      - ./diskv:/diskv
     ports:
       - "8000:8000"
     #env_file: 
@@ -39,8 +39,10 @@ services:
       - DFK_FETCH=fetch:8000
       - DFK_PARSE=parse:8001
       - DISKV_BASE_DIR=./diskv
+      - RESULTS_DIR=./results
     volumes:
-      - diskv:/diskv
+      - ./diskv:/diskv
+      - ./results:/results
     ports:
       - "8001:8001"
     depends_on:
@@ -48,3 +50,4 @@ services:
     restart: always
 volumes:
   diskv:
+  results:
