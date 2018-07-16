@@ -185,13 +185,14 @@ type Task struct {
 	//Results
 	Parsed bool
 	// Block counter
-	BlockCounter uint32
+	BlockCounter []uint32
+	// storage using to write result into corresponding storage type
+	storage storage.Store
 }
 
 type worker struct {
 	wg      *sync.WaitGroup
 	scraper *Scraper
-	storage *storage.Store
 	mx      *sync.Mutex
 }
 
@@ -199,11 +200,10 @@ type taskWorker struct {
 	wg              *sync.WaitGroup
 	UID             string
 	currentPageNum  int
-	keys            *map[int]uint32
 	scraper         *Scraper
-	storage         *storage.Store
 	mx              *sync.Mutex
 	useBlockCounter bool
+	keys            map[int][]uint32
 }
 
 type blockStruct struct {
@@ -211,6 +211,7 @@ type blockStruct struct {
 	key             string
 	hash            string
 	useBlockCounter bool
+	keys            *map[int][]uint32
 }
 
 type fetchInfo struct {

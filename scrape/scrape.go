@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -44,13 +45,15 @@ func NewTask(p Payload) *Task {
 	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
 	id := ksuid.New()
 	//tQueue := make(chan *Scraper, 100)
+	storageType := viper.GetString("STORAGE_TYPE")
 	return &Task{
 		ID:           id.String(),
 		Payload:      p,
 		Errors:       []error{},
 		Robots:       make(map[string]*robotstxt.RobotsData),
 		Parsed:       false,
-		BlockCounter: 0,
+		BlockCounter: []uint32{},
+		storage:      storage.NewStore(storageType),
 	}
 
 }
@@ -69,21 +72,17 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		go task.fetchWorker()
 	}
 	// Array of page keys
-	k := make(map[int]uint32)
 	wg := sync.WaitGroup{}
 	uid := string(utils.GenerateCRC32([]byte(task.Payload.PayloadMD5)))
 	mx := sync.Mutex{}
-	storageType := viper.GetString("STORAGE_TYPE")
-	s := storage.NewStore(storageType)
 	tw := taskWorker{
 		wg:              &wg,
 		currentPageNum:  0,
 		scraper:         scraper,
-		keys:            &k,
 		UID:             uid,
-		storage:         &s,
 		mx:              &mx,
 		useBlockCounter: false,
+		keys:            make(map[int][]uint32),
 	}
 	wg.Add(1)
 	_, err = task.scrape(&tw)
@@ -112,15 +111,15 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	}
 	close(fetchCannel)
 
-	if task.BlockCounter > 0 {
-		(*tw.keys)[0] = task.BlockCounter
+	if len(task.BlockCounter) > 0 {
+		tw.keys[0] = task.BlockCounter
 	}
 
 	j, err := json.Marshal(tw.keys)
 	if err != nil {
 		return nil, err
 	}
-	err = s.Write(storage.Record{
+	err = task.storage.Write(storage.Record{
 		Type:    storage.INTERMEDIATE,
 		Key:     string(uid),
 		Value:   j,
@@ -130,7 +129,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		return nil, fmt.Errorf("Cannot write parse results key map. %s", err.Error())
 	}
 
-	s.Close()
+	task.storage.Close()
 
 	var e encoder
 	switch strings.ToLower(task.Payload.Format) {
@@ -383,10 +382,9 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 					wg:             tw.wg,
 					currentPageNum: curPageNum,
 					scraper:        paginatorScraper,
-					keys:           tw.keys,
 					UID:            tw.UID,
-					storage:        tw.storage,
 					mx:             tw.mx,
+					keys:           tw.keys,
 				}
 				tw.wg.Add(1)
 				go t.scrape(&paginatorTW)
@@ -402,7 +400,6 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	wrk := &worker{
 		wg:      &wg,
 		scraper: tw.scraper,
-		storage: tw.storage,
 		mx:      tw.mx,
 	}
 
@@ -412,17 +409,16 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 		wg.Add(1)
 		go t.blockWorker(blocks, wrk)
 	}
+
 	// Divide this page into blocks
 	for i, blockSel := range blockSelections {
 		ref := fmt.Sprintf("%s-%d-%d", tw.UID, tw.currentPageNum, i)
-		tw.mx.Lock()
-		(*tw.keys)[tw.currentPageNum]++
-		tw.mx.Unlock()
 		block := blockStruct{
 			blockSelection:  blockSel,
 			key:             ref,
 			hash:            tw.UID,
 			useBlockCounter: tw.useBlockCounter,
+			keys:            &tw.keys,
 		}
 		blocks <- &block
 	}
@@ -584,9 +580,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 					//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
 
 					wg := sync.WaitGroup{}
-					k := make(map[int]uint32)
 					var uid string
-					pKeys := &k
 					ubc := false
 					if wrk.scraper.IsPath {
 						uid = block.hash
@@ -594,16 +588,14 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 					} else {
 						uid = string(utils.GenerateCRC32([]byte(r.GetURL())))
 					}
-
 					tw := taskWorker{
 						wg:              &wg,
 						currentPageNum:  0,
 						scraper:         &part.Details,
-						keys:            pKeys,
 						UID:             uid,
-						storage:         wrk.storage,
 						mx:              wrk.mx,
 						useBlockCounter: ubc,
+						keys:            make(map[int][]uint32),
 					}
 					wg.Add(1)
 					log1 = append(log1, part.Details.Request.GetURL())
@@ -625,7 +617,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 						logger.Warning(fmt.Errorf("Failed to marshal details key. %s", err.Error()))
 						continue
 					}
-					err = (*wrk.storage).Write(storage.Record{
+					err = task.storage.Write(storage.Record{
 						Type:    storage.INTERMEDIATE,
 						Key:     string(uid),
 						Value:   j,
@@ -652,10 +644,22 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 				wrk.mx.Lock()
 				key := block.key
 				if block.useBlockCounter {
-					key = fmt.Sprintf("%s-0-%d", block.hash, task.BlockCounter)
-					task.BlockCounter++
+					blockNum := uint32(len(task.BlockCounter))
+					key = fmt.Sprintf("%s-0-%d", block.hash, blockNum)
+					task.BlockCounter = append(task.BlockCounter, blockNum)
+				} else {
+					keys := strings.Split(block.key, "-")
+					pageNum, err := strconv.Atoi(keys[1])
+					if err != nil {
+						logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()))
+					}
+					blockNum, err := strconv.Atoi(keys[2])
+					if err != nil {
+						logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()))
+					}
+					(*block.keys)[pageNum] = append((*block.keys)[pageNum], uint32(blockNum))
 				}
-				err = (*wrk.storage).Write(storage.Record{
+				err = task.storage.Write(storage.Record{
 					Type:    storage.INTERMEDIATE,
 					Key:     key,
 					Value:   output,
