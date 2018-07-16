@@ -113,7 +113,8 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 		sel, err := getCommonAncestor(doc, selectors)
 		//sel, err = findIntersection(doc, selectors)
 		if err != nil {
-			logger.Warn(err)
+			// no common ancestor returned
+			//logger.Warn(err)
 			return nil
 		}
 

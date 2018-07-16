@@ -124,14 +124,14 @@ type storageResultReader struct {
 	page       int
 	keys       []int
 	block      int
-	payloadMap map[int]int
+	payloadMap map[int][]int
 }
 
 func newStorageReader(store *storage.Store, md5Hash string) *storageResultReader {
 	reader := &storageResultReader{
 		storage:    store,
 		payloadMD5: md5Hash,
-		payloadMap: make(map[int]int),
+		payloadMap: make(map[int][]int),
 		block:      0,
 		page:       0,
 	}
@@ -163,7 +163,7 @@ func (r *storageResultReader) init() {
 func (r *storageResultReader) Read() (map[string]interface{}, error) {
 	blockMap := make(map[string]interface{})
 	var err error
-	if r.block >= r.payloadMap[r.page] {
+	if r.block >= len(r.payloadMap[r.keys[r.page]]) {
 		if r.page+1 < len(r.keys) {
 			//achieve next page
 			r.page++
@@ -220,7 +220,7 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 }
 
 func (r *storageResultReader) getValue() (map[string]interface{}, error) {
-	key := fmt.Sprintf("%s-%d-%d", r.payloadMD5, r.page, r.block)
+	key := fmt.Sprintf("%s-%d-%d", r.payloadMD5, r.page, r.payloadMap[r.page][r.block])
 	blockJSON, err := (*r.storage).Read(storage.Record{
 		Type: storage.INTERMEDIATE,
 		Key:  key,
@@ -266,7 +266,7 @@ func (e CSVEncoder) Encode(results *Results) (io.ReadCloser, error) {
 }
 
 func (e CSVEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) {
-	storageType:= viper.GetString("STORAGE_TYPE")
+	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	// open output file
 	sFileName := payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".csv"

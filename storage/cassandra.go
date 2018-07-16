@@ -69,6 +69,16 @@ func (c cassandra) writeIntermediate(key string, value []byte, expTime int64) er
 		if err != nil {
 			return fmt.Errorf("Failed unmarshal parse results. %s", err.Error())
 		}
+		for k, v := range results {
+			_, ok := v.([]interface{})
+			if ok {
+				strValue, err := json.Marshal(v)
+				if err != nil {
+					return fmt.Errorf("Failed to marshal %s array value. %s", key, err.Error())
+				}
+				results[k] = strValue
+			}
+		}
 		q := fmt.Sprintf(writeIntermediateQuery, expTime)
 		return c.session.Query(q, keys[0], keys[1], keys[2], results).Exec()
 	}
@@ -79,10 +89,24 @@ func (c cassandra) writeIntermediate(key string, value []byte, expTime int64) er
 func (c cassandra) readIntermediate(key string) ([]byte, error) {
 	keys := strings.Split(string(key), "-")
 	if len(keys) > 1 {
-		value := map[string]string{}
-		err := c.session.Query(readIntermediateResultQuery, keys[0], keys[1], keys[2]).Scan(&value)
+		value := map[string]interface{}{}
+		get := map[string]string{}
+		err := c.session.Query(readIntermediateResultQuery, keys[0], keys[1], keys[2]).Scan(&get)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read key: %s. %s", key, err.Error())
+		}
+		for k, v := range get {
+			if string([]rune(v)[0]) == "[" {
+				var strArray []string
+				err := json.Unmarshal([]byte(v), &strArray)
+				if err != nil {
+					value[k] = v
+				} else {
+					value[k] = strArray
+				}
+			} else {
+				value[k] = v
+			}
 		}
 		val, err := json.Marshal(value)
 		if err != nil {
