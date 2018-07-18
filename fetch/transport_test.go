@@ -42,32 +42,3 @@ func TestQuery(t *testing.T) {
 		t.Errorf("query did not hit")
 	}
 }
-
-// func TestDecodeSplashFetcherRequest(t *testing.T) {
-// 	ctx := context.Background()
-// 	body := []byte(`{"url":"http://dbconvert.com"}`)
-// 	r := bytes.NewReader(body)
-// 	req := httptest.NewRequest("GET", "http://example.com", r)
-// 	actual, err := DecodeSplashFetcherRequest(ctx, req)
-// 	assert.Nil(t, err, "Expected no error")
-// 	var cookies []*http.Cookie
-// 	expected := splash.Request{
-// 		URL:      "http://dbconvert.com",
-// 		FormData: "", Cookies: cookies, LUA: "",
-// 	}
-// 	assert.Equal(t, expected, actual)
-// }
-
-// func TestDecodeBaseFetcherRequest(t *testing.T) {
-// 	ctx := context.Background()
-// 	body := []byte(`{"url":"http://dbconvert.com"}`)
-// 	r := bytes.NewReader(body)
-// 	req := httptest.NewRequest("GET", "http://example.com", r)
-// 	actual, err := DecodeBaseFetcherRequest(ctx, req)
-// 	assert.Nil(t, err, "Expected no error")
-// 	expected := BaseFetcherRequest{
-// 		URL:    "http://dbconvert.com",
-// 		Method: "",
-// 	}
-// 	assert.Equal(t, expected, actual)
-// }

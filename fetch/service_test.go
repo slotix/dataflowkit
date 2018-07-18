@@ -1,11 +1,12 @@
 package fetch
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 
-	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -19,10 +20,6 @@ var (
 )
 
 func init() {
-	viper.Set("SPLASH", "127.0.0.1:8050")
-	viper.Set("SPLASH_TIMEOUT", 20)
-	viper.Set("SPLASH_RESOURCE_TIMEOUT", 30)
-	viper.Set("SPLASH_WAIT", 0.5)
 	viper.Set("STORAGE_TYPE", "Diskv")
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	viper.Set("PROXY", "")
@@ -31,19 +28,31 @@ func init() {
 }
 
 func TestFetchService(t *testing.T) {
-	var svc Service
-	svc = FetchService{}
+	//start fetch server
+	fetchServer := viper.GetString("DFK_FETCH")
+	serverCfg := Config{
+		Host: fetchServer,
+	}
+	htmlServer := Start(serverCfg)
+	defer htmlServer.Stop()
+
+	svc, err := NewHTTPClient(fetchServer)
+	if err != nil {
+		logger.Error(err)
+	}
 	svc = RobotsTxtMiddleware()(svc)
+	svc = LoggingMiddleware(logger)(svc)
+
 	cArr := []*http.Cookie{
 		&http.Cookie{
 			Name:   "cookie1",
 			Value:  "cValue1",
-			Domain: "example.com",
+			Domain: "localhost:12345",
 		},
 		&http.Cookie{
 			Name:   "cookie2",
 			Value:  "cValue2",
-			Domain: "example.com",
+			Domain: "localhost:12345",
 		},
 	}
 	userToken := "12345"
@@ -59,16 +68,8 @@ func TestFetchService(t *testing.T) {
 		t.Log(err)
 	}
 
-	//BaseFetcher
-	// r := mux.NewRouter()
-	// r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	w.Header().Set("Conent-Type", "text/html")
-	// 	w.Write(IndexContent)
-	// })
-	// ts := httptest.NewServer(r)
-	// defer ts.Close()
-
-	data, err := svc.Fetch(BaseFetcherRequest{
+	data, err := svc.Fetch(Request{
+		Type:      "base",
 		URL:       tsURL + "/hello",
 		Method:    "GET",
 		UserToken: "12345",
@@ -78,7 +79,8 @@ func TestFetchService(t *testing.T) {
 	assert.NotNil(t, data, "Expected response is not nil")
 
 	//read cookies
-	data, err = svc.Fetch(BaseFetcherRequest{
+	data, err = svc.Fetch(Request{
+		Type:      "base",
 		URL:       tsURL,
 		Method:    "GET",
 		UserToken: "12345",
@@ -87,15 +89,49 @@ func TestFetchService(t *testing.T) {
 	assert.Nil(t, err, "Expected no error")
 	assert.NotNil(t, data, "Expected response is not nil")
 
+	//Test invalid Response Status codes.
+	urls := []string{
+		tsURL + "/status/404",
+		tsURL + "/status/400",
+		tsURL + "/status/401",
+		tsURL + "/status/403",
+		tsURL + "/status/407",
+		tsURL + "/status/500",
+		tsURL + "/status/502",
+		tsURL + "/status/504",
+		tsURL + "/status/600",
+		"http://google",
+		"google.com",
+	}
+	for _, url := range urls {
+		req := Request{
+			Type: "base",
+			URL:  url,
+		}
+		_, err := svc.Fetch(req)
+		t.Log(err)
+		assert.Error(t, err, fmt.Sprintf("%T", err)+"error returned")
+	}
+
 	//invalid URL
-	data, err = svc.Fetch(BaseFetcherRequest{
+	data, err = svc.Fetch(Request{
+		Type:   "base",
+		URL:    "invalid_addr",
+		Method: "GET",
+	})
+	assert.Error(t, err, "Expected error")
+
+	//invalid Fetcher type
+	data, err = svc.Fetch(Request{
+		Type:   "invalid",
 		URL:    "invalid_addr",
 		Method: "GET",
 	})
 	assert.Error(t, err, "Expected error")
 
 	//disallowed by robots
-	data, err = svc.Fetch(BaseFetcherRequest{
+	data, err = svc.Fetch(Request{
+		Type:      "base",
 		URL:       tsURL + "/disallowed",
 		Method:    "GET",
 		UserToken: "12345",
@@ -104,7 +140,8 @@ func TestFetchService(t *testing.T) {
 	assert.Error(t, err, "Expected error")
 
 	//disallowed by robots
-	data, err = svc.Fetch(BaseFetcherRequest{
+	data, err = svc.Fetch(Request{
+		Type:      "base",
 		URL:       tsURL + "/redirect",
 		Method:    "GET",
 		UserToken: "12345",
@@ -112,28 +149,38 @@ func TestFetchService(t *testing.T) {
 
 	assert.Error(t, err, "Expected error")
 
-	//Splash Fetcher
-	svcSplash := FetchService{}
-	data, err = svcSplash.Fetch(splash.Request{
+	//Test Chrome Fetcher
+	//svcChrome := FetchService{}
+	data, err = svc.Fetch(Request{
+		Type:      "chrome",
 		URL:       "http://testserver:12345",
 		FormData:  "",
-		LUA:       "",
 		UserToken: userToken,
 	})
 	assert.Nil(t, err, "Expected no error")
-	// assert.Equal(t, 200, response.(*splash.Response).Response.Status, "Expected Splash server returns 200 status code")
+
+	svc1 := FetchService{}
+	//Pass invalid Fetcher type directly to service skipping NewHTTPClient
+	data, err = svc1.Fetch(Request{
+		Type:   "invalid",
+		URL:    "invalid_addr",
+		Method: "GET",
+	})
+	assert.Error(t, err, "Expected error")
+
+	//Test decodeChromeFetcherContent
+	//Chrome returns empty result for erroneous pages: <html><head></head><body></body></html>
+	//And returns no error
+	data, err = svc.Fetch(Request{
+		Type: "chrome",
+		URL:  "http://testserver:12345/status/404",
+		//URL:    "http://httpbin.org/status/404",
+		Method: "GET",
+	})
+	assert.NoError(t, err, "No error")
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(data)
+	s := buf.String()
+	t.Log(s)
 
 }
-
-/* func TestEncodeSplashFetcherContent(t *testing.T) {
-	ctx := context.Background()
-	resp := splash.Response{
-		HTML: `<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`,
-	}
-	w := httptest.NewRecorder()
-
-	EncodeSplashFetcherContent(ctx, w, resp)
-	//r := w.Code
-	//r := w.Result()
-	logger.Info(w)
-} */
