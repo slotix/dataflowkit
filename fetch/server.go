@@ -14,8 +14,6 @@ import (
 // Config provides basic configuration
 type Config struct {
 	Host string
-	/* ReadTimeout  time.Duration
-	WriteTimeout time.Duration */
 }
 
 // HTMLServer represents the web service that serves up HTML
@@ -34,19 +32,13 @@ func Start(cfg Config) *HTMLServer {
 
 	var svc Service
 	svc = FetchService{}
-	//svc = StatsMiddleware("18")(svc)
 
-	// if !viper.GetBool("SKIP_STORAGE_MW") {
-	// 	svc = StorageMiddleware(storage.NewStore(viper.GetString("STORAGE_TYPE")))(svc)
-	// }
 	//svc = RobotsTxtMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{
-		SplashFetchEndpoint: MakeSplashFetchEndpoint(svc),
-		//	SplashResponseEndpoint: MakeSplashResponseEndpoint(svc),
+		ChromeFetchEndpoint: MakeChromeFetchEndpoint(svc),
 		BaseFetchEndpoint: MakeBaseFetchEndpoint(svc),
-		//	BaseResponseEndpoint:   MakeBaseResponseEndpoint(svc),
 	}
 
 	r := NewHttpHandler(ctx, endpoints, logger)

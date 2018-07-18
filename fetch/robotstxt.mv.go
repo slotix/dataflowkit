@@ -19,7 +19,7 @@ type robotstxtMiddleware struct {
 
 //Fetch gets response from req.URL, then passes response.URL to Robots.txt validator.
 //issue #1 https://github.com/slotix/dataflowkit/issues/1
-func (mw robotstxtMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err error) {
+func (mw robotstxtMiddleware) Fetch(req Request) (io.ReadCloser, error) {
 	url := req.GetURL()
 	//to avoid recursion while retrieving robots.txt
 	if !IsRobotsTxt(url) {
@@ -27,14 +27,14 @@ func (mw robotstxtMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err 
 		//robots.txt may be empty but we have to continue processing the page
 		if !AllowedByRobots(url, robotsData) {
 			//no need a body retrieve to get information about redirects
-			r := BaseFetcherRequest{URL: url, Method: "HEAD"}
+			r := Request{URL: url, Method: "HEAD"}
 			resp, err := fetchRobots(r)
 			if err != nil {
 				return nil, err
 			}
 			//if initial URL is not equal to final URL (Redirected) f.e. domains are different
 			//then try to fetch robots following by final URL
-			finalURL := resp.GetURL()
+			finalURL := resp.URL
 			//	finalURL := resp.Request.URL.String()
 			if url != finalURL {
 				robotsData, err = RobotstxtData(finalURL)
@@ -53,38 +53,3 @@ func (mw robotstxtMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err 
 
 	return mw.Service.Fetch(req)
 }
-
-//Response passes req to the next middleware.
-// func (mw robotstxtMiddleware) Response(req FetchRequester) (FetchResponser, error) {
-// 	url := req.GetURL()
-// 	//to avoid recursion while retrieving robots.txt
-// 	if !IsRobotsTxt(url) {
-// 		robotsData, _ := RobotstxtData(url)
-// 		//robots.txt may be empty but we have to continue processing the page
-// 		if !AllowedByRobots(url, robotsData) {
-// 			//no need a body retrieve to get information about redirects
-// 			r := BaseFetcherRequest{URL: url, Method: "HEAD"}
-// 			resp, err := fetchRobots(r)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 			//if initial URL is not equal to final URL (Redirected) f.e. domains are different
-// 			//then try to fetch robots following by final URL
-// 			finalURL := resp.GetURL()
-// 			//	finalURL := resp.Request.URL.String()
-// 			if url != finalURL {
-// 				robotsData, err = RobotstxtData(finalURL)
-// 				if err != nil {
-// 					return nil, err
-// 				}
-// 				if !AllowedByRobots(finalURL, robotsData) {
-// 					return nil, &errs.ForbiddenByRobots{finalURL}
-// 				}
-// 			} else {
-// 				return nil, &errs.ForbiddenByRobots{url}
-// 			}
-// 		}
-
-// 	}
-// 	return mw.Service.Response(req)
-// }

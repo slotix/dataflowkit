@@ -1,36 +1,12 @@
 package fetch
 
 import (
-	"errors"
-	"io"
-	"io/ioutil"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 
 	"github.com/pquerna/cachecontrol"
 	"github.com/pquerna/cachecontrol/cacheobject"
 )
-
-//BaseFetcherRequest struct contains request information used by BaseFetcher
-type BaseFetcherRequest struct {
-	//	URL to be retrieved
-	URL string `json:"url"`
-	//	HTTP method : GET, POST
-	Method string
-	// FormData is a string value for passing formdata parameters.
-	//
-	// For example it may be used for processing pages which require authentication
-	//
-	// Example:
-	//
-	// "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
-	//
-	FormData string `json:"formData,omitempty"`
-	//UserToken identifies user to keep personal cookies information.
-	UserToken string `json:"userToken"`
-}
 
 //BaseFetcherResponse struct groups Response data together after retrieving it by BaseFetcher
 type BaseFetcherResponse struct {
@@ -82,59 +58,4 @@ func (r *BaseFetcherResponse) SetCacheInfo() {
 		r.Expires = expires
 	}
 	r.ReasonsNotToCache = reasons
-}
-
-//GetURL returns URL after all redirects
-func (r BaseFetcherResponse) GetURL() string {
-	return r.URL
-}
-
-//GetExpires returns Response Expires value.
-func (r BaseFetcherResponse) GetExpires() time.Time {
-	return r.Expires
-}
-
-//GetReasonsNotToCache returns an array of reasons why a response should not be cached.
-func (r BaseFetcherResponse) GetReasonsNotToCache() []cacheobject.Reason {
-	return r.ReasonsNotToCache
-}
-
-//GetURL returns URL to be fetched
-func (req BaseFetcherRequest) GetURL() string {
-	return strings.TrimRight(strings.TrimSpace(req.URL), "/")
-}
-
-// Host returns Host value from Request
-func (req BaseFetcherRequest) Host() (string, error) {
-	u, err := url.Parse(req.GetURL())
-	if err != nil {
-		return "", err
-	}
-	return u.Host, nil
-}
-
-//	GetFormData returns form data from BaseFetcherRequest
-func (req BaseFetcherRequest) GetFormData() string {
-	return req.FormData
-}
-
-//Type returns fetcher type
-func (req BaseFetcherRequest) Type() string {
-	return "base"
-}
-
-//GetHTML return HTML content from BaseFetcherResponse
-func (r *BaseFetcherResponse) GetHTML() (io.ReadCloser, error) {
-	if r == nil {
-		return nil, errors.New("empty response")
-	}
-	if r.StatusCode != 200 {
-		return nil, errors.New(r.Status)
-	}
-	readCloser := ioutil.NopCloser(strings.NewReader(r.HTML))
-	return readCloser, nil
-}
-
-func (r BaseFetcherRequest) GetUserToken() string {
-	return r.UserToken
 }

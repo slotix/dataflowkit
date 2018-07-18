@@ -13,7 +13,6 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
 	"github.com/slotix/dataflowkit/errs"
-	"github.com/slotix/dataflowkit/splash"
 )
 
 // NewHttpHandler mounts all of the service endpoints into an http.Handler.
@@ -24,70 +23,28 @@ func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logg
 		//httptransport.ServerErrorLogger(logger),
 		httptransport.ServerErrorEncoder(encodeError),
 	}
-
 	//r.Methods("GET").Path("/proxy").HandlerFunc(proxyHandler)
 	r.Methods("GET").Path("/ping").HandlerFunc(healthCheckHandler)
-	r.Methods("POST").Path("/fetch/splash").Handler(httptransport.NewServer(
-		endpoint.SplashFetchEndpoint,
-		DecodeSplashFetcherRequest,
-		EncodeFetcherContent,
-		options...,
-	))
-
 	r.Methods("POST").Path("/fetch/chrome").Handler(httptransport.NewServer(
 		endpoint.ChromeFetchEndpoint,
-		DecodeChromeFetcherRequest,
+		DecodeRequest,
 		EncodeFetcherContent,
 		options...,
 	))
-
 
 	r.Methods("POST").Path("/fetch/base").Handler(httptransport.NewServer(
 		endpoint.BaseFetchEndpoint,
-		DecodeBaseFetcherRequest,
+		DecodeRequest,
 		EncodeFetcherContent,
 		options...,
 	))
-
-	// r.Methods("POST").Path("/response/splash").Handler(httptransport.NewServer(
-	// 	endpoint.SplashResponseEndpoint,
-	// 	DecodeSplashFetcherRequest,
-	// 	EncodeFetcherResponse,
-	// 	options...,
-	// ))
-	// r.Methods("POST").Path("/response/base").Handler(httptransport.NewServer(
-	// 	endpoint.BaseResponseEndpoint,
-	// 	DecodeBaseFetcherRequest,
-	// 	EncodeFetcherResponse,
-	// 	options...,
-	// ))
 	return r
 }
 
-//DecodeSplashFetcherRequest decodes request sent to remote Splash service
-//if error occures, server returns 400 Bad Request
-func DecodeSplashFetcherRequest(ctx context.Context, r *http.Request) (interface{}, error) {
-	var request splash.Request
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		return nil, &errs.BadRequest{err}
-	}
-	return request, nil
-}
-
-//DecodeBaseFetcherRequest decodes BaseFetcherRequest
+//DecodeRequest decodes BaseFetcherRequest
 //if error occures, server should return 400 Bad Request
-func DecodeBaseFetcherRequest(ctx context.Context, r *http.Request) (interface{}, error) {
-	var request BaseFetcherRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		return nil, &errs.BadRequest{err}
-	}
-	return request, nil
-}
-
-//DecodeChromeFetcherRequest decodes ChromeFetcherRequest
-//if error occures, server should return 400 Bad Request
-func DecodeChromeFetcherRequest(ctx context.Context, r *http.Request) (interface{}, error) {
-	var request ChromeFetcherRequest
+func DecodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	var request Request
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return nil, &errs.BadRequest{err}
 	}
@@ -101,7 +58,6 @@ func EncodeFetcherContent(ctx context.Context, w http.ResponseWriter, response i
 		e := errs.BadGateway{What: "content"}
 		encodeError(ctx, &e, w)
 		return nil
-		//encodeError(ctx, errors.New("invalid Content from Fetcher"), w)
 	}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	_, err := io.Copy(w, fetcherContent)
@@ -112,38 +68,6 @@ func EncodeFetcherContent(ctx context.Context, w http.ResponseWriter, response i
 	}
 	return nil
 }
-
-//EncodeFetcherResponse encodes response returned by fetcher
-// func EncodeFetcherResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-// 	fetcherResponse, ok := response.(FetchResponser)
-// 	if !ok {
-// 		//return errors.New("invalid Fetcher Response")
-// 		e := errs.BadGateway{What: "response"}
-// 		encodeError(ctx, &e, w)
-// 		return nil
-// 	}
-// 	//statusCode := fetcherResponse.GetStatusCode()
-// 	//if statusCode != 200 {
-// 	//	return errors.New(strconv.Itoa(statusCode))
-// 	//}
-// 	//if fetcherResponse.Error != "" {
-// 	//	return errors.New(fetcherResponse.Error)
-// 	//}
-
-// 	data, err := json.Marshal(fetcherResponse)
-// 	if err != nil {
-// 		encodeError(ctx, err, w)
-// 		return nil
-// 	}
-// 	w.Header().Set("Access-Control-Allow-Origin", "*")
-// 	_, err = w.Write(data)
-
-// 	if err != nil {
-// 		encodeError(ctx, err, w)
-// 		return nil
-// 	}
-// 	return nil
-// }
 
 // encodeError encodes erroneous responses and writes http status header.
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
@@ -162,10 +86,16 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		*errs.Error:
 		//return 400 Status
 		httpStatus = http.StatusBadRequest
+	case *errs.Unauthorized:
+		//return 401 Status
+		httpStatus = http.StatusUnauthorized
 	case *errs.ForbiddenByRobots,
 		*errs.Forbidden:
 		//return 403 Status
 		httpStatus = http.StatusForbidden
+	case *errs.ProxyAuthenticationRequired:
+		//return 407 Status
+		httpStatus = http.StatusProxyAuthRequired
 	case *errs.NotFound:
 		//return 404 Status
 		httpStatus = http.StatusNotFound
@@ -179,16 +109,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	//logger.Error(err)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(httpStatus)
-	//AWS error payload should looks like
-	//{
-	//"errorType": "BadRequest",
-	//"httpStatus": httpStatus,
-	//"requestId" : "<context.awsRequestId>",
-	//"message": err.Error(),
-	//}
-	//according to the information from https://aws.amazon.com/blogs/compute/error-handling-patterns-in-amazon-api-gateway-and-aws-lambda/
-
-	//But it seems enough to w.WriteHeader(httpStatus) and send an error only
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": err.Error(),
 	})
@@ -197,60 +117,23 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 
 // Endpoints wrapper
 type Endpoints struct {
-	ChromeFetchEndpoint    endpoint.Endpoint
-	SplashFetchEndpoint    endpoint.Endpoint
-	//SplashResponseEndpoint endpoint.Endpoint
-	BaseFetchEndpoint      endpoint.Endpoint
-	//BaseResponseEndpoint   endpoint.Endpoint
+	ChromeFetchEndpoint endpoint.Endpoint
+	BaseFetchEndpoint   endpoint.Endpoint
 }
 
-// MakeSplashFetchEndpoint creates Splash Fetch Endpoint
-func MakeSplashFetchEndpoint(svc Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(splash.Request)
-		return svc.Fetch(req)
-	}
-}
-
-// MakeChromeFetchEndpoint creates BaseFetch Endpoint
+// MakeChromeFetchEndpoint creates ChromeFetch Endpoint
 func MakeChromeFetchEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(ChromeFetcherRequest)
-		return svc.Fetch(req)
+		return svc.Fetch(request.(Request))
 	}
 }
 
 // MakeBaseFetchEndpoint creates BaseFetch Endpoint
 func MakeBaseFetchEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(BaseFetcherRequest)
-		return svc.Fetch(req)
+		return svc.Fetch(request.(Request))
 	}
 }
-
-// MakeSplashResponseEndpoint creates SplashResponse Endpoint
-// func MakeSplashResponseEndpoint(svc Service) endpoint.Endpoint {
-// 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-// 		req := request.(splash.Request)
-// 		v, err := svc.Response(req)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		return v, nil
-// 	}
-// }
-
-// MakeBaseResponseEndpoint creates BaseResponse Endpoint
-// func MakeBaseResponseEndpoint(svc Service) endpoint.Endpoint {
-// 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-// 		req := request.(BaseFetcherRequest)
-// 		v, err := svc.Response(req)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		return v, nil
-// 	}
-// }
 
 //healthCheckHandler is used to check if Fetch service is alive.
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {

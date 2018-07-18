@@ -14,24 +14,9 @@ func IsRobotsTxt(url string) bool {
 }
 
 //fetchRobots is used for getting robots.txt files.
-func fetchRobots(req BaseFetcherRequest) (*BaseFetcherResponse, error) {
+func fetchRobots(req Request) (*BaseFetcherResponse, error) {
 	fetcher := NewBaseFetcher()
-	resp, err := fetcher.Response(req)
-	if err != nil {
-		logger.Error(err)
-		return nil, err
-	}
-	return resp.(*BaseFetcherResponse), nil
-	// svc, err := NewHTTPClient(viper.GetString("DFK_FETCH"))
-	// if err != nil {
-	// 	logger.Error(err)
-	// }
-	// resp, err := svc.Response(req)
-	// if err != nil {
-	// 	//	logger.Error(err)
-	// 	return nil, err
-	// }
-	// return resp.(*BaseFetcherResponse), nil
+	return fetcher.response(req)
 }
 
 //AssembleRobotstxtURL robots.txt URL from URL
@@ -51,7 +36,7 @@ func RobotstxtData(url string) (robotsData *robotstxt.RobotsData, err error) {
 	if err != nil {
 		return nil, err
 	}
-	r := BaseFetcherRequest{URL: robotsURL, Method: "GET"}
+	r := Request{URL: robotsURL, Method: "GET"}
 
 	//response, err := fetchRobots(r)
 	response, err := fetchRobots(r)
