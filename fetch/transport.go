@@ -1,11 +1,9 @@
 package fetch
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
-	"path/filepath"
 
 	"context"
 
@@ -27,7 +25,7 @@ func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logg
 		httptransport.ServerErrorEncoder(encodeError),
 	}
 
-	r.Methods("GET").Path("/proxy").HandlerFunc(proxyHandler)
+	//r.Methods("GET").Path("/proxy").HandlerFunc(proxyHandler)
 	r.Methods("GET").Path("/ping").HandlerFunc(healthCheckHandler)
 	r.Methods("POST").Path("/fetch/splash").Handler(httptransport.NewServer(
 		endpoint.SplashFetchEndpoint,
@@ -36,6 +34,14 @@ func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logg
 		options...,
 	))
 
+	r.Methods("POST").Path("/fetch/chrome").Handler(httptransport.NewServer(
+		endpoint.ChromeFetchEndpoint,
+		DecodeChromeFetcherRequest,
+		EncodeFetcherContent,
+		options...,
+	))
+
+
 	r.Methods("POST").Path("/fetch/base").Handler(httptransport.NewServer(
 		endpoint.BaseFetchEndpoint,
 		DecodeBaseFetcherRequest,
@@ -43,18 +49,18 @@ func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logg
 		options...,
 	))
 
-	r.Methods("POST").Path("/response/splash").Handler(httptransport.NewServer(
-		endpoint.SplashResponseEndpoint,
-		DecodeSplashFetcherRequest,
-		EncodeFetcherResponse,
-		options...,
-	))
-	r.Methods("POST").Path("/response/base").Handler(httptransport.NewServer(
-		endpoint.BaseResponseEndpoint,
-		DecodeBaseFetcherRequest,
-		EncodeFetcherResponse,
-		options...,
-	))
+	// r.Methods("POST").Path("/response/splash").Handler(httptransport.NewServer(
+	// 	endpoint.SplashResponseEndpoint,
+	// 	DecodeSplashFetcherRequest,
+	// 	EncodeFetcherResponse,
+	// 	options...,
+	// ))
+	// r.Methods("POST").Path("/response/base").Handler(httptransport.NewServer(
+	// 	endpoint.BaseResponseEndpoint,
+	// 	DecodeBaseFetcherRequest,
+	// 	EncodeFetcherResponse,
+	// 	options...,
+	// ))
 	return r
 }
 
@@ -72,6 +78,16 @@ func DecodeSplashFetcherRequest(ctx context.Context, r *http.Request) (interface
 //if error occures, server should return 400 Bad Request
 func DecodeBaseFetcherRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var request BaseFetcherRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		return nil, &errs.BadRequest{err}
+	}
+	return request, nil
+}
+
+//DecodeChromeFetcherRequest decodes ChromeFetcherRequest
+//if error occures, server should return 400 Bad Request
+func DecodeChromeFetcherRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	var request ChromeFetcherRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return nil, &errs.BadRequest{err}
 	}
@@ -98,36 +114,36 @@ func EncodeFetcherContent(ctx context.Context, w http.ResponseWriter, response i
 }
 
 //EncodeFetcherResponse encodes response returned by fetcher
-func EncodeFetcherResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	fetcherResponse, ok := response.(FetchResponser)
-	if !ok {
-		//return errors.New("invalid Fetcher Response")
-		e := errs.BadGateway{What: "response"}
-		encodeError(ctx, &e, w)
-		return nil
-	}
-	//statusCode := fetcherResponse.GetStatusCode()
-	//if statusCode != 200 {
-	//	return errors.New(strconv.Itoa(statusCode))
-	//}
-	//if fetcherResponse.Error != "" {
-	//	return errors.New(fetcherResponse.Error)
-	//}
+// func EncodeFetcherResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+// 	fetcherResponse, ok := response.(FetchResponser)
+// 	if !ok {
+// 		//return errors.New("invalid Fetcher Response")
+// 		e := errs.BadGateway{What: "response"}
+// 		encodeError(ctx, &e, w)
+// 		return nil
+// 	}
+// 	//statusCode := fetcherResponse.GetStatusCode()
+// 	//if statusCode != 200 {
+// 	//	return errors.New(strconv.Itoa(statusCode))
+// 	//}
+// 	//if fetcherResponse.Error != "" {
+// 	//	return errors.New(fetcherResponse.Error)
+// 	//}
 
-	data, err := json.Marshal(fetcherResponse)
-	if err != nil {
-		encodeError(ctx, err, w)
-		return nil
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	_, err = w.Write(data)
+// 	data, err := json.Marshal(fetcherResponse)
+// 	if err != nil {
+// 		encodeError(ctx, err, w)
+// 		return nil
+// 	}
+// 	w.Header().Set("Access-Control-Allow-Origin", "*")
+// 	_, err = w.Write(data)
 
-	if err != nil {
-		encodeError(ctx, err, w)
-		return nil
-	}
-	return nil
-}
+// 	if err != nil {
+// 		encodeError(ctx, err, w)
+// 		return nil
+// 	}
+// 	return nil
+// }
 
 // encodeError encodes erroneous responses and writes http status header.
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
@@ -181,21 +197,26 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 
 // Endpoints wrapper
 type Endpoints struct {
+	ChromeFetchEndpoint    endpoint.Endpoint
 	SplashFetchEndpoint    endpoint.Endpoint
-	SplashResponseEndpoint endpoint.Endpoint
+	//SplashResponseEndpoint endpoint.Endpoint
 	BaseFetchEndpoint      endpoint.Endpoint
-	BaseResponseEndpoint   endpoint.Endpoint
+	//BaseResponseEndpoint   endpoint.Endpoint
 }
 
 // MakeSplashFetchEndpoint creates Splash Fetch Endpoint
 func MakeSplashFetchEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(splash.Request)
-		resp, err := svc.Response(req)
-		if err != nil {
-			return nil, err
-		}
-		return resp.GetHTML()
+		return svc.Fetch(req)
+	}
+}
+
+// MakeChromeFetchEndpoint creates BaseFetch Endpoint
+func MakeChromeFetchEndpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(ChromeFetcherRequest)
+		return svc.Fetch(req)
 	}
 }
 
@@ -203,94 +224,37 @@ func MakeSplashFetchEndpoint(svc Service) endpoint.Endpoint {
 func MakeBaseFetchEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(BaseFetcherRequest)
-		resp, err := svc.Response(req)
-		if err != nil {
-			return nil, err
-		}
-		return resp.GetHTML()
+		return svc.Fetch(req)
 	}
 }
 
 // MakeSplashResponseEndpoint creates SplashResponse Endpoint
-func MakeSplashResponseEndpoint(svc Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(splash.Request)
-		v, err := svc.Response(req)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
-	}
-}
+// func MakeSplashResponseEndpoint(svc Service) endpoint.Endpoint {
+// 	return func(ctx context.Context, request interface{}) (interface{}, error) {
+// 		req := request.(splash.Request)
+// 		v, err := svc.Response(req)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		return v, nil
+// 	}
+// }
 
 // MakeBaseResponseEndpoint creates BaseResponse Endpoint
-func MakeBaseResponseEndpoint(svc Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(BaseFetcherRequest)
-		v, err := svc.Response(req)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
-	}
-}
+// func MakeBaseResponseEndpoint(svc Service) endpoint.Endpoint {
+// 	return func(ctx context.Context, request interface{}) (interface{}, error) {
+// 		req := request.(BaseFetcherRequest)
+// 		v, err := svc.Response(req)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		return v, nil
+// 	}
+// }
 
 //healthCheckHandler is used to check if Fetch service is alive.
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	io.WriteString(w, `{"alive": true}`)
-}
-
-
-func proxyHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
-	u := r.URL.Query().Get("url")
-	fetcher := NewFetcher(Base)
-	req := BaseFetcherRequest{
-		URL:    u,
-		Method: "GET",
-	}
-	resp, err := fetcher.Response(req)
-	if err != nil {
-		e := errs.BadGateway{What: "response"}
-		encodeError(ctx, &e, w)
-		return
-	}
-	if err != nil {
-		return
-	}
-
-	extension := filepath.Ext(u)
-
-	var mimetype string
-	switch extension {
-	case ".html":
-		mimetype = "text/html"
-	case ".ico":
-		mimetype = "image/x-icon"
-	case ".jpg":
-		mimetype = "image/jpeg"
-	case ".png":
-		mimetype = "image/png"
-	case ".gif":
-		mimetype = "image/gif"
-	case ".css":
-		mimetype = "text/css"
-	case ".js":
-		mimetype = "text/javascript"
-	default:
-		mimetype = "text/plain"
-	}
-	w.Header().Set("Content-Type", mimetype)
-	w.WriteHeader(http.StatusOK)
-	rc, err := resp.GetHTML()
-	if err != nil {
-		e := errs.BadGateway{What: "content"}
-		encodeError(ctx, &e, w)
-		return
-	}
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(rc)
-	io.WriteString(w, buf.String())
 }

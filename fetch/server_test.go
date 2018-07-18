@@ -66,11 +66,13 @@ func Test_server_Base(t *testing.T) {
 		//URL: "http://example.com",
 		//URL: "http://github.com",
 	}
-	resp, err := svc.Response(req)
-	assert.NoError(t, err, "error is nil")
-	data, err := resp.GetHTML()
-	assert.NoError(t, err)
+	// resp, err := svc.Response(req)
+	// assert.NoError(t, err, "error is nil")
+	// data, err := resp.GetHTML()
+	// assert.NoError(t, err)
 	//	assert.NotNil(t, html)
+	data, err := svc.Fetch(req)
+	assert.NoError(t, err, "error is nil")
 	html, err := ioutil.ReadAll(data)
 	assert.NoError(t, err, "Expected no error")
 	assert.Equal(t, []byte(`<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`), html, "Expected Hello World")
@@ -79,7 +81,7 @@ func Test_server_Base(t *testing.T) {
 	req = BaseFetcherRequest{
 		URL: tsURL + "/disallowed",
 	}
-	resp, err = svc.Response(req)
+	data, err = svc.Fetch(req)
 	assert.Error(t, err, "returned error")
 
 	//Test invalid Response Status codes.
@@ -99,7 +101,7 @@ func Test_server_Base(t *testing.T) {
 		req := BaseFetcherRequest{
 			URL: url,
 		}
-		_, err = svc.Response(req)
+		_, err = svc.Fetch(req)
 		t.Log(err)
 		assert.Error(t, err)
 	}
@@ -130,7 +132,7 @@ func Test_server_Splash(t *testing.T) {
 		URL: "http://testserver:12345",
 		//URL: "http://example.com",
 	}
-	resp, err := svc.Response(sReq)
+	resp, err := svc.Fetch(sReq)
 	if err != nil {
 		logger.Error(err)
 	}
