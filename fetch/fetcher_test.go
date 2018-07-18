@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/url"
 	"testing"
-	"time"
 
 	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
@@ -24,7 +23,6 @@ func TestBaseFetcher_Proxy(t *testing.T) {
 	fetcher := NewFetcher(Base)
 	assert.NotNil(t, fetcher)
 }
-
 
 func TestBaseFetcher_Fetch(t *testing.T) {
 	// r := mux.NewRouter()
@@ -66,15 +64,16 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 		URL:    tsURL + "/hello",
 		Method: "GET",
 	}
-	resp, err := fetcher.Response(req)
-	assert.Nil(t, err, "Expected no error")
-	html, err := resp.GetHTML()
+	//resp, err := fetcher.Response(req)
+	//assert.Nil(t, err, "Expected no error")
+	//html, err := resp.GetHTML()
+	html, err := fetcher.Fetch(req)
 	assert.NoError(t, err, "Expected no error")
 	data, err := ioutil.ReadAll(html)
 	assert.NoError(t, err, "Expected no error")
 	assert.Equal(t, helloContent, data)
-	assert.Equal(t, req.GetURL(), resp.GetURL())
-	assert.Equal(t, time.Now().UTC().Add(24*time.Hour).Truncate(1*time.Minute), resp.GetExpires().Truncate(1*time.Minute), "Expires default value is 24 hours")
+	//assert.Equal(t, req.GetURL(), resp.GetURL())
+	//assert.Equal(t, time.Now().UTC().Add(24*time.Hour).Truncate(1*time.Minute), resp.GetExpires().Truncate(1*time.Minute), "Expires default value is 24 hours")
 
 	//Test invalid Response Status codes.
 	urls := []string{
@@ -131,16 +130,20 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 	//Test Type()
 	assert.Equal(t, "base", req.Type(), "Test BaseFetcherRequest Type()")
 	//fetch robots.txt data
-	resp, err = fetcher.Response(BaseFetcherRequest{
+	robots, err := fetcher.Fetch(BaseFetcherRequest{
 		URL:    tsURL + "/robots.txt",
 		Method: "GET",
 	})
-	bfResponse := resp.(*BaseFetcherResponse)
-	//t.Log(string(bfResponse.HTML))
-	assert.Equal(t, robotsContent, bfResponse.HTML)
+	data, err = ioutil.ReadAll(robots)
+	assert.NoError(t, err, "Expected no error")
+	// resp, err := fetcher.Response(BaseFetcherRequest{
+	// 	URL:    tsURL + "/robots.txt",
+	// 	Method: "GET",
+	// })
+	//bfResponse := resp.(*BaseFetcherResponse)
+	assert.Equal(t, robotsContent, string(data))
 
 }
-
 
 func TestSplashFetcher_Fetch(t *testing.T) {
 	// r := mux.NewRouter()
@@ -187,7 +190,7 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 	// 	assert.Error(t, err, "error returned")
 	// }
 	//Test Host()
-	
+
 	req = splash.Request{
 		URL: "http://testserver:12345/status/200",
 		//URL: ts.URL + "/index.html",
@@ -206,6 +209,29 @@ func TestSplashFetcher_Fetch(t *testing.T) {
 
 }
 
+func TestChromeFetcher_Fetch(t *testing.T) {
+	fetcher := NewFetcher(Chrome)
+	req := ChromeFetcherRequest{
+		URL: "http://testserver:12345",
+	}
+	resp, err := fetcher.Fetch(req)
+	assert.Nil(t, err, "Expected no error")
+	assert.NotNil(t, resp, "Expected resp not nil")
+	req = ChromeFetcherRequest{
+		URL: "http://testserver:12345/status/200",
+		//URL: ts.URL + "/index.html",
+	}
+	host, err := req.Host()
+	assert.NoError(t, err)
+	assert.Equal(t, "testserver:12345", host)
+	req = ChromeFetcherRequest{
+		URL: "Invalid.%$^host",
+	}
+	host, err = req.Host()
+	assert.Error(t, err)
+
+	assert.Equal(t, "chrome", req.Type(), "Test ChromeFetcherRequest Type()")
+}
 func Test_parseFormData(t *testing.T) {
 	formData := "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=usr&ips_password=passw&rememberMe=0"
 	values := parseFormData(formData)

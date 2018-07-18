@@ -4,6 +4,8 @@ package fetch
 // https://github.com/andrew-d/goscrape package governed by MIT license.
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -13,6 +15,10 @@ import (
 	"time"
 
 	"github.com/juju/persistent-cookiejar"
+	"github.com/mafredri/cdp"
+	"github.com/mafredri/cdp/devtool"
+	"github.com/mafredri/cdp/protocol/dom"
+	"github.com/mafredri/cdp/rpcc"
 	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/splash"
@@ -28,6 +34,8 @@ const (
 	Base Type = "Base"
 	//Splash server is used to download content of web page after running of js scripts on the web page.
 	Splash = "Splash"
+	//Headless chrome is used to download content from JS driven web pages
+	Chrome = "Chrome"
 )
 
 // Fetcher is the interface that must be satisfied by things that can fetch
@@ -37,7 +45,7 @@ const (
 // documentation for each fetcher for more details.
 type Fetcher interface {
 	//  Response return response after fetch Request.
-	Response(request FetchRequester) (FetchResponser, error)
+	//Response(request FetchRequester) (FetchResponser, error)
 	//  Fetch is called to retrieve HTML content of a document from the remote server.
 	Fetch(request FetchRequester) (io.ReadCloser, error)
 	GetCookieJar() *cookiejar.Jar
@@ -73,14 +81,17 @@ type FetchRequester interface {
 
 //NewFetcher creates instances of Fetcher for downloading a web page.
 func NewFetcher(t Type) Fetcher {
-	var f Fetcher
 	switch t {
 	case Base:
-		f = NewBaseFetcher()
+		return NewBaseFetcher()
 	case Splash:
-		f = NewSplashFetcher()
+		return NewSplashFetcher()
+	case Chrome:
+		return NewChromeFetcher()
+	default:
+		logger.Panicf("unhandled type: %#v", t)
 	}
-	return f
+	panic("unreachable")
 }
 
 // BaseFetcher is a Fetcher that uses the Go standard library's http
@@ -97,7 +108,14 @@ type SplashFetcher struct {
 	jar *cookiejar.Jar
 }
 
-// NewSplashFetcher creates instances of SplashFetcher{} to fetch a page content from remote Scrapinghub splash service.
+// ChromeFetcher is used to fetch Java Script rendeded pages.
+type ChromeFetcher struct {
+	cdpClient *cdp.Client
+	client    *http.Client
+	jar       *cookiejar.Jar
+}
+
+// NewSplashFetcher creates instance of SplashFetcher{} to fetch a page content from remote Scrapinghub splash service.
 func NewSplashFetcher() *SplashFetcher {
 	sf := &SplashFetcher{}
 	return sf
@@ -149,6 +167,140 @@ func (sf *SplashFetcher) SetCookieJar(jar *cookiejar.Jar) {
 // Static type assertion
 var _ Fetcher = &SplashFetcher{}
 
+// NewChromeFetcher returns ChromeFetcher
+func NewChromeFetcher() *ChromeFetcher {
+	var client *http.Client
+	proxy := viper.GetString("PROXY")
+	if len(proxy) > 0 {
+		proxyURL, err := url.Parse(proxy)
+		if err != nil {
+			logger.Error(err)
+			return nil
+		}
+		transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+		client = &http.Client{Transport: transport}
+	} else {
+		client = &http.Client{}
+	}
+	f := &ChromeFetcher{
+		client: client,
+	}
+	return f
+}
+
+// Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
+func (f *ChromeFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
+	//URL validation
+	if _, err := url.ParseRequestURI(strings.TrimSpace(request.GetURL())); err != nil {
+		return nil, &errs.BadRequest{err}
+	}
+
+	if f.jar != nil {
+		f.client.Jar = f.jar
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	devt := devtool.New("http://localhost:9222", devtool.WithClient(f.client))
+	pt, err := devt.Get(ctx, devtool.Page)
+	if err != nil {
+		return nil, err
+	}
+	// Connect to WebSocket URL (page) that speaks the Chrome Debugging Protocol.
+	conn, err := rpcc.DialContext(ctx, pt.WebSocketDebuggerURL)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer conn.Close() // Cleanup.
+	// Create a new CDP Client that uses conn.
+	f.cdpClient = cdp.NewClient(conn)
+
+	// Give enough capacity to avoid blocking any event listeners
+	abort := make(chan error, 2)
+	// Watch the abort channel.
+	go func() {
+		select {
+		case <-ctx.Done():
+		case err := <-abort:
+			fmt.Printf("aborted: %s\n", err.Error())
+			cancel()
+		}
+	}()
+	// Setup event handlers early because domain events can be sent as
+	// soon as Enable is called on the domain.
+	// if err = abortOnErrors(ctx, c, scriptID, abort); err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+
+	if err = runBatch(
+		// Enable all the domain events that we're interested in.
+		func() error { return f.cdpClient.DOM.Enable(ctx) },
+		func() error { return f.cdpClient.Network.Enable(ctx, nil) },
+		func() error { return f.cdpClient.Page.Enable(ctx) },
+		func() error { return f.cdpClient.Runtime.Enable(ctx) },
+
+		//func() error { return setCookies(ctx, c.Network, Cookies...) },
+	); err != nil {
+		return nil, err
+	}
+	domLoadTimeout := 5 * time.Second
+	if request.GetFormData() == "" {
+		err = f.navigate(ctx, f.cdpClient.Page, "GET", request.GetURL(), "", domLoadTimeout)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		formData := parseFormData(request.GetFormData())
+		err = f.navigate(ctx, f.cdpClient.Page, "POST", request.GetURL(), formData.Encode(), domLoadTimeout)
+	}
+
+	//TODO: add main loader script
+	// err = f.runJSFromFile(ctx, "./chrome/loader.js")
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	//TODO: scroll2bottom
+	// if request.InfiniteScroll {
+	// 	err = f.runJSFromFile(ctx, "./chrome/scroll2bottom.js")
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// }
+
+	// Fetch the document root node. We can pass nil here
+	// since this method only takes optional arguments.
+	doc, err := f.cdpClient.DOM.GetDocument(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the outer HTML for the page.
+	result, err := f.cdpClient.DOM.GetOuterHTML(ctx, &dom.GetOuterHTMLArgs{
+		NodeID: &doc.Root.NodeID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	readCloser := ioutil.NopCloser(strings.NewReader(result.OuterHTML))
+	return readCloser, nil
+
+}
+
+func (cf *ChromeFetcher) SetCookieJar(jar *cookiejar.Jar) {
+	cf.jar = jar
+}
+
+func (cf *ChromeFetcher) GetCookieJar() *cookiejar.Jar {
+	return cf.jar
+}
+
+// Static type assertion
+var _ Fetcher = &ChromeFetcher{}
+
 // NewBaseFetcher creates instances of NewBaseFetcher{} to fetch
 // a page content from regular websites as-is
 // without running js scripts on the page.
@@ -166,10 +318,10 @@ func NewBaseFetcher() *BaseFetcher {
 	} else {
 		client = &http.Client{}
 	}
-	bf := &BaseFetcher{
+	f := &BaseFetcher{
 		client: client,
 	}
-	return bf
+	return f
 }
 
 // Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
@@ -216,9 +368,8 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 		}
 	} else {
 		//if form data exists send POST request
-		r.Method = "POST"
 		formData := parseFormData(r.GetFormData())
-		req, err = http.NewRequest(r.Method, r.URL, strings.NewReader(formData.Encode()))
+		req, err = http.NewRequest("POST", r.URL, strings.NewReader(formData.Encode()))
 		if err != nil {
 			return nil, err
 		}

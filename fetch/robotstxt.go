@@ -15,7 +15,7 @@ func IsRobotsTxt(url string) bool {
 
 //fetchRobots is used for getting robots.txt files.
 func fetchRobots(req BaseFetcherRequest) (*BaseFetcherResponse, error) {
-	fetcher := NewFetcher(Base)
+	fetcher := NewBaseFetcher()
 	resp, err := fetcher.Response(req)
 	if err != nil {
 		logger.Error(err)

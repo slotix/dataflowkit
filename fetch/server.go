@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/slotix/dataflowkit/logger"
-	"github.com/slotix/dataflowkit/storage"
-	"github.com/spf13/viper"
 )
 
 // Config provides basic configuration
@@ -38,17 +36,17 @@ func Start(cfg Config) *HTMLServer {
 	svc = FetchService{}
 	//svc = StatsMiddleware("18")(svc)
 
-	if !viper.GetBool("SKIP_STORAGE_MW") {
-		svc = StorageMiddleware(storage.NewStore(viper.GetString("STORAGE_TYPE")))(svc)
-	}
+	// if !viper.GetBool("SKIP_STORAGE_MW") {
+	// 	svc = StorageMiddleware(storage.NewStore(viper.GetString("STORAGE_TYPE")))(svc)
+	// }
 	//svc = RobotsTxtMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{
-		SplashFetchEndpoint:    MakeSplashFetchEndpoint(svc),
-		SplashResponseEndpoint: MakeSplashResponseEndpoint(svc),
-		BaseFetchEndpoint:      MakeBaseFetchEndpoint(svc),
-		BaseResponseEndpoint:   MakeBaseResponseEndpoint(svc),
+		SplashFetchEndpoint: MakeSplashFetchEndpoint(svc),
+		//	SplashResponseEndpoint: MakeSplashResponseEndpoint(svc),
+		BaseFetchEndpoint: MakeBaseFetchEndpoint(svc),
+		//	BaseResponseEndpoint:   MakeBaseResponseEndpoint(svc),
 	}
 
 	r := NewHttpHandler(ctx, endpoints, logger)
