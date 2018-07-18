@@ -1,23 +1,14 @@
 version: '3'
 
 services:
-  splash:
-    image: scrapinghub/splash
-    command: --max-timeout 3600 --slots 10 --maxrss 3000 --verbosity 0
-    environment:
-      - DFK_TEST=testserver:12345
+    chrome:
+    image: justinribeiro/chrome-headless
+    cap_add:
+      - SYS_ADMIN
     restart: always
     ports:
-      - "8050:8050"
-    volumes:
-      - ./splash/filters:/etc/splash/filters:ro
+      - "9222:9222"
 
-  # redis:
-  #   image: redis
-  #   restart: always
-  #   ports:
-  #     - "6379:6379"
-    
   cassandra:
     #image: cassandra
     build: ./storage/cassandra
