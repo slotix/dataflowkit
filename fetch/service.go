@@ -2,12 +2,12 @@ package fetch
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/juju/persistent-cookiejar"
-	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
 	"golang.org/x/net/publicsuffix"
@@ -16,7 +16,7 @@ import (
 // Service defines Fetch service interface
 type Service interface {
 	//Response(req FetchRequester) (FetchResponser, error)
-	Fetch(req FetchRequester) (io.ReadCloser, error)
+	Fetch(req Request) (io.ReadCloser, error)
 }
 
 // FetchService implements service with empty struct
@@ -26,99 +26,15 @@ type FetchService struct {
 // ServiceMiddleware defines a middleware for a Fetch service
 type ServiceMiddleware func(Service) Service
 
-//Response returns FetchResponses
-// func (fs FetchService) Response(req FetchRequester) (FetchResponser, error) {
-// 	var fetcher Fetcher
-// 	switch req.(type) {
-// 	case BaseFetcherRequest:
-// 		fetcher = NewFetcher(Base)
-// 	case splash.Request:
-// 		fetcher = NewFetcher(Splash)
-// 	}
-// 	var (
-// 		jar     *cookiejar.Jar
-// 		cookies []byte
-// 		cArr    []*http.Cookie
-// 		s       storage.Store
-// 	)
-// 	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
-// 	jar, err := cookiejar.New(jarOpts)
-// 	if err != nil {
-// 		logger.Error("Failed to create Cookie Jar")
-
-// 	}
-// 	if req.GetUserToken() != "" {
-// 		storageType := viper.GetString("STORAGE_TYPE")
-// 		s = storage.NewStore(storageType)
-// 		//cookies, err = s.Read(req.GetUserToken(), storage.COOKIES)
-// 		cookies, err = s.Read(storage.Record{
-// 			Type:storage.COOKIES,
-// 			Key:req.GetUserToken(),
-// 			})
-// 		if err != nil {
-// 			logger.Warningf("Failed to read cookie for %s. %s", req.GetUserToken(), err.Error())
-// 		}
-// 		cArr = []*http.Cookie{}
-// 		if len(cookies) != 0 {
-// 			err = json.Unmarshal(cookies, &cArr)
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 			u, err := url.Parse(req.GetURL())
-// 			if err != nil {
-// 				return nil, err
-// 			}
-// 			tempCarr := []*http.Cookie{}
-// 			for i := 0; i < len(cArr); i++ {
-// 				c := cArr[i]
-// 				if u.Host == c.Domain {
-// 					tempCarr = append(tempCarr, c)
-// 					cArr = append(cArr[:i], cArr[i+1:]...)
-// 					i--
-// 				}
-// 			}
-// 			jar.SetCookies(u, tempCarr)
-// 		}
-// 	}
-// 	fetcher.SetCookieJar(jar)
-// 	//res, err := fetcher.Fetch(req)
-// 	res, err := fetcher.Response(req)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if req.GetUserToken() != "" {
-// 		jar = fetcher.GetCookieJar()
-// 		cArr = append(cArr, jar.AllCookies()...)
-// 		cookies, err = json.Marshal(cArr)
-// 		//logger.Info(string(cookies))
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		//err = s.Write(req.GetUserToken(), &storage.Record{RecordType: storage.COOKIES, Value: cookies}, 0)
-// 		err = s.Write(storage.Record{
-// 			Type: storage.COOKIES,
-// 			Key: req.GetUserToken(),
-// 			Value: cookies,
-// 			ExpTime: 0,
-// 		})
-
-// 		if err != nil {
-// 			logger.Warningf("Failed to write cookie for %s. %s", req.GetUserToken(), err.Error())
-// 		}
-// 		s.Close()
-// 	}
-// 	return res, nil
-// }
-
-func (fs FetchService) Fetch(req FetchRequester) (io.ReadCloser, error) {
+func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 	var fetcher Fetcher
-	switch req.(type) {
-	case BaseFetcherRequest:
+	switch req.Type {
+	case "base":
 		fetcher = NewFetcher(Base)
-	case splash.Request:
-		fetcher = NewFetcher(Splash)
-	case ChromeFetcherRequest:
-		fetcher = NewFetcher(Splash)
+	case "chrome":
+		fetcher = NewFetcher(Chrome)
+	default:
+		return nil, fmt.Errorf("Invalid fetcher type specified %s", req.Type)
 	}
 	var (
 		jar     *cookiejar.Jar
@@ -132,16 +48,16 @@ func (fs FetchService) Fetch(req FetchRequester) (io.ReadCloser, error) {
 		logger.Error("Failed to create Cookie Jar")
 
 	}
-	if req.GetUserToken() != "" {
+	if req.UserToken != "" {
 		storageType := viper.GetString("STORAGE_TYPE")
 		s = storage.NewStore(storageType)
 		//cookies, err = s.Read(req.GetUserToken(), storage.COOKIES)
 		cookies, err = s.Read(storage.Record{
 			Type: storage.COOKIES,
-			Key:  req.GetUserToken(),
+			Key:  req.UserToken,
 		})
 		if err != nil {
-			logger.Warningf("Failed to read cookie for %s. %s", req.GetUserToken(), err.Error())
+			logger.Warningf("Failed to read cookie for %s. %s", req.UserToken, err.Error())
 		}
 		cArr = []*http.Cookie{}
 		if len(cookies) != 0 {
@@ -171,7 +87,7 @@ func (fs FetchService) Fetch(req FetchRequester) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	if req.GetUserToken() != "" {
+	if req.UserToken != "" {
 		jar = fetcher.GetCookieJar()
 		cArr = append(cArr, jar.AllCookies()...)
 		cookies, err = json.Marshal(cArr)
@@ -182,24 +98,15 @@ func (fs FetchService) Fetch(req FetchRequester) (io.ReadCloser, error) {
 		//err = s.Write(req.GetUserToken(), &storage.Record{RecordType: storage.COOKIES, Value: cookies}, 0)
 		err = s.Write(storage.Record{
 			Type:    storage.COOKIES,
-			Key:     req.GetUserToken(),
+			Key:     req.UserToken,
 			Value:   cookies,
 			ExpTime: 0,
 		})
 
 		if err != nil {
-			logger.Warningf("Failed to write cookie for %s. %s", req.GetUserToken(), err.Error())
+			logger.Warningf("Failed to write cookie for %s. %s", req.UserToken, err.Error())
 		}
 		s.Close()
 	}
 	return res, nil
 }
-
-//Fetch downloads web page content and returns it
-// func (fs FetchService) Fetch(req FetchRequester) (io.ReadCloser, error) {
-// 	res, err := fs.Response(req)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return res.GetHTML()
-// }

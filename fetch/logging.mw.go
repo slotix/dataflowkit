@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/slotix/dataflowkit/splash"
 )
 
 // LoggingMiddleware logs Service endpoints
@@ -23,22 +22,13 @@ type loggingMiddleware struct {
 }
 
 // Fetch logs requests to Fetch endpoint
-func (mw loggingMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err error) {
+func (mw loggingMiddleware) Fetch(req Request) (out io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		url := req.GetURL()
-		var fetcher string
-		switch req.(type) {
-		case BaseFetcherRequest:
-			fetcher = "base"
-		case splash.Request:
-			fetcher = "splash"
-		default:
-			panic("invalid fetcher request")
-		}
 		if err == nil {
 			mw.logger.WithFields(
 				logrus.Fields{
-					"fetcher": fetcher,
+					"fetcher": req.Type,
 					"func":    "Fetch",
 					"took":    time.Since(begin),
 				}).Info("Fetch URL: ", url)
@@ -48,38 +38,3 @@ func (mw loggingMiddleware) Fetch(req FetchRequester) (out io.ReadCloser, err er
 	out, err = mw.Service.Fetch(req)
 	return
 }
-
-// Fetch logs requests to Response endpoint
-// func (mw loggingMiddleware) Response(req FetchRequester) (response FetchResponser, err error) {
-// 	defer func(begin time.Time) {
-// 		response, err = mw.Service.Response(req)
-// 		url := req.GetURL()
-// 		var fetcher string
-// 		switch req.(type) {
-// 		case BaseFetcherRequest:
-// 			fetcher = "base"
-// 		case splash.Request:
-// 			fetcher = "splash"
-// 		default:
-// 			panic("invalid fetcher request")
-// 		}
-// 		if err == nil {
-// 			mw.logger.WithFields(
-// 				logrus.Fields{
-// 					"fetcher": fetcher,
-// 					"func":    "Response",
-// 					"took":    time.Since(begin),
-// 				}).Info("Fetch URL: ", url)
-// 		} else {
-// 			mw.logger.WithFields(
-// 				logrus.Fields{
-// 					"err":   err,
-// 					"fetcher": fetcher,
-// 					"func":    "Response",
-// 					"took":    time.Since(begin),
-// 				}).Error("Fetch URL: ", url)
-// 		}
-// 	}(time.Now())
-
-// 	return
-// }

@@ -19,9 +19,7 @@ import (
 	"github.com/mafredri/cdp/devtool"
 	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/rpcc"
-	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/slotix/dataflowkit/errs"
-	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 )
 
@@ -32,8 +30,6 @@ type Type string
 const (
 	//Base fetcher is used for downloading html web page using Go standard library's http
 	Base Type = "Base"
-	//Splash server is used to download content of web page after running of js scripts on the web page.
-	Splash = "Splash"
 	//Headless chrome is used to download content from JS driven web pages
 	Chrome = "Chrome"
 )
@@ -47,36 +43,44 @@ type Fetcher interface {
 	//  Response return response after fetch Request.
 	//Response(request FetchRequester) (FetchResponser, error)
 	//  Fetch is called to retrieve HTML content of a document from the remote server.
-	Fetch(request FetchRequester) (io.ReadCloser, error)
+	Fetch(request Request) (io.ReadCloser, error)
 	GetCookieJar() *cookiejar.Jar
 	SetCookieJar(jar *cookiejar.Jar)
 }
 
-//FetchResponser interface that must be satisfied the listed methods
-type FetchResponser interface {
-	//  GetExpires returns expires value of response
-	GetExpires() time.Time
-	//  GetReasonsNotToCache returns an array of reasons why a response should not be cached if any.
-	GetReasonsNotToCache() []cacheobject.Reason
-	//  ReasonsNotToCache and Expires values are set here
-	SetCacheInfo()
-	//  GetURL returns final URL after all redirects
-	GetURL() string
-	//  GetHTML return html content of fetched document
-	GetHTML() (io.ReadCloser, error)
-}
+// //FetchRequester interface interface that must be satisfied the listed methods
+// type FetchRequester interface {
+// 	//  GetURL returns initial URL from Request
+// 	GetURL() string
+// 	//  Host returns Host value from Request
+// 	Host() (string, error)
+// 	//  GetFormData Returns Form Data from FetchRequester
+// 	GetFormData() string
+// 	//  Type return type of request : base or splash
+// 	Type() string
+// 	GetUserToken() string
+// }
 
-//FetchRequester interface interface that must be satisfied the listed methods
-type FetchRequester interface {
-	//  GetURL returns initial URL from Request
-	GetURL() string
-	//  Host returns Host value from Request
-	Host() (string, error)
-	//  GetFormData Returns Form Data from FetchRequester
-	GetFormData() string
-	//  Type return type of request : base or splash
-	Type() string
-	GetUserToken() string
+//Request struct contains request information sent to  Fetchers
+type Request struct {
+	Type string `json:"type"`
+	//	URL to be retrieved
+	URL string `json:"url"`
+	//	HTTP method : GET, POST
+	Method string
+	// FormData is a string value for passing formdata parameters.
+	//
+	// For example it may be used for processing pages which require authentication
+	//
+	// Example:
+	//
+	// "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
+	//
+	FormData string `json:"formData,omitempty"`
+	//UserToken identifies user to keep personal cookies information.
+	UserToken string `json:"userToken"`
+	//InfiniteScroll option is used for fetching web pages with Continuous Scrolling
+	InfiniteScroll bool `json:"infiniteScroll"`
 }
 
 //NewFetcher creates instances of Fetcher for downloading a web page.
@@ -84,8 +88,6 @@ func NewFetcher(t Type) Fetcher {
 	switch t {
 	case Base:
 		return NewBaseFetcher()
-	case Splash:
-		return NewSplashFetcher()
 	case Chrome:
 		return NewChromeFetcher()
 	default:
@@ -101,71 +103,12 @@ type BaseFetcher struct {
 	jar    *cookiejar.Jar
 }
 
-// SplashFetcher is a Fetcher that uses Scrapinghub splash
-// to fetch URLs. Splash is a javascript rendering service
-// Read more at https://github.com/scrapinghub/splash
-type SplashFetcher struct {
-	jar *cookiejar.Jar
-}
-
 // ChromeFetcher is used to fetch Java Script rendeded pages.
 type ChromeFetcher struct {
 	cdpClient *cdp.Client
 	client    *http.Client
 	jar       *cookiejar.Jar
 }
-
-// NewSplashFetcher creates instance of SplashFetcher{} to fetch a page content from remote Scrapinghub splash service.
-func NewSplashFetcher() *SplashFetcher {
-	sf := &SplashFetcher{}
-	return sf
-}
-
-// Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
-func (sf *SplashFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
-	r, err := sf.Response(request)
-	if err != nil {
-		return nil, err
-	}
-	return r.GetHTML()
-}
-
-// Response return response from Splash server after document fetching
-func (sf *SplashFetcher) Response(request FetchRequester) (FetchResponser, error) {
-	req := request.(splash.Request)
-	u, err := url.Parse(req.GetURL())
-	if err != nil {
-		return nil, err
-	}
-
-	if sf.jar != nil {
-		req.Cookies = sf.jar.AllCookies()
-	}
-
-	r, err := req.GetResponse()
-	if err != nil {
-		return nil, err
-	}
-
-	cArr := []*http.Cookie{}
-	for _, c := range r.Cookies {
-		cookie := c.Cookie
-		cArr = append(cArr, &cookie)
-	}
-	sf.jar.SetCookies(u, cArr)
-	return r, nil
-}
-
-func (sf *SplashFetcher) GetCookieJar() *cookiejar.Jar {
-	return sf.jar
-}
-
-func (sf *SplashFetcher) SetCookieJar(jar *cookiejar.Jar) {
-	sf.jar = jar
-}
-
-// Static type assertion
-var _ Fetcher = &SplashFetcher{}
 
 // NewChromeFetcher returns ChromeFetcher
 func NewChromeFetcher() *ChromeFetcher {
@@ -189,7 +132,7 @@ func NewChromeFetcher() *ChromeFetcher {
 }
 
 // Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
-func (f *ChromeFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
+func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	//URL validation
 	if _, err := url.ParseRequestURI(strings.TrimSpace(request.GetURL())); err != nil {
 		return nil, &errs.BadRequest{err}
@@ -241,19 +184,17 @@ func (f *ChromeFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
 		func() error { return f.cdpClient.Network.Enable(ctx, nil) },
 		func() error { return f.cdpClient.Page.Enable(ctx) },
 		func() error { return f.cdpClient.Runtime.Enable(ctx) },
-
-		//func() error { return setCookies(ctx, c.Network, Cookies...) },
 	); err != nil {
 		return nil, err
 	}
 	domLoadTimeout := 5 * time.Second
-	if request.GetFormData() == "" {
+	if request.FormData == "" {
 		err = f.navigate(ctx, f.cdpClient.Page, "GET", request.GetURL(), "", domLoadTimeout)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		formData := parseFormData(request.GetFormData())
+		formData := parseFormData(request.FormData)
 		err = f.navigate(ctx, f.cdpClient.Page, "POST", request.GetURL(), formData.Encode(), domLoadTimeout)
 	}
 
@@ -325,12 +266,13 @@ func NewBaseFetcher() *BaseFetcher {
 }
 
 // Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
-func (bf *BaseFetcher) Fetch(request FetchRequester) (io.ReadCloser, error) {
-	r, err := bf.Response(request)
+func (bf *BaseFetcher) Fetch(request Request) (io.ReadCloser, error) {
+	resp, err := bf.response(request)
 	if err != nil {
 		return nil, err
 	}
-	return r.GetHTML()
+	readCloser := ioutil.NopCloser(strings.NewReader(resp.HTML))
+	return readCloser, nil
 }
 
 // parseFormData is used for converting formdata string to url.Values type
@@ -346,9 +288,9 @@ func parseFormData(fd string) url.Values {
 }
 
 //Response return response after document fetching using BaseFetcher
-func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) {
+func (bf *BaseFetcher) response(r Request) (*BaseFetcherResponse, error) {
 	//URL validation
-	if _, err := url.ParseRequestURI(strings.TrimSpace(request.GetURL())); err != nil {
+	if _, err := url.ParseRequestURI(strings.TrimSpace(r.GetURL())); err != nil {
 		return nil, &errs.BadRequest{err}
 	}
 
@@ -356,19 +298,18 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 		bf.client.Jar = bf.jar
 	}
 
-	r := request.(BaseFetcherRequest)
 	var err error
 	var req *http.Request
 	var resp *http.Response
 
-	if request.GetFormData() == "" {
+	if r.FormData == "" {
 		req, err = http.NewRequest(r.Method, r.URL, nil)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		//if form data exists send POST request
-		formData := parseFormData(r.GetFormData())
+		formData := parseFormData(r.FormData)
 		req, err = http.NewRequest("POST", r.URL, strings.NewReader(formData.Encode()))
 		if err != nil {
 			return nil, err
@@ -395,6 +336,8 @@ func (bf *BaseFetcher) Response(request FetchRequester) (FetchResponser, error) 
 			return nil, &errs.ProxyAuthenticationRequired{}
 		case 500:
 			return nil, &errs.InternalServerError{}
+		case 502:
+			return nil, &errs.BadGateway{}
 		case 504:
 			return nil, &errs.GatewayTimeout{}
 		default:
@@ -429,3 +372,17 @@ func (bf *BaseFetcher) SetCookieJar(jar *cookiejar.Jar) {
 
 // Static type assertion
 var _ Fetcher = &BaseFetcher{}
+
+//GetURL returns URL to be fetched
+func (req Request) GetURL() string {
+	return strings.TrimRight(strings.TrimSpace(req.URL), "/")
+}
+
+// Host returns Host value from Request
+func (req Request) Host() (string, error) {
+	u, err := url.Parse(req.GetURL())
+	if err != nil {
+		return "", err
+	}
+	return u.Host, nil
+}

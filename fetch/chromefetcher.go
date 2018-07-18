@@ -1,87 +1,17 @@
 package fetch
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"io/ioutil"
-	"net/url"
-	"strings"
 	"time"
 
 	"github.com/mafredri/cdp"
-	"github.com/mafredri/cdp/protocol/dom"
 	"github.com/mafredri/cdp/protocol/network"
 	"github.com/mafredri/cdp/protocol/page"
 	"github.com/mafredri/cdp/protocol/runtime"
 	"golang.org/x/sync/errgroup"
 )
-
-//ChromeFetcherRequest struct contains request information used by ChromeFetcher
-type ChromeFetcherRequest struct {
-	//	URL to be retrieved
-	URL string `json:"url"`
-	//	HTTP method : GET, POST
-	Method string
-	// FormData is a string value for passing formdata parameters.
-	//
-	// For example it may be used for processing pages which require authentication
-	//
-	// Example:
-	//
-	// "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
-	//
-	FormData string `json:"formData,omitempty"`
-	//UserToken identifies user to keep personal cookies information.
-	UserToken string `json:"userToken"`
-}
-
-//	GetFormData returns form data from ChromeFetcherRequest
-func (req ChromeFetcherRequest) GetFormData() string {
-	return req.FormData
-}
-
-//GetURL returns URL to be fetched
-func (req ChromeFetcherRequest) GetURL() string {
-	return strings.TrimRight(strings.TrimSpace(req.URL), "/")
-}
-
-//GetUserToken returns user token
-func (r ChromeFetcherRequest) GetUserToken() string {
-	return r.UserToken
-}
-
-// Host returns Host value from Request
-func (req ChromeFetcherRequest) Host() (string, error) {
-	u, err := url.Parse(req.GetURL())
-	if err != nil {
-		return "", err
-	}
-	return u.Host, nil
-}
-
-//Type returns fetcher type
-func (req ChromeFetcherRequest) Type() string {
-	return "chrome"
-}
-
-// setCookies sets all the provided cookies.
-// func setCookies(ctx context.Context, net cdp.Network, cookies ...Cookie) error {
-// 	var cmds []runBatchFunc
-// 	for _, c := range cookies {
-// 		args := network.NewSetCookieArgs(c.Name, c.Value).SetURL(c.URL)
-// 		cmds = append(cmds, func() error {
-// 			reply, err := net.SetCookie(ctx, args)
-// 			if err != nil {
-// 				return err
-// 			}
-// 			if !reply.Success {
-// 				return errors.New("could not set cookie")
-// 			}
-// 			return nil
-// 		})
-// 	}
-// 	return runBatch(cmds...)
-// }
 
 // navigate to the URL and wait for DOMContentEventFired. An error is
 // returned if timeout happens before DOMContentEventFired.
@@ -118,7 +48,7 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 			interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
 			interceptedArgs.SetMethod("POST")
 			interceptedArgs.SetPostData(formData)
-			fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`,len(formData))
+			fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`, len(formData))
 			interceptedArgs.Headers = []byte(fData)
 			if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
 				panic(err)
@@ -156,14 +86,14 @@ func (f ChromeFetcher) runJSFromFile(ctx context.Context, path string) error {
 }
 
 // removeNodes deletes all provided nodeIDs from the DOM.
-func removeNodes(ctx context.Context, domClient cdp.DOM, nodes ...dom.NodeID) error {
-	var rmNodes []runBatchFunc
-	for _, id := range nodes {
-		arg := dom.NewRemoveNodeArgs(id)
-		rmNodes = append(rmNodes, func() error { return domClient.RemoveNode(ctx, arg) })
-	}
-	return runBatch(rmNodes...)
-}
+// func removeNodes(ctx context.Context, domClient cdp.DOM, nodes ...dom.NodeID) error {
+// 	var rmNodes []runBatchFunc
+// 	for _, id := range nodes {
+// 		arg := dom.NewRemoveNodeArgs(id)
+// 		rmNodes = append(rmNodes, func() error { return domClient.RemoveNode(ctx, arg) })
+// 	}
+// 	return runBatch(rmNodes...)
+// }
 
 // runBatchFunc is the function signature for runBatch.
 type runBatchFunc func() error
