@@ -445,17 +445,19 @@ func (p Payload) selectors() ([]string, error) {
 
 //response sends request to fetch service and returns fetch.FetchResponser
 func fetchContent(req fetch.FetchRequester) (io.ReadCloser, error) {
-	svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH") /*, gklog.NewNopLogger()*/)
+	svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH"))
 	if err != nil {
 		logger.Error(err)
 	}
-	resp, err := svc.Response(req)
-	if err != nil {
-		logger.Error(err)
-		return nil, err
-	}
+	
+	// resp, err := svc.Response(req)
+	// if err != nil {
+	// 	logger.Error(err)
+	// 	return nil, err
+	// }
 
-	return resp.GetHTML()
+	// return resp.GetHTML()
+	return svc.Fetch(req)
 }
 
 //partNames returns Part Names which are used as a header of output CSV
