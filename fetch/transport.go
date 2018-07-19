@@ -23,17 +23,9 @@ func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logg
 		//httptransport.ServerErrorLogger(logger),
 		httptransport.ServerErrorEncoder(encodeError),
 	}
-	//r.Methods("GET").Path("/proxy").HandlerFunc(proxyHandler)
 	r.Methods("GET").Path("/ping").HandlerFunc(healthCheckHandler)
-	r.Methods("POST").Path("/fetch/chrome").Handler(httptransport.NewServer(
-		endpoint.ChromeFetchEndpoint,
-		DecodeRequest,
-		EncodeFetcherContent,
-		options...,
-	))
-
-	r.Methods("POST").Path("/fetch/base").Handler(httptransport.NewServer(
-		endpoint.BaseFetchEndpoint,
+	r.Methods("POST").Path("/fetch").Handler(httptransport.NewServer(
+		endpoint.FetchEndpoint,
 		DecodeRequest,
 		EncodeFetcherContent,
 		options...,
@@ -41,7 +33,7 @@ func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logg
 	return r
 }
 
-//DecodeRequest decodes BaseFetcherRequest
+//DecodeRequest decodes FetcherRequest
 //if error occures, server should return 400 Bad Request
 func DecodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var request Request
@@ -64,7 +56,6 @@ func EncodeFetcherContent(ctx context.Context, w http.ResponseWriter, response i
 	if err != nil {
 		encodeError(ctx, err, w)
 		return nil
-		//return err
 	}
 	return nil
 }
@@ -76,7 +67,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	//	logger.Printf("Type: %T\n", err)
 
 	var httpStatus int
 	switch err.(type) {
@@ -106,34 +96,25 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		//return 504 Status
 		httpStatus = http.StatusGatewayTimeout
 	}
-	//logger.Error(err)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(httpStatus)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": err.Error(),
 	})
-
 }
 
 // Endpoints wrapper
 type Endpoints struct {
-	ChromeFetchEndpoint endpoint.Endpoint
-	BaseFetchEndpoint   endpoint.Endpoint
+	FetchEndpoint endpoint.Endpoint
 }
 
-// MakeChromeFetchEndpoint creates ChromeFetch Endpoint
-func MakeChromeFetchEndpoint(svc Service) endpoint.Endpoint {
+// MakeFetchEndpoint creates Fetch Endpoint
+func MakeFetchEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		return svc.Fetch(request.(Request))
 	}
 }
 
-// MakeBaseFetchEndpoint creates BaseFetch Endpoint
-func MakeBaseFetchEndpoint(svc Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		return svc.Fetch(request.(Request))
-	}
-}
 
 //healthCheckHandler is used to check if Fetch service is alive.
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {

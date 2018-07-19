@@ -2,7 +2,6 @@ package fetch
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -29,12 +28,10 @@ type ServiceMiddleware func(Service) Service
 func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 	var fetcher Fetcher
 	switch req.Type {
-	case "base":
-		fetcher = NewFetcher(Base)
 	case "chrome":
 		fetcher = NewFetcher(Chrome)
 	default:
-		return nil, fmt.Errorf("Invalid fetcher type specified %s", req.Type)
+		fetcher = NewFetcher(Base)
 	}
 	var (
 		jar     *cookiejar.Jar
@@ -51,7 +48,6 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 	if req.UserToken != "" {
 		storageType := viper.GetString("STORAGE_TYPE")
 		s = storage.NewStore(storageType)
-		//cookies, err = s.Read(req.GetUserToken(), storage.COOKIES)
 		cookies, err = s.Read(storage.Record{
 			Type: storage.COOKIES,
 			Key:  req.UserToken,
@@ -83,7 +79,6 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 	}
 	fetcher.SetCookieJar(jar)
 	res, err := fetcher.Fetch(req)
-	//res, err := fetcher.Response(req)
 	if err != nil {
 		return nil, err
 	}
@@ -91,11 +86,9 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 		jar = fetcher.GetCookieJar()
 		cArr = append(cArr, jar.AllCookies()...)
 		cookies, err = json.Marshal(cArr)
-		//logger.Info(string(cookies))
 		if err != nil {
 			return nil, err
 		}
-		//err = s.Write(req.GetUserToken(), &storage.Record{RecordType: storage.COOKIES, Value: cookies}, 0)
 		err = s.Write(storage.Record{
 			Type:    storage.COOKIES,
 			Key:     req.UserToken,

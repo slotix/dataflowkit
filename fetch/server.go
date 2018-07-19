@@ -37,8 +37,7 @@ func Start(cfg Config) *HTMLServer {
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{
-		ChromeFetchEndpoint: MakeChromeFetchEndpoint(svc),
-		BaseFetchEndpoint: MakeBaseFetchEndpoint(svc),
+		FetchEndpoint: MakeFetchEndpoint(svc),
 	}
 
 	r := NewHttpHandler(ctx, endpoints, logger)
