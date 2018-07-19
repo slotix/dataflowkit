@@ -204,13 +204,12 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	// 	return nil, err
 	// }
 
-	//TODO: scroll2bottom
-	// if request.InfiniteScroll {
-	// 	err = f.runJSFromFile(ctx, "./chrome/scroll2bottom.js")
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// }
+	if request.InfiniteScroll {
+		err = f.runJSFromFile(ctx, "./chrome/scroll2bottom.js")
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// Fetch the document root node. We can pass nil here
 	// since this method only takes optional arguments.
