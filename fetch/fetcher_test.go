@@ -21,26 +21,20 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 	viper.Set("PROXY", "")
 	fetcher := NewFetcher(Base)
 	req := Request{
-		Type: "base",
-		//URL:    ts.URL,
 		URL:    tsURL + "/hello",
 		Method: "GET",
 	}
-	//resp, err := fetcher.Response(req)
-	//assert.Nil(t, err, "Expected no error")
-	//html, err := resp.GetHTML()
 	html, err := fetcher.Fetch(req)
 	assert.NoError(t, err, "Expected no error")
 	data, err := ioutil.ReadAll(html)
 	assert.NoError(t, err, "Expected no error")
 	assert.Equal(t, helloContent, data)
-	//assert.Equal(t, req.GetURL(), resp.GetURL())
+
 	//assert.Equal(t, time.Now().UTC().Add(24*time.Hour).Truncate(1*time.Minute), resp.GetExpires().Truncate(1*time.Minute), "Expires default value is 24 hours")
-	
+
 	//Test 200 response
 	req = Request{
-		Type: "base",
-		URL:  tsURL,
+		URL: tsURL,
 	}
 	content, err := fetcher.Fetch(req)
 	assert.NoError(t, err)
@@ -59,32 +53,25 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 
 	//Test Host()
 	req = Request{
-		Type: "base",
-		URL:  "http://google.com/somepage",
+		URL: "http://google.com/somepage",
 	}
 	host, err := req.Host()
 	assert.NoError(t, err)
 	assert.Equal(t, "google.com", host, "Test BaseFetcherRequest Host()")
+
 	req = Request{
-		Type: "base",
-		URL:  "Invalid.%$^host",
+		URL: "Invalid.%$^host",
 	}
 	host, err = req.Host()
 	assert.Error(t, err)
 
 	//fetch robots.txt data
 	robots, err := fetcher.Fetch(Request{
-		Type:   "base",
 		URL:    tsURL + "/robots.txt",
 		Method: "GET",
 	})
 	data, err = ioutil.ReadAll(robots)
 	assert.NoError(t, err, "Expected no error")
-	// resp, err := fetcher.Response(BaseFetcherRequest{
-	// 	URL:    tsURL + "/robots.txt",
-	// 	Method: "GET",
-	// })
-	//bfResponse := resp.(*BaseFetcherResponse)
 	assert.Equal(t, robotsContent, string(data))
 
 }
@@ -113,6 +100,16 @@ func TestChromeFetcher_Fetch(t *testing.T) {
 	}
 	host, err = req.Host()
 	assert.Error(t, err)
+
+	//test runJSFromFile
+	req = Request{
+		Type:           "chrome",
+		URL:            "http://testserver:12345/status/200",
+		InfiniteScroll: true,
+	}
+	resp, err = fetcher.Fetch(req)
+	assert.Nil(t, err, "Expected no error")
+	assert.NotNil(t, resp, "Expected resp not nil")
 }
 func Test_parseFormData(t *testing.T) {
 	formData := "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=usr&ips_password=passw&rememberMe=0"
