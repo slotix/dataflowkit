@@ -26,23 +26,6 @@ type BaseFetcherResponse struct {
 	Status string
 }
 
-//MarshalJSON customizes marshaling of http.Response.Body which has type io.ReadCloser. It cannot be marshaled with standard Marshal method without casting to []byte.
-//http://choly.ca/post/go-json-marshalling/
-/* func (r *BaseFetcherResponse) MarshalJSON() ([]byte, error) {
-	type Alias BaseFetcherResponse
-	body, err := ioutil.ReadAll(r.Response.Body)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(&struct {
-		HTML []byte `json:"-"`
-		*Alias
-	}{
-		HTML:  body,
-		Alias: (*Alias)(r),
-	})
-} */
-
 // SetCacheInfo checks if resource is cacheable.
 // Respource is cachable if length of ReasonsNotToCache is zero.
 // ReasonsNotToCache and Expires values are filled here
