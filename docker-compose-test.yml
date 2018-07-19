@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-    chrome:
+  chrome:
     image: justinribeiro/chrome-headless
     cap_add:
       - SYS_ADMIN
@@ -50,11 +50,10 @@ services:
     #build: ./testserver
     image: slotix/dfk-testserver
     environment:
-      - SPLASH=splash:8050
       - DFK_TEST=testserver:12345
     ports:
       - "12345:12345"
     depends_on:
-      - splash
+      - chrome
     restart: always
   
