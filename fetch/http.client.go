@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -35,23 +34,13 @@ func NewHTTPClient(instance string) (Service, error) {
 	// made your own client library, you'd do this work there, so your server
 	// could rely on a consistent set of client behavior.
 
-	var baseFetchEndpoint endpoint.Endpoint
+	var fetchEndpoint endpoint.Endpoint
 	{
-		baseFetchEndpoint = httptransport.NewClient(
+		fetchEndpoint = httptransport.NewClient(
 			"POST",
-			copyURL(u, "/fetch/base"),
+			copyURL(u, "/fetch"),
 			encodeRequest,
-			decodeBaseFetcherContent,
-		).Endpoint()
-	}
-
-	var chromeFetchEndpoint endpoint.Endpoint
-	{
-		chromeFetchEndpoint = httptransport.NewClient(
-			"POST",
-			copyURL(u, "/fetch/chrome"),
-			encodeRequest,
-			decodeChromeFetcherContent,
+			decodeFetcherContent,
 		).Endpoint()
 	}
 
@@ -59,8 +48,7 @@ func NewHTTPClient(instance string) (Service, error) {
 	// endpoint.Set implementing the Service methods. That's just a simple bit
 	// of glue code.
 	return Endpoints{
-		BaseFetchEndpoint:   baseFetchEndpoint,
-		ChromeFetchEndpoint: chromeFetchEndpoint,
+		FetchEndpoint: fetchEndpoint,
 	}, nil
 }
 
@@ -75,22 +63,10 @@ func encodeRequest(ctx context.Context, r *http.Request, request interface{}) er
 	return nil
 }
 
-func decodeBaseFetcherContent(ctx context.Context, r *http.Response) (interface{}, error) {
+func decodeFetcherContent(ctx context.Context, r *http.Response) (interface{}, error) {
 	if r.StatusCode != http.StatusOK {
 		return nil, errors.New(r.Status)
 	}
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func decodeChromeFetcherContent(ctx context.Context, r *http.Response) (interface{}, error) {
-	//Chrome returns no error for pages with non 200 pages. So we don't need to this check 
-	// if r.StatusCode != http.StatusOK {
-	// 	return nil, errors.New(r.Status)
-	// }
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
@@ -108,19 +84,9 @@ func (e Endpoints) Fetch(req Request) (io.ReadCloser, error) {
 	ctx := context.Background()
 	var resp interface{}
 	var err error
-	switch req.Type {
-	case "base":
-		resp, err = e.BaseFetchEndpoint(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-	case "chrome":
-		resp, err = e.ChromeFetchEndpoint(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, fmt.Errorf("Invalid fetcher type specified %s", req.Type)
+	resp, err = e.FetchEndpoint(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 	readCloser := ioutil.NopCloser(bytes.NewReader(resp.([]byte)))
 	return readCloser, nil
