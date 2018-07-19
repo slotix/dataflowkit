@@ -11,17 +11,13 @@
 // Fetcher is the interface that must be satisfied by things that can fetch
 // remote URLs and return their contents.
 //
-// Currently two types of fetcher are available : Splash Fetcher and Base Fetcher.
+// Currently two types of fetcher are available : Chrome Fetcher and Base Fetcher.
 //
 // Base fetcher is used for downloading html web page using Go standard library's http.
 //
-// Splash Fetcher uses Scrapinghub splash to fetch URLs.
-// Splash is a javascript rendering service.
-// Read more at https://github.com/scrapinghub/splash
+// Chrome Fetcher connects to Headless Chrome which renders JavaScript pages.
 //
 // RobotsTxtMiddleware checks if scraping of specified resource is allowed by robots.txt
-//
-// StorageMiddleware caches web pages content passed to Dataflow kit parser.
 //
 package fetch
 
