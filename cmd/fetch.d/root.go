@@ -103,15 +103,13 @@ func init() {
 	//flags and configuration settings. They are global for the application.
 
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "HTTP listen address")
+	RootCmd.Flags().StringVarP(&chrome, "CHROME", "c", "http://127.0.0.1:9222", "Headless Chrome URL address. It is used for fetching JS driven web pages")
 	RootCmd.Flags().StringVarP(&fetchProxy, "PROXY", "p", "", "Proxy address http://username:password@proxy-host:port")
 
-	RootCmd.Flags().StringVarP(&chrome, "CHROME", "", "http://127.0.0.1:9222", "chromium --remote-debugging-port")
-
 	//set here default type of storage
-	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: Diskv, Cassandra")
-	RootCmd.Flags().BoolVarP(&ignoreCacheInfo, "IGNORE_CACHE_INFO", "", false, "If a website is not cachable by some reason, ignore this and use cached copy if any. Please don't set it to true in production")
+	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage type. Types: Diskv, Cassandra")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
-	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "c", "127.0.0.1", "Cassandra host address")
+	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "", "127.0.0.1", "Cassandra host address")
 
 	//viper.AutomaticEnv() // read in environment variables that match
 
@@ -140,7 +138,6 @@ func init() {
 	viper.BindPFlag("PROXY", RootCmd.Flags().Lookup("PROXY"))
 
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
-	viper.BindPFlag("IGNORE_CACHE_INFO", RootCmd.Flags().Lookup("IGNORE_CACHE_INFO"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
 }
