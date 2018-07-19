@@ -11,13 +11,14 @@
 package healthcheck
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/garyburd/redigo/redis"
-	"github.com/slotix/dataflowkit/splash"
+	"github.com/gocql/gocql"
+	"github.com/mafredri/cdp/devtool"
 )
 
 //Checker is the key interface of healthChecker. All other structs implement methods wchich satisfy that interface.
@@ -28,18 +29,12 @@ type Checker interface {
 	String() string
 }
 
-// RedisConn struct implements methods satisfying Checker interface
-type RedisConn struct {
-	Conn    redis.Conn
-	Network string
-	Host    string
+type ChromeConn struct {
+	Host string
 }
 
-// SplashConn struct implements methods satisfying Checker interface
-type SplashConn struct {
+type CassandraConn struct {
 	Host string
-	//	User            string
-	//	Password        string
 }
 
 // FetchConn struct implements methods satisfying Checker interface
@@ -60,12 +55,12 @@ func (ParseConn) String() string {
 	return "DFK Parse Service"
 }
 
-func (RedisConn) String() string {
-	return "Redis"
+func (ChromeConn) String() string {
+	return "Headless Chrome"
 }
 
-func (SplashConn) String() string {
-	return "Splash"
+func (CassandraConn) String() string {
+	return "Cassandra"
 }
 
 func (p ParseConn) isAlive() error {
@@ -120,32 +115,26 @@ func (f FetchConn) isAlive() error {
 	return nil
 }
 
-func (r RedisConn) isAlive() error {
-	var err error
-	r.Conn, err = redis.Dial(r.Network, r.Host)
-	if err != nil {
+func (c ChromeConn) isAlive() error {
+	devt := devtool.New(c.Host)
+	ctx := context.Background()
+	version, err := devt.Version(ctx)
+	if err != nil || version.Browser == "" {
 		return err
 	}
-	defer r.Conn.Close()
-	res, err := r.Conn.Do("PING")
-	if err != nil {
-		return err
-	}
-	if res == "PONG" {
-		return nil
-	}
-	return err
+	return nil
 }
 
-func (s SplashConn) isAlive() error {
-	resp, err := splash.Ping(s.Host)
+func (c CassandraConn) isAlive() error {
+	cluster := gocql.NewCluster(c.Host)
+	cluster.Keyspace = "dfk"
+	cluster.Consistency = gocql.One
+	s, err := cluster.CreateSession()
 	if err != nil {
 		return err
 	}
-	if resp.Status == "ok" {
-		return nil
-	}
-	return err
+	defer s.Close()
+	return nil
 }
 
 // CheckServices checks if services passed as parameters are alive. It returns the map containing serviceName and appropriate status
