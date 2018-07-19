@@ -32,18 +32,16 @@ import (
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/healthcheck"
-	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
 	DFKFetch string //DFKFetch service address.
-	fetcher  string //fetcher type: splash, base
+	fetcher  string //fetcher type: chrome, base
 	URL      string
 	Params   string
 	Cookies  string
-	LUA      string
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -56,7 +54,7 @@ var RootCmd = &cobra.Command{
 
 		services := []healthcheck.Checker{
 			healthcheck.FetchConn{
-				//Check if Splash Fetch service is alive
+				//Check if DFK Fetch service is alive
 				Host: viper.GetString("DFK_FETCH"),
 			},
 		}
@@ -85,29 +83,19 @@ var RootCmd = &cobra.Command{
 					os.Exit(1)
 				}
 
-				var req fetch.FetchRequester
+				var req fetch.Request
 				switch strings.ToLower(fetcher) {
-				case "splash":
-					req = splash.Request{
-						URL:     URL,
-					//	FormData:  Params,
-					//	Cookies: Cookies,
-					//	LUA:     LUA,
+				case "chrome":
+					req = fetch.Request{
+						Type: "chrome",
+						URL:  URL,
 					}
-				case "base":
-					req = fetch.BaseFetcherRequest{URL: URL}
 				default:
-					err := errors.New("invalid fetcher type specified")
-					fmt.Fprintf(os.Stderr, err.Error())
-					os.Exit(1)
+					req = fetch.Request{
+						URL: URL,
+					}
 				}
-				//	req := splash.Request{URL: URL}
-				resp, err := svc.Response(req)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "error: %v\n", err)
-					os.Exit(1)
-				}
-				html,err  := resp.GetHTML()
+				html, err := svc.Fetch(req)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error: %v\n", err)
 					os.Exit(1)
@@ -152,11 +140,10 @@ func Execute(version string) {
 func init() {
 	//flags and configuration settings. They are global for the application.
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
-	RootCmd.Flags().StringVarP(&fetcher, "FETCHER_TYPE", "t", "splash", "DFK Fetcher type: splash, base")
+	RootCmd.Flags().StringVarP(&fetcher, "FETCHER_TYPE", "t", "base", "DFK Fetcher type: chrome, base")
 	RootCmd.Flags().StringVarP(&URL, "URL", "u", "", "URL to be fetched")
 	RootCmd.Flags().StringVarP(&Params, "FORMDATA", "", "", "Params is a string value for passing formdata parameters.")
 	RootCmd.Flags().StringVarP(&Cookies, "COOKIES", "", "", "Cookies contain cookies to be added to request  before sending it to browser.")
-	RootCmd.Flags().StringVarP(&LUA, "LUA", "", "", "LUA Splash custom script")
 
 	//viper.AutomaticEnv() // read in environment variables that match
 	//Environment variable takes precedence over flag value
@@ -165,11 +152,8 @@ func init() {
 	} else {
 		viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
 	}
-	
 	viper.BindPFlag("FETCHER_TYPE", RootCmd.Flags().Lookup("FETCHER_TYPE"))
 	viper.BindPFlag("URL", RootCmd.Flags().Lookup("URL"))
 	viper.BindPFlag("PARAMS", RootCmd.Flags().Lookup("PARAMS"))
 	viper.BindPFlag("COOKIES", RootCmd.Flags().Lookup("COOKIES"))
-	viper.BindPFlag("LUA", RootCmd.Flags().Lookup("LUA"))
-
 }
