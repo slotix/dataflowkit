@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -113,6 +114,11 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 
 	if len(task.BlockCounter) > 0 {
 		tw.keys[0] = task.BlockCounter
+	} else {
+		// We have to sort a keys to keep an order
+		for k := range tw.keys {
+			sort.Slice(tw.keys[k], func(i, j int) bool { return tw.keys[k][i] < tw.keys[k][j] })
+		}
 	}
 
 	j, err := json.Marshal(tw.keys)
@@ -449,7 +455,7 @@ func fetchContent(req fetch.FetchRequester) (io.ReadCloser, error) {
 	if err != nil {
 		logger.Error(err)
 	}
-	
+
 	// resp, err := svc.Response(req)
 	// if err != nil {
 	// 	logger.Error(err)
@@ -613,6 +619,10 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 						continue
 					}
 					blockResults[part.Name+"_details"] = uid //generate uid resDetails.AllBlocks()
+					// Sort keys to keep an order before write them into storage.
+					for k := range tw.keys {
+						sort.Slice(tw.keys[k], func(i, j int) bool { return tw.keys[k][i] < tw.keys[k][j] })
+					}
 					j, err := json.Marshal(tw.keys)
 					if err != nil {
 						//return nil, err
