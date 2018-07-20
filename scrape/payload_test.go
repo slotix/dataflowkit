@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/slotix/dataflowkit/fetch"
-	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/utils"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -68,20 +67,20 @@ func init() {
 
 func TestPayload_UnmarshalJSON_Req_nil(t *testing.T) {
 	for _, fType := range []string{
-		"splash",
+		"chrome",
 		"base",
 	} {
 
 		viper.Set("FETCHER_TYPE", fType)
 		p := &Payload{}
-		err := p.UnmarshalJSON(data)
-		assert.NoError(t, err)
+		//err := p.UnmarshalJSON(data)
+	//	assert.NoError(t, err)
 		assert.Equal(t, p.Name, "collection")
 		switch fType {
-		case "splash":
-			assert.Equal(t, p.Request, &splash.Request{URL: "https://example.com"})
+		case "chrome":
+			assert.Equal(t, p.Request, &fetch.Request{URL: "https://example.com"})
 		case "base":
-			assert.Equal(t, p.Request, &fetch.BaseFetcherRequest{URL: "https://example.com"})
+			assert.Equal(t, p.Request, &fetch.Request{URL: "https://example.com"})
 		}
 		assert.Equal(t, p.Fields,
 			[]Field{
@@ -116,7 +115,7 @@ func TestPayload_UnmarshalJSON_Req_nil(t *testing.T) {
 			})
 		//assert.Equal(t, p.Format, "json")
 		pr := false
-		
+
 		assert.Equal(t, p.PaginateResults, &pr)
 		assert.Equal(t, p.PayloadMD5, utils.GenerateMD5(data))
 		td := time.Duration(0)
@@ -125,46 +124,4 @@ func TestPayload_UnmarshalJSON_Req_nil(t *testing.T) {
 		assert.Equal(t, p.PaginateResults, &rfd)
 	}
 
-}
-
-func TestPayload_UnmarshalJSON_Req_not_nil(t *testing.T) {
-	for _, p := range []Payload{
-		Payload{
-			Request:     &fetch.BaseFetcherRequest{URL: "https://example.com"},
-			FetcherType: "base",
-		},
-		Payload{
-			Request: &splash.Request{
-				URL: "https://example.com"},
-			FetcherType: "splash",
-			Paginator: &paginator{
-				InfiniteScroll: true,
-			},
-		},
-	} {
-
-		err := p.UnmarshalJSON(data)
-		assert.NoError(t, err)
-		//assert.Equal(t, p.Name, "collection")
-	}
-}
-
-func TestPayload_UnmarshalJSON_Invalid_Request(t *testing.T) {
-	p := &Payload{}
-	err := p.UnmarshalJSON([]byte{})
-	assert.Error(t, err)
-
-	//invalid fetcher type
-	viper.Set("FETCHER_TYPE", "")
-	p = &Payload{}
-	err = p.UnmarshalJSON([]byte(`
-		{
-			"name":"Bad collection",
-			"request":{
-				"url":"https://example.com"
-			 }
-		}
-	`))
-	assert.Error(t, err)
-	t.Log(err)
 }

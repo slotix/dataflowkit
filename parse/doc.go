@@ -8,8 +8,6 @@
 
 // Package parse of the Dataflow kit is used by parse.d service which parses html content from web pages following the rules described in Payload JSON file.
 //
-// StorageMiddleware caches parsed pages content.
-//
 package parse
 
 // EOF
