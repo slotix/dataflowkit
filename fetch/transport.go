@@ -15,8 +15,8 @@ import (
 	"github.com/slotix/dataflowkit/errs"
 )
 
-// NewHttpHandler mounts all of the service endpoints into an http.Handler.
-func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logger) http.Handler {
+// newHttpHandler mounts all of the service endpoints into an http.Handler.
+func newHttpHandler(ctx context.Context, endpoint endpoints, logger *logrus.Logger) http.Handler {
 	r := mux.NewRouter()
 	r.UseEncodedPath()
 	options := []httptransport.ServerOption{
@@ -25,9 +25,9 @@ func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logg
 	}
 	r.Methods("GET").Path("/ping").HandlerFunc(healthCheckHandler)
 	r.Methods("POST").Path("/fetch").Handler(httptransport.NewServer(
-		endpoint.FetchEndpoint,
-		DecodeRequest,
-		EncodeFetcherContent,
+		endpoint.fetchEndpoint,
+		decodeRequest,
+		encodeFetcherContent,
 		options...,
 	))
 	return r
@@ -35,7 +35,7 @@ func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logg
 
 //DecodeRequest decodes FetcherRequest
 //if error occures, server should return 400 Bad Request
-func DecodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+func decodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var request Request
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		return nil, &errs.BadRequest{err}
@@ -44,7 +44,7 @@ func DecodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 }
 
 //EncodeFetcherContent encodes HTML Content returned by fetcher
-func EncodeFetcherContent(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeFetcherContent(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	fetcherContent, ok := response.(io.ReadCloser)
 	if !ok {
 		e := errs.BadGateway{What: "content"}
@@ -103,13 +103,13 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	})
 }
 
-// Endpoints wrapper
-type Endpoints struct {
-	FetchEndpoint endpoint.Endpoint
+// endpoints wrapper
+type endpoints struct {
+	fetchEndpoint endpoint.Endpoint
 }
 
 // MakeFetchEndpoint creates Fetch Endpoint
-func MakeFetchEndpoint(svc Service) endpoint.Endpoint {
+func makeFetchEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		return svc.Fetch(request.(Request))
 	}

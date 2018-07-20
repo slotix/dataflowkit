@@ -11,8 +11,8 @@ import (
 	"github.com/slotix/dataflowkit/logger"
 )
 
-// Config provides basic configuration
-type Config struct {
+// config provides basic configuration
+type config struct {
 	Host string
 }
 
@@ -23,7 +23,7 @@ type HTMLServer struct {
 }
 
 // Start func launches Parsing service
-func Start(cfg Config) *HTMLServer {
+func Start(cfg config) *HTMLServer {
 	// Setup Context
 	ctx := context.Background()
 	_, cancel := context.WithCancel(ctx)
@@ -36,11 +36,11 @@ func Start(cfg Config) *HTMLServer {
 	//svc = RobotsTxtMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
-	endpoints := Endpoints{
-		FetchEndpoint: MakeFetchEndpoint(svc),
+	endpoints := endpoints{
+		fetchEndpoint: makeFetchEndpoint(svc),
 	}
 
-	r := NewHttpHandler(ctx, endpoints, logger)
+	r := newHttpHandler(ctx, endpoints, logger)
 
 	// Create the HTML Server
 	htmlServer := HTMLServer{

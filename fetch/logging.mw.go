@@ -24,7 +24,7 @@ type loggingMiddleware struct {
 // Fetch logs requests to Fetch endpoint
 func (mw loggingMiddleware) Fetch(req Request) (out io.ReadCloser, err error) {
 	defer func(begin time.Time) {
-		url := req.GetURL()
+		url := req.getURL()
 		if err == nil {
 			mw.logger.WithFields(
 				logrus.Fields{
