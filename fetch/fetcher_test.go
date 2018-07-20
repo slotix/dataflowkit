@@ -13,13 +13,13 @@ import (
 func TestBaseFetcher_Proxy(t *testing.T) {
 	viper.Set("PROXY", "http://127.0.0.1:3128")
 	//viper.Set("PROXY", "")
-	fetcher := NewFetcher(Base)
+	fetcher := newFetcher(Base)
 	assert.NotNil(t, fetcher)
 }
 
 func TestBaseFetcher_Fetch(t *testing.T) {
 	viper.Set("PROXY", "")
-	fetcher := NewFetcher(Base)
+	fetcher := newFetcher(Base)
 	req := Request{
 		URL:    tsURL + "/hello",
 		Method: "GET",
@@ -29,8 +29,6 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 	data, err := ioutil.ReadAll(html)
 	assert.NoError(t, err, "Expected no error")
 	assert.Equal(t, helloContent, data)
-
-	//assert.Equal(t, time.Now().UTC().Add(24*time.Hour).Truncate(1*time.Minute), resp.GetExpires().Truncate(1*time.Minute), "Expires default value is 24 hours")
 
 	//Test 200 response
 	req = Request{
@@ -78,7 +76,7 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 
 func TestChromeFetcher_Fetch(t *testing.T) {
 	viper.Set("PROXY", "")
-	fetcher := NewFetcher(Chrome)
+	fetcher := newFetcher(Chrome)
 	req := Request{
 		Type: "chrome",
 		URL:  "http://testserver:12345",

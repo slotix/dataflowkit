@@ -23,14 +23,15 @@ func init() {
 	viper.Set("STORAGE_TYPE", "Diskv")
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	viper.Set("PROXY", "")
+	viper.Set("CHROME", "http://127.0.0.1:9222")
 	st = storage.NewStore(viper.GetString("STORAGE_TYPE"))
 	tsURL = "http://localhost:12345"
 }
 
-func TestFetchService(t *testing.T) {
+func TestFetchServiceMW(t *testing.T) {
 	//start fetch server
 	fetchServer := viper.GetString("DFK_FETCH")
-	serverCfg := Config{
+	serverCfg := config{
 		Host: fetchServer,
 	}
 	htmlServer := Start(serverCfg)
@@ -63,6 +64,7 @@ func TestFetchService(t *testing.T) {
 		Value:   cookies,
 		ExpTime: 0,
 	}
+	//write cookies to storage
 	err = st.Write(rec)
 	if err != nil {
 		t.Log(err)
@@ -183,4 +185,9 @@ func TestFetchService(t *testing.T) {
 	s := buf.String()
 	t.Log(s)
 
+	//remove cookies from storage
+	err = st.Delete(rec)
+	if err != nil {
+		t.Log(err)
+	}
 }

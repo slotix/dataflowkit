@@ -47,8 +47,8 @@ func NewHTTPClient(instance string) (Service, error) {
 	// Returning the endpoint.Set as a service.Service relies on the
 	// endpoint.Set implementing the Service methods. That's just a simple bit
 	// of glue code.
-	return Endpoints{
-		FetchEndpoint: fetchEndpoint,
+	return endpoints{
+		fetchEndpoint: fetchEndpoint,
 	}, nil
 }
 
@@ -80,11 +80,11 @@ func copyURL(base *url.URL, path string) *url.URL {
 	return &next
 }
 
-func (e Endpoints) Fetch(req Request) (io.ReadCloser, error) {
+func (e endpoints) Fetch(req Request) (io.ReadCloser, error) {
 	ctx := context.Background()
 	var resp interface{}
 	var err error
-	resp, err = e.FetchEndpoint(ctx, req)
+	resp, err = e.fetchEndpoint(ctx, req)
 	if err != nil {
 		return nil, err
 	}

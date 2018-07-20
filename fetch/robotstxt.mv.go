@@ -20,9 +20,9 @@ type robotstxtMiddleware struct {
 //Fetch gets response from req.URL, then passes response.URL to Robots.txt validator.
 //issue #1 https://github.com/slotix/dataflowkit/issues/1
 func (mw robotstxtMiddleware) Fetch(req Request) (io.ReadCloser, error) {
-	url := req.GetURL()
+	url := req.getURL()
 	//to avoid recursion while retrieving robots.txt
-	if !IsRobotsTxt(url) {
+	if !isRobotsTxt(url) {
 		robotsData, _ := RobotstxtData(url)
 		//robots.txt may be empty but we have to continue processing the page
 		if !AllowedByRobots(url, robotsData) {
@@ -34,7 +34,8 @@ func (mw robotstxtMiddleware) Fetch(req Request) (io.ReadCloser, error) {
 			}
 			//if initial URL is not equal to final URL (Redirected) f.e. domains are different
 			//then try to fetch robots following by final URL
-			finalURL := resp.URL
+			//finalURL := resp.URL
+			finalURL := resp.Request.URL.String()
 			//	finalURL := resp.Request.URL.String()
 			if url != finalURL {
 				robotsData, err = RobotstxtData(finalURL)

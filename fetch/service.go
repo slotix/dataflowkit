@@ -29,9 +29,9 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 	var fetcher Fetcher
 	switch req.Type {
 	case "chrome":
-		fetcher = NewFetcher(Chrome)
+		fetcher = newFetcher(Chrome)
 	default:
-		fetcher = NewFetcher(Base)
+		fetcher = newFetcher(Base)
 	}
 	var (
 		jar     *cookiejar.Jar
@@ -61,7 +61,7 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 			if err != nil {
 				return nil, err
 			}
-			u, err := url.Parse(req.GetURL())
+			u, err := url.Parse(req.getURL())
 			if err != nil {
 				return nil, err
 			}
@@ -77,13 +77,13 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 			jar.SetCookies(u, tempCarr)
 		}
 	}
-	fetcher.SetCookieJar(jar)
+	fetcher.setCookieJar(jar)
 	res, err := fetcher.Fetch(req)
 	if err != nil {
 		return nil, err
 	}
 	if req.UserToken != "" {
-		jar = fetcher.GetCookieJar()
+		jar = fetcher.getCookieJar()
 		cArr = append(cArr, jar.AllCookies()...)
 		cookies, err = json.Marshal(cArr)
 		if err != nil {
