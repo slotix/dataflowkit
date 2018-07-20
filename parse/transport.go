@@ -74,16 +74,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	logger.Error(err)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(httpStatus)
-	//AWS error payload should looks like
-	//{
-	//"errorType": "BadRequest",
-	//"httpStatus": httpStatus,
-	//"requestId" : "<context.awsRequestId>",
-	//"message": err.Error(),
-	//}
-	//according to the information from https://aws.amazon.com/blogs/compute/error-handling-patterns-in-amazon-api-gateway-and-aws-lambda/
-
-	//But it seems enough to w.WriteHeader(httpStatus) and send an error only
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": err.Error(),
 	})
@@ -116,7 +106,6 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logger) http.Handler {
 	r := mux.NewRouter()
 	options := []httptransport.ServerOption{
-		//httptransport.ServerErrorLogger(logger),
 		httptransport.ServerErrorEncoder(encodeError),
 	}
 

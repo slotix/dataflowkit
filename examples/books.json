@@ -1,6 +1,7 @@
 {
     "name": "books.toscrape",
     "request": {
+        "type": "base",
         "url": "http://books.toscrape.com/"
     },
     "fields": [
@@ -46,9 +47,9 @@
     "paginator": {
         "selector": ".next a",
         "attr": "href",
-        "maxPages": 2
+        "maxPages": 10
     },
     "format": "json",
-    "fetcherType": "splash",
+    "fetcherType": "base",
     "paginatedResults": true
 }

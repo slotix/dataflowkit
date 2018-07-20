@@ -12,7 +12,7 @@ import (
 )
 
 // config provides basic configuration
-type config struct {
+type Config struct {
 	Host string
 }
 
@@ -23,7 +23,7 @@ type HTMLServer struct {
 }
 
 // Start func launches Parsing service
-func Start(cfg config) *HTMLServer {
+func Start(cfg Config) *HTMLServer {
 	// Setup Context
 	ctx := context.Background()
 	_, cancel := context.WithCancel(ctx)

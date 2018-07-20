@@ -26,7 +26,7 @@ type loggingMiddleware struct {
 func (mw loggingMiddleware) Parse(payload scrape.Payload) (output io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		output, err = mw.Service.Parse(payload)
-		url := payload.Request.GetURL()
+		url := payload.Request.URL
 		if err != nil {
 			mw.logger.WithFields(
 				logrus.Fields{

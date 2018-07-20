@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/slotix/dataflowkit/fetch"
-	"github.com/slotix/dataflowkit/splash"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/temoto/robotstxt"
@@ -22,10 +21,7 @@ var (
 )
 
 func init() {
-	viper.Set("SPLASH", "127.0.0.1:8050")
-	viper.Set("SPLASH_TIMEOUT", 20)
-	viper.Set("SPLASH_RESOURCE_TIMEOUT", 30)
-	viper.Set("SPLASH_WAIT", 0.5)
+	viper.Set("CHROME", "http://127.0.0.1:9222")
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	randomize = true
 	//delayFetch = 500 * time.Millisecond
@@ -33,10 +29,7 @@ func init() {
 	paginateResults = false
 	pJSON = Payload{
 		Name: "books-to-scrape",
-		// Request: splash.Request{
-		// 	URL: "http://books.toscrape.com",
-		// },
-		Request: fetch.BaseFetcherRequest{
+		Request: fetch.Request{
 			URL: "http://books.toscrape.com",
 		},
 		Fields: []Field{
@@ -92,7 +85,7 @@ func init() {
 	}
 	pCSV_XML = Payload{
 		Name: "books-to-scrape",
-		Request: splash.Request{
+		Request: fetch.Request{
 			URL: "http://books.toscrape.com",
 		},
 		Fields: []Field{
@@ -128,9 +121,9 @@ func TestTask_ParseJSON(t *testing.T) {
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
-		Host:         fetchServerAddr,
-	//	ReadTimeout:  60 * time.Second,
-	//	WriteTimeout: 60 * time.Second,
+		Host: fetchServerAddr,
+		//	ReadTimeout:  60 * time.Second,
+		//	WriteTimeout: 60 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
@@ -164,7 +157,7 @@ func TestTask_ParseJSON(t *testing.T) {
 			task := &Task{
 				ID:      tt.fields.ID,
 				Payload: tt.fields.Payload,
-				Visited: tt.fields.Visited,
+				//Visited: tt.fields.Visited,
 				Robots:  tt.fields.Robots,
 			}
 			r, err := task.Parse()
@@ -193,9 +186,9 @@ func TestTask_ParseCSV(t *testing.T) {
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
-		Host:         fetchServerAddr,
-	//	ReadTimeout:  60 * time.Second,
-	//	WriteTimeout: 60 * time.Second,
+		Host: fetchServerAddr,
+		//	ReadTimeout:  60 * time.Second,
+		//	WriteTimeout: 60 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
@@ -229,7 +222,7 @@ func TestTask_ParseCSV(t *testing.T) {
 			task := &Task{
 				ID:      tt.fields.ID,
 				Payload: tt.fields.Payload,
-				Visited: tt.fields.Visited,
+			//	Visited: tt.fields.Visited,
 				Robots:  tt.fields.Robots,
 			}
 			r, err := task.Parse()
@@ -253,9 +246,9 @@ func TestTask_ParseXML(t *testing.T) {
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
-		Host:         fetchServerAddr,
-	//	ReadTimeout:  60 * time.Second,
-	//	WriteTimeout: 60 * time.Second,
+		Host: fetchServerAddr,
+		//	ReadTimeout:  60 * time.Second,
+		//	WriteTimeout: 60 * time.Second,
 	}
 	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
@@ -291,7 +284,7 @@ func TestTask_ParseXML(t *testing.T) {
 			task := &Task{
 				ID:      tt.fields.ID,
 				Payload: tt.fields.Payload,
-				Visited: tt.fields.Visited,
+			//	Visited: tt.fields.Visited,
 				Robots:  tt.fields.Robots,
 			}
 			r, err := task.Parse()
@@ -366,7 +359,7 @@ func TestParseTestServer12345(t *testing.T) {
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
-		Host:         fetchServerAddr,
+		Host: fetchServerAddr,
 		//ReadTimeout:  60 * time.Second,
 		//WriteTimeout: 60 * time.Second,
 	}
@@ -377,7 +370,7 @@ func TestParseTestServer12345(t *testing.T) {
 	paginateResults = false
 	p := Payload{
 		Name: "persons Table",
-		Request: fetch.BaseFetcherRequest{
+		Request: fetch.Request{
 			URL: "http://127.0.0.1:12345/persons/page-0",
 		},
 		Fields: []Field{
@@ -385,7 +378,7 @@ func TestParseTestServer12345(t *testing.T) {
 				Name:     "Names",
 				Selector: "#cards a",
 				Extractor: Extractor{
-					Types: []string{"text"},//"const", "outerHtml"},
+					Types: []string{"text"}, //"const", "outerHtml"},
 					//Params: map[string]interface{}{
 					//	"value": "2",
 					//},
@@ -413,7 +406,7 @@ func TestParseTestServer12345(t *testing.T) {
 	task := &Task{
 		ID:      "12345",
 		Payload: p,
-		Visited: map[string]error{},
+		//Visited: map[string]error{},
 		Robots:  map[string]*robotstxt.RobotsData{},
 	}
 	r, err := task.Parse()
@@ -426,7 +419,7 @@ func TestParseTestServer12345(t *testing.T) {
 	///// No selectors
 	badP := Payload{
 		Name: "No Selectors",
-		Request: fetch.BaseFetcherRequest{
+		Request: fetch.Request{
 			URL: "http://127.0.0.1:12345",
 		},
 		PaginateResults: &paginateResults,
@@ -435,7 +428,7 @@ func TestParseTestServer12345(t *testing.T) {
 	task = &Task{
 		ID:      "12345",
 		Payload: badP,
-		Visited: map[string]error{},
+		//Visited: map[string]error{},
 		Robots:  map[string]*robotstxt.RobotsData{},
 	}
 	r, err = task.Parse()
@@ -443,7 +436,7 @@ func TestParseTestServer12345(t *testing.T) {
 	//Bad output format
 	badOF := Payload{
 		Name: "No Selectors",
-		Request: fetch.BaseFetcherRequest{
+		Request: fetch.Request{
 			URL: "http://127.0.0.1:12345",
 		},
 		Fields: []Field{
@@ -461,7 +454,7 @@ func TestParseTestServer12345(t *testing.T) {
 	task = &Task{
 		ID:      "12345",
 		Payload: badOF,
-		Visited: map[string]error{},
+	//	Visited: map[string]error{},
 		Robots:  map[string]*robotstxt.RobotsData{},
 	}
 	r, err = task.Parse()
@@ -472,7 +465,7 @@ func TestParseSwitchFetchers(t *testing.T) {
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
-		Host:         fetchServerAddr,
+		Host: fetchServerAddr,
 		//ReadTimeout:  60 * time.Second,
 		//WriteTimeout: 60 * time.Second,
 	}
@@ -483,7 +476,7 @@ func TestParseSwitchFetchers(t *testing.T) {
 	paginateResults = false
 	p := Payload{
 		Name: "quotes",
-		Request: fetch.BaseFetcherRequest{
+		Request: fetch.Request{
 			URL: "http://quotes.toscrape.com/js/",
 		},
 		Fields: []Field{
@@ -501,7 +494,7 @@ func TestParseSwitchFetchers(t *testing.T) {
 	task := &Task{
 		ID:      "12345",
 		Payload: p,
-		Visited: map[string]error{},
+	//	Visited: map[string]error{},
 		Robots:  map[string]*robotstxt.RobotsData{},
 	}
 	r, err := task.Parse()

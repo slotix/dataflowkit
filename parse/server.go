@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/slotix/dataflowkit/logger"
-	"github.com/slotix/dataflowkit/storage"
-	"github.com/spf13/viper"
 )
 
 // Config provides basic configuration
@@ -34,11 +32,6 @@ func Start(cfg Config) *HTMLServer {
 
 	var svc Service
 	svc = ParseService{}
-	//svc = StatsMiddleware("18")(svc)
-	if !viper.GetBool("SKIP_STORAGE_MW") {
-		storageType := viper.GetString("STORAGE_TYPE")
-		svc = StorageMiddleware(storage.NewStore(storageType))(svc)
-	}
 	svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := Endpoints{

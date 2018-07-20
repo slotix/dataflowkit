@@ -1,75 +1,69 @@
 package scrape
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
-	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/fetch"
-	"github.com/slotix/dataflowkit/splash"
-	"github.com/slotix/dataflowkit/utils"
 	"github.com/spf13/viper"
 )
 
-// UnmarshalJSON casts Request interface{} type to custom splash.Request{} type.
+// UnmarshalJSON casts Request interface{} type to custom Request{} type.
 // If omited in Payload, Optional payload parameters initialized with default values.
 // http://choly.ca/post/go-json-marshalling/
-func (p *Payload) UnmarshalJSON(data []byte) error {
-	type Alias Payload
-	aux := &struct {
-		Request interface{} `json:"request"`
-		*Alias
-	}{
-		Alias: (*Alias)(p),
-	}
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
+// func (p *Payload) UnmarshalJSON(data []byte) error {
+// 	// type Alias Payload
+// 	// aux := &struct {
+// 	// 	Request fetch.Request `json:"request"`
+// 	// 	*Alias
+// 	// }{
+// 	// 	Alias: (*Alias)(p),
+// 	// }
 
-	request, err := p.initRequest("")
-	if err != nil {
-		return err
-	}
-	if aux.Request == nil {
-		return &errs.BadRequest{}
-	}
-	err = fillStruct(aux.Request.(map[string]interface{}), request)
-	if err != nil {
-		return err
-	}
-	p.Request = request
+// 	if err := json.Unmarshal(data, p); err != nil {
+// 		return err
+// 	}
 
-	//init other fields
-	p.PayloadMD5 = utils.GenerateMD5(data)
-	if p.Format == "" {
-		p.Format = viper.GetString("FORMAT")
-	}
-	//if p.RetryTimes == 0 {
-	//	p.RetryTimes = DefaultOptions.RetryTimes
-	//}
-	if p.FetchDelay == nil {
-		delay := time.Duration(viper.GetInt("FETCH_DELAY")) * time.Millisecond
-		p.FetchDelay = &delay
-	}
-	if p.RandomizeFetchDelay == nil {
-		rand := viper.GetBool("RANDOMIZE_FETCH_DELAY")
-		p.RandomizeFetchDelay = &rand
-	}
-	if p.Paginator != nil && p.Paginator.MaxPages == 0 {
-		p.Paginator.MaxPages = viper.GetInt("MAX_PAGES")
-	}
-	if p.PaginateResults == nil {
-		pag := viper.GetBool("PAGINATE_RESULTS")
-		p.PaginateResults = &pag
-	}
-	return nil
-}
+// 	request := p.initRequest("")
 
-func (p *Payload) initRequest(newURL string) (fetch.FetchRequester, error) {
+// 	if p.Request.URL == "" {
+// 		return &errs.BadRequest{}
+// 	}
+// 	// err := fillStruct(p.Request, request)
+// 	// if err != nil {
+// 	// 	return err
+// 	// }
+// 	p.Request = request
+
+// 	//init other fields
+// 	p.PayloadMD5 = utils.GenerateMD5(data)
+// 	if p.Format == "" {
+// 		p.Format = viper.GetString("FORMAT")
+// 	}
+// 	//if p.RetryTimes == 0 {
+// 	//	p.RetryTimes = DefaultOptions.RetryTimes
+// 	//}
+// 	if p.FetchDelay == nil {
+// 		delay := time.Duration(viper.GetInt("FETCH_DELAY")) * time.Millisecond
+// 		p.FetchDelay = &delay
+// 	}
+// 	if p.RandomizeFetchDelay == nil {
+// 		rand := viper.GetBool("RANDOMIZE_FETCH_DELAY")
+// 		p.RandomizeFetchDelay = &rand
+// 	}
+// 	if p.Paginator != nil && p.Paginator.MaxPages == 0 {
+// 		p.Paginator.MaxPages = viper.GetInt("MAX_PAGES")
+// 	}
+// 	if p.PaginateResults == nil {
+// 		pag := viper.GetBool("PAGINATE_RESULTS")
+// 		p.PaginateResults = &pag
+// 	}
+// 	return nil
+// }
+
+func (p *Payload) initRequest(newURL string) fetch.Request {
 	//fetcher type from Payload structure takes precedence over FETCHER_TYPE flag value
 	fetcherType := p.FetcherType
 	if fetcherType == "" {
@@ -77,41 +71,22 @@ func (p *Payload) initRequest(newURL string) (fetch.FetchRequester, error) {
 	}
 
 	var URL string
-	if URL = newURL; URL == "" && p.Request != nil {
-		URL = p.Request.GetURL()
+	if URL = newURL; URL == "" && (fetch.Request{}) != p.Request {
+		URL = p.Request.URL
 	}
 
-	var request fetch.FetchRequester
-	switch strings.ToLower(fetcherType) {
-	case "splash":
-		if p.Request == nil {
-			request = &splash.Request{}
-		} else {
-			var infiniteScroll bool
-			if infiniteScroll = false; p.Paginator != nil && p.Paginator.InfiniteScroll {
-				infiniteScroll = true
-			}
-			request = &splash.Request{
-				URL:            URL,
-				FormData:       p.Request.GetFormData(),
-				UserToken:      p.Request.GetUserToken(),
-				InfiniteScroll: infiniteScroll}
-		}
-	case "base":
-		if p.Request == nil {
-			request = &fetch.BaseFetcherRequest{}
-		} else {
-			request = &fetch.BaseFetcherRequest{
-				URL:       URL,
-				FormData:  p.Request.GetFormData(),
-				UserToken: p.Request.GetUserToken()}
-		}
-	default:
-		err := errors.New("invalid fetcher type specified")
-		logger.Error(err.Error())
-		return nil, err
+	//var request fetch.Request
+
+	return fetch.Request{
+		Type:           p.FetcherType,
+		URL:            URL,
+		FormData:       p.Request.FormData,
+		UserToken:      p.Request.UserToken,
+		InfiniteScroll: p.Request.InfiniteScroll,
 	}
-	return request, nil
+
+
+
 }
 
 //fillStruct fills s Structure with values from m map
@@ -119,7 +94,6 @@ func fillStruct(m map[string]interface{}, s interface{}) error {
 	for k, v := range m {
 		err := setField(s, k, v)
 		if err != nil {
-			//белать фиксить надо
 			if k == "regexp" {
 				return nil
 			}

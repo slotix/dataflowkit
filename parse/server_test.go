@@ -15,7 +15,7 @@ import (
 
 var payload = scrape.Payload{
 	Name: "books-to-scrape",
-	// Request: splash.Request{
+	// Request: chrome.Request{
 	// 	URL: "http://books.toscrape.com",
 	// },
 	FetcherType: "base",

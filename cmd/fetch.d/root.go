@@ -111,16 +111,6 @@ func init() {
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
 	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "", "127.0.0.1", "Cassandra host address")
 
-	//viper.AutomaticEnv() // read in environment variables that match
-
-	//Environmoent variable takes precedence over flag value
-	// if os.Getenv("SPLASH") != "" {
-	// 	//viper.BindEnv("SPLASH")
-	// 	viper.Set("SPLASH", os.Getenv("SPLASH"))
-	// } else {
-	// 	viper.BindPFlag("SPLASH", RootCmd.Flags().Lookup("SPLASH"))
-	// }
-
 	if os.Getenv("DFK_FETCH") != "" {
 		viper.Set("DFK_FETCH", os.Getenv("DFK_FETCH"))
 	} else {
@@ -136,6 +126,7 @@ func init() {
 	}
 
 	viper.BindPFlag("PROXY", RootCmd.Flags().Lookup("PROXY"))
+	viper.BindPFlag("CHROME", RootCmd.Flags().Lookup("CHROME"))
 
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))

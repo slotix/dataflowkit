@@ -31,7 +31,7 @@ func init() {
 func TestFetchServiceMW(t *testing.T) {
 	//start fetch server
 	fetchServer := viper.GetString("DFK_FETCH")
-	serverCfg := config{
+	serverCfg := Config{
 		Host: fetchServer,
 	}
 	htmlServer := Start(serverCfg)

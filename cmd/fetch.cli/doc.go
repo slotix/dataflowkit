@@ -26,7 +26,7 @@
 //		DFK_FETCH: HTTP listen address of Fetch service (defaults to "127.0.0.1:8000")
 //		FETCHER_TYPE: DFK Fetcher type: chrome, base (defaults to base)
 //		URL: URL to be fetched
-// Request parameters for splash fetcher
+// Request parameters for fetchers
 //		FORMDATA: string value for passing formdata parameters.
 //		For example the following string for processing pages which
 //		require authentication may be passed:
