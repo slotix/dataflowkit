@@ -25,7 +25,7 @@ func TestRobotstxtData(t *testing.T) {
 	assert.Equal(t, time.Duration(0), getCrawlDelay(robots))
 	robots = nil
 	assert.Equal(t, true, AllowedByRobots("http://"+addr+"/allowed", robots), "Test allowed url")
-	serverCfg := config{
+	serverCfg := Config{
 		Host: viper.GetString("DFK_FETCH"),
 	}
 	viper.Set("SKIP_STORAGE_MW", true)

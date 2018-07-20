@@ -1,26 +1,20 @@
 version: '3'
 
 services:
-  splash:
-    image: scrapinghub/splash
-    command: --max-timeout 3600 --slots 10 --maxrss 3000 --verbosity 0
+  chrome:
+    image: justinribeiro/chrome-headless
+    cap_add:
+      - SYS_ADMIN
     restart: always
     ports:
-      - "8050:8050"
-    volumes:
-      - ./splash/filters:/etc/splash/filters:ro
+      - "9222:9222"
 
-  # redis:
-  #   image: redis
-  #   restart: always
-  #   ports:
-  #     - "6379:6379"
     
 
   fetch:
     image: slotix/dfk-fetch
     environment:
-      - SPLASH=splash:8050
+      - CHROME=chrome:9222
       - DFK_FETCH=fetch:8000
       - DISKV_BASE_DIR=./diskv
     volumes:
@@ -30,7 +24,7 @@ services:
     #env_file: 
      # - .env
     depends_on:
-      - splash
+      - chrome
     restart: always
   
   parse:

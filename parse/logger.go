@@ -11,11 +11,3 @@ var logger *logrus.Logger
 func init() {
 	logger = log.NewLogger(true)
 }
-
-/*
-var logger *log.Logger
-
-func init() {
-	logger = log.New(os.Stdout, "Parser: ", log.Lshortfile)
-}
-*/
