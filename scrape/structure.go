@@ -15,28 +15,7 @@ import (
 	"github.com/temoto/robotstxt"
 )
 
-// Extractor type represents Extractor types available for scraping.
-// Here is the list of Extractor types are currently supported:
-// text, html, outerHtml, attr, link, image, regex, const, count
-// Find more actual information in docs/extractors.md
-type Extractor struct {
-	Types []string `json:"types"`
-	// Params are unique for each type
-	Params  map[string]interface{} `json:"params"`
-	Filters []string               `json:"filters"`
-}
 
-//A Field corresponds to a given chunk of data to be extracted from every block in each page of a scrape.
-type Field struct {
-	//Name is a name of fields. It is required, and will be used to aggregate results.
-	Name string `json:"name"`
-	//Selector is a CSS selector within the given block to process.  Pass in "." to use the root block's selector.
-	Selector string `json:"selector"`
-	//Extractor contains the logic on how to extract some results from the selector that is provided to this Field.
-	Extractor Extractor `json:"extractor"`
-	//Details is an optional field strictly for Link extractor type. It guides scraper to parse additional pages following the links according to the set of fields specified inside "details"
-	Details *details `json:"details"`
-}
 
 type details struct {
 	Fields    []Field    `json:"fields"`
@@ -60,6 +39,30 @@ type paginator struct {
 	InfiniteScroll bool `json:"infiniteScroll"`
 }
 
+// Extractor type represents Extractor types available for scraping.
+// Here is the list of Extractor types are currently supported:
+// text, html, outerHtml, attr, link, image, regex, const, count
+// Find more actual information in docs/extractors.md
+type Extractor struct {
+	Types []string `json:"types"`
+	// Params are unique for each type
+	Params  map[string]interface{} `json:"params"`
+	Filters []string               `json:"filters"`
+}
+
+//A Field corresponds to a given chunk of data to be extracted from every block in each page of a scrape.
+type Field struct {
+	//Name is a name of fields. It is required, and will be used to aggregate results.
+	Name string `json:"name"`
+	//Selector is a CSS selector within the given block to process.  Pass in "." to use the root block's selector.
+	Selector string `json:"selector"`
+	//Extractor contains the logic on how to extract some results from the selector that is provided to this Field.
+	Extractor Extractor `json:"extractor"`
+	//Details is an optional field strictly for Link extractor type. It guides scraper to parse additional pages following the links according to the set of fields specified inside "details"
+	Details *details `json:"details"`
+}
+
+
 // Payload structure contain information and rules to be passed to a scraper
 // Find the most actual information in docs/payload.md
 type Payload struct {
@@ -67,13 +70,13 @@ type Payload struct {
 	Name string `json:"name"`
 	//Request struct represents HTTP request to be sent to a server. It combines parameters for passing for downloading html pages by Fetch Endpoint.
 	//Request.URL field is required. All other fields including Params, Cookies, Func are optional.
-	Request fetch.FetchRequester `json:"request"`
+	Request fetch.Request `json:"request"`
 	//Fields is a set of fields used to extract data from a web page.
 	Fields []Field `json:"fields"`
 	//PayloadMD5 encodes payload content to MD5. It is used for generating file name to be stored.
 	PayloadMD5 []byte `json:"payloadMD5"`
 	//FetcherType represent fetcher which is used for document download.
-	//Set up it to either `base` or `splash` values
+	//Set up it to either `base` or `chrome` values
 	//If FetcherType is omited the value of FETCHER_TYPE of parse.d service is used by default.
 	FetcherType string `json:"fetcherType"`
 	//Format represents output format (CSV, JSON, XML)
@@ -127,7 +130,7 @@ type Part struct {
 
 //Scraper struct consolidates settings for scraping task.
 type Scraper struct {
-	Request fetch.FetchRequester
+	Request fetch.Request
 	// Paginator is the Paginator to use for this current scrape.
 	//
 	// If Paginator is nil, then no pagination is performed and it is assumed that
@@ -216,6 +219,6 @@ type blockStruct struct {
 
 type fetchInfo struct {
 	result  chan<- io.ReadCloser
-	request fetch.FetchRequester
+	request fetch.Request
 	err     chan<- error
 }

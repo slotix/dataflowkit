@@ -60,7 +60,7 @@ Here is a simple example for requesting Parse endpoint:
       "maxPages":3
    },
    "format":"json",
-   "fetcherType": "splash",
+   "fetcherType": "chrome",
    "paginateResults":false
   }'
 
@@ -72,13 +72,12 @@ Collection name
 Request
 
 Request parameters are passed to Fetch Endpoint for downloading html pages.
-url holds the URL address of the web page to be downloaded. URL is required. All other fields including formData, lua (for splash fetcher) are optional.
+url holds the URL address of the web page to be downloaded. URL is required. All other fields including are optional.
 
 formData is a string value for passing form data parameters.
 For example it may be used for processing pages which require authentication.
   "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
 
-lua contains custom LUA script for passing to Splash server for extending Splash functionality. Example of LUA script currently used for making requests to Splash is avaiable at splash/lua.go file.
 
 Fields
 
@@ -110,7 +109,7 @@ The following Output formats are available: CSV, JSON, XML
 fetcherType
 
 fetcherType represents fetcher which is used for document download. 
-Set it to either "splash" or "base" value. 
+Set it to either "chrome" or "base" value. 
 If omited in Payload, default fetcher type is defined as FETCHER_TYPE variable of parse.d service. 
 fetcherType from Payload structure takes precedence over FETCHER_TYPE flag value.
 
@@ -131,7 +130,7 @@ Combined list of results is always returned for CSV format.
 //    DFK_FETCH: HTTP listen address of Fetch service (defaults to "127.0.0.1:8000")
 //
 //    FETCHER_TYPE: represent fetcher which is used for document download.
-//    Set up it to either `base` or `splash` values
+//    Set up it to either `base` or `chrome` values
 //    fetcherType from Payload structure takes precedence over FETCHER_TYPE flag value.
 //
 //Storage settings
@@ -140,36 +139,13 @@ Combined list of results is always returned for CSV format.
 //
 //    STORAGE_TYPE: Storage backend for intermediary data passed to Dataflow 
 //    kit Parse service. 
-//    Types: S3, Digital Ocean Spaces, Redis, Diskv 
+//    Types: Diskv, Cassandra 
 //    (defaults to "Diskv"). It is case insensitive.
 //
 //    ITEM_EXPIRE_IN: Default value for item expiration in seconds (defaults to 3600)
 //
 //    DISKV_BASE_DIR: diskv base directory for storing parsed results (defaults to "diskv").
 //    Find more information about Diskv storage at https://github.com/peterbourgon/diskv
-//
-//    SPACES_ENDPOINT: Digital Ocean Spaces Endpoint Address.
-//    Find more information about DO Spaces at https://www.digitalocean.com/community/tutorials/an-introduction-to-digitalocean-spaces
-//
-//    SPACES_CONFIG: Digital Ocean Spaces Configuration file location.
-//    (defaults to "~/.spaces/credentials")
-//
-//    S3_REGION: AWS S3 or Digital Ocean Spaces region (defaults to "us-east-1")
-//
-//    DFK_BUCKET: Amazon AWS S3 or Digital Ocean Spaces bucket name for storing 
-//    parsed results. (defaults to "dfk-storage")
-//
-//    REDIS: Redis host address (defaults to "127.0.0.1:6379")
-//
-//    REDIS_EXPIRE: Default Redis expire value in seconds  (defaults to 3600)
-//
-//    REDIS_NETWORK: Redis Network (defaults to "tcp")
-//
-//    REDIS_PASSWORD: Redis Password (defaults to "")
-//
-//    REDIS_DB: Redis database (defaults to 0)
-//
-//    REDIS_SOCKET_PATH: Redis Socket Path (defaults to "")
 //
 //Crawler settings
 //    MAX_PAGES: The maximum number of pages to scrape. The scrape will proceed 

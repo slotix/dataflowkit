@@ -38,12 +38,6 @@
   version = "v1.4.7"
 
 [[projects]]
-  name = "github.com/garyburd/redigo"
-  packages = ["internal","redis"]
-  revision = "a69d19351219b6dd56f274f96d85a7014a2ec34e"
-  version = "v1.6.0"
-
-[[projects]]
   name = "github.com/go-kit/kit"
   packages = ["endpoint","log","transport/http"]
   revision = "4dc7be5d2d12881735283bcab7352178e190fc71"
@@ -176,12 +170,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/pquerna/cachecontrol"
-  packages = [".","cacheobject"]
-  revision = "525d0eb5f91d30e3b1548de401b7ef9ea6898520"
-
-[[projects]]
   name = "github.com/segmentio/ksuid"
   packages = ["."]
   revision = "112f929a3020abfcd06b77c963ec919130796a35"
@@ -298,6 +286,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bf990fffbc1b49faa596ce50951e3f0f2d122a2c786a9af239a08d6ef4739f3e"
+  inputs-digest = "fba9d7ce1b690d86ba9ad9b35932d821f297ab680db0e39175d89f07925b8fa2"
   solver-name = "gps-cdcl"
   solver-version = 1

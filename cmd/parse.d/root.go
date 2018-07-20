@@ -34,23 +34,12 @@ import (
 var (
 	DFKParse           string //DFKParse service address.
 	DFKFetch           string //DFKFetch service address.
-	fetcherType        string //fetcher type: splash, base
+	fetcherType        string //fetcher type: chrome, base
 	storageType        string
 	skipStorageMW      bool
 	storageItemExpires int64 //how long in seconds object stay in a cache before expiration.
 	diskvBaseDir       string
 	resultsDir         string
-
-	spacesConfig   string //Digital Ocean spaces configuration file
-	spacesEndpoint string //Digital Ocean spaces endpoint address
-	DFKBucket      string //Bucket name for AWS S3 or DO Spaces
-
-	redisHost       string
-	redisExpire     int
-	redisNetwork    string
-	redisPassword   string
-	redisDB         int
-	redisSocketPath string
 
 	cassandraHost string
 
@@ -72,14 +61,14 @@ var RootCmd = &cobra.Command{
 
 		services := []healthcheck.Checker{
 			healthcheck.FetchConn{
-				//Check if Splash Fetch service is alive
+				//Check if Chrome Fetch service is alive
 				Host: viper.GetString("DFK_FETCH"),
 			},
 		}
-		if storageType == "Redis" {
-			services = append(services, healthcheck.RedisConn{
-				Network: redisNetwork,
-				Host:    redisHost})
+		if storageType == "Cassandra" {
+			services = append(services, healthcheck.CassandraConn{
+				Host: cassandraHost,
+			})
 		}
 
 		status := healthcheck.CheckServices(services...)
@@ -129,7 +118,7 @@ func init() {
 
 	RootCmd.Flags().StringVarP(&DFKParse, "DFK_PARSE", "p", "127.0.0.1:8001", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
-	RootCmd.Flags().StringVarP(&fetcherType, "FETCHER_TYPE", "t", "base", "DFK Fetcher type: splash, base")
+	RootCmd.Flags().StringVarP(&fetcherType, "FETCHER_TYPE", "t", "base", "DFK Fetcher type: chrome, base")
 	//default type of storage
 	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", true, "If true no parsed data will be saved to storage. This flag forces parser to bypass storage middleware.")
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: Diskv, Cassandra")
@@ -137,18 +126,6 @@ func init() {
 	RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 86400, "Default value for item expiration in seconds")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
 	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "c", "127.0.0.1", "Cassandra host address")
-	//RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "", os.Getenv("HOME")+"/"+".spaces/credentials", "Digital Ocean Spaces Configuration file")
-	// RootCmd.Flags().StringVarP(&spacesConfig, "SPACES_CONFIG", "",
-	// 	"$HOME/.spaces/credentials", "Digital Ocean Spaces Configuration file")
-	// RootCmd.Flags().StringVarP(&spacesEndpoint, "SPACES_ENDPOINT", "", "https://ams3.digitaloceanspaces.com", "Digital Ocean Spaces Endpoint Address")
-	// RootCmd.Flags().StringVarP(&DFKBucket, "DFK_BUCKET", "", "dfk-storage", "AWS S3 or Digital Ocean Spaces bucket name for storing parsed results")
-
-	// RootCmd.Flags().StringVarP(&redisHost, "REDIS", "r", "127.0.0.1:6379", "Redis host address")
-	// RootCmd.Flags().IntVarP(&redisExpire, "REDIS_EXPIRE", "", 3600, "Default Redis expire value in seconds")
-	// RootCmd.Flags().StringVarP(&redisNetwork, "REDIS_NETWORK", "", "tcp", "Redis Network")
-	// RootCmd.Flags().StringVarP(&redisPassword, "REDIS_PASSWORD", "", "", "Redis Password")
-	// RootCmd.Flags().IntVarP(&redisDB, "REDIS_DB", "", 0, "Redis DB")
-	// RootCmd.Flags().StringVarP(&redisSocketPath, "REDIS_SOCKET_PATH", "", "", "Redis Socket Path")
 
 	RootCmd.Flags().IntVarP(&maxPages, "MAX_PAGES", "", 1, "The maximum number of pages to scrape")
 	RootCmd.Flags().StringVarP(&format, "FORMAT", "", "json", "Output format (CSV, JSON, XML)")
@@ -191,17 +168,9 @@ func init() {
 	viper.BindPFlag("SKIP_STORAGE_MW", RootCmd.Flags().Lookup("SKIP_STORAGE_MW"))
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
 	viper.BindPFlag("ITEM_EXPIRE_IN", RootCmd.Flags().Lookup("ITEM_EXPIRE_IN"))
-	// viper.BindPFlag("SPACES_CONFIG", RootCmd.Flags().Lookup("SPACES_CONFIG"))
-	// viper.BindPFlag("SPACES_ENDPOINT", RootCmd.Flags().Lookup("SPACES_ENDPOINT"))
+	
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
-	// viper.BindPFlag("DFK_BUCKET", RootCmd.Flags().Lookup("DFK_BUCKET"))
-	// viper.BindPFlag("REDIS", RootCmd.Flags().Lookup("REDIS"))
-	// viper.BindPFlag("REDIS_EXPIRE", RootCmd.Flags().Lookup("REDIS_EXPIRE"))
-	// viper.BindPFlag("REDIS_NETWORK", RootCmd.Flags().Lookup("REDIS_NETWORK"))
-	// viper.BindPFlag("REDIS_PASSWORD", RootCmd.Flags().Lookup("REDIS_PASSWORD"))
-	// viper.BindPFlag("REDIS_DB", RootCmd.Flags().Lookup("REDIS_DB"))
-	// viper.BindPFlag("REDIS_SOCKET_PATH", RootCmd.Flags().Lookup("REDIS_SOCKET_PATH"))
 
 	viper.BindPFlag("MAX_PAGES", RootCmd.Flags().Lookup("MAX_PAGES"))
 	viper.BindPFlag("FORMAT", RootCmd.Flags().Lookup("FORMAT"))

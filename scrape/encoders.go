@@ -20,9 +20,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-//bug: xml is not correct if there are details in payload
-//
-
 type encoder interface {
 	Encode(*Results) (io.ReadCloser, error)
 	EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error)

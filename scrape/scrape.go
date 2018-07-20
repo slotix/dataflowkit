@@ -16,7 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/slotix/dataflowkit/splash"
 	"github.com/slotix/dataflowkit/storage"
 
 	"github.com/sirupsen/logrus"
@@ -43,6 +42,29 @@ func init() {
 
 // NewTask creates new task to parse fetched page following the rules from Payload.
 func NewTask(p Payload) *Task {
+	//init other fields
+	//p.PayloadMD5 = utils.GenerateMD5(data)
+	if p.Format == "" {
+		p.Format = viper.GetString("FORMAT")
+	}
+	//if p.RetryTimes == 0 {
+	//	p.RetryTimes = DefaultOptions.RetryTimes
+	//}
+	if p.FetchDelay == nil {
+		delay := time.Duration(viper.GetInt("FETCH_DELAY")) * time.Millisecond
+		p.FetchDelay = &delay
+	}
+	if p.RandomizeFetchDelay == nil {
+		rand := viper.GetBool("RANDOMIZE_FETCH_DELAY")
+		p.RandomizeFetchDelay = &rand
+	}
+	if p.Paginator != nil && p.Paginator.MaxPages == 0 {
+		p.Paginator.MaxPages = viper.GetInt("MAX_PAGES")
+	}
+	if p.PaginateResults == nil {
+		pag := viper.GetBool("PAGINATE_RESULTS")
+		p.PaginateResults = &pag
+	}
 	//https://blog.kowalczyk.info/article/JyRZ/generating-good-random-and-unique-ids-in-go.html
 	id := ksuid.New()
 	//tQueue := make(chan *Scraper, 100)
@@ -89,17 +111,13 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	_, err = task.scrape(&tw)
 	wg.Wait()
 	if !task.Parsed {
-		logger.Info("Failed to scrape with base fetcher. Reinitializing to scrape with Splash fetcher.")
-		if task.Payload.Request.Type() == "splash" {
+		logger.Info("Failed to scrape with base fetcher. Reinitializing to scrape with Chrome fetcher.")
+		if task.Payload.Request.Type == "chrome" {
 			close(fetchCannel)
 			return nil, err
 		}
-		task.Payload.FetcherType = "splash"
-		request, err := task.Payload.initRequest("")
-		if err != nil {
-			close(fetchCannel)
-			return nil, err
-		}
+		task.Payload.FetcherType = "chrome"
+		request := task.Payload.initRequest("")
 		task.Payload.Request = request
 		scraper.Request = request
 		wg.Add(1)
@@ -302,7 +320,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 
 	req := tw.scraper.Request
-	url := req.GetURL()
+	url := req.URL
 
 	//get Robotstxt Data
 	host, err := req.Host()
@@ -370,11 +388,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 			if len(url) != 0 &&
 				(t.Payload.Paginator != nil && (t.Payload.Paginator.MaxPages > 0 && tw.currentPageNum < t.Payload.Paginator.MaxPages)) {
 				paginatorPayload := t.Payload
-				paginatorPayload.Request, err = paginatorPayload.initRequest(url)
-				if err != nil {
-					tw.wg.Done()
-					return nil, err
-				}
+				paginatorPayload.Request = paginatorPayload.initRequest(url)
 				paginatorScraper, err := paginatorPayload.newScraper()
 				if err != nil {
 					tw.wg.Done()
@@ -450,19 +464,11 @@ func (p Payload) selectors() ([]string, error) {
 }
 
 //response sends request to fetch service and returns fetch.FetchResponser
-func fetchContent(req fetch.FetchRequester) (io.ReadCloser, error) {
+func fetchContent(req fetch.Request) (io.ReadCloser, error) {
 	svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH"))
 	if err != nil {
 		logger.Error(err)
 	}
-
-	// resp, err := svc.Response(req)
-	// if err != nil {
-	// 	logger.Error(err)
-	// 	return nil, err
-	// }
-
-	// return resp.GetHTML()
 	return svc.Fetch(req)
 }
 
@@ -513,7 +519,7 @@ func (t Task) startTime() (*time.Time, error) {
 
 func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 	defer wrk.wg.Done()
-	url := wrk.scraper.Request.GetURL()
+	url := wrk.scraper.Request.URL
 	for block := range blocks {
 		blockResults := map[string]interface{}{}
 
@@ -547,43 +553,20 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 			}
 			//********* details
 			if len(part.Details.Parts) > 0 {
-				var requests []fetch.FetchRequester
+				var requests []fetch.Request
 
 				switch extractedPartResults.(type) {
 				case string:
-					var rq fetch.FetchRequester
-					switch task.Payload.Request.Type() {
-					case "base":
-						rq = &fetch.BaseFetcherRequest{URL: extractedPartResults.(string)}
-					case "splash":
-						rq = &splash.Request{URL: extractedPartResults.(string)}
-					default:
-						err := errors.New("invalid fetcher type specified")
-						logger.Error(err.Error())
-					}
+					rq := fetch.Request{URL: extractedPartResults.(string)}
 					requests = append(requests, rq)
 				case []string:
 					for _, r := range extractedPartResults.([]string) {
-
-						var rq fetch.FetchRequester
-						switch task.Payload.Request.Type() {
-						case "base":
-							rq = &fetch.BaseFetcherRequest{URL: r}
-						case "splash":
-							rq = &splash.Request{URL: r}
-						default:
-							err := errors.New("invalid fetcher type specified")
-							logger.Error(err.Error())
-						}
-
+						rq := fetch.Request{URL: r}
 						requests = append(requests, rq)
-
 					}
 				}
 				for _, r := range requests {
 					part.Details.Request = r
-					var log1 []string
-					log1 = append(log1, part.Details.Request.GetURL())
 					//check if domain is the same for initial URL and details' URLs
 					//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
 
@@ -594,7 +577,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 						uid = block.hash
 						ubc = true
 					} else {
-						uid = string(utils.GenerateCRC32([]byte(r.GetURL())))
+						uid = string(utils.GenerateCRC32([]byte(r.URL)))
 					}
 					tw := taskWorker{
 						wg:              &wg,
@@ -606,10 +589,6 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 						keys:            make(map[int][]uint32),
 					}
 					wg.Add(1)
-					log1 = append(log1, part.Details.Request.GetURL())
-					if log1[0] != log1[1] {
-						logger.Infof("Orig: %s \r\n Details: %s", log1[0], log1[1])
-					}
 					_, err = task.scrape(&tw)
 					if err != nil {
 						logger.Error(err)

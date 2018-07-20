@@ -29,19 +29,19 @@ DFK consists of two general services for fetching and parsing web pages content.
 
 ## Fetch service
 **fetch.d** server is intended for html web pages content download. 
-Depending on Fetcher type, web page content is downloaded using either Base Fetcher or Splash fetcher. 
+Depending on Fetcher type, web page content is downloaded using either Base Fetcher or Chrome fetcher. 
 
 Base fetcher uses standard golang http client to fetch pages as is. 
-It works faster than Splash fetcher. But Base fetcher cannot render dynamic javascript driven web pages. 
+It works faster than Chrome fetcher. But Base fetcher cannot render dynamic javascript driven web pages. 
 
-Splash fetcher is intended for rendering dynamic javascript based content. It sends requests to [Splash javascript rendering service](https://github.com/scrapinghub/splash). 
+Chrome fetcher is intended for rendering dynamic javascript based content. It sends requests to Chrome running in headless mode.  
 
-Splash passes retrieved data to parse.d service. 
+Chrome passes retrieved data to parse.d service. 
 
 ## Parse service
 **parse.d** is the service that extracts data from downloaded web page following the rules described in configuration JSON file. Extracted data are returned in CSV, JSON or XML format.
 
-*Note: Sometimes Parse service cannot extract data from some pages retrieved by default Base fetcher. Empty results may be returned while parsing Java Script generated pages. Parse service then attempts to force Splash fetcher to render the same dynamic javascript driven content automatically. Have a look at http://quotes.toscrape.com/js/ which is a sampe of JavaScript driven web page.*   
+*Note: Sometimes Parse service cannot extract data from some pages retrieved by default Base fetcher. Empty results may be returned while parsing Java Script generated pages. Parse service then attempts to force Chrome fetcher to render the same dynamic javascript driven content automatically. Have a look at http://quotes.toscrape.com/js/ which is a sampe of JavaScript driven web page.*   
 
 ## Installation
 Using [dep](https://github.com/golang/dep)
@@ -120,7 +120,7 @@ Here is the sample json configuration file:
 	   "maxPages":3
 	},
 	"format":"json",
-	"fetcherType":"splash",
+	"fetcherType":"chrome",
 	"paginateResults":false
 }
 ```
@@ -139,11 +139,11 @@ Click on image to see CLI in action.
 
 ### Manual way
 
-1. Start Splash docker container 
+1. Start Chrome docker container 
 
-``` docker run -d -it --rm -p 5023:5023 -p 8050:8050 -p 8051:8051 scrapinghub/splash```
+``` docker run -d -it -rm -p 9222:9222 --cap-add=SYS_ADMIN justinribeiro/chrome-headless```
 
-[Splash](https://github.com/scrapinghub/splash) is used for fetching web pages to feed a Dataflow kit parser. 
+[Headless Chrome](https://developers.google.com/web/updates/2017/04/headless-chrome) is used for fetching web pages to feed a Dataflow kit parser. 
 
 2. Build and run fetch.d service
 ```
@@ -159,7 +159,7 @@ cd $GOPATH/src/github.com/slotix/dataflowkit/parse/parse.d && go build && ./pars
 ## Front-End
 Try http://scrape.dataflowkit.org Front-end with Point-and-click interface to Dataflow kit services. It generates JSON config file and sends POST request to DFK Parser 
 
-[![IMAFGE ALT Dataflow kit web scraping framework](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/dfk-screenshot1.png)](https://youtu.be/5gRcftONmTU)
+[![IMAGE ALT Dataflow kit web scraping framework](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/dfk-screenshot1.png)](https://youtu.be/5gRcftONmTU)
 
 Click on image to see Dataflow kit in action.
 
