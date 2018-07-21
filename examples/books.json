@@ -1,6 +1,7 @@
 {
     "name": "books.toscrape",
     "request": {
+        "type": "base",
         "url": "http://books.toscrape.com/"
     },
     "fields": [
