@@ -43,7 +43,6 @@ var (
 	cassandraHost string
 
 	maxPages            int
-	format              string
 	paginateResults     bool
 	fetchDelay          int
 	randomizeFetchDelay bool
@@ -126,7 +125,6 @@ func init() {
 	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "c", "127.0.0.1", "Cassandra host address")
 
 	RootCmd.Flags().IntVarP(&maxPages, "MAX_PAGES", "", 1, "The maximum number of pages to scrape")
-	RootCmd.Flags().StringVarP(&format, "FORMAT", "", "json", "Output format (CSV, JSON, XML)")
 	RootCmd.Flags().BoolVarP(&paginateResults, "PAGINATE_RESULTS", "", false, "Paginated results are returned. Single list of combined results from every block on all pages is returned by default.")
 	RootCmd.Flags().IntVarP(&fetchDelay, "FETCH_DELAY", "", 500, "Specifies sleep time in milliseconds for multiple requests for the same domain.")
 	RootCmd.Flags().BoolVarP(&randomizeFetchDelay, "RANDOMIZE_FETCH_DELAY", "", true, "RandomizeFetchDelay setting decreases the chance of a crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay to 1.5 * FetchDelay seconds is used between consecutive requests to the same domain. If FetchDelay is zero this option has no effect.")
@@ -164,7 +162,6 @@ func init() {
 	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
 
 	viper.BindPFlag("MAX_PAGES", RootCmd.Flags().Lookup("MAX_PAGES"))
-	viper.BindPFlag("FORMAT", RootCmd.Flags().Lookup("FORMAT"))
 	viper.BindPFlag("PAGINATE_RESULTS", RootCmd.Flags().Lookup("PAGINATE_RESULTS"))
 	viper.BindPFlag("FETCH_DELAY", RootCmd.Flags().Lookup("FETCH_DELAY"))
 	viper.BindPFlag("RANDOMIZE_FETCH_DELAY", RootCmd.Flags().Lookup("RANDOMIZE_FETCH_DELAY"))
