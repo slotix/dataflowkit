@@ -34,7 +34,6 @@ import (
 var (
 	DFKParse           string //DFKParse service address.
 	DFKFetch           string //DFKFetch service address.
-	fetcherType        string //fetcher type: chrome, base
 	storageType        string
 	skipStorageMW      bool
 	storageItemExpires int64 //how long in seconds object stay in a cache before expiration.
@@ -118,7 +117,6 @@ func init() {
 
 	RootCmd.Flags().StringVarP(&DFKParse, "DFK_PARSE", "p", "127.0.0.1:8001", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
-	RootCmd.Flags().StringVarP(&fetcherType, "FETCHER_TYPE", "t", "base", "DFK Fetcher type: chrome, base")
 	//default type of storage
 	RootCmd.Flags().BoolVarP(&skipStorageMW, "SKIP_STORAGE_MW", "", true, "If true no parsed data will be saved to storage. This flag forces parser to bypass storage middleware.")
 	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: Diskv, Cassandra")
@@ -150,12 +148,6 @@ func init() {
 		viper.BindPFlag("DFK_FETCH", RootCmd.Flags().Lookup("DFK_FETCH"))
 	}
 
-	if os.Getenv("FETCHER_TYPE") != "" {
-		viper.Set("FETCHER_TYPE", os.Getenv("FETCHER_TYPE"))
-	} else {
-		viper.BindPFlag("FETCHER_TYPE", RootCmd.Flags().Lookup("FETCHER_TYPE"))
-	}
-
 	if os.Getenv("DISKV_BASE_DIR") != "" {
 		//viper.BindEnv("DISKV_BASE_DIR")
 		viper.Set("DISKV_BASE_DIR", os.Getenv("DISKV_BASE_DIR"))
@@ -168,7 +160,7 @@ func init() {
 	viper.BindPFlag("SKIP_STORAGE_MW", RootCmd.Flags().Lookup("SKIP_STORAGE_MW"))
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
 	viper.BindPFlag("ITEM_EXPIRE_IN", RootCmd.Flags().Lookup("ITEM_EXPIRE_IN"))
-	
+
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
 

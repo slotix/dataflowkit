@@ -5,10 +5,12 @@ package scrape
 
 //TODO: add paginator to details
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"regexp"
 	"sort"
 	"strconv"
@@ -43,7 +45,11 @@ func init() {
 // NewTask creates new task to parse fetched page following the rules from Payload.
 func NewTask(p Payload) *Task {
 	//init other fields
-	//p.PayloadMD5 = utils.GenerateMD5(data)
+	data, err := json.Marshal(p)
+	if err != nil {
+		panic(err)
+	}
+	p.PayloadMD5 = string(utils.GenerateCRC32(utils.GenerateMD5(data)))
 	if p.Format == "" {
 		p.Format = viper.GetString("FORMAT")
 	}
@@ -75,7 +81,7 @@ func NewTask(p Payload) *Task {
 		Errors:       []error{},
 		Robots:       make(map[string]*robotstxt.RobotsData),
 		Parsed:       false,
-		BlockCounter: []uint32{},
+		BlockCounter: []int{},
 		storage:      storage.NewStore(storageType),
 	}
 
@@ -105,7 +111,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		UID:             uid,
 		mx:              &mx,
 		useBlockCounter: false,
-		keys:            make(map[int][]uint32),
+		keys:            make(map[int][]int),
 	}
 	wg.Add(1)
 	_, err = task.scrape(&tw)
@@ -171,11 +177,12 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	default:
 		return nil, errors.New("invalid output format specified")
 	}
-	r, err := e.EncodeFromStorage(string(uid))
+	r, err := EncodeToFile(&e, task.Payload.Format, string(uid))
 	if err != nil {
 		return nil, err
 	}
-	return r, err
+	fName := ioutil.NopCloser(bytes.NewReader(r))
+	return fName, err
 }
 
 // Create a new scraper with the provided configuration.
@@ -432,6 +439,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 
 	// Divide this page into blocks
 	for i, blockSel := range blockSelections {
+		tw.mx.Lock()
 		ref := fmt.Sprintf("%s-%d-%d", tw.UID, tw.currentPageNum, i)
 		block := blockStruct{
 			blockSelection:  blockSel,
@@ -440,6 +448,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 			useBlockCounter: tw.useBlockCounter,
 			keys:            &tw.keys,
 		}
+		tw.mx.Unlock()
 		blocks <- &block
 	}
 	close(blocks)
@@ -586,7 +595,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 						UID:             uid,
 						mx:              wrk.mx,
 						useBlockCounter: ubc,
-						keys:            make(map[int][]uint32),
+						keys:            make(map[int][]int),
 					}
 					wg.Add(1)
 					_, err = task.scrape(&tw)
@@ -635,7 +644,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 				wrk.mx.Lock()
 				key := block.key
 				if block.useBlockCounter {
-					blockNum := uint32(len(task.BlockCounter))
+					blockNum := len(task.BlockCounter)
 					key = fmt.Sprintf("%s-0-%d", block.hash, blockNum)
 					task.BlockCounter = append(task.BlockCounter, blockNum)
 				} else {
@@ -648,7 +657,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 					if err != nil {
 						logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()))
 					}
-					(*block.keys)[pageNum] = append((*block.keys)[pageNum], uint32(blockNum))
+					(*block.keys)[pageNum] = append((*block.keys)[pageNum], blockNum)
 				}
 				err = task.storage.Write(storage.Record{
 					Type:    storage.INTERMEDIATE,

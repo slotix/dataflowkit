@@ -15,8 +15,6 @@ import (
 	"github.com/temoto/robotstxt"
 )
 
-
-
 type details struct {
 	Fields    []Field    `json:"fields"`
 	Paginator *paginator `json:"paginator"`
@@ -62,7 +60,6 @@ type Field struct {
 	Details *details `json:"details"`
 }
 
-
 // Payload structure contain information and rules to be passed to a scraper
 // Find the most actual information in docs/payload.md
 type Payload struct {
@@ -74,7 +71,7 @@ type Payload struct {
 	//Fields is a set of fields used to extract data from a web page.
 	Fields []Field `json:"fields"`
 	//PayloadMD5 encodes payload content to MD5. It is used for generating file name to be stored.
-	PayloadMD5 []byte `json:"payloadMD5"`
+	PayloadMD5 string
 	//FetcherType represent fetcher which is used for document download.
 	//Set up it to either `base` or `chrome` values
 	//If FetcherType is omited the value of FETCHER_TYPE of parse.d service is used by default.
@@ -188,7 +185,7 @@ type Task struct {
 	//Results
 	Parsed bool
 	// Block counter
-	BlockCounter []uint32
+	BlockCounter []int
 	// storage using to write result into corresponding storage type
 	storage storage.Store
 }
@@ -206,7 +203,7 @@ type taskWorker struct {
 	scraper         *Scraper
 	mx              *sync.Mutex
 	useBlockCounter bool
-	keys            map[int][]uint32
+	keys            map[int][]int
 }
 
 type blockStruct struct {
@@ -214,7 +211,7 @@ type blockStruct struct {
 	key             string
 	hash            string
 	useBlockCounter bool
-	keys            *map[int][]uint32
+	keys            *map[int][]int
 }
 
 type fetchInfo struct {
