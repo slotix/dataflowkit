@@ -126,7 +126,7 @@ func init() {
 	}
 
 	viper.BindPFlag("PROXY", RootCmd.Flags().Lookup("PROXY"))
-
+	viper.BindPFlag("CHROME", RootCmd.Flags().Lookup("CHROME"))
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
