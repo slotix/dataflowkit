@@ -8,7 +8,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -20,9 +19,48 @@ import (
 	"github.com/spf13/viper"
 )
 
+//bug: xml is not correct if there are details in payload
+//
+
+func EncodeToFile(e *encoder, ext string, payloadMD5 string, blockMap ...*map[int][]int) ([]byte, error) {
+	path := viper.GetString("RESULTS_DIR")
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, 0700)
+	}
+	sFileName := viper.GetString("RESULTS_DIR") + "/" + payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + "." + ext
+	fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
+	if err != nil {
+		return nil, err
+	}
+	// close fo on exit and check for its returned error
+	defer func() {
+		if err := fo.Close(); err != nil {
+			panic(err)
+		}
+	}()
+	var keys *map[int][]int
+	if len(blockMap) > 0 {
+		keys = blockMap[0]
+	}
+	w := bufio.NewWriter(fo)
+	(*e).encode(w, payloadMD5, keys)
+	return []byte(sFileName), nil
+}
+
+func EncodeToByteArray(e *encoder, payloadMD5 string, blockMap ...*map[int][]int) ([]byte, error) {
+	result := ""
+	buf := bytes.NewBufferString(result)
+	w := bufio.NewWriter(buf)
+	var keys *map[int][]int
+	if len(blockMap) > 0 {
+		keys = blockMap[0]
+	}
+	(*e).encode(w, payloadMD5, keys)
+	return buf.Bytes(), nil
+}
+
 type encoder interface {
-	Encode(*Results) (io.ReadCloser, error)
-	EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error)
+	encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error
 }
 
 // CSVEncoder transforms parsed data to CSV format.
@@ -40,45 +78,16 @@ type JSONEncoder struct {
 type XMLEncoder struct {
 }
 
-//Encode method implementation for JSONEncoder
-func (e JSONEncoder) Encode(results *Results) (io.ReadCloser, error) {
-	var buf bytes.Buffer
-	if e.paginateResults {
-		json.NewEncoder(&buf).Encode(results.Output)
-	} else {
-		json.NewEncoder(&buf).Encode(results.AllBlocks())
-	}
-	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
-	return readCloser, nil
-}
-
-func (e JSONEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) {
+func (e JSONEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error {
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
-	// open output file
-	path := viper.GetString("RESULTS_DIR")
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.Mkdir(path, 0700)
-	}
-	sFileName := viper.GetString("RESULTS_DIR") + "/" + payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".json"
-	fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
-	if err != nil {
-		return nil, err
-	}
-	// close fo on exit and check for its returned error
-	defer func() {
-		if err := fo.Close(); err != nil {
-			panic(err)
-		}
-	}()
 	// make a write buffer
-	w := bufio.NewWriter(fo)
 	if e.paginateResults {
 		w.WriteString("[")
 	}
 	w.WriteString("[")
 
-	reader := newStorageReader(&s, payloadMD5)
+	reader := newStorageReader(&s, payloadMD5, keys)
 	writeComma := false
 	for {
 		block, err := reader.Read()
@@ -112,11 +121,7 @@ func (e JSONEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error)
 		w.WriteString("]")
 	}
 	s.Close()
-	if err = w.Flush(); err != nil {
-		return nil, err
-	}
-	readCloser := ioutil.NopCloser(strings.NewReader(sFileName))
-	return readCloser, nil
+	return w.Flush()
 }
 
 type storageResultReader struct {
@@ -128,7 +133,7 @@ type storageResultReader struct {
 	payloadMap map[int][]int
 }
 
-func newStorageReader(store *storage.Store, md5Hash string) *storageResultReader {
+func newStorageReader(store *storage.Store, md5Hash string, extractPageKeys *map[int][]int) *storageResultReader {
 	reader := &storageResultReader{
 		storage:    store,
 		payloadMD5: md5Hash,
@@ -136,29 +141,37 @@ func newStorageReader(store *storage.Store, md5Hash string) *storageResultReader
 		block:      0,
 		page:       0,
 	}
+	if extractPageKeys != nil {
+		reader.payloadMap = *extractPageKeys
+	}
 	reader.init()
 	return reader
 }
 
 // have return error
 func (r *storageResultReader) init() {
-	keysJSON, err := (*r.storage).Read(storage.Record{
-		Type: storage.INTERMEDIATE,
-		Key:  r.payloadMD5,
-	})
-	if err != nil {
-		logger.Error(err)
+	r.page = 0
+	r.block = 0
+	if len(r.payloadMap) == 0 {
+		keysJSON, err := (*r.storage).Read(storage.Record{
+			Type: storage.INTERMEDIATE,
+			Key:  r.payloadMD5,
+		})
+		if err != nil {
+			logger.Error(err)
+		}
+		err = json.Unmarshal(keysJSON, &r.payloadMap)
+		if err != nil {
+			logger.Error(err)
+		}
 	}
-	err = json.Unmarshal(keysJSON, &r.payloadMap)
-	if err != nil {
-		logger.Error(err)
-	}
-
 	for k := range r.payloadMap {
 		r.keys = append(r.keys, k)
 	}
-	r.page = 0
-	r.block = 0
+}
+
+func (r *storageResultReader) initManualKeys(blocks []int) {
+	r.keys = blocks
 }
 
 func (r *storageResultReader) Read() (map[string]interface{}, error) {
@@ -184,7 +197,7 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 	for field, value := range blockMap {
 		if strings.Contains(field, "details") {
 			details := []map[string]interface{}{}
-			detailsReader := newStorageReader(r.storage, value.(string))
+			detailsReader := newStorageReader(r.storage, value.(string), nil)
 			for {
 				detailsBlock, detailsErr := detailsReader.Read()
 				if detailsErr != nil {
@@ -238,55 +251,9 @@ func (r *storageResultReader) getValue() (map[string]interface{}, error) {
 	return blockMap, nil
 }
 
-//Encode method implementation for CSVEncoder
-func (e CSVEncoder) Encode(results *Results) (io.ReadCloser, error) {
-	var buf bytes.Buffer
-	/*
-		includeHeader := true
-		w := csv.NewWriter(&buf)
-		for i, page := range results.Results {
-			if i != 0 {
-				includeHeader = false
-			}
-			err = encodeCSV(names, includeHeader, page, ",", w)
-			if err != nil {
-				logger.Error(err)
-			}
-		}
-		w.Flush()
-	*/
-	w := csv.NewWriter(&buf)
-	allBlocks := results.AllBlocks()
-	err := encodeCSV(e.partNames, allBlocks, e.comma, w)
-	if err != nil {
-		return nil, err
-	}
-	w.Flush()
-	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
-	return readCloser, nil
-}
-
-func (e CSVEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) {
+func (e CSVEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error {
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
-	// open output file
-	path := viper.GetString("RESULTS_DIR")
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.Mkdir(path, 0700)
-	}
-	sFileName := viper.GetString("RESULTS_DIR") + "/" + payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".csv"
-	fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
-	if err != nil {
-		return nil, err
-	}
-	// close fo on exit and check for its returned error
-	defer func() {
-		if err := fo.Close(); err != nil {
-			panic(err)
-		}
-	}()
-	// make a write buffer
-	w := bufio.NewWriter(fo)
 
 	//write csv headers
 	sString := ""
@@ -294,16 +261,16 @@ func (e CSVEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) 
 		sString += fmt.Sprintf("%s,", headerName)
 	}
 	sString = strings.TrimSuffix(sString, ",") + "\n"
-	_, err = w.WriteString(sString)
+	_, err := w.WriteString(sString)
 	if err != nil {
-		logger.Error(err)
+		return err
 	}
 	err = w.Flush()
 	if err != nil {
-		logger.Error(err)
+		return err
 	}
 
-	reader := newStorageReader(&s, payloadMD5)
+	reader := newStorageReader(&s, payloadMD5, keys)
 
 	for {
 		block, err := reader.Read()
@@ -355,76 +322,23 @@ func (e CSVEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) 
 			logger.Error(err)
 		}
 	}
-
 	s.Close()
-
-	if err = w.Flush(); err != nil {
-		panic(err)
-	}
-	readCloser := ioutil.NopCloser(strings.NewReader(sFileName))
-	return readCloser, nil
+	return w.Flush()
 }
 
-//Encode method implementation for XMLEncoder
-func (e XMLEncoder) Encode(results *Results) (io.ReadCloser, error) {
-	/*
-		case "xmlviajson":
-			var jbuf bytes.Buffer
-			if config.Opts.PaginateResults {
-				json.NewEncoder(&jbuf).Encode(results)
-			} else {
-				json.NewEncoder(&jbuf).Encode(results.AllBlocks())
-			}
-			//var buf bytes.Buffer
-			m, err := mxj.NewMapJson(jbuf.Bytes())
-			err = m.XmlIndentWriter(&buf, "", "  ")
-			if err != nil {
-				logger.Error(err)
-			}
-	*/
-	var buf bytes.Buffer
-	err := encodeXML(results.AllBlocks(), &buf)
-	if err != nil {
-		return nil, err
-	}
-	readCloser := ioutil.NopCloser(bytes.NewReader(buf.Bytes()))
-	return readCloser, nil
-}
-
-func (e XMLEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) {
+func (e XMLEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error {
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
-	// open output file
-	path := viper.GetString("RESULTS_DIR")
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.Mkdir(path, 0700)
-	}
-	sFileName := viper.GetString("RESULTS_DIR") + "/" + payloadMD5 + "_" + time.Now().Format("2006-01-02_15:04") + ".xml"
-
-	fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
-	if err != nil {
-		return nil, err
-	}
-	// close fo on exit and check for its returned error
-	defer func() {
-		if err := fo.Close(); err != nil {
-			panic(err)
-		}
-	}()
-	// make a write buffer
-	w := bufio.NewWriter(fo)
-
 	//write xml headers
-	_, err = w.WriteString(`<?xml version="1.0" encoding="UTF-8"?><root>`)
+	_, err := w.WriteString(`<?xml version="1.0" encoding="UTF-8"?><root>`)
 	if err != nil {
-		logger.Error(err)
+		return err
 	}
 	err = w.Flush()
 	if err != nil {
-		logger.Error(err)
+		return err
 	}
-
-	reader := newStorageReader(&s, payloadMD5)
+	reader := newStorageReader(&s, payloadMD5, keys)
 
 	for {
 		block, err := reader.Read()
@@ -445,15 +359,9 @@ func (e XMLEncoder) EncodeFromStorage(payloadMD5 string) (io.ReadCloser, error) 
 			logger.Error(err)
 		}
 	}
-
 	s.Close()
-
 	w.WriteString("</root>")
-	if err = w.Flush(); err != nil {
-		panic(err)
-	}
-	readCloser := ioutil.NopCloser(strings.NewReader(sFileName))
-	return readCloser, nil
+	return w.Flush()
 }
 
 func (e XMLEncoder) writeXML(w io.Writer, block *map[string]interface{}) {
@@ -467,7 +375,20 @@ func (e XMLEncoder) writeXML(w io.Writer, block *map[string]interface{}) {
 			nodeName := fmt.Sprintf("<%s>", field)
 			w.Write([]byte(nodeName))
 			// have to escape predefined entities to obtain valid xml
-			xml.Escape(w, []byte(value.(string)))
+			v, ok := value.(string)
+			if ok {
+				xml.Escape(w, []byte(v))
+			} else {
+				for i, val := range value.([]interface{}) {
+					v, ok = val.(string)
+					if ok {
+						xml.Escape(w, []byte(v))
+						if i < len(value.([]interface{}))-1 {
+							w.Write([]byte(";"))
+						}
+					}
+				}
+			}
 			nodeName = fmt.Sprintf("</%s>", field)
 			w.Write([]byte(nodeName))
 		}
