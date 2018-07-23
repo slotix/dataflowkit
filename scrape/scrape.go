@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -50,20 +51,12 @@ func NewTask(p Payload) *Task {
 		panic(err)
 	}
 	p.PayloadMD5 = string(utils.GenerateCRC32(utils.GenerateMD5(data)))
-	if p.Format == "" {
-		p.Format = viper.GetString("FORMAT")
-	}
-	//if p.RetryTimes == 0 {
-	//	p.RetryTimes = DefaultOptions.RetryTimes
-	//}
-	if p.FetchDelay == nil {
-		delay := time.Duration(viper.GetInt("FETCH_DELAY")) * time.Millisecond
-		p.FetchDelay = &delay
-	}
-	if p.RandomizeFetchDelay == nil {
-		rand := viper.GetBool("RANDOMIZE_FETCH_DELAY")
-		p.RandomizeFetchDelay = &rand
-	}
+
+	delay := time.Duration(viper.GetInt("FETCH_DELAY")) * time.Millisecond
+	p.FetchDelay = &delay
+	rand := viper.GetBool("RANDOMIZE_FETCH_DELAY")
+	p.RandomizeFetchDelay = &rand
+
 	if p.Paginator != nil && p.Paginator.MaxPages == 0 {
 		p.Paginator.MaxPages = viper.GetInt("MAX_PAGES")
 	}
@@ -122,10 +115,10 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 			close(fetchCannel)
 			return nil, err
 		}
-		task.Payload.FetcherType = "chrome"
-		request := task.Payload.initRequest("")
-		task.Payload.Request = request
-		scraper.Request = request
+		task.Payload.Request.Type = "chrome"
+		//request := task.Payload.initRequest("")
+		//task.Payload.Request = request
+		//scraper.Request = request
 		wg.Add(1)
 		_, err = task.scrape(&tw)
 		wg.Wait()
@@ -395,7 +388,8 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 			if len(url) != 0 &&
 				(t.Payload.Paginator != nil && (t.Payload.Paginator.MaxPages > 0 && tw.currentPageNum < t.Payload.Paginator.MaxPages)) {
 				paginatorPayload := t.Payload
-				paginatorPayload.Request = paginatorPayload.initRequest(url)
+				paginatorPayload.Request.URL = url
+				//paginatorPayload.Request = paginatorPayload.initRequest(url)
 				paginatorScraper, err := paginatorPayload.newScraper()
 				if err != nil {
 					tw.wg.Done()
@@ -693,4 +687,57 @@ func (task *Task) fetchWorker() {
 			fetch.result <- content
 		}
 	}
+}
+
+//fillStruct fills s Structure with values from m map
+func fillStruct(m map[string]interface{}, s interface{}) error {
+	for k, v := range m {
+		err := setField(s, k, v)
+		if err != nil {
+			if k == "regexp" {
+				return nil
+			}
+			return err
+		}
+	}
+	//}
+	return nil
+}
+
+func setField(obj interface{}, name string, value interface{}) error {
+	structValue := reflect.ValueOf(obj).Elem()
+	//Outgoing structs may contain fields in Title Case or in UPPERCASE - f.e. URL. So we should check if there are fields in Title case or upper case before skipping non-existent fields.
+	//It is unlikely there is a situation when there are several fields like url, Url, URL in the same structure.
+	fValues := []reflect.Value{
+		structValue.FieldByName(name),
+		structValue.FieldByName(strings.Title(name)),
+		structValue.FieldByName(strings.ToUpper(name)),
+	}
+
+	var structFieldValue reflect.Value
+	for _, structFieldValue = range fValues {
+		if structFieldValue.IsValid() {
+			break
+		}
+	}
+
+	//	if !structFieldValue.IsValid() {
+	//skip non-existent fields
+	//		return nil
+	//return fmt.Errorf("No such field: %s in obj", name)
+	//	}
+
+	if !structFieldValue.CanSet() {
+		return fmt.Errorf("Cannot set field value: %s", name)
+	}
+
+	structFieldType := structFieldValue.Type()
+	val := reflect.ValueOf(value)
+	if structFieldType != val.Type() {
+		invalidTypeError := errors.New("Provided value type didn't match obj field type")
+		return invalidTypeError
+	}
+
+	structFieldValue.Set(val)
+	return nil
 }

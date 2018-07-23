@@ -50,6 +50,5 @@
         "maxPages": 10
     },
     "format": "json",
-    "fetcherType": "base",
     "paginatedResults": true
 }
