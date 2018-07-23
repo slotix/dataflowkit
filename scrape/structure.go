@@ -15,8 +15,6 @@ import (
 	"github.com/temoto/robotstxt"
 )
 
-
-
 type details struct {
 	Fields    []Field    `json:"fields"`
 	Paginator *paginator `json:"paginator"`
@@ -62,7 +60,6 @@ type Field struct {
 	Details *details `json:"details"`
 }
 
-
 // Payload structure contain information and rules to be passed to a scraper
 // Find the most actual information in docs/payload.md
 type Payload struct {
@@ -74,7 +71,7 @@ type Payload struct {
 	//Fields is a set of fields used to extract data from a web page.
 	Fields []Field `json:"fields"`
 	//PayloadMD5 encodes payload content to MD5. It is used for generating file name to be stored.
-	PayloadMD5 []byte `json:"payloadMD5"`
+	PayloadMD5 string
 	//FetcherType represent fetcher which is used for document download.
 	//Set up it to either `base` or `chrome` values
 	//If FetcherType is omited the value of FETCHER_TYPE of parse.d service is used by default.
@@ -95,7 +92,7 @@ type Payload struct {
 	//FetchDelay should be used for a scraper to throttle the crawling speed to avoid hitting the web servers too frequently.
 	//FetchDelay specifies sleep time for multiple requests for the same domain. It is equal to FetchDelay * random value between 500 and 1500 msec
 	FetchDelay *time.Duration `json:"fetchDelay"`
-	//Some web sites track  statistically significant similarities in the time between requests to them. RandomizeCrawlDelay setting decreases the chance of a crawler being blocked by such sites. This way a random delay ranging from 0.5 * CrawlDelay to 1.5 * CrawlDelay seconds is used between consecutive requests to the same domain. If CrawlDelay is zero (default) this option has no effect.
+	//Some web sites track  statistically significant similarities in the time between requests to them. RandomizeCrawlDelay setting decreases the chance of a crawler being blocked by such sites. This way a random delay ranging from 0.5  CrawlDelay to 1.5  CrawlDelay seconds is used between consecutive requests to the same domain. If CrawlDelay is zero (default) this option has no effect.
 	RandomizeFetchDelay *bool `json:"randomizeFetchDelay"`
 	//Maximum number of times to retry, in addition to the first download.
 	//RETRY_HTTP_CODES
@@ -188,7 +185,7 @@ type Task struct {
 	//Results
 	Parsed bool
 	// Block counter
-	BlockCounter []uint32
+	BlockCounter []int
 	// storage using to write result into corresponding storage type
 	storage storage.Store
 }
@@ -206,7 +203,7 @@ type taskWorker struct {
 	scraper         *Scraper
 	mx              *sync.Mutex
 	useBlockCounter bool
-	keys            map[int][]uint32
+	keys            map[int][]int
 }
 
 type blockStruct struct {
@@ -214,7 +211,7 @@ type blockStruct struct {
 	key             string
 	hash            string
 	useBlockCounter bool
-	keys            *map[int][]uint32
+	keys            *map[int][]int
 }
 
 type fetchInfo struct {
