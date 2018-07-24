@@ -307,8 +307,6 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	// }
 
 	if request.InfiniteScroll {
-		// Temprorary solution. Give a chance to load main js content
-		time.Sleep(3 * time.Second)
 		err = f.runJSFromFile(ctx, "./chrome/scroll2bottom.js")
 		if err != nil {
 			return nil, err
@@ -358,12 +356,11 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 		return err
 	}
 
-	// Open client for DOMContentEventFired to block until DOM has fully loaded.
-	domContentEventFired, err := pageClient.DOMContentEventFired(ctx)
+	// Navigate to GitHub, block until ready.
+	loadEventFired, err := pageClient.LoadEventFired(ctx)
 	if err != nil {
 		return err
 	}
-	defer domContentEventFired.Close()
 
 	if method == "GET" {
 		_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
@@ -391,8 +388,12 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 			return err
 		}
 	}
-	_, err = domContentEventFired.Recv()
-	return err
+	_, err = loadEventFired.Recv()
+	if err != nil {
+		return err
+	}
+	loadEventFired.Close()
+	return nil
 }
 
 func (f ChromeFetcher) runJSFromFile(ctx context.Context, path string) error {
