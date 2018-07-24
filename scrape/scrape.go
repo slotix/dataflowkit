@@ -116,6 +116,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 			return nil, err
 		}
 		task.Payload.Request.Type = "chrome"
+		scraper.Request.Type = "chrome"
 		//request := task.Payload.initRequest("")
 		//task.Payload.Request = request
 		//scraper.Request = request

@@ -99,7 +99,6 @@ func newFetcher(t Type) Fetcher {
 	panic("unreachable")
 }
 
-
 // newBaseFetcher creates instances of newBaseFetcher{} to fetch
 // a page content from regular websites as-is
 // without running js scripts on the page.
@@ -308,6 +307,8 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	// }
 
 	if request.InfiniteScroll {
+		// Temprorary solution. Give a chance to load main js content
+		time.Sleep(3 * time.Second)
 		err = f.runJSFromFile(ctx, "./chrome/scroll2bottom.js")
 		if err != nil {
 			return nil, err

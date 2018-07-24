@@ -7,7 +7,7 @@ async function scroll2bottom() {
   while (docHeight < window.document.body.scrollHeight) {
     docHeight = window.document.body.scrollHeight;
     window.scrollTo(0, docHeight);
-    await sleep(200);
+    await sleep(2000);
   }
 }
 
