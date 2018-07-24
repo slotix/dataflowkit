@@ -57,8 +57,14 @@ func NewTask(p Payload) *Task {
 	rand := viper.GetBool("RANDOMIZE_FETCH_DELAY")
 	p.RandomizeFetchDelay = &rand
 
-	if p.Paginator != nil && p.Paginator.MaxPages == 0 {
-		p.Paginator.MaxPages = viper.GetInt("MAX_PAGES")
+	if p.Paginator != nil {
+		if p.Paginator.MaxPages == 0 {
+			p.Paginator.MaxPages = viper.GetInt("MAX_PAGES")
+		}
+		if p.Paginator.InfiniteScroll {
+			p.Request.InfiniteScroll = true
+			p.Request.Type = "chrome"
+		}
 	}
 	if p.PaginateResults == nil {
 		pag := viper.GetBool("PAGINATE_RESULTS")
