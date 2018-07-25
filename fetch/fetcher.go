@@ -289,7 +289,7 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	); err != nil {
 		return nil, err
 	}
-	domLoadTimeout := 5 * time.Second
+	domLoadTimeout := 60 * time.Second
 	if request.FormData == "" {
 		err = f.navigate(ctx, f.cdpClient.Page, "GET", request.getURL(), "", domLoadTimeout)
 		if err != nil {
@@ -393,6 +393,7 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 		return err
 	}
 	loadEventFired.Close()
+	time.Sleep(500 * time.Millisecond)
 	return nil
 }
 
