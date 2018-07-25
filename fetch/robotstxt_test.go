@@ -28,7 +28,6 @@ func TestRobotstxtData(t *testing.T) {
 	serverCfg := Config{
 		Host: viper.GetString("DFK_FETCH"),
 	}
-	viper.Set("SKIP_STORAGE_MW", true)
 	htmlServer := Start(serverCfg)
 
 	////////
