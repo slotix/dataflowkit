@@ -2,14 +2,12 @@ package scrape
 
 import (
 	"bytes"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"github.com/temoto/robotstxt"
 )
 
 var (
@@ -23,6 +21,9 @@ var (
 func init() {
 	viper.Set("CHROME", "http://127.0.0.1:9222")
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
+	viper.Set("STORAGE_TYPE", "diskv")
+	viper.Set("RESULTS_DIR", "results")
+	viper.Set("RANDOMIZE_FETCH_DELAY", true)
 	randomize = true
 	//delayFetch = 500 * time.Millisecond
 	delayFetch = 0
@@ -116,195 +117,195 @@ func init() {
 	outXML = []byte(`<?xml version="1.0" encoding="UTF-8"?><root><element><Price_text>£51.77</Price_text><Title_text>A Light in the ...</Title_text></element><element><Price_text>£53.74</Price_text><Title_text>Tipping the Velvet</Title_text></element><element><Price_text>£50.10</Price_text><Title_text>Soumission</Title_text></element><element><Price_text>£47.82</Price_text><Title_text>Sharp Objects</Title_text></element><element><Price_text>£54.23</Price_text><Title_text>Sapiens: A Brief History ...</Title_text></element><element><Price_text>£22.65</Price_text><Title_text>The Requiem Red</Title_text></element><element><Price_text>£33.34</Price_text><Title_text>The Dirty Little Secrets ...</Title_text></element><element><Price_text>£17.93</Price_text><Title_text>The Coming Woman: A ...</Title_text></element><element><Price_text>£22.60</Price_text><Title_text>The Boys in the ...</Title_text></element><element><Price_text>£52.15</Price_text><Title_text>The Black Maria</Title_text></element><element><Price_text>£13.99</Price_text><Title_text>Starving Hearts (Triangular Trade ...</Title_text></element><element><Price_text>£20.66</Price_text><Title_text>Shakespeare&apos;s Sonnets</Title_text></element><element><Price_text>£17.46</Price_text><Title_text>Set Me Free</Title_text></element><element><Price_text>£52.29</Price_text><Title_text>Scott Pilgrim&apos;s Precious Little ...</Title_text></element><element><Price_text>£35.02</Price_text><Title_text>Rip it Up and ...</Title_text></element><element><Price_text>£57.25</Price_text><Title_text>Our Band Could Be ...</Title_text></element><element><Price_text>£23.88</Price_text><Title_text>Olio</Title_text></element><element><Price_text>£37.59</Price_text><Title_text>Mesaerion: The Best Science ...</Title_text></element><element><Price_text>£51.33</Price_text><Title_text>Libertarianism for Beginners</Title_text></element><element><Price_text>£45.17</Price_text><Title_text>It&apos;s Only the Himalayas</Title_text></element></root>`)
 }
 
-func TestTask_ParseJSON(t *testing.T) {
-	//start fetch server
-	viper.Set("DFK_FETCH", "127.0.0.1:8000")
-	fetchServerAddr := viper.GetString("DFK_FETCH")
-	fetchServerCfg := fetch.Config{
-		Host: fetchServerAddr,
-		//	ReadTimeout:  60 * time.Second,
-		//	WriteTimeout: 60 * time.Second,
-	}
-	viper.Set("SKIP_STORAGE_MW", true)
-	fetchServer := fetch.Start(fetchServerCfg)
-	/////////
-	type fields struct {
-		ID      string
-		Payload Payload
-		Visited map[string]error
-		Robots  map[string]*robotstxt.RobotsData
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		want    []byte
-		wantErr bool
-	}{
-		{
-			name: "books-to-scrape-json",
-			fields: fields{
-				ID:      "111",
-				Payload: pJSON,
-				Visited: map[string]error{},
-				Robots:  map[string]*robotstxt.RobotsData{},
-			},
-			want:    outJSON,
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			task := &Task{
-				ID:      tt.fields.ID,
-				Payload: tt.fields.Payload,
-				//Visited: tt.fields.Visited,
-				Robots:  tt.fields.Robots,
-			}
-			r, err := task.Parse()
-			if err != nil {
-				t.Error(err)
-				return
-			}
-			buf := new(bytes.Buffer)
-			buf.ReadFrom(r)
-			got := buf.Bytes()
-			//	t.Log(string(got))
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Task.Parse() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Task.Parse() = %v, want %v", string(got), string(tt.want))
-			}
-		})
-	}
-	fetchServer.Stop()
-}
+// func TestTask_ParseJSON(t *testing.T) {
+// 	//start fetch server
+// 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
+// 	fetchServerAddr := viper.GetString("DFK_FETCH")
+// 	fetchServerCfg := fetch.Config{
+// 		Host: fetchServerAddr,
+// 		//	ReadTimeout:  60 * time.Second,
+// 		//	WriteTimeout: 60 * time.Second,
+// 	}
+// 	// viper.Set("SKIP_STORAGE_MW", true)
+// 	fetchServer := fetch.Start(fetchServerCfg)
+// 	/////////
+// 	type fields struct {
+// 		ID      string
+// 		Payload Payload
+// 		Visited map[string]error
+// 		Robots  map[string]*robotstxt.RobotsData
+// 	}
+// 	tests := []struct {
+// 		name    string
+// 		fields  fields
+// 		want    []byte
+// 		wantErr bool
+// 	}{
+// 		{
+// 			name: "books-to-scrape-json",
+// 			fields: fields{
+// 				ID:      "111",
+// 				Payload: pJSON,
+// 				Visited: map[string]error{},
+// 				Robots:  map[string]*robotstxt.RobotsData{},
+// 			},
+// 			want:    outJSON,
+// 			wantErr: false,
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			task := &Task{
+// 				ID:      tt.fields.ID,
+// 				Payload: tt.fields.Payload,
+// 				//Visited: tt.fields.Visited,
+// 				Robots:  tt.fields.Robots,
+// 			}
+// 			r, err := task.Parse()
+// 			if err != nil {
+// 				t.Error(err)
+// 				return
+// 			}
+// 			buf := new(bytes.Buffer)
+// 			buf.ReadFrom(r)
+// 			got := buf.Bytes()
+// 			//	t.Log(string(got))
+// 			if (err != nil) != tt.wantErr {
+// 				t.Errorf("Task.Parse() error = %v, wantErr %v", err, tt.wantErr)
+// 				return
+// 			}
+// 			if !reflect.DeepEqual(got, tt.want) {
+// 				t.Errorf("Task.Parse() = %v, want %v", string(got), string(tt.want))
+// 			}
+// 		})
+// 	}
+// 	fetchServer.Stop()
+// }
 
-func TestTask_ParseCSV(t *testing.T) {
-	//start fetch server
-	viper.Set("DFK_FETCH", "127.0.0.1:8000")
-	fetchServerAddr := viper.GetString("DFK_FETCH")
-	fetchServerCfg := fetch.Config{
-		Host: fetchServerAddr,
-		//	ReadTimeout:  60 * time.Second,
-		//	WriteTimeout: 60 * time.Second,
-	}
-	viper.Set("SKIP_STORAGE_MW", true)
-	fetchServer := fetch.Start(fetchServerCfg)
-	///////
-	type fields struct {
-		ID      string
-		Payload Payload
-		Visited map[string]error
-		Robots  map[string]*robotstxt.RobotsData
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		want    []byte
-		wantErr bool
-	}{
-		{
-			name: "books-to-scrape-csv",
-			fields: fields{
-				ID:      "111",
-				Payload: pCSV_XML,
-				Visited: map[string]error{},
-				Robots:  map[string]*robotstxt.RobotsData{},
-			},
-			want:    outCSV,
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			task := &Task{
-				ID:      tt.fields.ID,
-				Payload: tt.fields.Payload,
-			//	Visited: tt.fields.Visited,
-				Robots:  tt.fields.Robots,
-			}
-			r, err := task.Parse()
-			buf := new(bytes.Buffer)
-			buf.ReadFrom(r)
-			got := buf.Bytes()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Task.Parse() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Task.Parse() = %v, want %v", string(got), string(tt.want))
-			}
-		})
-	}
-	fetchServer.Stop()
-}
+// func TestTask_ParseCSV(t *testing.T) {
+// 	//start fetch server
+// 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
+// 	fetchServerAddr := viper.GetString("DFK_FETCH")
+// 	fetchServerCfg := fetch.Config{
+// 		Host: fetchServerAddr,
+// 		//	ReadTimeout:  60 * time.Second,
+// 		//	WriteTimeout: 60 * time.Second,
+// 	}
+// 	// viper.Set("SKIP_STORAGE_MW", true)
+// 	fetchServer := fetch.Start(fetchServerCfg)
+// 	///////
+// 	type fields struct {
+// 		ID      string
+// 		Payload Payload
+// 		Visited map[string]error
+// 		Robots  map[string]*robotstxt.RobotsData
+// 	}
+// 	tests := []struct {
+// 		name    string
+// 		fields  fields
+// 		want    []byte
+// 		wantErr bool
+// 	}{
+// 		{
+// 			name: "books-to-scrape-csv",
+// 			fields: fields{
+// 				ID:      "111",
+// 				Payload: pCSV_XML,
+// 				Visited: map[string]error{},
+// 				Robots:  map[string]*robotstxt.RobotsData{},
+// 			},
+// 			want:    outCSV,
+// 			wantErr: false,
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			task := &Task{
+// 				ID:      tt.fields.ID,
+// 				Payload: tt.fields.Payload,
+// 			//	Visited: tt.fields.Visited,
+// 				Robots:  tt.fields.Robots,
+// 			}
+// 			r, err := task.Parse()
+// 			buf := new(bytes.Buffer)
+// 			buf.ReadFrom(r)
+// 			got := buf.Bytes()
+// 			if (err != nil) != tt.wantErr {
+// 				t.Errorf("Task.Parse() error = %v, wantErr %v", err, tt.wantErr)
+// 				return
+// 			}
+// 			if !reflect.DeepEqual(got, tt.want) {
+// 				t.Errorf("Task.Parse() = %v, want %v", string(got), string(tt.want))
+// 			}
+// 		})
+// 	}
+// 	fetchServer.Stop()
+// }
 
-func TestTask_ParseXML(t *testing.T) {
-	//start fetch server
-	viper.Set("DFK_FETCH", "127.0.0.1:8000")
-	fetchServerAddr := viper.GetString("DFK_FETCH")
-	fetchServerCfg := fetch.Config{
-		Host: fetchServerAddr,
-		//	ReadTimeout:  60 * time.Second,
-		//	WriteTimeout: 60 * time.Second,
-	}
-	viper.Set("SKIP_STORAGE_MW", true)
-	fetchServer := fetch.Start(fetchServerCfg)
-	///////
-	pCSV_XML.Format = "XML"
+// func TestTask_ParseXML(t *testing.T) {
+// 	//start fetch server
+// 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
+// 	fetchServerAddr := viper.GetString("DFK_FETCH")
+// 	fetchServerCfg := fetch.Config{
+// 		Host: fetchServerAddr,
+// 		//	ReadTimeout:  60 * time.Second,
+// 		//	WriteTimeout: 60 * time.Second,
+// 	}
+// 	// viper.Set("SKIP_STORAGE_MW", true)
+// 	fetchServer := fetch.Start(fetchServerCfg)
+// 	///////
+// 	pCSV_XML.Format = "XML"
 
-	type fields struct {
-		ID      string
-		Payload Payload
-		Visited map[string]error
-		Robots  map[string]*robotstxt.RobotsData
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		want    []byte
-		wantErr bool
-	}{
-		{
-			name: "books-to-scrape-csv",
-			fields: fields{
-				ID:      "111",
-				Payload: pCSV_XML,
-				Visited: map[string]error{},
-				Robots:  map[string]*robotstxt.RobotsData{},
-			},
-			want:    outXML,
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			task := &Task{
-				ID:      tt.fields.ID,
-				Payload: tt.fields.Payload,
-			//	Visited: tt.fields.Visited,
-				Robots:  tt.fields.Robots,
-			}
-			r, err := task.Parse()
-			buf := new(bytes.Buffer)
-			_, err = buf.ReadFrom(r)
-			if err != nil {
-				t.Error(err)
-			}
-			got := buf.Bytes()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Task.Parse() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Task.Parse() = %v, want %v", string(got), string(tt.want))
-			}
-		})
-	}
-	fetchServer.Stop()
-}
+// 	type fields struct {
+// 		ID      string
+// 		Payload Payload
+// 		Visited map[string]error
+// 		Robots  map[string]*robotstxt.RobotsData
+// 	}
+// 	tests := []struct {
+// 		name    string
+// 		fields  fields
+// 		want    []byte
+// 		wantErr bool
+// 	}{
+// 		{
+// 			name: "books-to-scrape-csv",
+// 			fields: fields{
+// 				ID:      "111",
+// 				Payload: pCSV_XML,
+// 				Visited: map[string]error{},
+// 				Robots:  map[string]*robotstxt.RobotsData{},
+// 			},
+// 			want:    outXML,
+// 			wantErr: false,
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			task := &Task{
+// 				ID:      tt.fields.ID,
+// 				Payload: tt.fields.Payload,
+// 			//	Visited: tt.fields.Visited,
+// 				Robots:  tt.fields.Robots,
+// 			}
+// 			r, err := task.Parse()
+// 			buf := new(bytes.Buffer)
+// 			_, err = buf.ReadFrom(r)
+// 			if err != nil {
+// 				t.Error(err)
+// 			}
+// 			got := buf.Bytes()
+// 			if (err != nil) != tt.wantErr {
+// 				t.Errorf("Task.Parse() error = %v, wantErr %v", err, tt.wantErr)
+// 				return
+// 			}
+// 			if !reflect.DeepEqual(got, tt.want) {
+// 				t.Errorf("Task.Parse() = %v, want %v", string(got), string(tt.want))
+// 			}
+// 		})
+// 	}
+// 	fetchServer.Stop()
+// }
 
 func TestScraper_partNames(t *testing.T) {
 	s := Scraper{}
@@ -356,14 +357,10 @@ func TestNewTask(t *testing.T) {
 }
 
 func TestParseTestServer12345(t *testing.T) {
-	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host: fetchServerAddr,
-		//ReadTimeout:  60 * time.Second,
-		//WriteTimeout: 60 * time.Second,
 	}
-	viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
@@ -371,7 +368,8 @@ func TestParseTestServer12345(t *testing.T) {
 	p := Payload{
 		Name: "persons Table",
 		Request: fetch.Request{
-			URL: "http://127.0.0.1:12345/persons/page-0",
+			Type: "chrome",
+			URL:  "http://testserver:12345/persons/page-0",
 		},
 		Fields: []Field{
 			Field{
@@ -385,10 +383,10 @@ func TestParseTestServer12345(t *testing.T) {
 				},
 			},
 			Field{
-				Name:     "IDs",
-				Selector: ".badge-primary",
+				Name:     "Image",
+				Selector: ".card-img-top",
 				Extractor: Extractor{
-					Types: []string{"html"},
+					Types: []string{"src", "alt"},
 				},
 			},
 			// Field{
@@ -403,12 +401,13 @@ func TestParseTestServer12345(t *testing.T) {
 		Format:          "json",
 	}
 	expected := []byte(`[{"Count_count":10,"Header_const":"1","Header_outerHtml":"\u003ch1\u003ePersons\u003c/h1\u003e","Warning_html":"\u003cstrong\u003eWarning!\u003c/strong\u003e This is a demo website for web scraping purposes. \u003cbr/\u003eThe data on this page has been randomly generated."}]` + "\n")
-	task := &Task{
-		ID:      "12345",
-		Payload: p,
-		//Visited: map[string]error{},
-		Robots:  map[string]*robotstxt.RobotsData{},
-	}
+	// task := &Task{
+	// 	ID:      "12345",
+	// 	Payload: p,
+	// 	//Visited: map[string]error{},
+	// 	Robots: map[string]*robotstxt.RobotsData{},
+	// }
+	task := NewTask(p)
 	r, err := task.Parse()
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
@@ -425,12 +424,8 @@ func TestParseTestServer12345(t *testing.T) {
 		PaginateResults: &paginateResults,
 		Format:          "json",
 	}
-	task = &Task{
-		ID:      "12345",
-		Payload: badP,
-		//Visited: map[string]error{},
-		Robots:  map[string]*robotstxt.RobotsData{},
-	}
+
+	task = NewTask(badP)
 	r, err = task.Parse()
 	assert.Error(t, err, "400: no parts found")
 	//Bad output format
@@ -451,12 +446,8 @@ func TestParseTestServer12345(t *testing.T) {
 		PaginateResults: &paginateResults,
 		Format:          "BadOutputFormat",
 	}
-	task = &Task{
-		ID:      "12345",
-		Payload: badOF,
-	//	Visited: map[string]error{},
-		Robots:  map[string]*robotstxt.RobotsData{},
-	}
+	task = NewTask(badOF)
+
 	r, err = task.Parse()
 	assert.Error(t, err, "invalid output format specified")
 }
@@ -466,10 +457,8 @@ func TestParseSwitchFetchers(t *testing.T) {
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host: fetchServerAddr,
-		//ReadTimeout:  60 * time.Second,
-		//WriteTimeout: 60 * time.Second,
 	}
-	viper.Set("SKIP_STORAGE_MW", true)
+	// viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
@@ -491,12 +480,7 @@ func TestParseSwitchFetchers(t *testing.T) {
 		PaginateResults: &paginateResults,
 		Format:          "json",
 	}
-	task := &Task{
-		ID:      "12345",
-		Payload: p,
-	//	Visited: map[string]error{},
-		Robots:  map[string]*robotstxt.RobotsData{},
-	}
+	task := NewTask(p)
 	r, err := task.Parse()
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
