@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -60,7 +61,7 @@ func NewStore(sType string) Store {
 		cassandraHost := viper.GetString("CASSANDRA")
 		return newCassandra(cassandraHost)
 	default:
-		return nil
+		panic(errors.New("no storage type specified"))
 		// case "s3": //AWS S3
 		// 	bucket := viper.GetString("DFK_BUCKET")
 		// 	config := &aws.Config{
