@@ -380,7 +380,8 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 		if err != nil {
 			panic(err)
 		}
-		go func() {
+		kill := make(chan bool)
+		go func(kill chan bool) {
 			var sig = false
 			for {
 				if sig {
@@ -404,13 +405,17 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 						sig = true
 						break
 					}
+				case <-kill:
+					sig = true
+					break
 				}
 			}
-		}()
+		}(kill)
 		_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
 		if err != nil {
 			return err
 		}
+		kill <- true
 	}
 	_, err = loadEventFired.Recv()
 	if err != nil {
