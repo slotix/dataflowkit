@@ -73,7 +73,7 @@ func TestJSONEncoder_Encode(t *testing.T) {
 			e := JSONEncoder{
 				paginateResults: tt.fields.paginateResults,
 			}
-			got, err := e.Encode(tt.args.results)
+			got, err := e.encode(tt.args.results)
 			buf := new(bytes.Buffer)
 			buf.ReadFrom(got)
 			t.Log(buf.String())
