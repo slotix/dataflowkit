@@ -368,19 +368,43 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 			return err
 		}
 	} else {
+		pattern := network.RequestPattern{URLPattern: &url}
+		patterns := []network.RequestPattern{pattern}
+
+		interArgs := network.NewSetRequestInterceptionArgs(patterns)
+		err = f.cdpClient.Network.SetRequestInterception(ctx, interArgs)
+		if err != nil {
+			return err
+		}
+		cl, err := f.cdpClient.Network.RequestIntercepted(ctx)
+		if err != nil {
+			panic(err)
+		}
 		go func() {
-			cl, err := f.cdpClient.Network.RequestIntercepted(ctx)
-			r, err := cl.Recv()
-			if err != nil {
-				panic(err)
-			}
-			interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
-			interceptedArgs.SetMethod("POST")
-			interceptedArgs.SetPostData(formData)
-			fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`, len(formData))
-			interceptedArgs.Headers = []byte(fData)
-			if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
-				panic(err)
+			var sig = false
+			for {
+				if sig {
+					return
+				}
+				select {
+				case <-cl.Ready():
+					r, err := cl.Recv()
+					if err != nil {
+						logger.Error(err)
+						sig = true
+						break
+					}
+					interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
+					interceptedArgs.SetMethod("POST")
+					interceptedArgs.SetPostData(formData)
+					fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`, len(formData))
+					interceptedArgs.Headers = []byte(fData)
+					if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
+						logger.Error(err)
+						sig = true
+						break
+					}
+				}
 			}
 		}()
 		_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
