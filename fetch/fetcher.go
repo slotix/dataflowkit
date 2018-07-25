@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -300,14 +301,9 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 		err = f.navigate(ctx, f.cdpClient.Page, "POST", request.getURL(), formData.Encode(), domLoadTimeout)
 	}
 
-	//TODO: add main loader script
-	// err = f.runJSFromFile(ctx, "./chrome/loader.js")
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	if request.InfiniteScroll {
-		err = f.runJSFromFile(ctx, "./chrome/scroll2bottom.js")
+		path := filepath.Join(viper.GetString("CHROME_SCRIPTS"), "scroll2bottom.js")
+		err = f.runJSFromFile(ctx, path)
 		if err != nil {
 			return nil, err
 		}
