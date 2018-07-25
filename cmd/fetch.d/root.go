@@ -35,9 +35,10 @@ import (
 var (
 	//VERSION               string // VERSION is set during build
 	//  DFKFetch represents address of DFK Fetch service
-	DFKFetch   string //Fetch service address
-	fetchProxy string //Proxy address http://username:password@proxy-host:port
-	chrome     string
+	DFKFetch          string //Fetch service address
+	fetchProxy        string //Proxy address http://username:password@proxy-host:port
+	chrome            string
+	chromeScriptsPath string
 
 	storageType     string
 	ignoreCacheInfo bool
@@ -104,6 +105,8 @@ func init() {
 
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&chrome, "CHROME", "c", "http://127.0.0.1:9222", "Headless Chrome URL address. It is used for fetching JS driven web pages")
+	RootCmd.Flags().StringVarP(&chromeScriptsPath, "CHROME_SCRIPTS", "", "./chrome", "Path to chrome scripts")
+
 	RootCmd.Flags().StringVarP(&fetchProxy, "PROXY", "p", "", "Proxy address http://username:password@proxy-host:port")
 
 	//set here default type of storage
@@ -127,6 +130,7 @@ func init() {
 
 	viper.BindPFlag("PROXY", RootCmd.Flags().Lookup("PROXY"))
 	viper.BindPFlag("CHROME", RootCmd.Flags().Lookup("CHROME"))
+	viper.BindPFlag("CHROME_SCRIPTS", RootCmd.Flags().Lookup("CHROME_SCRIPTS"))
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))

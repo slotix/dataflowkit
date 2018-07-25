@@ -24,6 +24,7 @@ func init() {
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	viper.Set("PROXY", "")
 	viper.Set("CHROME", "http://127.0.0.1:9222")
+	viper.Set("CHROME_SCRIPTS", "../cmd/fetch.d/chrome")
 	st = storage.NewStore(viper.GetString("STORAGE_TYPE"))
 	tsURL = "http://localhost:12345"
 }
