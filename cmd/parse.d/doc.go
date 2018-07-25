@@ -134,8 +134,6 @@ Combined list of results is always returned for CSV format.
 //    fetcherType from Payload structure takes precedence over FETCHER_TYPE flag value.
 //
 //Storage settings
-//    SKIP_STORAGE_MW: If true no data will be saved to storage. 
-//    This flag forces fetcher to bypass storage middleware.
 //
 //    STORAGE_TYPE: Storage backend for intermediary data passed to Dataflow 
 //    kit Parse service. 
