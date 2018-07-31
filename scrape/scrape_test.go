@@ -145,7 +145,8 @@ func TestParse(t *testing.T) {
 	if *update {
 		ioutil.WriteFile(golden, actual, 0644)
 	}
-	expected, _ := ioutil.ReadFile(golden)
+	expected, err := ioutil.ReadFile(golden)
+	assert.NoError(t, err)
 
 	// if !bytes.Equal(actual, expected) {
 	// 	// FAIL!

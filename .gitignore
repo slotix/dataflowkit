@@ -52,8 +52,6 @@ webserver/webserver
 coverage.txt
 coverage.out
 
-testdata
-
 storage/cassandra/db
 
 webserver
