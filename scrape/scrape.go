@@ -82,6 +82,7 @@ func NewTask(p Payload) *Task {
 		Parsed:       false,
 		BlockCounter: []int{},
 		storage:      storage.NewStore(storageType),
+		mx:           &sync.Mutex{},
 	}
 
 }
@@ -97,7 +98,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 
 	fetchCannel = make(chan *fetchInfo, 100)
 	for i := 0; i < 50; i++ {
-		go task.fetchWorker()
+		go task.fetchWorker(fetchCannel)
 	}
 	// Array of page keys
 	wg := sync.WaitGroup{}
@@ -428,7 +429,6 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	wrk := &worker{
 		wg:      &wg,
 		scraper: tw.scraper,
-		mx:      tw.mx,
 	}
 
 	blockSelections := tw.scraper.DividePage(doc.Selection)
@@ -440,7 +440,6 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 
 	// Divide this page into blocks
 	for i, blockSel := range blockSelections {
-		tw.mx.Lock()
 		ref := fmt.Sprintf("%s-%d-%d", tw.UID, tw.currentPageNum, i)
 		block := blockStruct{
 			blockSelection:  blockSel,
@@ -449,7 +448,6 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 			useBlockCounter: tw.useBlockCounter,
 			keys:            &tw.keys,
 		}
-		tw.mx.Unlock()
 		blocks <- &block
 	}
 	close(blocks)
@@ -544,10 +542,14 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 			case *extract.Attr:
 				attr := part.Extractor.(*extract.Attr)
 				if attr.Attr == "href" || attr.Attr == "src" {
+					task.mx.Lock()
 					attr.BaseURL = url
+					task.mx.Unlock()
 				}
 			}
+			task.mx.Lock()
 			extractedPartResults, err := part.Extractor.Extract(sel)
+			task.mx.Unlock()
 			if err != nil {
 				logger.Error(err)
 				return
@@ -594,7 +596,6 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 						currentPageNum:  0,
 						scraper:         &part.Details,
 						UID:             uid,
-						mx:              wrk.mx,
 						useBlockCounter: ubc,
 						keys:            make(map[int][]int),
 					}
@@ -633,16 +634,18 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 			//********* end details
 		}
 		if len(blockResults) > 0 {
+			task.mx.Lock()
 			if !task.Parsed {
 				task.Parsed = true
 			}
+			task.mx.Unlock()
 
 			output, err := json.Marshal(blockResults)
 			if err != nil {
 				logger.Error(err)
 			}
 			if !wrk.scraper.IsPath {
-				wrk.mx.Lock()
+				task.mx.Lock()
 				key := block.key
 				if block.useBlockCounter {
 					blockNum := len(task.BlockCounter)
@@ -669,14 +672,14 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 				if err != nil {
 					logger.Error(fmt.Errorf("Failed to write %s. %s", key, err.Error()))
 				}
-				wrk.mx.Unlock()
+				task.mx.Unlock()
 			}
 		}
 	}
 }
 
-func (task *Task) fetchWorker() {
-	for fetch := range fetchCannel {
+func (task *Task) fetchWorker(fc chan *fetchInfo) {
+	for fetch := range fc {
 		if !viper.GetBool("IGNORE_FETCH_DELAY") {
 			if *task.Payload.RandomizeFetchDelay {
 				//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
