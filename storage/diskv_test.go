@@ -65,6 +65,7 @@ func Test_diskv(t *testing.T) {
 	//erase all items
 	err = d.DeleteAll()
 	assert.NoError(t, err, "Expected no error")
+	d.Close()
 }
 
 // func TestDiskvConn_Write1(t *testing.T) {
