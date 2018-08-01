@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	randomize                      bool
-	delayFetch                     time.Duration
-	paginateResults                bool
+	randomize  bool
+	delayFetch time.Duration
+	//paginateResults                bool
 	personsPayload, detailsPayload Payload
 	update                         = flag.Bool("update", false, "update result files")
 )
@@ -31,7 +31,7 @@ func init() {
 	randomize = true
 	//delayFetch = 500 * time.Millisecond
 	delayFetch = 0
-	paginateResults = false
+	//paginateResults = false
 	personsPayload = Payload{
 		Name: "persons Cards",
 		Request: fetch.Request{
@@ -56,16 +56,14 @@ func init() {
 					Types: []string{"src", "alt", "width", "height"},
 				},
 			},
-			// Field{
-			// 	Name:     "Count",
-			// 	Selector: "#cards a",
-			// 	Extractor: Extractor{
-			// 		Types: []string{"count"},
-			// 	},
-			// },
 		},
-		PaginateResults: &paginateResults,
-		Format:          "json",
+		Paginator: &paginator{
+			Selector:  "nav:nth-child(4) :nth-child(2) .page-link",
+			Attribute: "href",
+			MaxPages:  2,
+		},
+		//	PaginateResults: &paginateResults,
+		Format: "json",
 	}
 	detailsPayload = Payload{
 		Name: "persons details",
@@ -83,6 +81,17 @@ func init() {
 				},
 				Details: &details{
 					Fields: []Field{
+						Field{
+							Name:     "Number",
+							Selector: ".display-4",
+							Extractor: Extractor{
+								Types: []string{"regex"},
+								Params: map[string]interface{}{
+									"regexp": "([\\d]+)\\s",
+								},
+								Filters: []string{"trim"},
+							},
+						},
 						Field{
 							Name:     "Name",
 							Selector: ".display-4",
@@ -111,24 +120,46 @@ func init() {
 								Filters: []string{"trim"},
 							},
 						},
+						Field{
+							Name:     "Email",
+							Selector: ".card-text:nth-child(2) .col-5",
+							Extractor: Extractor{
+								Types:   []string{"text"},
+								Filters: []string{"trim"},
+							},
+						},
 					},
 				},
 			},
+			Field{
+				Name:     "Count",
+				Selector: ".badge-primary",
+				Extractor: Extractor{
+					Types: []string{"count"},
+				},
+			},
 		},
-		Paginator: &paginator{
-			Selector:  "nav:nth-child(4) :nth-child(2) .page-link",
-			Attribute: "href",
-			MaxPages:  1,
-		},
+		// Paginator: &paginator{
+		// 	Selector:  "nav:nth-child(4) :nth-child(2) .page-link",
+		// 	Attribute: "href",
+		// 	MaxPages:  2,
+		// },
 		RandomizeFetchDelay: &randomize,
 		//	FetchDelay:          &delayFetch,
-		Format:          "json",
-		PaginateResults: &paginateResults,
+		Format: "json",
+		//PaginateResults: &paginateResults,
 	}
 }
 
 func TestNewTask(t *testing.T) {
-	task := NewTask(Payload{})
+	viper.Set("MAX_PAGES", 10)
+	task := NewTask(Payload{
+		Paginator: &paginator{
+			Selector:       ".paginatorrr",
+			Attribute:      "href",
+			InfiniteScroll: true,
+		},
+	})
 	assert.NotEmpty(t, task.ID)
 	start, err := task.startTime()
 	assert.NoError(t, err)
@@ -161,6 +192,25 @@ func TestParseDetails(t *testing.T) {
 	expected, err := ioutil.ReadFile(golden)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
+
+	//XML details output
+	// detailsPayload.Format = "xml"
+	// task = NewTask(detailsPayload)
+	// r, err = task.Parse()
+	// assert.NoError(t, err)
+	// buf = new(bytes.Buffer)
+	// buf.ReadFrom(r)
+	// resultFile = buf.Bytes()
+	// actual, err = ioutil.ReadFile(filepath.Join("./", string(resultFile)))
+	// assert.NoError(t, err)
+	// golden = filepath.Join("../testdata", "details.xml")
+	// if *update {
+	// 	ioutil.WriteFile(golden, actual, 0644)
+	// }
+	// expected, err = ioutil.ReadFile(golden)
+	// assert.NoError(t, err)
+	// assert.Equal(t, expected, actual)
+
 	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 }
@@ -249,8 +299,8 @@ func TestParseErrs(t *testing.T) {
 		Request: fetch.Request{
 			URL: "http://127.0.0.1:12345",
 		},
-		PaginateResults: &paginateResults,
-		Format:          "json",
+		//	PaginateResults: &paginateResults,
+		Format: "json",
 	}
 
 	task := NewTask(badP)
@@ -272,8 +322,8 @@ func TestParseErrs(t *testing.T) {
 				},
 			},
 		},
-		PaginateResults: &paginateResults,
-		Format:          "BadOutputFormat",
+		//		PaginateResults: &paginateResults,
+		Format: "BadOutputFormat",
 	}
 	task = NewTask(badOF)
 
@@ -296,8 +346,6 @@ func TestParseSwitchFetchers(t *testing.T) {
 	// viper.Set("SKIP_STORAGE_MW", true)
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
-
-	paginateResults = false
 	p := Payload{
 		Name: "persons Table",
 		Request: fetch.Request{
@@ -313,8 +361,7 @@ func TestParseSwitchFetchers(t *testing.T) {
 				},
 			},
 		},
-		PaginateResults: &paginateResults,
-		Format:          "csv",
+		Format: "json",
 	}
 	task := NewTask(p)
 	r, err := task.Parse()
@@ -362,4 +409,14 @@ func TestPayload_selectors(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, []string(nil), s2)
 
+}
+
+func TestIntArrayToString(t *testing.T) {
+	str := intArrayToString([]int{1, 2, 3, 4, 5}, ";")
+	assert.Equal(t, "1;2;3;4;5", str)
+}
+
+func TestFloatArrayToString(t *testing.T) {
+	str := floatArrayToString([]float64{1.1, 2.2, 3.3, 4.4, 5.5}, ";")
+	assert.Equal(t, "1.1;2.2;3.3;4.4;5.5", str)
 }

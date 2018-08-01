@@ -39,21 +39,21 @@ func TestText(t *testing.T) {
 	assert.Equal(t, ret, []string{"First", "Second", "Third"})
 }
 
-func TestHtml(t *testing.T) {
-	sel := selFrom(
-		`<div class="one">` +
-			`<div class="two">Bar</div>` +
-			`<div class="two"><i>Baz</i></div>` +
-			`<div class="three">Asdf</div>` +
-			`</div>`)
-	ret, err := Html{}.Extract(sel.Find(".one"))
-	assert.NoError(t, err)
-	assert.Equal(t, ret, `<div class="two">Bar</div><div class="two"><i>Baz</i></div><div class="three">Asdf</div>`)
+// func TestHtml(t *testing.T) {
+// 	sel := selFrom(
+// 		`<div class="one">` +
+// 			`<div class="two">Bar</div>` +
+// 			`<div class="two"><i>Baz</i></div>` +
+// 			`<div class="three">Asdf</div>` +
+// 			`</div>`)
+// 	ret, err := Html{}.Extract(sel.Find(".one"))
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, ret, `<div class="two">Bar</div><div class="two"><i>Baz</i></div><div class="three">Asdf</div>`)
 
-	ret, err = Html{}.Extract(sel.Find(".two"))
-	assert.NoError(t, err)
-	assert.Equal(t, ret, `Bar<i>Baz</i>`)
-}
+// 	ret, err = Html{}.Extract(sel.Find(".two"))
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, ret, `Bar<i>Baz</i>`)
+// }
 
 func TestOuterHtml(t *testing.T) {
 	// Simple version
