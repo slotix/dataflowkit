@@ -16,8 +16,6 @@ func TestNewStore(t *testing.T) {
 }
 
 func TestInvalidStore(t *testing.T){
-	
-	
 	sType := "unknownStorage"
 	defer func() {
         if r := recover(); r == nil {
