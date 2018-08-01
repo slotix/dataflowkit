@@ -97,30 +97,30 @@ var _ Extractor = Text{}
 // then the output will be: "<b>ONE</b><i>TWO</i>".
 //
 // The return type is a string of all the inner HTML joined together.
-type Html struct{}
+//type Html struct{}
 
 // Extract returns HTML from specified selection.
-func (e Html) Extract(sel *goquery.Selection) (interface{}, error) {
-	var ret, h string
-	var err error
+// func (e Html) Extract(sel *goquery.Selection) (interface{}, error) {
+// 	var ret, h string
+// 	var err error
 
-	sel.EachWithBreak(func(i int, s *goquery.Selection) bool {
-		h, err = s.Html()
-		if err != nil {
-			return false
-		}
+// 	sel.EachWithBreak(func(i int, s *goquery.Selection) bool {
+// 		h, err = s.Html()
+// 		if err != nil {
+// 			return false
+// 		}
 
-		ret += h
-		return true
-	})
+// 		ret += h
+// 		return true
+// 	})
 
-	if err != nil {
-		return nil, err
-	}
-	return ret, nil
-}
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return ret, nil
+// }
 
-var _ Extractor = Html{}
+// var _ Extractor = Html{}
 
 // OuterHtml extracts and returns the HTML of each part of the
 // given selection, as a string.

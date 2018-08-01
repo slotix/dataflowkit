@@ -65,7 +65,7 @@ type CSVEncoder struct {
 
 // JSONEncoder transforms parsed data to JSON format.
 type JSONEncoder struct {
-	paginateResults bool
+//	paginateResults bool
 }
 
 // XMLEncoder transforms parsed data to XML format.
@@ -76,9 +76,9 @@ func (e JSONEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	// make a write buffer
-	if e.paginateResults {
-		w.WriteString("[")
-	}
+	// if e.paginateResults {
+	// 	w.WriteString("[")
+	// }
 	w.WriteString("[")
 
 	reader := newStorageReader(&s, payloadMD5, keys)
@@ -91,9 +91,9 @@ func (e JSONEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]
 				break
 			} else if err.Error() == errs.NextPage {
 				//next page
-				if e.paginateResults {
-					w.WriteString("],[")
-				}
+				// if e.paginateResults {
+				// 	w.WriteString("],[")
+				// }
 			} else {
 				logger.Error(err)
 				continue
@@ -111,9 +111,9 @@ func (e JSONEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]
 		}
 		w.Write(blockJSON)
 	}
-	if e.paginateResults {
-		w.WriteString("]")
-	}
+	// if e.paginateResults {
+	// 	w.WriteString("]")
+	// }
 	s.Close()
 	return w.Flush()
 }
@@ -164,9 +164,9 @@ func (r *storageResultReader) init() {
 	}
 }
 
-func (r *storageResultReader) initManualKeys(blocks []int) {
-	r.keys = blocks
-}
+// func (r *storageResultReader) initManualKeys(blocks []int) {
+// 	r.keys = blocks
+// }
 
 func (r *storageResultReader) Read() (map[string]interface{}, error) {
 	blockMap := make(map[string]interface{})

@@ -171,7 +171,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		}
 	case "json":
 		e = JSONEncoder{
-			paginateResults: *task.Payload.PaginateResults,
+	//		paginateResults: *task.Payload.PaginateResults,
 		}
 	case "xml":
 		e = XMLEncoder{}
@@ -288,8 +288,8 @@ func (p Payload) fields2parts() ([]Part, error) {
 				e = &extract.Const{Val: params["value"]}
 			case "count":
 				e = &extract.Count{}
-			case "html":
-				e = &extract.Html{}
+			// case "html":
+			// 	e = &extract.Html{}
 			case "outerhtml":
 				e = &extract.OuterHtml{}
 
