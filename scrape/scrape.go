@@ -600,6 +600,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 						keys:            make(map[int][]int),
 					}
 					wg.Add(1)
+					tw.scraper.Request.Type = task.Payload.Request.Type
 					_, err = task.scrape(&tw)
 					if err != nil {
 						logger.Error(err)
