@@ -249,10 +249,12 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	defer cancel()
 
 	devt := devtool.New(viper.GetString("CHROME"), devtool.WithClient(f.client))
-	pt, err := devt.Get(ctx, devtool.Page)
+	//https://github.com/mafredri/cdp/issues/60
+	//pt, err := devt.Get(ctx, devtool.Page)
+	pt, err := devt.Create(ctx)
 	if err != nil {
 		return nil, err
-	}
+	}	
 	// Connect to WebSocket URL (page) that speaks the Chrome Debugging Protocol.
 	conn, err := rpcc.DialContext(ctx, pt.WebSocketDebuggerURL)
 	if err != nil {
@@ -260,6 +262,10 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 		return nil, err
 	}
 	defer conn.Close() // Cleanup.
+	defer devt.Close(ctx, pt)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	// Create a new CDP Client that uses conn.
 	f.cdpClient = cdp.NewClient(conn)
 
