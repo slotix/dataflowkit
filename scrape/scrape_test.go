@@ -15,12 +15,12 @@ import (
 )
 
 var (
-//	randTrue   = true
-//	randFalse  = false
+	//	randTrue   = true
+	//	randFalse  = false
 	delayFetch time.Duration
 	//paginateResults                bool
-	personsPayload, detailsPayload Payload
-	update                         = flag.Bool("update", true, "update result files")
+	personsPayload, detailsPayload, CSVPayload Payload
+	update                                     = flag.Bool("update", false, "update result files")
 )
 
 func init() {
@@ -64,7 +64,7 @@ func init() {
 		},
 		//	PaginateResults: &paginateResults,
 		//RandomizeFetchDelay: &randFalse,
-		Format:              "json",
+		Format: "json",
 	}
 	detailsPayload = Payload{
 		Name: "persons details",
@@ -110,8 +110,8 @@ func init() {
 							},
 						},
 						Field{
-							Name:     "Phone",
-							Selector: ".card-text:nth-child(1) .col-5",
+							Name:     "Phones",
+							Selector: ".col-10 span",
 							Extractor: Extractor{
 								// Types: []string{"regex"},
 								// Params: map[string]interface{}{
@@ -149,6 +149,32 @@ func init() {
 		//	FetchDelay:          &delayFetch,
 		Format: "json",
 		//PaginateResults: &paginateResults,
+	}
+	CSVPayload = Payload{
+		Name: "persons details",
+		Request: fetch.Request{
+			Type: "base",
+			URL:  "http://127.0.0.1:12345/persons/3",
+		},
+		Fields: []Field{
+			Field{
+				Name:     "Name",
+				Selector: ".display-4",
+				Extractor: Extractor{
+					Types:   []string{"text"},
+					Filters: []string{"trim"},
+				},
+			},
+			Field{
+				Name:     "Phones",
+				Selector: ".col-10 span",
+				Extractor: Extractor{
+					Types:   []string{"text"},
+					Filters: []string{"trim"},
+				},
+			},
+		},
+		Format: "csv",
 	}
 }
 
@@ -195,6 +221,7 @@ func TestParseDetails(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
 
+	//todo: test details with xml encoder
 	//XML details output
 	// detailsPayload.Format = "xml"
 	// task = NewTask(detailsPayload)
@@ -212,6 +239,25 @@ func TestParseDetails(t *testing.T) {
 	//expected, err = ioutil.ReadFile(golden)
 	//assert.NoError(t, err)
 	//assert.Equal(t, expected, actual)
+
+	//todo: test details with csv encoder
+	//CSV details output
+	// detailsPayload.Format = "csv"
+	// task = NewTask(detailsPayload)
+	// r, err = task.Parse()
+	// assert.NoError(t, err)
+	// buf = new(bytes.Buffer)
+	// buf.ReadFrom(r)
+	// resultFile = buf.Bytes()
+	// actual, err = ioutil.ReadFile(filepath.Join("./", string(resultFile)))
+	// assert.NoError(t, err)
+	// golden = filepath.Join("../testdata", "details.csv")
+	// if *update {
+	// 	ioutil.WriteFile(golden, actual, 0644)
+	// }
+	// expected, err = ioutil.ReadFile(golden)
+	// assert.NoError(t, err)
+	// assert.Equal(t, expected, actual)
 
 	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
@@ -247,22 +293,22 @@ func TestParse(t *testing.T) {
 	assert.Equal(t, expected, actual)
 
 	//CSV
-	personsPayload.Format = "csv"
-	task = NewTask(personsPayload)
-	r, err = task.Parse()
-	assert.NoError(t, err)
-	buf = new(bytes.Buffer)
-	buf.ReadFrom(r)
-	resultFile = buf.Bytes()
-	actual, err = ioutil.ReadFile(filepath.Join("./", string(resultFile)))
-	assert.NoError(t, err)
-	golden = filepath.Join("../testdata", "res.csv")
-	if *update {
-		ioutil.WriteFile(golden, actual, 0644)
-	}
-	expected, err = ioutil.ReadFile(golden)
-	assert.NoError(t, err)
-	assert.Equal(t, expected, actual)
+	// personsPayload.Format = "csv"
+	// task = NewTask(personsPayload)
+	// r, err = task.Parse()
+	// assert.NoError(t, err)
+	// buf = new(bytes.Buffer)
+	// buf.ReadFrom(r)
+	// resultFile = buf.Bytes()
+	// actual, err = ioutil.ReadFile(filepath.Join("./", string(resultFile)))
+	// assert.NoError(t, err)
+	// golden = filepath.Join("../testdata", "res.csv")
+	// if *update {
+	// 	ioutil.WriteFile(golden, actual, 0644)
+	// }
+	// expected, err = ioutil.ReadFile(golden)
+	// assert.NoError(t, err)
+	// assert.Equal(t, expected, actual)
 
 	//xml
 	personsPayload.Format = "xml"
@@ -361,6 +407,36 @@ func TestParseErrs(t *testing.T) {
 
 	_, err = task.Parse()
 	assert.Error(t, err, "invalid output format specified")
+
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+}
+
+func TestCSVEncode(t *testing.T) {
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host: fetchServerAddr,
+	}
+	fetchServer := fetch.Start(fetchServerCfg)
+	defer fetchServer.Stop()
+
+	task := NewTask(CSVPayload)
+	r, err := task.Parse()
+	assert.NoError(t, err)
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+	resultFile := buf.Bytes()
+	actual, err := ioutil.ReadFile(filepath.Join("./", string(resultFile)))
+	assert.NoError(t, err)
+	golden := filepath.Join("../testdata", "CSVEncode.csv")
+	if *update {
+		ioutil.WriteFile(golden, actual, 0644)
+	}
+	expected, err := ioutil.ReadFile(golden)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
 
 	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")

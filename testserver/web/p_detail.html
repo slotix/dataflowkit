@@ -21,13 +21,15 @@
         <div class="card-text">
             <div class="row lead">
                 <div class="col-2">
-                    <strong>Phone:</strong>
+                    <strong>Phones:</strong>
                 </div>
+                <div class="col-10">
                  {{range $phone := .Phones}}
-                    <div class="col-2">
-                        {{$phone}}
-                    </div>
+                    <span>
+                        {{$phone}} &nbsp;
+                    </span>
                 {{end}} 
+                </div>
             </div>
         </div>
         <div class="card-text">
