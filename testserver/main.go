@@ -37,12 +37,12 @@ var (
 )
 
 type Person struct {
-	Name    string `json:"Name"`
-	Phone   string `json:"Phone"`
-	Email   string `json:"Email"`
-	Company string `json:"Company"`
-	Counter string `json:"Counter"`
-	Bio     string `json:"Bio"`
+	Name    string          `json:"Name"`
+	Phone   json.RawMessage `json:"Phone"`
+	Email   string          `json:"Email"`
+	Company string          `json:"Company"`
+	Counter string          `json:"Counter"`
+	Bio     string          `json:"Bio"`
 }
 
 func init() {
@@ -300,6 +300,21 @@ func personTableHandler(w http.ResponseWriter, r *http.Request) {
 	render(w, r, personTableTpl, "base", vars)
 }
 
+func ToStringSlice(data []byte) []string {
+	var v []string
+	err := json.Unmarshal(data, &v)
+	if err != nil {
+		var s string
+		err := json.Unmarshal(data, &s)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+		v = append(v, s)
+	}
+	return v
+}
+
 func personDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Conent-Type", "text/html")
 	v := mux.Vars(r)
@@ -311,11 +326,11 @@ func personDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	vars := map[string]interface{}{
 		"Header":       "Person Details: " + persons[id].Name,
 		"Person":       persons[id],
+		"Phones":       ToStringSlice(persons[id].Phone),
 		"PersonsCount": personCount,
 		"ItemsPerPage": "10",
 	}
 	render(w, r, personDetailTpl, "base", vars)
-
 }
 
 // Render a template, or server error.

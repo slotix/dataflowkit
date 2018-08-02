@@ -1,7 +1,7 @@
 [
 	{
 		"Name": "Merrill X. Dyer",
-		"Phone": "525-3009",
+		"Phone": ["525-3009","121-4432-2323"],
 		"Email": "Nam.ligula@diam.org",
 		"Company": "Magnis Dis Parturient Institute",
 		"Counter": "1",
@@ -17,7 +17,7 @@
 	},
 	{
 		"Name": "Katelyn Huber",
-		"Phone": "578-1964",
+		"Phone": "",
 		"Email": "mollis@arcu.edu",
 		"Company": "Vulputate Nisi Institute",
 		"Counter": "3",
@@ -25,7 +25,7 @@
 	},
 	{
 		"Name": "Fulton M. Kim",
-		"Phone": "645-9963",
+		"Phone": ["645-9963","13245-112","42424-1115"],
 		"Email": "vulputate.eu@vestibulumlorem.edu",
 		"Company": "Nunc Laoreet Lectus Inc.",
 		"Counter": "4",
@@ -41,7 +41,7 @@
 	},
 	{
 		"Name": "Athena K. Becker",
-		"Phone": "1-451-452-0788",
+		"Phone": ["5332323-5555","645-9963","13245-112","42424-1115"],
 		"Email": "vitae@fermentumfermentumarcu.edu",
 		"Company": "Elit Sed Consequat LLP",
 		"Counter": "6",
@@ -49,7 +49,7 @@
 	},
 	{
 		"Name": "Samson Boyer",
-		"Phone": "556-0089",
+		"Phone": [""],
 		"Email": "Vivamus.non.lorem@dolorQuisquetincidunt.org",
 		"Company": "Gravida Mauris Ut Corp.",
 		"Counter": "7",
@@ -57,7 +57,7 @@
 	},
 	{
 		"Name": "Jordan Mueller",
-		"Phone": "1-122-207-5335",
+		"Phone": ["1-122-207-5335"],
 		"Email": "justo.sit.amet@ligula.co.uk",
 		"Company": "Arcu Imperdiet Ullamcorper Incorporated",
 		"Counter": "8",
