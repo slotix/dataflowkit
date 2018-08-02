@@ -23,9 +23,11 @@
                 <div class="col-2">
                     <strong>Phone:</strong>
                 </div>
-                <div class="col-5">
-                    {{ .Person.Phone}}
-                </div>
+                 {{range $phone := .Phones}}
+                    <div class="col-2">
+                        {{$phone}}
+                    </div>
+                {{end}} 
             </div>
         </div>
         <div class="card-text">
