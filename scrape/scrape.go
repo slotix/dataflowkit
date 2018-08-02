@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -171,7 +170,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		}
 	case "json":
 		e = JSONEncoder{
-	//		paginateResults: *task.Payload.PaginateResults,
+		//		paginateResults: *task.Payload.PaginateResults,
 		}
 	case "xml":
 		e = XMLEncoder{}
@@ -299,12 +298,13 @@ func (p Payload) fields2parts() ([]Part, error) {
 			}
 			part.Extractor = e
 
-			if params != nil {
-				err := fillStruct(params, e)
-				if err != nil {
-					logger.Error(err)
-				}
-			}
+			//if params != nil {
+			// if len(params) > 0 {
+			// 	err := fillStruct(params, e)
+			// 	if err != nil {
+			// 		logger.Error(err)
+			// 	}
+			// }
 			//logger.Info(e)
 			parts = append(parts, part)
 		}
@@ -701,54 +701,54 @@ func (task *Task) fetchWorker(fc chan *fetchInfo) {
 }
 
 //fillStruct fills s Structure with values from m map
-func fillStruct(m map[string]interface{}, s interface{}) error {
-	for k, v := range m {
-		err := setField(s, k, v)
-		if err != nil {
-			if k == "regexp" {
-				return nil
-			}
-			return err
-		}
-	}
-	//}
-	return nil
-}
+// func fillStruct(m map[string]interface{}, s interface{}) error {
+// 	for k, v := range m {
+// 		err := setField(s, k, v)
+// 		if err != nil {
+// 			if k == "regexp" {
+// 				return nil
+// 			}
+// 			return err
+// 		}
+// 	}
+// 	//}
+// 	return nil
+// }
 
-func setField(obj interface{}, name string, value interface{}) error {
-	structValue := reflect.ValueOf(obj).Elem()
-	//Outgoing structs may contain fields in Title Case or in UPPERCASE - f.e. URL. So we should check if there are fields in Title case or upper case before skipping non-existent fields.
-	//It is unlikely there is a situation when there are several fields like url, Url, URL in the same structure.
-	fValues := []reflect.Value{
-		structValue.FieldByName(name),
-		structValue.FieldByName(strings.Title(name)),
-		structValue.FieldByName(strings.ToUpper(name)),
-	}
+// func setField(obj interface{}, name string, value interface{}) error {
+// 	structValue := reflect.ValueOf(obj).Elem()
+// 	//Outgoing structs may contain fields in Title Case or in UPPERCASE - f.e. URL. So we should check if there are fields in Title case or upper case before skipping non-existent fields.
+// 	//It is unlikely there is a situation when there are several fields like url, Url, URL in the same structure.
+// 	fValues := []reflect.Value{
+// 		structValue.FieldByName(name),
+// 		structValue.FieldByName(strings.Title(name)),
+// 		structValue.FieldByName(strings.ToUpper(name)),
+// 	}
 
-	var structFieldValue reflect.Value
-	for _, structFieldValue = range fValues {
-		if structFieldValue.IsValid() {
-			break
-		}
-	}
+// 	var structFieldValue reflect.Value
+// 	for _, structFieldValue = range fValues {
+// 		if structFieldValue.IsValid() {
+// 			break
+// 		}
+// 	}
 
-	//	if !structFieldValue.IsValid() {
-	//skip non-existent fields
-	//		return nil
-	//return fmt.Errorf("No such field: %s in obj", name)
-	//	}
+// 	if !structFieldValue.IsValid() {
+// 		//skip non-existent fields
+// 		return nil
+// 		return fmt.Errorf("No such field: %s in obj", name)
+// 	}
 
-	if !structFieldValue.CanSet() {
-		return fmt.Errorf("Cannot set field value: %s", name)
-	}
+// 	// if !structFieldValue.CanSet() {
+// 	// 	return fmt.Errorf("Cannot set field value: %s", name)
+// 	// }
 
-	structFieldType := structFieldValue.Type()
-	val := reflect.ValueOf(value)
-	if structFieldType != val.Type() {
-		invalidTypeError := errors.New("Provided value type didn't match obj field type")
-		return invalidTypeError
-	}
+// 	structFieldType := structFieldValue.Type()
+// 	val := reflect.ValueOf(value)
+// 	if structFieldType != val.Type() {
+// 		invalidTypeError := errors.New("Provided value type didn't match obj field type")
+// 		return invalidTypeError
+// 	}
 
-	structFieldValue.Set(val)
-	return nil
-}
+// 	structFieldValue.Set(val)
+// 	return nil
+// }

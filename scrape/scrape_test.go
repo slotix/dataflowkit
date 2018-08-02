@@ -15,11 +15,12 @@ import (
 )
 
 var (
-	randomize  bool
+//	randTrue   = true
+//	randFalse  = false
 	delayFetch time.Duration
 	//paginateResults                bool
 	personsPayload, detailsPayload Payload
-	update                         = flag.Bool("update", false, "update result files")
+	update                         = flag.Bool("update", true, "update result files")
 )
 
 func init() {
@@ -28,7 +29,6 @@ func init() {
 	viper.Set("STORAGE_TYPE", "diskv")
 	viper.Set("RESULTS_DIR", "results")
 	viper.Set("RANDOMIZE_FETCH_DELAY", true)
-	randomize = true
 	//delayFetch = 500 * time.Millisecond
 	delayFetch = 0
 	//paginateResults = false
@@ -43,7 +43,7 @@ func init() {
 				Name:     "Names",
 				Selector: "#cards a",
 				Extractor: Extractor{
-					Types: []string{"text", "href", "const", "outerHtml"},
+					Types: []string{"text", "href", "const", "outerHtml", "unknownSelectorType"},
 					Params: map[string]interface{}{
 						"value": "--- NAME ---",
 					},
@@ -63,7 +63,8 @@ func init() {
 			MaxPages:  2,
 		},
 		//	PaginateResults: &paginateResults,
-		Format: "json",
+		//RandomizeFetchDelay: &randFalse,
+		Format:              "json",
 	}
 	detailsPayload = Payload{
 		Name: "persons details",
@@ -144,7 +145,7 @@ func init() {
 		// 	Attribute: "href",
 		// 	MaxPages:  2,
 		// },
-		RandomizeFetchDelay: &randomize,
+		//RandomizeFetchDelay: &randTrue,
 		//	FetchDelay:          &delayFetch,
 		Format: "json",
 		//PaginateResults: &paginateResults,
@@ -169,6 +170,7 @@ func TestNewTask(t *testing.T) {
 func TestParseDetails(t *testing.T) {
 	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
+	viper.Set("RANDOMIZE_FETCH_DELAY", true)
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host: fetchServerAddr,
@@ -207,15 +209,16 @@ func TestParseDetails(t *testing.T) {
 	// if *update {
 	// 	ioutil.WriteFile(golden, actual, 0644)
 	// }
-	// expected, err = ioutil.ReadFile(golden)
-	// assert.NoError(t, err)
-	// assert.Equal(t, expected, actual)
+	//expected, err = ioutil.ReadFile(golden)
+	//assert.NoError(t, err)
+	//assert.Equal(t, expected, actual)
 
 	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 }
 
 func TestParse(t *testing.T) {
+	viper.Set("RANDOMIZE_FETCH_DELAY", false)
 	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
@@ -299,13 +302,42 @@ func TestParseErrs(t *testing.T) {
 		Request: fetch.Request{
 			URL: "http://127.0.0.1:12345",
 		},
-		//	PaginateResults: &paginateResults,
 		Format: "json",
 	}
 
 	task := NewTask(badP)
 	_, err := task.Parse()
 	assert.Error(t, err, "400: no parts found")
+
+	///// ErrNoPartOrSelectorProvided
+	badP = Payload{
+		Name: "ErrNoPartOrSelectorProvided",
+		Request: fetch.Request{
+			URL: "http://127.0.0.1:12345",
+		},
+		Fields: []Field{
+			Field{
+				Name:     "Alert",
+				Selector: "",
+				Extractor: Extractor{
+					Types: []string{"text"},
+				},
+			},
+			Field{
+				Name:     "",
+				Selector: ".alert-info",
+				Extractor: Extractor{
+					Types: []string{"text"},
+				},
+			},
+		},
+		Format: "json",
+	}
+
+	task = NewTask(badP)
+	_, err = task.Parse()
+	assert.Error(t, err, "errs.ErrNoPartOrSelectorProvided")
+
 	//Bad output format
 	badOF := Payload{
 		Name: "BadOutputFormat",
