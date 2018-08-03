@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// EncodeToFile save parsed data to specified file.
 func EncodeToFile(e *encoder, ext string, payloadMD5 string, blockMap ...*map[int][]int) ([]byte, error) {
 	path := viper.GetString("RESULTS_DIR")
 	if _, err := os.Stat(path); os.IsNotExist(err) {

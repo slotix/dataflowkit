@@ -36,6 +36,7 @@ var (
 	personCount     int
 )
 
+// Person represents person info for test pages
 type Person struct {
 	Name    string          `json:"Name"`
 	Phone   json.RawMessage `json:"Phone"`
@@ -240,18 +241,22 @@ var funcMap = template.FuncMap{
 	"divide": Div,
 }
 
+// Dec decrease input value and return result as a string
 func Dec(a int) string {
 	return strconv.Itoa(a - 1)
 }
 
+// Inc increase input value and return result as a string
 func Inc(a int) string {
 	return strconv.Itoa(a + 1)
 }
 
+// Mult multiplies input values and return result as a string
 func Mult(a, b int) string {
 	return strconv.Itoa(a * b)
 }
 
+// Div divides a/b and return result as a string
 func Div(a, b string) string {
 	intA, err := strconv.Atoi(a)
 	if err != nil {
@@ -300,6 +305,7 @@ func personTableHandler(w http.ResponseWriter, r *http.Request) {
 	render(w, r, personTableTpl, "base", vars)
 }
 
+// ToStringSlice convert input data to string slice
 func ToStringSlice(data []byte) []string {
 	var v []string
 	err := json.Unmarshal(data, &v)

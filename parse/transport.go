@@ -102,7 +102,7 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, `{"alive": true}`)
 }
 
-// MakeHttpHandler mounts all of the service endpoints into an http.Handler.
+// NewHttpHandler mounts all of the service endpoints into an http.Handler.
 func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logger) http.Handler {
 	r := mux.NewRouter()
 	options := []httptransport.ServerOption{

@@ -334,12 +334,12 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 
 }
 
-func (cf *ChromeFetcher) setCookieJar(jar *cookiejar.Jar) {
-	cf.jar = jar
+func (f *ChromeFetcher) setCookieJar(jar *cookiejar.Jar) {
+	f.jar = jar
 }
 
-func (cf *ChromeFetcher) getCookieJar() *cookiejar.Jar {
-	return cf.jar
+func (f *ChromeFetcher) getCookieJar() *cookiejar.Jar {
+	return f.jar
 }
 
 // Static type assertion

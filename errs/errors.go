@@ -12,7 +12,7 @@ package errs
 //
 // BadRequest 400
 //
-// The server cannot or will not process the request due to an apparent client error (e.g., malformed request syntax, size too large, invalid request message framing, or deceptive request routing).
+// BadRequest. The server cannot or will not process the request due to an apparent client error (e.g., malformed request syntax, size too large, invalid request message framing, or deceptive request routing).
 type BadRequest struct {
 	Err error
 }
@@ -32,7 +32,7 @@ type Unauthorized struct {
 
 func (e *Unauthorized) Error() string { return "401 Unauthorized" }
 
-//Proxy Authentication Required 407
+// ProxyAuthenticationRequired : Proxy Authentication Required 407
 type ProxyAuthenticationRequired struct {
 }
 
@@ -67,8 +67,8 @@ func (e *NotFound) Error() string {
 	return "404 Not found: " + e.URL
 }
 
-//500 Internal Server Error
-//A generic error message, given when an unexpected condition was encountered and no more specific message is suitable
+// 500 Internal Server Error
+// InternalServerError. A generic error message, given when an unexpected condition was encountered and no more specific message is suitable
 type InternalServerError struct {
 }
 
@@ -103,6 +103,7 @@ func (e *GatewayTimeout) Error() string {
 //type ParserError string
 
 var (
+	// ErrNoParts: No parts found
 	ErrNoParts                  = "no parts found"
 	ErrNoSelectors              = "no selectors found"
 	ErrEmptyResults             = "empty results"

@@ -87,9 +87,9 @@ func NewTask(p Payload) *Task {
 }
 
 // Parse processes specified task which parses fetched page.
-func (task *Task) Parse() (io.ReadCloser, error) {
+func (t *Task) Parse() (io.ReadCloser, error) {
 
-	scraper, err := task.Payload.newScraper()
+	scraper, err := t.Payload.newScraper()
 	if err != nil {
 		return nil, err
 	}
@@ -97,11 +97,11 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 
 	fetchCannel = make(chan *fetchInfo, 100)
 	for i := 0; i < 50; i++ {
-		go task.fetchWorker(fetchCannel)
+		go t.fetchWorker(fetchCannel)
 	}
 	// Array of page keys
 	wg := sync.WaitGroup{}
-	uid := string(utils.GenerateCRC32([]byte(task.Payload.PayloadMD5)))
+	uid := string(utils.GenerateCRC32([]byte(t.Payload.PayloadMD5)))
 	mx := sync.Mutex{}
 	tw := taskWorker{
 		wg:              &wg,
@@ -113,31 +113,31 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		keys:            make(map[int][]int),
 	}
 	wg.Add(1)
-	_, err = task.scrape(&tw)
+	_, err = t.scrape(&tw)
 	wg.Wait()
-	if !task.Parsed {
+	if !t.Parsed {
 		logger.Info("Failed to scrape with base fetcher. Reinitializing to scrape with Chrome fetcher.")
-		if task.Payload.Request.Type == "chrome" {
+		if t.Payload.Request.Type == "chrome" {
 			close(fetchCannel)
 			return nil, err
 		}
-		task.Payload.Request.Type = "chrome"
+		t.Payload.Request.Type = "chrome"
 		scraper.Request.Type = "chrome"
 		//request := task.Payload.initRequest("")
 		//task.Payload.Request = request
 		//scraper.Request = request
 		wg.Add(1)
-		_, err = task.scrape(&tw)
+		_, err = t.scrape(&tw)
 		wg.Wait()
-		if !task.Parsed {
+		if !t.Parsed {
 			close(fetchCannel)
 			return nil, err
 		}
 	}
 	close(fetchCannel)
 
-	if len(task.BlockCounter) > 0 {
-		tw.keys[0] = task.BlockCounter
+	if len(t.BlockCounter) > 0 {
+		tw.keys[0] = t.BlockCounter
 	} else {
 		// We have to sort a keys to keep an order
 		for k := range tw.keys {
@@ -149,7 +149,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = task.storage.Write(storage.Record{
+	err = t.storage.Write(storage.Record{
 		Type:    storage.INTERMEDIATE,
 		Key:     string(uid),
 		Value:   j,
@@ -159,10 +159,10 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		return nil, fmt.Errorf("Cannot write parse results key map. %s", err.Error())
 	}
 
-	task.storage.Close()
+	t.storage.Close()
 
 	var e encoder
-	switch strings.ToLower(task.Payload.Format) {
+	switch strings.ToLower(t.Payload.Format) {
 	case "csv":
 		e = CSVEncoder{
 			comma:     ",",
@@ -177,7 +177,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	default:
 		return nil, errors.New("invalid output format specified")
 	}
-	r, err := EncodeToFile(&e, task.Payload.Format, string(uid))
+	r, err := EncodeToFile(&e, t.Payload.Format, string(uid))
 	if err != nil {
 		return nil, err
 	}

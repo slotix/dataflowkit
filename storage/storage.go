@@ -16,11 +16,13 @@ func init() {
 }
 
 const (
+	//Storage types
 	CACHE        = "Cache"
 	COOKIES      = "Cookies"
 	INTERMEDIATE = "Intermediate"
 )
 
+// Record struct keeps Key/Value and expiration time of specified type
 type Record struct {
 	Type    string
 	Key     string
