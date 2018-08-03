@@ -103,7 +103,7 @@ func Test_service(t *testing.T) {
 	invPayload := scrape.Payload{
 		Name: "invalid payload",
 	}
-	result, err = svc1.Parse(invPayload)
+	_, err = svc1.Parse(invPayload)
 	assert.Error(t, err)
 
 	//Invalid Payload - no fields
@@ -114,7 +114,7 @@ func Test_service(t *testing.T) {
 		},
 	}
 
-	result, err = svc.Parse(invPayload)
+	_, err = svc.Parse(invPayload)
 	assert.Error(t, err)
 
 }

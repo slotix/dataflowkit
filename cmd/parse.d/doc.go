@@ -110,7 +110,7 @@ fetcherType
 
 fetcherType represents fetcher which is used for document download.
 Set it to either "chrome" or "base" value.
-If omited in Payload, default fetcher type is defined as FETCHER_TYPE variable of parse.d service.
+If omitted in Payload, default fetcher type is defined as FETCHER_TYPE variable of parse.d service.
 fetcherType from Payload structure takes precedence over FETCHER_TYPE flag value.
 
 

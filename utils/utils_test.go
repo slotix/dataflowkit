@@ -34,17 +34,17 @@ func TestRelURL(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "http://books.toscrape.com/catalogue/page-2.html",
 		r)
-	r, err = RelUrl("http://books.toscrape.com/catalogue/", "page-2.html")
+	r, _ = RelUrl("http://books.toscrape.com/catalogue/", "page-2.html")
 	assert.Equal(t, "http://books.toscrape.com/catalogue/page-2.html",
 		r)
-	r, err = RelUrl("http://books.toscrape.com/catalogue/page-2.html", "in-her-wake_980/index.html")
+	r, _ = RelUrl("http://books.toscrape.com/catalogue/page-2.html", "in-her-wake_980/index.html")
 	assert.Equal(t, "http://books.toscrape.com/catalogue/in-her-wake_980/index.html",
 		r)
 	invBase := "Invalid.%$^base"
 	invRel := "Invalid.%$^rel"
-	r, err = RelUrl(invBase, invRel)
+	_, err = RelUrl(invBase, invRel)
 	assert.Error(t, err)
-	r, err = RelUrl("http://validbase.com", invRel)
+	_, err = RelUrl("http://validbase.com", invRel)
 	assert.Error(t, err)
 }
 
