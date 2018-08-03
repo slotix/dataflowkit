@@ -37,7 +37,6 @@ import (
 )
 
 var (
-	// DFKFetch service address.
 	DFKFetch string
 	fetcher  string //fetcher type: chrome, base
 	URL      string

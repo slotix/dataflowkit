@@ -34,7 +34,6 @@ import (
 
 var (
 	//VERSION               string // VERSION is set during build
-	// DFKFetch represents address of DFK Fetch service
 	DFKFetch          string //Fetch service address
 	fetchProxy        string //Proxy address http://username:password@proxy-host:port
 	chrome            string

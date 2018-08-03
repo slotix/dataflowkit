@@ -32,7 +32,6 @@ import (
 )
 
 var (
-	// DFKParse service address.
 	DFKParse           string 
 	DFKFetch           string //DFKFetch service address.
 	storageType        string
