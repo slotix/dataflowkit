@@ -226,7 +226,7 @@ func TestExtract(t *testing.T) {
 		<div class="foo">Two</div>
 		<div>Three</div>
 		`)
-	ret, err := Const{Val:"1"}.Extract(sel)
+	ret, err := Const{Val: "1"}.Extract(sel)
 	assert.NoError(t, err)
 	assert.Equal(t, ret, "1")
 }

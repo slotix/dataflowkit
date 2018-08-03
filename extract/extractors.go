@@ -46,7 +46,6 @@ func (e Const) Extract(sel *goquery.Selection) (interface{}, error) {
 	return e.Val, nil
 }
 
-
 var _ Extractor = Const{}
 
 // Text is an Extractor that returns the combined text contents of
@@ -85,7 +84,6 @@ func (e Text) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	return results, nil
 }
-
 
 var _ Extractor = Text{}
 
@@ -143,7 +141,6 @@ func (e OuterHtml) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	return output.String(), nil
 }
-
 
 var _ Extractor = OuterHtml{}
 
@@ -248,7 +245,6 @@ func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
 	return results, nil
 }
 
-
 var _ Extractor = Regex{}
 
 // Attr extracts the value of a given HTML attribute from each part
@@ -310,7 +306,6 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 
 	return results, nil
 }
-
 
 var _ Extractor = Attr{}
 

@@ -108,9 +108,9 @@ The following Output formats are available: CSV, JSON, XML
 
 fetcherType
 
-fetcherType represents fetcher which is used for document download. 
-Set it to either "chrome" or "base" value. 
-If omited in Payload, default fetcher type is defined as FETCHER_TYPE variable of parse.d service. 
+fetcherType represents fetcher which is used for document download.
+Set it to either "chrome" or "base" value.
+If omited in Payload, default fetcher type is defined as FETCHER_TYPE variable of parse.d service.
 fetcherType from Payload structure takes precedence over FETCHER_TYPE flag value.
 
 
@@ -135,9 +135,9 @@ Combined list of results is always returned for CSV format.
 //
 //Storage settings
 //
-//    STORAGE_TYPE: Storage backend for intermediary data passed to Dataflow 
-//    kit Parse service. 
-//    Types: Diskv, Cassandra 
+//    STORAGE_TYPE: Storage backend for intermediary data passed to Dataflow
+//    kit Parse service.
+//    Types: Diskv, Cassandra
 //    (defaults to "Diskv"). It is case insensitive.
 //
 //    ITEM_EXPIRE_IN: Default value for item expiration in seconds (defaults to 3600)
@@ -146,7 +146,7 @@ Combined list of results is always returned for CSV format.
 //    Find more information about Diskv storage at https://github.com/peterbourgon/diskv
 //
 //Crawler settings
-//    MAX_PAGES: The maximum number of pages to scrape. The scrape will proceed 
+//    MAX_PAGES: The maximum number of pages to scrape. The scrape will proceed
 //    until either this number of pages have been scraped, or until the paginator
 //    returns no further URLs. Set this value to 0 to indicate an unlimited number
 //    of pages to be scraped.(defaults to 1)
@@ -156,18 +156,18 @@ Combined list of results is always returned for CSV format.
 //    FetchDelay specifies sleep time for multiple requests for the same domain.
 //    It is equal to FetchDelay * random value between 500 and 1500 msec. (defaults to 500)
 //
-//    RANDOMIZE_FETCH_DELAY:  RandomizeFetchDelay setting decreases the chance of a 
+//    RANDOMIZE_FETCH_DELAY:  RandomizeFetchDelay setting decreases the chance of a
 //    crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay
-//    to 1.5 * FetchDelay seconds is used between consecutive requests to the same 
+//    to 1.5 * FetchDelay seconds is used between consecutive requests to the same
 //    domain. If FetchDelay is zero this option has no effect. (defaults to true)
 //
-//    IGNORE_FETCH_DELAY: Ignores fetchDelay setting intended for debug purpose. 
+//    IGNORE_FETCH_DELAY: Ignores fetchDelay setting intended for debug purpose.
 //    Please set it to false in Production
 //
 //Output settings
 //    FORMAT: Format represents output format (CSV, JSON, XML)(defaults to "json")
 //
-//    PAGINATE_RESULTS: Paginated results are returned if true. 
+//    PAGINATE_RESULTS: Paginated results are returned if true.
 //    Single list of combined results from every block on all pages is returned by default.
 //    Paginated results are applicable for JSON and XML output formats.
 //    Combined list of results is always returned for CSV format. (defaults to false)

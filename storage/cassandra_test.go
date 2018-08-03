@@ -14,23 +14,23 @@ func Test_cassandra(t *testing.T) {
 	//write records
 	testValue := []byte("testValue")
 
-	recs := []Record{Record{
+	recs := []Record{{
 		Type:    CACHE,
 		Key:     "testKey",
 		Value:   testValue,
 		ExpTime: 100,
-	}, Record{
+	}, {
 		Type:    COOKIES,
 		Key:     "testKey",
 		Value:   testValue,
 		ExpTime: 100,
-	}, Record{
+	}, {
 		Type:    INTERMEDIATE,
 		Key:     "PayloadHash-0-0",
 		Value:   []byte(`{"selector1_text":"Selector1_value"}`),
 		ExpTime: 100,
 	},
-		Record{
+		{
 			Type: INTERMEDIATE,
 			Key:  "PayloadHash",
 			Value: []byte(`"6eafe89a"
@@ -99,12 +99,12 @@ func Test_cassandra(t *testing.T) {
 		err = c.Delete(r)
 		assert.NoError(t, err, "Expected no error")
 	}
-	 //delete nonexistant record
+	//delete nonexistant record
 	err = c.Delete(Record{
-			Type: INTERMEDIATE,
-			Key:  "Payload-100-100",
-		})
-	 assert.NoError(t, err, "Expected no error. When delete a non-existent value Cassandra will never complain")
+		Type: INTERMEDIATE,
+		Key:  "Payload-100-100",
+	})
+	assert.NoError(t, err, "Expected no error. When delete a non-existent value Cassandra will never complain")
 
 	//Add two values to storage
 	err = c.Write(rec)

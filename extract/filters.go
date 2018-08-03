@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-func filterText(data string, filters []string) string{
+func filterText(data string, filters []string) string {
 	for _, filter := range filters {
 		switch strings.ToLower(filter) {
 		case "trim":
@@ -14,7 +14,7 @@ func filterText(data string, filters []string) string{
 		case "uppercase":
 			data = strings.ToUpper(data)
 		case "capitalize":
-			data = strings.Title(data)			
+			data = strings.Title(data)
 		}
 	}
 	return data

@@ -65,7 +65,7 @@ type CSVEncoder struct {
 
 // JSONEncoder transforms parsed data to JSON format.
 type JSONEncoder struct {
-//	paginateResults bool
+	//	paginateResults bool
 }
 
 // XMLEncoder transforms parsed data to XML format.

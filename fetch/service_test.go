@@ -46,12 +46,12 @@ func TestFetchServiceMW(t *testing.T) {
 	svc = LoggingMiddleware(logger)(svc)
 
 	cArr := []*http.Cookie{
-		&http.Cookie{
+		{
 			Name:   "cookie1",
 			Value:  "cValue1",
 			Domain: "localhost:12345",
 		},
-		&http.Cookie{
+		{
 			Name:   "cookie2",
 			Value:  "cValue2",
 			Domain: "localhost:12345",

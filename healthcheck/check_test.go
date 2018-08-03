@@ -19,7 +19,7 @@ func TestHealthCheckHandler(t *testing.T) {
 	}
 	status := CheckServices(checkers...)
 	t.Log(status)
-	eq := reflect.DeepEqual(map[string]string{"DFK Parse Service": "Ok", "DFK Fetch Service": "Ok", "Headless Chrome": "Ok", "Cassandra":"Ok"}, status)
+	eq := reflect.DeepEqual(map[string]string{"DFK Parse Service": "Ok", "DFK Fetch Service": "Ok", "Headless Chrome": "Ok", "Cassandra": "Ok"}, status)
 	assert.Equal(t, eq, true)
 
 	checkers = []Checker{

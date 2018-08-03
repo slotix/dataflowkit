@@ -20,7 +20,7 @@ var (
 	delayFetch time.Duration
 	//paginateResults                bool
 	personsPayload, detailsPayload, CSVPayload, XMLPayload Payload
-	update                                     = flag.Bool("update", false, "update result files")
+	update                                                 = flag.Bool("update", false, "update result files")
 )
 
 func init() {
@@ -39,7 +39,7 @@ func init() {
 			URL:  "http://testserver:12345/persons/page-0",
 		},
 		Fields: []Field{
-			Field{
+			{
 				Name:     "Names",
 				Selector: "#cards a",
 				Extractor: Extractor{
@@ -49,7 +49,7 @@ func init() {
 					},
 				},
 			},
-			Field{
+			{
 				Name:     "Images",
 				Selector: ".card-img-top",
 				Extractor: Extractor{
@@ -73,7 +73,7 @@ func init() {
 			URL:  "http://testserver:12345/persons/page-0",
 		},
 		Fields: []Field{
-			Field{
+			{
 				Name:     "Links",
 				Selector: "#cards a",
 				Extractor: Extractor{
@@ -82,7 +82,7 @@ func init() {
 				},
 				Details: &details{
 					Fields: []Field{
-						Field{
+						{
 							Name:     "Number",
 							Selector: ".display-4",
 							Extractor: Extractor{
@@ -93,7 +93,7 @@ func init() {
 								Filters: []string{"trim"},
 							},
 						},
-						Field{
+						{
 							Name:     "Name",
 							Selector: ".display-4",
 							Extractor: Extractor{
@@ -101,7 +101,7 @@ func init() {
 								Filters: []string{"trim"},
 							},
 						},
-						Field{
+						{
 							Name:     "Company",
 							Selector: ".card-text:nth-child(3) .col-5",
 							Extractor: Extractor{
@@ -109,7 +109,7 @@ func init() {
 								Filters: []string{"trim"},
 							},
 						},
-						Field{
+						{
 							Name:     "Phones",
 							Selector: ".col-10 span",
 							Extractor: Extractor{
@@ -121,7 +121,7 @@ func init() {
 								Filters: []string{"trim"},
 							},
 						},
-						Field{
+						{
 							Name:     "Email",
 							Selector: ".card-text:nth-child(2) .col-5",
 							Extractor: Extractor{
@@ -132,7 +132,7 @@ func init() {
 					},
 				},
 			},
-			Field{
+			{
 				Name:     "Count",
 				Selector: ".badge-primary",
 				Extractor: Extractor{
@@ -157,7 +157,7 @@ func init() {
 			URL:  "http://127.0.0.1:12345/persons/3",
 		},
 		Fields: []Field{
-			Field{
+			{
 				Name:     "Name",
 				Selector: ".display-4",
 				Extractor: Extractor{
@@ -165,7 +165,7 @@ func init() {
 					Filters: []string{"trim"},
 				},
 			},
-			Field{
+			{
 				Name:     "Phones",
 				Selector: ".col-10 span",
 				Extractor: Extractor{
@@ -173,14 +173,14 @@ func init() {
 					Filters: []string{"trim"},
 				},
 			},
-			Field{
+			{
 				Name:     "PhoneCount",
 				Selector: ".col-10 span",
 				Extractor: Extractor{
 					Types: []string{"count"},
 				},
 			},
-			Field{
+			{
 				Name:     "Const",
 				Selector: ".col-10 span",
 				Extractor: Extractor{
@@ -200,7 +200,7 @@ func init() {
 			URL:  "http://127.0.0.1:12345/persons/3",
 		},
 		Fields: []Field{
-			Field{
+			{
 				Name:     "Name",
 				Selector: ".display-4",
 				Extractor: Extractor{
@@ -208,7 +208,7 @@ func init() {
 					Filters: []string{"trim"},
 				},
 			},
-			Field{
+			{
 				Name:     "Phones",
 				Selector: ".col-10 span",
 				Extractor: Extractor{
@@ -405,14 +405,14 @@ func TestParseErrs(t *testing.T) {
 			URL: "http://127.0.0.1:12345",
 		},
 		Fields: []Field{
-			Field{
+			{
 				Name:     "Alert",
 				Selector: "",
 				Extractor: Extractor{
 					Types: []string{"text"},
 				},
 			},
-			Field{
+			{
 				Name:     "",
 				Selector: ".alert-info",
 				Extractor: Extractor{
@@ -435,7 +435,7 @@ func TestParseErrs(t *testing.T) {
 			URL:  "http://testserver:12345",
 		},
 		Fields: []Field{
-			Field{
+			{
 				Name:     "Alert",
 				Selector: ".alert-info",
 				Extractor: Extractor{
@@ -534,7 +534,7 @@ func TestParseSwitchFetchers(t *testing.T) {
 			URL:  "http://testserver:12345/persons/page-0",
 		},
 		Fields: []Field{
-			Field{
+			{
 				Name:     "Names",
 				Selector: "#cards a",
 				Extractor: Extractor{
@@ -555,10 +555,10 @@ func TestParseSwitchFetchers(t *testing.T) {
 func TestScraper_partNames(t *testing.T) {
 	s := Scraper{}
 	s.Parts = []Part{
-		Part{Name: "1"},
-		Part{Name: "2"},
-		Part{Name: "3"},
-		Part{Name: "4"},
+		{Name: "1"},
+		{Name: "2"},
+		{Name: "3"},
+		{Name: "4"},
 	}
 	parts := s.partNames()
 	assert.Equal(t, []string{"1", "2", "3", "4"}, parts)
@@ -568,18 +568,18 @@ func TestScraper_partNames(t *testing.T) {
 func TestPayload_selectors(t *testing.T) {
 	p1 := Payload{
 		Fields: []Field{
-			Field{Selector: "sel1"},
-			Field{Selector: "sel2"},
-			Field{Selector: "sel3"},
-			Field{Selector: "sel4"},
+			{Selector: "sel1"},
+			{Selector: "sel2"},
+			{Selector: "sel3"},
+			{Selector: "sel4"},
 		},
 	}
 	p2 := Payload{
 		Fields: []Field{
-			Field{},
-			Field{},
-			Field{},
-			Field{},
+			{},
+			{},
+			{},
+			{},
 		},
 	}
 
