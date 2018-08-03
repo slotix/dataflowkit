@@ -19,7 +19,7 @@ var (
 	//	randFalse  = false
 	delayFetch time.Duration
 	//paginateResults                bool
-	personsPayload, detailsPayload, CSVPayload Payload
+	personsPayload, detailsPayload, CSVPayload, XMLPayload Payload
 	update                                     = flag.Bool("update", false, "update result files")
 )
 
@@ -173,8 +173,51 @@ func init() {
 					Filters: []string{"trim"},
 				},
 			},
+			Field{
+				Name:     "PhoneCount",
+				Selector: ".col-10 span",
+				Extractor: Extractor{
+					Types: []string{"count"},
+				},
+			},
+			Field{
+				Name:     "Const",
+				Selector: ".col-10 span",
+				Extractor: Extractor{
+					Types: []string{"const", "unknownSelectorType"},
+					Params: map[string]interface{}{
+						"value": "--- CONST ---",
+					},
+				},
+			},
 		},
 		Format: "csv",
+	}
+	XMLPayload = Payload{
+		Name: "persons details",
+		Request: fetch.Request{
+			Type: "base",
+			URL:  "http://127.0.0.1:12345/persons/3",
+		},
+		Fields: []Field{
+			Field{
+				Name:     "Name",
+				Selector: ".display-4",
+				Extractor: Extractor{
+					Types:   []string{"text"},
+					Filters: []string{"trim"},
+				},
+			},
+			Field{
+				Name:     "Phones",
+				Selector: ".col-10 span",
+				Extractor: Extractor{
+					Types:   []string{"text"},
+					Filters: []string{"trim"},
+				},
+			},
+		},
+		Format: "xml",
 	}
 }
 
@@ -437,6 +480,36 @@ func TestCSVEncode(t *testing.T) {
 	expected, err := ioutil.ReadFile(golden)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
+
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+}
+
+func TestXMLEncode(t *testing.T) {
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host: fetchServerAddr,
+	}
+	fetchServer := fetch.Start(fetchServerCfg)
+	defer fetchServer.Stop()
+
+	task := NewTask(XMLPayload)
+	r, err := task.Parse()
+	assert.NoError(t, err)
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+	resultFile := buf.Bytes()
+	actual, err := ioutil.ReadFile(filepath.Join("./", string(resultFile)))
+	assert.NoError(t, err)
+	golden := filepath.Join("../testdata", "XMLEncode.xml")
+	if *update {
+		ioutil.WriteFile(golden, actual, 0644)
+	}
+	//expected, err := ioutil.ReadFile(golden)
+	assert.NoError(t, err)
+	//assert.Equal(t, expected, actual)
 
 	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
