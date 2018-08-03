@@ -29,10 +29,12 @@ type Checker interface {
 	String() string
 }
 
+// ChromeConn struct implements methods for Headless chrome connection satisfying Checker interface
 type ChromeConn struct {
 	Host string
 }
 
+// CassandraConn struct implements methods for Cassandra connection satisfying Checker interface
 type CassandraConn struct {
 	Host string
 }

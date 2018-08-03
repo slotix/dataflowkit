@@ -12,7 +12,6 @@
 package log
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -21,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ContextHook
 type ContextHook struct{}
 
 //Levels return Levels of ContextHook
@@ -57,16 +57,16 @@ func NewLogger(withContext bool) *logrus.Logger {
 	return logger
 }
 
-func NewFileLogger(withContext bool, fileName string) *logrus.Logger {
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0660)
-	if err != nil {
-		fmt.Printf("Failed to create %s file", fileName)
-	}
-	logger := logrus.New()
-	logger.Out = file
+// func NewFileLogger(withContext bool, fileName string) *logrus.Logger {
+// 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0660)
+// 	if err != nil {
+// 		fmt.Printf("Failed to create %s file", fileName)
+// 	}
+// 	logger := logrus.New()
+// 	logger.Out = file
 
-	if withContext {
-		logger.AddHook(ContextHook{})
-	}
-	return logger
-}
+// 	if withContext {
+// 		logger.AddHook(ContextHook{})
+// 	}
+// 	return logger
+// }

@@ -80,6 +80,7 @@ func copyURL(base *url.URL, path string) *url.URL {
 	return &next
 }
 
+// Parse method is used for sending payload requests to parse service.
 func (e Endpoints) Parse(p scrape.Payload) (io.ReadCloser, error) {
 	ctx := context.Background()
 	resp, err := e.ParseEndpoint(ctx, p)

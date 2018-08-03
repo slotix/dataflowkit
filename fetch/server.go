@@ -11,7 +11,7 @@ import (
 	"github.com/slotix/dataflowkit/logger"
 )
 
-// config provides basic configuration
+// Config provides basic configuration
 type Config struct {
 	Host string
 }

@@ -37,7 +37,8 @@ import (
 )
 
 var (
-	DFKFetch string //DFKFetch service address.
+	// DFKFetch service address.
+	DFKFetch string
 	fetcher  string //fetcher type: chrome, base
 	URL      string
 	Params   string
@@ -128,6 +129,8 @@ var RootCmd = &cobra.Command{
 	},
 }
 
+// Execute adds all child commands to the root command sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute(version string) {
 	VERSION = version
 

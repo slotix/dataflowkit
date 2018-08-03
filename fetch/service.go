@@ -14,7 +14,6 @@ import (
 
 // Service defines Fetch service interface
 type Service interface {
-	//Response(req FetchRequester) (FetchResponser, error)
 	Fetch(req Request) (io.ReadCloser, error)
 }
 
@@ -25,6 +24,7 @@ type FetchService struct {
 // ServiceMiddleware defines a middleware for a Fetch service
 type ServiceMiddleware func(Service) Service
 
+// Fetch method implements fetching content from web page with Base or Chrome fetcher.
 func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 	var fetcher Fetcher
 	switch req.Type {
