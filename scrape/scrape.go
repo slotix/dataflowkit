@@ -87,9 +87,9 @@ func NewTask(p Payload) *Task {
 }
 
 // Parse processes specified task which parses fetched page.
-func (t *Task) Parse() (io.ReadCloser, error) {
+func (task *Task) Parse() (io.ReadCloser, error) {
 
-	scraper, err := t.Payload.newScraper()
+	scraper, err := task.Payload.newScraper()
 	if err != nil {
 		return nil, err
 	}
@@ -97,11 +97,11 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 
 	fetchCannel = make(chan *fetchInfo, 100)
 	for i := 0; i < 50; i++ {
-		go t.fetchWorker(fetchCannel)
+		go task.fetchWorker(fetchCannel)
 	}
 	// Array of page keys
 	wg := sync.WaitGroup{}
-	uid := string(utils.GenerateCRC32([]byte(t.Payload.PayloadMD5)))
+	uid := string(utils.GenerateCRC32([]byte(task.Payload.PayloadMD5)))
 	mx := sync.Mutex{}
 	tw := taskWorker{
 		wg:              &wg,
@@ -113,31 +113,31 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 		keys:            make(map[int][]int),
 	}
 	wg.Add(1)
-	_, err = t.scrape(&tw)
+	_, err = task.scrape(&tw)
 	wg.Wait()
-	if !t.Parsed {
+	if !task.Parsed {
 		logger.Info("Failed to scrape with base fetcher. Reinitializing to scrape with Chrome fetcher.")
-		if t.Payload.Request.Type == "chrome" {
+		if task.Payload.Request.Type == "chrome" {
 			close(fetchCannel)
 			return nil, err
 		}
-		t.Payload.Request.Type = "chrome"
+		task.Payload.Request.Type = "chrome"
 		scraper.Request.Type = "chrome"
 		//request := task.Payload.initRequest("")
 		//task.Payload.Request = request
 		//scraper.Request = request
 		wg.Add(1)
-		_, err = t.scrape(&tw)
+		_, err = task.scrape(&tw)
 		wg.Wait()
-		if !t.Parsed {
+		if !task.Parsed {
 			close(fetchCannel)
 			return nil, err
 		}
 	}
 	close(fetchCannel)
 
-	if len(t.BlockCounter) > 0 {
-		tw.keys[0] = t.BlockCounter
+	if len(task.BlockCounter) > 0 {
+		tw.keys[0] = task.BlockCounter
 	} else {
 		// We have to sort a keys to keep an order
 		for k := range tw.keys {
@@ -149,7 +149,7 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = t.storage.Write(storage.Record{
+	err = task.storage.Write(storage.Record{
 		Type:    storage.INTERMEDIATE,
 		Key:     string(uid),
 		Value:   j,
@@ -159,10 +159,10 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 		return nil, fmt.Errorf("Cannot write parse results key map. %s", err.Error())
 	}
 
-	t.storage.Close()
+	task.storage.Close()
 
 	var e encoder
-	switch strings.ToLower(t.Payload.Format) {
+	switch strings.ToLower(task.Payload.Format) {
 	case "csv":
 		e = CSVEncoder{
 			comma:     ",",
@@ -177,7 +177,7 @@ func (t *Task) Parse() (io.ReadCloser, error) {
 	default:
 		return nil, errors.New("invalid output format specified")
 	}
-	r, err := EncodeToFile(&e, t.Payload.Format, string(uid))
+	r, err := EncodeToFile(&e, task.Payload.Format, string(uid))
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +325,7 @@ func (p Payload) fields2parts() ([]Part, error) {
 }
 
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
-func (t *Task) scrape(tw *taskWorker) (*Results, error) {
+func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 
 	req := tw.scraper.Request
 	url := req.URL
@@ -333,18 +333,18 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 	//get Robotstxt Data
 	host, err := req.Host()
 	if err != nil {
-		t.Errors = append(t.Errors, err)
+		task.Errors = append(task.Errors, err)
 		logger.Error(err)
 		//return err
 	}
-	if _, ok := t.Robots[host]; !ok {
+	if _, ok := task.Robots[host]; !ok {
 		robots, err := fetch.RobotstxtData(url)
 		if err != nil {
 			robotsURL, err1 := fetch.AssembleRobotstxtURL(url)
 			if err1 != nil {
 				return nil, err1
 			}
-			t.Errors = append(t.Errors, err)
+			task.Errors = append(task.Errors, err)
 			logger.WithFields(
 				logrus.Fields{
 					"err": err,
@@ -352,12 +352,12 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 			//logger.Warning(err)
 			//return err
 		}
-		t.Robots[host] = robots
+		task.Robots[host] = robots
 	}
 
 	//check if scraping of current url is not forbidden
-	if !fetch.AllowedByRobots(url, t.Robots[host]) {
-		t.Errors = append(t.Errors, &errs.ForbiddenByRobots{url})
+	if !fetch.AllowedByRobots(url, task.Robots[host]) {
+		task.Errors = append(task.Errors, &errs.ForbiddenByRobots{url})
 	}
 
 	//call remote fetcher to download web page
@@ -385,8 +385,8 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 		return nil, err
 	}
 
-	if t.Payload.Paginator != nil {
-		if !t.Payload.Paginator.InfiniteScroll {
+	if task.Payload.Paginator != nil {
+		if !task.Payload.Paginator.InfiniteScroll {
 			url, err = tw.scraper.Paginator.NextPage(url, doc.Selection)
 			if err != nil {
 				tw.wg.Done()
@@ -394,8 +394,8 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 			}
 			// Repeat until we don't have any more URLs, or until we hit our page limit.
 			if len(url) != 0 &&
-				(t.Payload.Paginator != nil && (t.Payload.Paginator.MaxPages > 0 && tw.currentPageNum < t.Payload.Paginator.MaxPages)) {
-				paginatorPayload := t.Payload
+				(task.Payload.Paginator != nil && (task.Payload.Paginator.MaxPages > 0 && tw.currentPageNum < task.Payload.Paginator.MaxPages)) {
+				paginatorPayload := task.Payload
 				paginatorPayload.Request.URL = url
 				//paginatorPayload.Request = paginatorPayload.initRequest(url)
 				paginatorScraper, err := paginatorPayload.newScraper()
@@ -416,7 +416,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 					keys:           tw.keys,
 				}
 				tw.wg.Add(1)
-				go t.scrape(&paginatorTW)
+				go task.scrape(&paginatorTW)
 			}
 		} else {
 			url = ""
@@ -435,7 +435,7 @@ func (t *Task) scrape(tw *taskWorker) (*Results, error) {
 
 	for i := 0; i < 25; i++ {
 		wg.Add(1)
-		go t.blockWorker(blocks, wrk)
+		go task.blockWorker(blocks, wrk)
 	}
 
 	// Divide this page into blocks
@@ -516,8 +516,8 @@ func (r *Results) AllBlocks() []map[string]interface{} {
 }
 
 //KSUID stores the timestamp portion in ID. So we can retrieve it from Task object as a Time object
-func (t Task) startTime() (*time.Time, error) {
-	id, err := ksuid.Parse(t.ID)
+func (task Task) startTime() (*time.Time, error) {
+	id, err := ksuid.Parse(task.ID)
 	if err != nil {
 		return nil, err
 	}
