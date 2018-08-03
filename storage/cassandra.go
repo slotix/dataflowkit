@@ -121,7 +121,7 @@ func (c cassandra) readIntermediate(key string) ([]byte, error) {
 
 // Expired returns Expired value of specified key from Cassandra.
 func (c cassandra) Expired(rec Record) bool {
-	//Expired = Non Existant
+	//Expired = Non Existent
 	return false
 }
 

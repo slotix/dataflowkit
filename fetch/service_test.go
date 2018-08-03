@@ -58,7 +58,7 @@ func TestFetchServiceMW(t *testing.T) {
 		},
 	}
 	userToken := "12345"
-	cookies, err := json.Marshal(cArr)
+	cookies, _ := json.Marshal(cArr)
 	rec := storage.Record{
 		Key:     userToken,
 		Type:    "Cookies",
@@ -117,7 +117,7 @@ func TestFetchServiceMW(t *testing.T) {
 	}
 
 	//invalid URL
-	data, err = svc.Fetch(Request{
+	_, err = svc.Fetch(Request{
 		Type:   "base",
 		URL:    "invalid_addr",
 		Method: "GET",
@@ -125,7 +125,7 @@ func TestFetchServiceMW(t *testing.T) {
 	assert.Error(t, err, "Expected error")
 
 	//invalid Fetcher type
-	data, err = svc.Fetch(Request{
+	_, err = svc.Fetch(Request{
 		Type:   "invalid",
 		URL:    "invalid_addr",
 		Method: "GET",
@@ -133,7 +133,7 @@ func TestFetchServiceMW(t *testing.T) {
 	assert.Error(t, err, "Expected error")
 
 	//disallowed by robots
-	data, err = svc.Fetch(Request{
+	_, err = svc.Fetch(Request{
 		Type:      "base",
 		URL:       tsURL + "/disallowed",
 		Method:    "GET",
@@ -143,7 +143,7 @@ func TestFetchServiceMW(t *testing.T) {
 	assert.Error(t, err, "Expected error")
 
 	//disallowed by robots
-	data, err = svc.Fetch(Request{
+	_, err = svc.Fetch(Request{
 		Type:      "base",
 		URL:       tsURL + "/redirect",
 		Method:    "GET",
@@ -154,7 +154,7 @@ func TestFetchServiceMW(t *testing.T) {
 
 	//Test Chrome Fetcher
 	//svcChrome := FetchService{}
-	data, err = svc.Fetch(Request{
+	_, err = svc.Fetch(Request{
 		Type:      "chrome",
 		URL:       "http://testserver:12345",
 		FormData:  "",
@@ -164,7 +164,7 @@ func TestFetchServiceMW(t *testing.T) {
 
 	svc1 := FetchService{}
 	//Pass invalid Fetcher type directly to service skipping NewHTTPClient
-	data, err = svc1.Fetch(Request{
+	_, err = svc1.Fetch(Request{
 		Type:   "invalid",
 		URL:    "invalid_addr",
 		Method: "GET",

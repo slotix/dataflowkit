@@ -298,13 +298,13 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	}
 	domLoadTimeout := 60 * time.Second
 	if request.FormData == "" {
-		err = f.navigate(ctx, f.cdpClient.Page, "GET", request.getURL(), "", domLoadTimeout)
-		if err != nil {
-			return nil, err
-		}
+		err = f.navigate(ctx, f.cdpClient.Page, "GET", request.getURL(), "", domLoadTimeout)		
 	} else {
 		formData := parseFormData(request.FormData)
 		err = f.navigate(ctx, f.cdpClient.Page, "POST", request.getURL(), formData.Encode(), domLoadTimeout)
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	if request.InfiniteScroll {

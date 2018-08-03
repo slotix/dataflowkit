@@ -43,7 +43,7 @@ func Test_cassandra(t *testing.T) {
 		err = c.Write(r)
 		assert.NoError(t, err, "Expected no error")
 	}
-	value, err := c.Read(Record{
+	value, _ := c.Read(Record{
 		Type: rec.Type,
 		Key:  rec.Key,
 	})
@@ -86,7 +86,7 @@ func Test_cassandra(t *testing.T) {
 	// assert.Error(t, err, "Read Intermediate error")
 
 	// Read NonExistent key
-	value, err = c.Read(Record{
+	_, err = c.Read(Record{
 		Type: INTERMEDIATE,
 		Key:  "NonExistentPayload-100-100",
 	})
@@ -107,8 +107,8 @@ func Test_cassandra(t *testing.T) {
 	assert.NoError(t, err, "Expected no error. When delete a non-existent value Cassandra will never complain")
 
 	//Add two values to storage
-	err = c.Write(rec)
-	err = c.Write(Record{
+	c.Write(rec)
+	c.Write(Record{
 		Type:  COOKIES,
 		Key:   "cookie1",
 		Value: []byte("Cookie=Value"),

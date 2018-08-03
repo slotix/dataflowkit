@@ -212,7 +212,7 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 				details = append(details, detailsBlock)
 				// we are just breaking here because we got all details recursively
 				// if we will continue to read storage, next iteration will returns EOF
-				// just to save a time break loop manualy
+				// just to save a time break loop manually
 				//break
 			}
 			if len(details) > 0 {

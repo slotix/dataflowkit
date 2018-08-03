@@ -36,7 +36,7 @@ func TestRobotstxtData(t *testing.T) {
 	assert.NoError(t, err, "No error returned")
 	assert.NotNil(t, rd, "Not nil returned")
 
-	rd, err = RobotstxtData("invalid_host")
+	_, err = RobotstxtData("invalid_host")
 	assert.Error(t, err, "error returned")
 
 	htmlServer.Stop()

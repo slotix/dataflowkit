@@ -367,7 +367,7 @@ func TestParse(t *testing.T) {
 	if *update {
 		ioutil.WriteFile(golden, actual, 0644)
 	}
-	expected, err = ioutil.ReadFile(golden)
+	_, err = ioutil.ReadFile(golden)
 	assert.NoError(t, err)
 	//todo: order of fields in both xml files is not identical. So it is not possible to compare them easily.
 	//assert.Equal(t, expected, actual)

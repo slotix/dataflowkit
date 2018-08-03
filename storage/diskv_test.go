@@ -21,7 +21,7 @@ func Test_diskv(t *testing.T) {
 	err := d.Write(rec)
 	assert.NoError(t, err, "Expected no error")
 
-	value, err := d.Read(Record{
+	value, _ := d.Read(Record{
 		Type: rec.Type,
 		Key:  rec.Key,
 	})
@@ -40,7 +40,7 @@ func Test_diskv(t *testing.T) {
 		Key: "NonExistent key",
 	}
 	// Read NonExistent key
-	value, err = d.Read(nonExistentRec)
+	_, err = d.Read(nonExistentRec)
 	assert.Error(t, err, "Expected error")
 
 	expired := d.Expired(rec)
@@ -55,9 +55,9 @@ func Test_diskv(t *testing.T) {
 	assert.Error(t, err, "Expected error")
 
 	//Add two values to storage
-	err = d.Write(rec)
+	_ = d.Write(rec)
 
-	err = d.Write(Record{
+	_ = d.Write(Record{
 		Key:     "OneMoreKey",
 		Value:   []byte("OneMoreValue"),
 		ExpTime: 100,

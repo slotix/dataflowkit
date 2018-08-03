@@ -62,11 +62,11 @@ func TestBaseFetcher_Fetch(t *testing.T) {
 	req = Request{
 		URL: "Invalid.%$^host",
 	}
-	host, err = req.Host()
+	_, err = req.Host()
 	assert.Error(t, err)
 
 	//fetch robots.txt data
-	robots, err := fetcher.Fetch(Request{
+	robots, _ := fetcher.Fetch(Request{
 		URL:    tsURL + "/robots.txt",
 		Method: "GET",
 	})
@@ -112,7 +112,7 @@ func TestChromeFetcher_Fetch(t *testing.T) {
 		Type: "chrome",
 		URL:  "Invalid.%$^host",
 	}
-	host, err = req.Host()
+	_, err = req.Host()
 	assert.Error(t, err)
 
 	//test runJSFromFile

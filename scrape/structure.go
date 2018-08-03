@@ -74,7 +74,7 @@ type Payload struct {
 	PayloadMD5 string
 	//FetcherType represent fetcher which is used for document download.
 	//Set up it to either `base` or `chrome` values
-	//If FetcherType is omited the value of FETCHER_TYPE of parse.d service is used by default.
+	//If FetcherType is omitted the value of FETCHER_TYPE of parse.d service is used by default.
 	//FetcherType string `json:"fetcherType"`
 	//Format represents output format (CSV, JSON, XML)
 	Format string `json:"format"`
