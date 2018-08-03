@@ -6,7 +6,7 @@
 // All rights reserved. Use of this source code is governed
 // by the BSD 3-Clause License license.
 
-// Package cmd of the Dataflow kit contains the following CLI daemons: 
+// Package cmd of the Dataflow kit contains the following CLI daemons:
 //
 // - fetch.d service downloads html content from web pages to feed Dataflow kit scrapers.
 //

@@ -115,7 +115,6 @@ func makeFetchEndpoint(svc Service) endpoint.Endpoint {
 	}
 }
 
-
 //healthCheckHandler is used to check if Fetch service is alive.
 func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)

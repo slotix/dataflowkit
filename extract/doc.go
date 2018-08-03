@@ -6,7 +6,7 @@
 // All rights reserved. Use of this source code is governed
 // by the BSD 3-Clause License license.
 
-// Package extract of the Dataflow kit describes available extractors to retrieve a structured data from html web pages. 
+// Package extract of the Dataflow kit describes available extractors to retrieve a structured data from html web pages.
 //
 // Extractor types
 //
@@ -16,10 +16,10 @@
 // given selection, as a string.
 //
 // Note that this results in what is effectively the innerHTML of the element -
-// i.e. if our selection consists of 
+// i.e. if our selection consists of
 //	["<p><b>ONE</b></p>", "<p><i>TWO</i></p>"]
 //
-// then the output will be: 
+// then the output will be:
 //	"<b>ONE</b><i>TWO</i>".
 //
 // The return type is a string of all the inner HTML joined together.
@@ -53,7 +53,7 @@
 //
 //- lowerCase  makes all of the letters in the Extractor's text/ Attr   lowercase.
 //
-//- capitalize capitalizes the first letter of each word in the Extractor's text/ Attr 
+//- capitalize capitalizes the first letter of each word in the Extractor's text/ Attr
 //
 //- trim returns a copy of the Extractor's text/ Attr, with all leading and trailing white space removed
 //

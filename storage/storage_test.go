@@ -7,7 +7,6 @@ import (
 )
 
 func TestNewStore(t *testing.T) {
-	
 
 	for _, sType := range []string{ /*"S3", "Spaces",*/ "Diskv", "Cassandra"} {
 		store := NewStore(sType)
@@ -15,13 +14,13 @@ func TestNewStore(t *testing.T) {
 	}
 }
 
-func TestInvalidStore(t *testing.T){
+func TestInvalidStore(t *testing.T) {
 	sType := "unknownStorage"
 	defer func() {
-        if r := recover(); r == nil {
-            t.Errorf("The code did not panic")
-        }
-    }()
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
 	store := NewStore(sType)
 	assert.NotNil(t, store)
 }

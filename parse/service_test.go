@@ -20,7 +20,7 @@ var (
 			UserToken: "12345",
 		},
 		Fields: []scrape.Field{
-			scrape.Field{
+			{
 				Name:     "Name",
 				Selector: "#cards a",
 				Extractor: scrape.Extractor{
@@ -28,7 +28,7 @@ var (
 					Filters: []string{"trim"},
 				},
 			},
-			scrape.Field{
+			{
 				Name:     "Image",
 				Selector: ".card-img-top",
 				Extractor: scrape.Extractor{
@@ -47,7 +47,7 @@ var (
 			UserToken: "12345",
 		},
 		Fields: []scrape.Field{
-			scrape.Field{
+			{
 				Name:     "alert",
 				Selector: ".alert-info",
 				Extractor: scrape.Extractor{

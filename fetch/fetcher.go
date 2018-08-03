@@ -254,7 +254,7 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	pt, err := devt.Create(ctx)
 	if err != nil {
 		return nil, err
-	}	
+	}
 	// Connect to WebSocket URL (page) that speaks the Chrome Debugging Protocol.
 	conn, err := rpcc.DialContext(ctx, pt.WebSocketDebuggerURL)
 	if err != nil {

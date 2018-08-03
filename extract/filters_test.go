@@ -50,6 +50,6 @@ func Test_filterText(t *testing.T) {
 
 func Test_filterTextMW(t *testing.T) {
 	filtered := filterTextMW("\n\t Test ChAinEd fILterS \n\t\t", strings.TrimSpace, strings.ToLower)
-	assert.Equal(t, "test chained filters", filtered )
+	assert.Equal(t, "test chained filters", filtered)
 
 }
