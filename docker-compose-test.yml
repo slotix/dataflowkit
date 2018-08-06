@@ -38,10 +38,6 @@ services:
       - "9042:9042" # native protocol clients
       - "9160:9160" # thrift clients
     volumes:
-#      - ./cassandra/config/collectd.cassandra.conf:/etc/collectd/collectd.conf
-#     - ./cassandra/config/graphite.cassandra.yaml:/etc/cassandra/graphite.yaml
-#     - ./cassandra/config/filebeat.yml:/etc/filebeat/filebeat.yml
-#      - ./cassandra/config/prometheus.yml:/prometheus/prometheus.yml
       - ./storage/cassandra/db:/var/lib/cassandra
       - ./storage/cassandra/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     
