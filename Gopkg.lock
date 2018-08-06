@@ -20,12 +20,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  name = "github.com/clbanning/mxj"
-  packages = ["."]
-  revision = "1cda74d18ebbb04f525b355309c16d594e1f8f77"
-  version = "v1.6.1"
-
-[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
@@ -286,6 +280,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fba9d7ce1b690d86ba9ad9b35932d821f297ab680db0e39175d89f07925b8fa2"
+  inputs-digest = "16ec19b591aff95d8c55d85d145e5583256f0812a2782b9e77fa54e7a6bda05a"
   solver-name = "gps-cdcl"
   solver-version = 1
