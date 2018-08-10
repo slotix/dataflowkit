@@ -4,7 +4,9 @@ package fetch
 // https://github.com/andrew-d/goscrape package governed by MIT license.
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -236,6 +238,37 @@ func newChromeFetcher() *ChromeFetcher {
 	return f
 }
 
+// LogCodec captures the output from writing RPC requests and reading
+// responses on the connection. It implements rpcc.Codec via
+// WriteRequest and ReadResponse.
+type LogCodec struct{ conn io.ReadWriter }
+
+// WriteRequest marshals v into a buffer, writes its contents onto the
+// connection and logs it.
+func (c *LogCodec) WriteRequest(req *rpcc.Request) error {
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(req); err != nil {
+		return err
+	}
+	fmt.Printf("SEND: %s", buf.Bytes())
+	_, err := c.conn.Write(buf.Bytes())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// ReadResponse unmarshals from the connection into v whilst echoing
+// what is read into a buffer for logging.
+func (c *LogCodec) ReadResponse(resp *rpcc.Response) error {
+	var buf bytes.Buffer
+	if err := json.NewDecoder(io.TeeReader(c.conn, &buf)).Decode(resp); err != nil {
+		return err
+	}
+	fmt.Printf("RECV: %s\n", buf.String())
+	return nil
+}
+
 // Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
 func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	//URL validation
@@ -250,19 +283,22 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 
 	devt := devtool.New(viper.GetString("CHROME"), devtool.WithClient(f.client))
 	//https://github.com/mafredri/cdp/issues/60
-	//pt, err := devt.Get(ctx, devtool.Page)
-	pt, err := devt.Create(ctx)
+	pt, err := devt.Get(ctx, devtool.Page)
+	//pt, err := devt.Create(ctx)
 	if err != nil {
 		return nil, err
 	}
+	/* newLogCodec := func(conn io.ReadWriter) rpcc.Codec {
+		return &LogCodec{conn: conn}
+	} */
 	// Connect to WebSocket URL (page) that speaks the Chrome Debugging Protocol.
-	conn, err := rpcc.DialContext(ctx, pt.WebSocketDebuggerURL)
+	conn, err := rpcc.DialContext(ctx, pt.WebSocketDebuggerURL /* , rpcc.WithCodec(newLogCodec) */)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
 	defer conn.Close() // Cleanup.
-	defer devt.Close(ctx, pt)
+	//defer devt.Close(ctx, pt)
 	// if err != nil {
 	// 	return nil, err
 	// }
@@ -298,7 +334,7 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	}
 	domLoadTimeout := 60 * time.Second
 	if request.FormData == "" {
-		err = f.navigate(ctx, f.cdpClient.Page, "GET", request.getURL(), "", domLoadTimeout)		
+		err = f.navigate(ctx, f.cdpClient.Page, "GET", request.getURL(), "", domLoadTimeout)
 	} else {
 		formData := parseFormData(request.FormData)
 		err = f.navigate(ctx, f.cdpClient.Page, "POST", request.getURL(), formData.Encode(), domLoadTimeout)
@@ -364,39 +400,56 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 		return err
 	}
 
-	if method == "GET" {
+	/* if method == "GET" {
 		_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
 		if err != nil {
 			return err
 		}
-	} else {
-		pattern := network.RequestPattern{URLPattern: &url}
-		patterns := []network.RequestPattern{pattern}
+	} else { */
+	ast := "*"
+	pattern := network.RequestPattern{URLPattern: &ast}
+	patterns := []network.RequestPattern{pattern}
 
-		interArgs := network.NewSetRequestInterceptionArgs(patterns)
-		err = f.cdpClient.Network.SetRequestInterception(ctx, interArgs)
-		if err != nil {
-			return err
-		}
+	f.cdpClient.Network.SetCacheDisabled(ctx, network.NewSetCacheDisabledArgs(true))
+
+	interArgs := network.NewSetRequestInterceptionArgs(patterns)
+	err = f.cdpClient.Network.SetRequestInterception(ctx, interArgs)
+	if err != nil {
+		return err
+	}
+
+	kill := make(chan bool)
+	go func(kill chan bool) {
+		var sig = false
 		cl, err := f.cdpClient.Network.RequestIntercepted(ctx)
 		if err != nil {
 			panic(err)
 		}
-		kill := make(chan bool)
-		go func(kill chan bool) {
-			var sig = false
-			for {
-				if sig {
-					return
+		defer cl.Close()
+		for {
+			if sig {
+				return
+			}
+			select {
+			case <-cl.Ready():
+				r, err := cl.Recv()
+				if err != nil {
+					logger.Error(err)
+					sig = true
+					continue
 				}
-				select {
-				case <-cl.Ready():
-					r, err := cl.Recv()
-					if err != nil {
+				if method != "POST" {
+					interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
+					if r.ResourceType == page.ResourceTypeImage || r.ResourceType == page.ResourceTypeStylesheet || isExclude(r.Request.URL) {
+						interceptedArgs.SetErrorReason(network.ErrorReasonAborted)
+					}
+					if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
 						logger.Error(err)
 						sig = true
-						break
+						continue
 					}
+					continue
+				} else {
 					interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
 					interceptedArgs.SetMethod("POST")
 					interceptedArgs.SetPostData(formData)
@@ -405,27 +458,39 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 					if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
 						logger.Error(err)
 						sig = true
-						break
+						continue
 					}
-				case <-kill:
-					sig = true
-					break
 				}
+			case <-kill:
+				sig = true
+				break
 			}
-		}(kill)
-		_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
-		if err != nil {
-			return err
 		}
-		kill <- true
+	}(kill)
+	_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
+	if err != nil {
+		return err
 	}
+
+	//}
 	_, err = loadEventFired.Recv()
+	kill <- true
 	if err != nil {
 		return err
 	}
 	loadEventFired.Close()
 	time.Sleep(500 * time.Millisecond)
 	return nil
+}
+
+func isExclude(origin string) bool {
+	excludeRes := viper.GetStringSlice("EXCLUDERES")
+	for _, res := range excludeRes {
+		if strings.Index(origin, res) != -1 {
+			return true
+		}
+	}
+	return false
 }
 
 func (f ChromeFetcher) runJSFromFile(ctx context.Context, path string) error {

@@ -22,8 +22,11 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/healthcheck"
@@ -44,6 +47,8 @@ var (
 	diskvBaseDir    string
 
 	cassandraHost string
+
+	excludeResources []string
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -113,6 +118,8 @@ func init() {
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
 	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "", "127.0.0.1", "Cassandra host address")
 
+	RootCmd.Flags().StringSliceVar(&excludeResources, "EXCLUDERES", nil, "Exclude resources from fetch.")
+
 	if os.Getenv("DFK_FETCH") != "" {
 		viper.Set("DFK_FETCH", os.Getenv("DFK_FETCH"))
 	} else {
@@ -133,4 +140,13 @@ func init() {
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
+
+	viper.BindPFlag("EXCLUDERES", RootCmd.Flags().Lookup("EXCLUDERES"))
+
+	path := filepath.Join(viper.GetString("CHROME_SCRIPTS"), "exclude.csv")
+	dat, err := ioutil.ReadFile(path)
+	if err != nil {
+		fmt.Println(err)
+	}
+	excludeResources = strings.Split(string(dat), ",")
 }
