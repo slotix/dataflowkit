@@ -15,8 +15,8 @@ func init() {
 	logger = log.NewLogger(true)
 }
 
+//Storage types
 const (
-	//Storage types
 	CACHE        = "Cache"
 	COOKIES      = "Cookies"
 	INTERMEDIATE = "Intermediate"
