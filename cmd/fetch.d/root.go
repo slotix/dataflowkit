@@ -32,6 +32,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+//flag vars
 var (
 	//VERSION               string // VERSION is set during build
 	DFKFetch          string //Fetch service address
