@@ -286,7 +286,7 @@ func (e CSVEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]i
 		}
 		sString = ""
 		for _, fieldName := range e.partNames {
-			sString += e.formatFieldValue(block[fieldName])
+			sString += e.formatFieldValue(&block, fieldName)
 		}
 		sString = strings.TrimSuffix(sString, ",") + "\n"
 		_, err = w.WriteString(sString)
@@ -302,26 +302,26 @@ func (e CSVEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]i
 	return w.Flush()
 }
 
-func (e CSVEncoder) formatFieldValue(v interface{}) string {
+func (e CSVEncoder) formatFieldValue(block *map[string]interface{}, fieldName string) string {
 	formatedString := ""
-	switch v.(type) {
+	switch v := (*block)[fieldName].(type) {
 	case string:
-		formatedString = v.(string)
+		formatedString = v
 	case []string:
-		formatedString = strings.Join(v.([]string), ";")
+		formatedString = strings.Join(v, ";")
 	case int:
-		formatedString = strconv.FormatInt(int64(v.(int)), 10)
+		formatedString = strconv.FormatInt(int64(v), 10)
 	case []int:
-		formatedString = intArrayToString(v.([]int), ";")
+		formatedString = intArrayToString(v, ";")
 	case []float64:
-		formatedString = floatArrayToString(v.([]float64), ";")
+		formatedString = floatArrayToString(v, ";")
 	case float64:
-		formatedString = strconv.FormatFloat(v.(float64), 'f', -1, 64)
+		formatedString = strconv.FormatFloat(v, 'f', -1, 64)
 	case nil:
 		formatedString = ""
 	case []interface{}:
-		values := make([]string, len(v.(string)))
-		for i, value := range v.(string) {
+		values := make([]string, len(v))
+		for i, value := range v {
 			values[i] = fmt.Sprint(value)
 		}
 		formatedString = strings.Join(values, ";")

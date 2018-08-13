@@ -241,16 +241,10 @@ func (p Payload) fields2parts() ([]Part, error) {
 			if err != nil {
 				return nil, err
 			}
+			if e == nil {
+				continue
+			}
 			part.Extractor = *e
-
-			//if params != nil {
-			// if len(params) > 0 {
-			// 	err := fillStruct(params, e)
-			// 	if err != nil {
-			// 		logger.Error(err)
-			// 	}
-			// }
-			//logger.Info(e)
 			parts = append(parts, part)
 		}
 	}
@@ -325,6 +319,7 @@ func (p Payload) newExtractor(t string, f *Field, part *Part, params *map[string
 
 	default:
 		logger.Error(errors.New(t + ": Unknown selector type"))
+		return nil, nil
 	}
 	return &e, nil
 }
@@ -370,7 +365,7 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 
 	err := task.allowedByRobots(req)
 	if err != nil {
-		tw.wg.Done()
+		//tw.wg.Done()
 		return nil, err
 	}
 
@@ -724,56 +719,3 @@ func (task *Task) fetchWorker(fc chan *fetchInfo) {
 		}
 	}
 }
-
-//fillStruct fills s Structure with values from m map
-// func fillStruct(m map[string]interface{}, s interface{}) error {
-// 	for k, v := range m {
-// 		err := setField(s, k, v)
-// 		if err != nil {
-// 			if k == "regexp" {
-// 				return nil
-// 			}
-// 			return err
-// 		}
-// 	}
-// 	//}
-// 	return nil
-// }
-
-// func setField(obj interface{}, name string, value interface{}) error {
-// 	structValue := reflect.ValueOf(obj).Elem()
-// 	//Outgoing structs may contain fields in Title Case or in UPPERCASE - f.e. URL. So we should check if there are fields in Title case or upper case before skipping non-existent fields.
-// 	//It is unlikely there is a situation when there are several fields like url, Url, URL in the same structure.
-// 	fValues := []reflect.Value{
-// 		structValue.FieldByName(name),
-// 		structValue.FieldByName(strings.Title(name)),
-// 		structValue.FieldByName(strings.ToUpper(name)),
-// 	}
-
-// 	var structFieldValue reflect.Value
-// 	for _, structFieldValue = range fValues {
-// 		if structFieldValue.IsValid() {
-// 			break
-// 		}
-// 	}
-
-// 	if !structFieldValue.IsValid() {
-// 		//skip non-existent fields
-// 		return nil
-// 		return fmt.Errorf("No such field: %s in obj", name)
-// 	}
-
-// 	// if !structFieldValue.CanSet() {
-// 	// 	return fmt.Errorf("Cannot set field value: %s", name)
-// 	// }
-
-// 	structFieldType := structFieldValue.Type()
-// 	val := reflect.ValueOf(value)
-// 	if structFieldType != val.Type() {
-// 		invalidTypeError := errors.New("Provided value type didn't match obj field type")
-// 		return invalidTypeError
-// 	}
-
-// 	structFieldValue.Set(val)
-// 	return nil
-// }
