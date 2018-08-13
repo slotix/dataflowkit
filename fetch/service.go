@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/url"
-
-	//"github.com/juju/persistent-cookiejar"
 	"net/http/cookiejar"
+	"net/url"
 
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
@@ -36,7 +34,7 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 		fetcher = newFetcher(Base)
 	}
 	var (
-		jar     http.CookieJar //*cookiejar.Jar
+		jar     http.CookieJar
 		cookies []byte
 		cArr    []*http.Cookie
 		s       storage.Store
@@ -88,7 +86,6 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 	}
 	if req.UserToken != "" {
 		jar = fetcher.getCookieJar()
-		//cArr = append(cArr, jar.AllCookies()...)
 		cArr = append(cArr, jar.Cookies(u)...)
 		cookies, err = json.Marshal(cArr)
 		if err != nil {
