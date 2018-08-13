@@ -8,20 +8,25 @@
 [![codecov](https://codecov.io/gh/slotix/dataflowkit/branch/master/graph/badge.svg)](https://codecov.io/gh/slotix/dataflowkit)
 
 
-Dataflow kit is a Scraping framework for Gophers. DFK extracts structured data from web pages, following the specified extractors.
+Dataflow kit is a Web Scraping framework for Gophers. DFK extracts structured data from web pages, following the specified extractors.
 
 It can be used in many ways for data mining, data processing or archiving.
 
+- Dataflow kit is fast. It takes about 4-6 seconds to fetch and then parse 50 pages.
+- Dataflow kit is suitable to process quite large volumes of data. Our tests show the time needed to parse appr. 4 millions of pages is about 7 hours. 
+
 ## Dataflow kit benefits:
+
 - Scraping of JavaScript generated pages;
 - Data extraction from paginated websites;
+- Processing infinite scrolled pages.
 - Sсraping of websites behind login form;
 - Cookies and sessions handling;
 - Following links and detailed pages processing;
 - Managing delays between requests per domain; 
 - Following robots.txt directives; 
-- Caching support. 
-The following storage type are available Diskv, Redis, Amazon AWS S3, Digital Ocean Spaces;
+- Various storage types support. 
+The following storage type are available Diskv, Cassandra;
 - Save results as CSV, JSON, XML;
 
 
@@ -36,12 +41,12 @@ It works faster than Chrome fetcher. But Base fetcher cannot render dynamic java
 
 Chrome fetcher is intended for rendering dynamic javascript based content. It sends requests to Chrome running in headless mode.  
 
-Chrome passes retrieved data to parse.d service. 
+Fetchers pass retrieved data to parse.d service. 
 
 ## Parse service
-**parse.d** is the service that extracts data from downloaded web page following the rules described in configuration JSON file. Extracted data are returned in CSV, JSON or XML format.
+**parse.d** is the service that extracts data from downloaded web page following the rules described in configuration JSON file. Extracted data is returned in CSV, JSON or XML format.
 
-*Note: Sometimes Parse service cannot extract data from some pages retrieved by default Base fetcher. Empty results may be returned while parsing Java Script generated pages. Parse service then attempts to force Chrome fetcher to render the same dynamic javascript driven content automatically. Have a look at http://quotes.toscrape.com/js/ which is a sampe of JavaScript driven web page.*   
+*Note: Sometimes Parse service cannot extract data from some pages retrieved by default Base fetcher. Empty results may be returned while parsing Java Script generated pages. Parse service then attempts to force Chrome fetcher to render the same dynamic javascript driven content automatically. Have a look at https://scrape.dataflowkit.org/persons/page-0 which is a sample of JavaScript driven web page.*   
 
 ## Installation
 Using [dep](https://github.com/golang/dep)

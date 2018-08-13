@@ -170,20 +170,21 @@ func (r *storageResultReader) init() {
 // }
 
 func (r *storageResultReader) Read() (map[string]interface{}, error) {
-	blockMap := make(map[string]interface{})
+	//blockMap := make(map[string]interface{})
 	var err error
+	var nextPage bool
 	if r.block >= len(r.payloadMap[r.keys[r.page]]) {
 		if r.page+1 < len(r.keys) {
 			//achieve next page
 			r.page++
-			r.block = 0
-			err = &errs.ErrStorageResult{Err: errs.NextPage}
+			r.block = 0	
+			nextPage = true
 		} else {
 			//achieve EOF
 			return nil, &errs.ErrStorageResult{Err: errs.EOF}
 		}
 	}
-	blockMap, err = r.getValue()
+	blockMap, err := r.getValue()
 	if err != nil {
 		// have to try get next block value
 		r.block++
@@ -225,6 +226,9 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 		}
 	}
 	r.block++
+	if nextPage {
+		err = &errs.ErrStorageResult{Err: errs.NextPage}
+	}
 	return blockMap, err
 }
 
