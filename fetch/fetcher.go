@@ -146,7 +146,6 @@ func (bf *BaseFetcher) response(r Request) (*http.Response, error) {
 
 	var err error
 	var req *http.Request
-	var resp *http.Response
 
 	if r.FormData == "" {
 		req, err = http.NewRequest(r.Method, r.URL, nil)
@@ -163,34 +162,36 @@ func (bf *BaseFetcher) response(r Request) (*http.Response, error) {
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Content-Length", strconv.Itoa(len(formData.Encode())))
 	}
+	return bf.doRequest(req)
+}
 
-	resp, err = bf.client.Do(req)
+func (bf *BaseFetcher) doRequest(req *http.Request) (*http.Response, error) {
+	resp, err := bf.client.Do(req)
 	if err != nil {
 		return nil, &errs.BadRequest{err}
 	}
-	if resp.StatusCode != 200 {
-		switch resp.StatusCode {
-		case 404:
-			return nil, &errs.NotFound{r.URL}
-		case 403:
-			return nil, &errs.Forbidden{r.URL}
-		case 400:
-			return nil, &errs.BadRequest{err}
-		case 401:
-			return nil, &errs.Unauthorized{}
-		case 407:
-			return nil, &errs.ProxyAuthenticationRequired{}
-		case 500:
-			return nil, &errs.InternalServerError{}
-		case 502:
-			return nil, &errs.BadGateway{}
-		case 504:
-			return nil, &errs.GatewayTimeout{}
-		default:
-			return nil, &errs.Error{"Unknown Error"}
-		}
+	switch resp.StatusCode {
+	case 200:
+		return resp, err
+	case 404:
+		return nil, &errs.NotFound{req.URL.String()}
+	case 403:
+		return nil, &errs.Forbidden{req.URL.String()}
+	case 400:
+		return nil, &errs.BadRequest{err}
+	case 401:
+		return nil, &errs.Unauthorized{}
+	case 407:
+		return nil, &errs.ProxyAuthenticationRequired{}
+	case 500:
+		return nil, &errs.InternalServerError{}
+	case 502:
+		return nil, &errs.BadGateway{}
+	case 504:
+		return nil, &errs.GatewayTimeout{}
+	default:
+		return nil, &errs.Error{"Unknown Error"}
 	}
-	return resp, err
 }
 
 func (bf *BaseFetcher) getCookieJar() http.CookieJar { //*cookiejar.Jar {
@@ -420,54 +421,7 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 	}
 
 	kill := make(chan bool)
-	go func(kill chan bool) {
-		var sig = false
-		cl, err := f.cdpClient.Network.RequestIntercepted(ctx)
-		if err != nil {
-			panic(err)
-		}
-		defer cl.Close()
-		for {
-			if sig {
-				return
-			}
-			select {
-			case <-cl.Ready():
-				r, err := cl.Recv()
-				if err != nil {
-					logger.Error(err)
-					sig = true
-					continue
-				}
-				if method != "POST" {
-					interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
-					if r.ResourceType == page.ResourceTypeImage || r.ResourceType == page.ResourceTypeStylesheet || isExclude(r.Request.URL) {
-						interceptedArgs.SetErrorReason(network.ErrorReasonAborted)
-					}
-					if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
-						logger.Error(err)
-						sig = true
-						continue
-					}
-					continue
-				} else {
-					interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
-					interceptedArgs.SetMethod("POST")
-					interceptedArgs.SetPostData(formData)
-					fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`, len(formData))
-					interceptedArgs.Headers = []byte(fData)
-					if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
-						logger.Error(err)
-						sig = true
-						continue
-					}
-				}
-			case <-kill:
-				sig = true
-				break
-			}
-		}
-	}(kill)
+	go f.interceptRequest(ctx, formData, kill)
 	_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
 	if err != nil {
 		return err
@@ -482,6 +436,56 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 	loadEventFired.Close()
 	time.Sleep(500 * time.Millisecond)
 	return nil
+}
+
+func (f *ChromeFetcher) interceptRequest(ctx context.Context, formData string, kill chan bool) {
+	var sig = false
+	cl, err := f.cdpClient.Network.RequestIntercepted(ctx)
+	if err != nil {
+		panic(err)
+	}
+	defer cl.Close()
+	for {
+		if sig {
+			return
+		}
+		select {
+		case <-cl.Ready():
+			r, err := cl.Recv()
+			if err != nil {
+				logger.Error(err)
+				sig = true
+				continue
+			}
+
+			if r.Request.Method != "POST" {
+				interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
+				if r.ResourceType == page.ResourceTypeImage || r.ResourceType == page.ResourceTypeStylesheet || isExclude(r.Request.URL) {
+					interceptedArgs.SetErrorReason(network.ErrorReasonAborted)
+				}
+				if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
+					logger.Error(err)
+					sig = true
+					continue
+				}
+				continue
+			} else {
+				interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
+				interceptedArgs.SetMethod("POST")
+				interceptedArgs.SetPostData(formData)
+				fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`, len(formData))
+				interceptedArgs.Headers = []byte(fData)
+				if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
+					logger.Error(err)
+					sig = true
+					continue
+				}
+			}
+		case <-kill:
+			sig = true
+			break
+		}
+	}
 }
 
 func isExclude(origin string) bool {

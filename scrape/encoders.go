@@ -177,7 +177,7 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 		if r.page+1 < len(r.keys) {
 			//achieve next page
 			r.page++
-			r.block = 0	
+			r.block = 0
 			nextPage = true
 		} else {
 			//achieve EOF
@@ -286,30 +286,7 @@ func (e CSVEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]i
 		}
 		sString = ""
 		for _, fieldName := range e.partNames {
-			formatedString := ""
-			switch v := block[fieldName].(type) {
-			case string:
-				formatedString = v
-			case []string:
-				formatedString = strings.Join(v, ";")
-			case int:
-				formatedString = strconv.FormatInt(int64(v), 10)
-			case []int:
-				formatedString = intArrayToString(v, ";")
-			case []float64:
-				formatedString = floatArrayToString(v, ";")
-			case float64:
-				formatedString = strconv.FormatFloat(v, 'f', -1, 64)
-			case nil:
-				formatedString = ""
-			case []interface{}:
-				values := make([]string, len(v))
-				for i, value := range v {
-					values[i] = fmt.Sprint(value)
-				}
-				formatedString = strings.Join(values, ";")
-			}
-			sString += fmt.Sprintf("%s,", formatedString)
+			sString += e.formatFieldValue(block[fieldName])
 		}
 		sString = strings.TrimSuffix(sString, ",") + "\n"
 		_, err = w.WriteString(sString)
@@ -323,6 +300,33 @@ func (e CSVEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]i
 	}
 	s.Close()
 	return w.Flush()
+}
+
+func (e CSVEncoder) formatFieldValue(v interface{}) string {
+	formatedString := ""
+	switch v.(type) {
+	case string:
+		formatedString = v.(string)
+	case []string:
+		formatedString = strings.Join(v.([]string), ";")
+	case int:
+		formatedString = strconv.FormatInt(int64(v.(int)), 10)
+	case []int:
+		formatedString = intArrayToString(v.([]int), ";")
+	case []float64:
+		formatedString = floatArrayToString(v.([]float64), ";")
+	case float64:
+		formatedString = strconv.FormatFloat(v.(float64), 'f', -1, 64)
+	case nil:
+		formatedString = ""
+	case []interface{}:
+		values := make([]string, len(v.(string)))
+		for i, value := range v.(string) {
+			values[i] = fmt.Sprint(value)
+		}
+		formatedString = strings.Join(values, ";")
+	}
+	return fmt.Sprintf("%s,", formatedString)
 }
 
 func (e XMLEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error {
