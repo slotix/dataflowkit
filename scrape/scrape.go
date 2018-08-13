@@ -238,65 +238,11 @@ func (p Payload) fields2parts() ([]Part, error) {
 				Name:     f.Name + "_" + t,
 				Selector: f.Selector,
 			}
-
-			var e extract.Extractor
-			switch strings.ToLower(t) {
-			case "text":
-				e = &extract.Text{
-					Filters: f.Extractor.Filters,
-				}
-			case "href", "src", "path":
-				extrAttr := t
-				if t == "path" {
-					extrAttr = "href"
-				}
-				e = &extract.Attr{
-					Attr: extrAttr,
-					//BaseURL: p.Request.URL,
-				}
-				//******* details
-				if f.Details != nil {
-					detailsPayload := p
-					detailsPayload.Name = f.Name + "Details"
-					detailsPayload.Fields = f.Details.Fields
-					detailsPayload.Paginator = f.Details.Paginator
-					detailsPayload.IsPath = f.Details.IsPath
-					//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
-					scraper, err := detailsPayload.newScraper()
-					if err != nil {
-						return nil, err
-					}
-					part.Details = *scraper
-				}
-
-			case "alt":
-				e = &extract.Attr{
-					Attr:    t,
-					Filters: f.Extractor.Filters,
-				}
-			case "width", "height":
-				e = &extract.Attr{Attr: t}
-			case "regex":
-				r := &extract.Regex{}
-				regExp := params["regexp"]
-				r.Regex = regexp.MustCompile(regExp.(string))
-				//it is obligatory parameter and we don't need to add it again in further fillStruct() func. So we can delete it here
-				delete(params, "regexp")
-				e = r
-			case "const":
-				e = &extract.Const{Val: params["value"]}
-			case "count":
-				e = &extract.Count{}
-			// case "html":
-			// 	e = &extract.Html{}
-			case "outerhtml":
-				e = &extract.OuterHtml{}
-
-			default:
-				logger.Error(errors.New(t + ": Unknown selector type"))
-				continue
+			e, err := p.newExtractor(t, &f, &part, &params)
+			if err != nil {
+				return nil, err
 			}
-			part.Extractor = e
+			part.Extractor = *e
 
 			//if params != nil {
 			// if len(params) > 0 {
@@ -324,12 +270,67 @@ func (p Payload) fields2parts() ([]Part, error) {
 	return parts, nil
 }
 
-// scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
-func (task *Task) scrape(tw *taskWorker) (*Results, error) {
+func (p Payload) newExtractor(t string, f *Field, part *Part, params *map[string]interface{}) (*extract.Extractor, error) {
+	var e extract.Extractor
+	switch strings.ToLower(t) {
+	case "text":
+		e = &extract.Text{
+			Filters: f.Extractor.Filters,
+		}
+	case "href", "src", "path":
+		extrAttr := t
+		if t == "path" {
+			extrAttr = "href"
+		}
+		e = &extract.Attr{
+			Attr: extrAttr,
+			//BaseURL: p.Request.URL,
+		}
+		//******* details
+		if f.Details != nil {
+			detailsPayload := p
+			detailsPayload.Name = f.Name + "Details"
+			detailsPayload.Fields = f.Details.Fields
+			detailsPayload.Paginator = f.Details.Paginator
+			detailsPayload.IsPath = f.Details.IsPath
+			//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
+			scraper, err := detailsPayload.newScraper()
+			if err != nil {
+				return nil, err
+			}
+			part.Details = *scraper
+		}
 
-	req := tw.scraper.Request
-	url := req.URL
+	case "alt":
+		e = &extract.Attr{
+			Attr:    t,
+			Filters: f.Extractor.Filters,
+		}
+	case "width", "height":
+		e = &extract.Attr{Attr: t}
+	case "regex":
+		r := &extract.Regex{}
+		regExp := (*params)["regexp"]
+		r.Regex = regexp.MustCompile(regExp.(string))
+		//it is obligatory parameter and we don't need to add it again in further fillStruct() func. So we can delete it here
+		delete((*params), "regexp")
+		e = r
+	case "const":
+		e = &extract.Const{Val: (*params)["value"]}
+	case "count":
+		e = &extract.Count{}
+	// case "html":
+	// 	e = &extract.Html{}
+	case "outerhtml":
+		e = &extract.OuterHtml{}
 
+	default:
+		logger.Error(errors.New(t + ": Unknown selector type"))
+	}
+	return &e, nil
+}
+
+func (task *Task) allowedByRobots(req fetch.Request) error {
 	//get Robotstxt Data
 	host, err := req.Host()
 	if err != nil {
@@ -338,11 +339,11 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 		//return err
 	}
 	if _, ok := task.Robots[host]; !ok {
-		robots, err := fetch.RobotstxtData(url)
+		robots, err := fetch.RobotstxtData(req.URL)
 		if err != nil {
-			robotsURL, err1 := fetch.AssembleRobotstxtURL(url)
+			robotsURL, err1 := fetch.AssembleRobotstxtURL(req.URL)
 			if err1 != nil {
-				return nil, err1
+				return err1
 			}
 			task.Errors = append(task.Errors, err)
 			logger.WithFields(
@@ -356,8 +357,22 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 	}
 
 	//check if scraping of current url is not forbidden
-	if !fetch.AllowedByRobots(url, task.Robots[host]) {
-		task.Errors = append(task.Errors, &errs.ForbiddenByRobots{url})
+	if !fetch.AllowedByRobots(req.URL, task.Robots[host]) {
+		task.Errors = append(task.Errors, &errs.ForbiddenByRobots{req.URL})
+	}
+	return nil
+}
+
+// scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
+func (task *Task) scrape(tw *taskWorker) (*Results, error) {
+
+	req := tw.scraper.Request
+	url := req.URL
+
+	err := task.allowedByRobots(req)
+	if err != nil {
+		tw.wg.Done()
+		return nil, err
 	}
 
 	//call remote fetcher to download web page
@@ -394,7 +409,7 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 			}
 			// Repeat until we don't have any more URLs, or until we hit our page limit.
 			if len(url) != 0 &&
-				(task.Payload.Paginator != nil && (task.Payload.Paginator.MaxPages > 0 && tw.currentPageNum < task.Payload.Paginator.MaxPages)) {
+				task.Payload.Paginator.MaxPages > 0 && tw.currentPageNum < task.Payload.Paginator.MaxPages {
 				paginatorPayload := task.Payload
 				paginatorPayload.Request.URL = url
 				//paginatorPayload.Request = paginatorPayload.initRequest(url)
@@ -538,15 +553,15 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 				sel = sel.Find(part.Selector)
 			}
 			//update base URL to reflect attr relative URL change
-			switch part.Extractor.(type) {
-			case *extract.Attr:
-				attr := part.Extractor.(*extract.Attr)
-				if attr.Attr == "href" || attr.Attr == "src" {
-					task.mx.Lock()
-					attr.BaseURL = url
-					task.mx.Unlock()
-				}
+			/* switch part.Extractor.(type) {
+			case *extract.Attr: */
+			attr, ok := part.Extractor.(*extract.Attr)
+			if ok && (attr.Attr == "href" || attr.Attr == "src") {
+				task.mx.Lock()
+				attr.BaseURL = url
+				task.mx.Unlock()
 			}
+			/* } */
 			task.mx.Lock()
 			extractedPartResults, err := part.Extractor.Extract(sel)
 			task.mx.Unlock()
@@ -565,117 +580,128 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 			}
 			//********* details
 			if len(part.Details.Parts) > 0 {
-				var requests []fetch.Request
-
-				switch extractedPartResults.(type) {
-				case string:
-					rq := fetch.Request{URL: extractedPartResults.(string)}
-					requests = append(requests, rq)
-				case []string:
-					for _, r := range extractedPartResults.([]string) {
-						rq := fetch.Request{URL: r}
-						requests = append(requests, rq)
-					}
-				}
-				for _, r := range requests {
-					part.Details.Request = r
-					//check if domain is the same for initial URL and details' URLs
-					//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
-
-					wg := sync.WaitGroup{}
-					var uid string
-					ubc := false
-					if wrk.scraper.IsPath {
-						uid = block.hash
-						ubc = true
-					} else {
-						uid = string(utils.GenerateCRC32([]byte(r.URL)))
-					}
-					tw := taskWorker{
-						wg:              &wg,
-						currentPageNum:  0,
-						scraper:         &part.Details,
-						UID:             uid,
-						useBlockCounter: ubc,
-						keys:            make(map[int][]int),
-					}
-					wg.Add(1)
-					tw.scraper.Request.Type = task.Payload.Request.Type
-					_, err = task.scrape(&tw)
-					if err != nil {
-						logger.Error(err)
-						continue
-					}
-					if wrk.scraper.IsPath {
-						continue
-					}
-					blockResults[part.Name+"_details"] = uid //generate uid resDetails.AllBlocks()
-					// Sort keys to keep an order before write them into storage.
-					for k := range tw.keys {
-						sort.Slice(tw.keys[k], func(i, j int) bool { return tw.keys[k][i] < tw.keys[k][j] })
-					}
-					j, err := json.Marshal(tw.keys)
-					if err != nil {
-						//return nil, err
-						logger.Warning(fmt.Errorf("Failed to marshal details key. %s", err.Error()))
-						continue
-					}
-					err = task.storage.Write(storage.Record{
-						Type:    storage.INTERMEDIATE,
-						Key:     string(uid),
-						Value:   j,
-						ExpTime: 0,
-					})
-					if err != nil {
-						logger.Warning(fmt.Errorf("Failed to write %s. %s", string(uid), err.Error()))
-						continue
-					}
+				if !task.scrapeDetails(extractedPartResults, &part, wrk, block, &blockResults) {
+					continue
 				}
 			}
 			//********* end details
 		}
 		if len(blockResults) > 0 {
-			task.mx.Lock()
-			if !task.Parsed {
-				task.Parsed = true
-			}
-			task.mx.Unlock()
-
-			output, err := json.Marshal(blockResults)
-			if err != nil {
-				logger.Error(err)
-			}
-			if !wrk.scraper.IsPath {
-				task.mx.Lock()
-				key := block.key
-				if block.useBlockCounter {
-					blockNum := len(task.BlockCounter)
-					key = fmt.Sprintf("%s-0-%d", block.hash, blockNum)
-					task.BlockCounter = append(task.BlockCounter, blockNum)
-				} else {
-					keys := strings.Split(block.key, "-")
-					pageNum, err := strconv.Atoi(keys[1])
-					if err != nil {
-						logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()))
-					}
-					blockNum, err := strconv.Atoi(keys[2])
-					if err != nil {
-						logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()))
-					}
-					(*block.keys)[pageNum] = append((*block.keys)[pageNum], blockNum)
-				}
-				err = task.storage.Write(storage.Record{
-					Type:    storage.INTERMEDIATE,
-					Key:     key,
-					Value:   output,
-					ExpTime: 0,
-				})
-				if err != nil {
-					logger.Error(fmt.Errorf("Failed to write %s. %s", key, err.Error()))
-				}
-				task.mx.Unlock()
-			}
+			task.saveToStorage(&blockResults, wrk, block)
 		}
+	}
+}
+
+func (task *Task) scrapeDetails(extractedPartResults interface{}, part *Part, wrk *worker, block *blockStruct, blockResults *map[string]interface{}) bool {
+	var requests []fetch.Request
+
+	switch extractedPartResults.(type) {
+	case string:
+		rq := fetch.Request{URL: extractedPartResults.(string)}
+		requests = append(requests, rq)
+	case []string:
+		for _, r := range extractedPartResults.([]string) {
+			rq := fetch.Request{URL: r}
+			requests = append(requests, rq)
+		}
+	}
+	for _, r := range requests {
+		part.Details.Request = r
+		//check if domain is the same for initial URL and details' URLs
+		//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
+
+		wg := sync.WaitGroup{}
+		var uid string
+		ubc := false
+		if wrk.scraper.IsPath {
+			uid = block.hash
+			ubc = true
+		} else {
+			uid = string(utils.GenerateCRC32([]byte(r.URL)))
+		}
+		tw := taskWorker{
+			wg:              &wg,
+			currentPageNum:  0,
+			scraper:         &part.Details,
+			UID:             uid,
+			useBlockCounter: ubc,
+			keys:            make(map[int][]int),
+		}
+		wg.Add(1)
+		tw.scraper.Request.Type = task.Payload.Request.Type
+		_, err := task.scrape(&tw)
+		if err != nil {
+			logger.Error(err)
+			return false
+		}
+		if wrk.scraper.IsPath {
+			return false
+		}
+		(*blockResults)[part.Name+"_details"] = uid //generate uid resDetails.AllBlocks()
+		// Sort keys to keep an order before write them into storage.
+		for k := range tw.keys {
+			sort.Slice(tw.keys[k], func(i, j int) bool { return tw.keys[k][i] < tw.keys[k][j] })
+		}
+		j, err := json.Marshal(tw.keys)
+		if err != nil {
+			//return nil, err
+			logger.Warning(fmt.Errorf("Failed to marshal details key. %s", err.Error()))
+			return false
+		}
+		err = task.storage.Write(storage.Record{
+			Type:    storage.INTERMEDIATE,
+			Key:     string(uid),
+			Value:   j,
+			ExpTime: 0,
+		})
+		if err != nil {
+			logger.Warning(fmt.Errorf("Failed to write %s. %s", string(uid), err.Error()))
+			return false
+		}
+	}
+	return true
+}
+
+func (task *Task) saveToStorage(blockResults *map[string]interface{}, wrk *worker, block *blockStruct) {
+	task.mx.Lock()
+	if !task.Parsed {
+		task.Parsed = true
+	}
+	task.mx.Unlock()
+
+	output, err := json.Marshal(blockResults)
+	if err != nil {
+		logger.Error(err)
+	}
+	if !wrk.scraper.IsPath {
+		task.mx.Lock()
+		key := block.key
+		if block.useBlockCounter {
+			blockNum := len(task.BlockCounter)
+			key = fmt.Sprintf("%s-0-%d", block.hash, blockNum)
+			task.BlockCounter = append(task.BlockCounter, blockNum)
+		} else {
+			keys := strings.Split(block.key, "-")
+			pageNum, err := strconv.Atoi(keys[1])
+			if err != nil {
+				logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()))
+			}
+			blockNum, err := strconv.Atoi(keys[2])
+			if err != nil {
+				logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()))
+			}
+			(*block.keys)[pageNum] = append((*block.keys)[pageNum], blockNum)
+		}
+		err = task.storage.Write(storage.Record{
+			Type:    storage.INTERMEDIATE,
+			Key:     key,
+			Value:   output,
+			ExpTime: 0,
+		})
+		if err != nil {
+			logger.Error(fmt.Errorf("Failed to write %s. %s", key, err.Error()))
+		}
+		task.mx.Unlock()
 	}
 }
 
