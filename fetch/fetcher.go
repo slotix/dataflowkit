@@ -78,14 +78,12 @@ type Request struct {
 // client to fetch URLs.
 type BaseFetcher struct {
 	client *http.Client
-	//jar    *cookiejar.Jar
 }
 
 // ChromeFetcher is used to fetch Java Script rendeded pages.
 type ChromeFetcher struct {
 	cdpClient *cdp.Client
 	client    *http.Client
-	//jar       *cookiejar.Jar
 }
 
 //newFetcher creates instances of Fetcher for downloading a web page.
@@ -139,11 +137,6 @@ func (bf *BaseFetcher) response(r Request) (*http.Response, error) {
 	if _, err := url.ParseRequestURI(r.getURL()); err != nil {
 		return nil, &errs.BadRequest{err}
 	}
-
-	// if bf.jar != nil {
-	// 	bf.client.Jar = bf.jar
-	// }
-
 	var err error
 	var req *http.Request
 
@@ -277,16 +270,13 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	if _, err := url.ParseRequestURI(strings.TrimSpace(request.getURL())); err != nil {
 		return nil, &errs.BadRequest{err}
 	}
-	// if f.jar != nil {
-	// 	f.client.Jar = f.jar
-	// }
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	devt := devtool.New(viper.GetString("CHROME"), devtool.WithClient(f.client))
 	//https://github.com/mafredri/cdp/issues/60
-	pt, err := devt.Get(ctx, devtool.Page)
-	//pt, err := devt.Create(ctx)
+	//pt, err := devt.Get(ctx, devtool.Page)
+	pt, err := devt.Create(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +290,7 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 		return nil, err
 	}
 	defer conn.Close() // Cleanup.
-	//defer devt.Close(ctx, pt)
+	defer devt.Close(ctx, pt)
 	// if err != nil {
 	// 	return nil, err
 	// }
