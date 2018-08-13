@@ -166,7 +166,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		}
 	case "json":
 		e = JSONEncoder{
-		//		paginateResults: *task.Payload.PaginateResults,
+			//		paginateResults: *task.Payload.PaginateResults,
 		}
 	case "xml":
 		e = XMLEncoder{}
