@@ -31,8 +31,9 @@ import (
 	"github.com/spf13/viper"
 )
 
+//flag vars
 var (
-	DFKParse           string 
+	DFKParse           string
 	DFKFetch           string //DFKFetch service address.
 	storageType        string
 	skipStorageMW      bool

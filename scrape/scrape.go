@@ -418,13 +418,13 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 				tw.wg.Add(1)
 				go task.scrape(&paginatorTW)
 			}
-		} else {
-			url = ""
 		}
+		//todo: test this case
+		// } else {
+		// 	url = ""
+		// }
 	}
-
 	blocks := make(chan *blockStruct)
-
 	wg := sync.WaitGroup{}
 	wrk := &worker{
 		wg:      &wg,

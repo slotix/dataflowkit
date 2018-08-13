@@ -74,7 +74,7 @@ func RandomF() float64 {
 	return rand.Float64() + 0.5
 }
 
-// ArrayContains check if string slice contains string 
+// ArrayContains check if string slice contains string
 func ArrayContains(a []string, x string) bool {
 	for _, n := range a {
 		if x == n {

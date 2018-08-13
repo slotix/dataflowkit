@@ -36,6 +36,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+//flag vars
 var (
 	DFKFetch string
 	fetcher  string //fetcher type: chrome, base

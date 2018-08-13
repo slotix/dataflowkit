@@ -20,7 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-//ContextHook
+// ContextHook represents ContextHook struct
 type ContextHook struct{}
 
 //Levels return Levels of ContextHook
