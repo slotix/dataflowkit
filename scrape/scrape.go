@@ -2,7 +2,6 @@ package scrape
 
 // The following code was sourced and modified from the
 // https://github.com/andrew-d/goscrape package governed by MIT license.
-
 //TODO: add paginator to details
 import (
 	"bytes"
