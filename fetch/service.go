@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/juju/persistent-cookiejar"
+	//"github.com/juju/persistent-cookiejar"
+	"net/http/cookiejar"
+
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
 	"golang.org/x/net/publicsuffix"
@@ -34,16 +36,21 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 		fetcher = newFetcher(Base)
 	}
 	var (
-		jar     *cookiejar.Jar
+		jar     http.CookieJar //*cookiejar.Jar
 		cookies []byte
 		cArr    []*http.Cookie
 		s       storage.Store
 	)
+
 	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
 	jar, err := cookiejar.New(jarOpts)
 	if err != nil {
 		logger.Error("Failed to create Cookie Jar")
 
+	}
+	u, err := url.Parse(req.getURL())
+	if err != nil {
+		return nil, err
 	}
 	if req.UserToken != "" {
 		storageType := viper.GetString("STORAGE_TYPE")
@@ -61,10 +68,7 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 			if err != nil {
 				return nil, err
 			}
-			u, err := url.Parse(req.getURL())
-			if err != nil {
-				return nil, err
-			}
+
 			tempCarr := []*http.Cookie{}
 			for i := 0; i < len(cArr); i++ {
 				c := cArr[i]
@@ -84,7 +88,8 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 	}
 	if req.UserToken != "" {
 		jar = fetcher.getCookieJar()
-		cArr = append(cArr, jar.AllCookies()...)
+		//cArr = append(cArr, jar.AllCookies()...)
+		cArr = append(cArr, jar.Cookies(u)...)
 		cookies, err = json.Marshal(cArr)
 		if err != nil {
 			return nil, err

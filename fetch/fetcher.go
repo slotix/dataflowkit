@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/juju/persistent-cookiejar"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
 	"github.com/mafredri/cdp/protocol/dom"
@@ -47,8 +46,8 @@ const (
 type Fetcher interface {
 	//  Fetch is called to retrieve HTML content of a document from the remote server.
 	Fetch(request Request) (io.ReadCloser, error)
-	getCookieJar() *cookiejar.Jar
-	setCookieJar(jar *cookiejar.Jar)
+	getCookieJar() http.CookieJar
+	setCookieJar(jar http.CookieJar)
 }
 
 //Request struct contains request information sent to  Fetchers
@@ -77,14 +76,14 @@ type Request struct {
 // client to fetch URLs.
 type BaseFetcher struct {
 	client *http.Client
-	jar    *cookiejar.Jar
+	//jar    *cookiejar.Jar
 }
 
 // ChromeFetcher is used to fetch Java Script rendeded pages.
 type ChromeFetcher struct {
 	cdpClient *cdp.Client
 	client    *http.Client
-	jar       *cookiejar.Jar
+	//jar       *cookiejar.Jar
 }
 
 //newFetcher creates instances of Fetcher for downloading a web page.
@@ -139,9 +138,9 @@ func (bf *BaseFetcher) response(r Request) (*http.Response, error) {
 		return nil, &errs.BadRequest{err}
 	}
 
-	if bf.jar != nil {
-		bf.client.Jar = bf.jar
-	}
+	// if bf.jar != nil {
+	// 	bf.client.Jar = bf.jar
+	// }
 
 	var err error
 	var req *http.Request
@@ -192,12 +191,14 @@ func (bf *BaseFetcher) response(r Request) (*http.Response, error) {
 	return resp, err
 }
 
-func (bf *BaseFetcher) getCookieJar() *cookiejar.Jar {
-	return bf.jar
+func (bf *BaseFetcher) getCookieJar() http.CookieJar { //*cookiejar.Jar {
+	return bf.client.Jar
 }
 
-func (bf *BaseFetcher) setCookieJar(jar *cookiejar.Jar) {
-	bf.jar = jar
+//func (bf *BaseFetcher) setCookieJar(jar *cookiejar.Jar) {
+func (bf *BaseFetcher) setCookieJar(jar http.CookieJar) {
+
+	bf.client.Jar = jar
 }
 
 // parseFormData is used for converting formdata string to url.Values type
@@ -242,9 +243,9 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	if _, err := url.ParseRequestURI(strings.TrimSpace(request.getURL())); err != nil {
 		return nil, &errs.BadRequest{err}
 	}
-	if f.jar != nil {
-		f.client.Jar = f.jar
-	}
+	// if f.jar != nil {
+	// 	f.client.Jar = f.jar
+	// }
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -334,12 +335,12 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 
 }
 
-func (f *ChromeFetcher) setCookieJar(jar *cookiejar.Jar) {
-	f.jar = jar
+func (f *ChromeFetcher) setCookieJar(jar http.CookieJar) {
+	f.client.Jar = jar
 }
 
-func (f *ChromeFetcher) getCookieJar() *cookiejar.Jar {
-	return f.jar
+func (f *ChromeFetcher) getCookieJar() http.CookieJar {
+	return f.client.Jar
 }
 
 // Static type assertion
