@@ -280,11 +280,16 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	/* newLogCodec := func(conn io.ReadWriter) rpcc.Codec {
-		return &LogCodec{conn: conn}
-	} */
-	// Connect to WebSocket URL (page) that speaks the Chrome Debugging Protocol.
-	conn, err := rpcc.DialContext(ctx, pt.WebSocketDebuggerURL /* , rpcc.WithCodec(newLogCodec) */)
+	var conn *rpcc.Conn
+	if viper.GetBool("CHROME_TRACE") {
+		newLogCodec := func(conn io.ReadWriter) rpcc.Codec {
+			return &LogCodec{conn: conn}
+		}
+		// Connect to WebSocket URL (page) that speaks the Chrome Debugging Protocol.
+		conn, err = rpcc.DialContext(ctx, pt.WebSocketDebuggerURL, rpcc.WithCodec(newLogCodec))
+	} else {
+		conn, err = rpcc.DialContext(ctx, pt.WebSocketDebuggerURL)
+	}
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
