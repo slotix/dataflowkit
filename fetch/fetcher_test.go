@@ -12,6 +12,7 @@ import (
 
 func TestBaseFetcher_Proxy(t *testing.T) {
 	viper.Set("PROXY", "http://127.0.0.1:3128")
+	viper.Set("CHROME_TRACE", true)
 	//viper.Set("PROXY", "")
 	fetcher := newFetcher(Base)
 	assert.NotNil(t, fetcher)
