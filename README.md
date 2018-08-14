@@ -1,6 +1,6 @@
 # Dataflow kit
 
-![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/dfk-logo/logo-mini.png)
+![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/logo-mini.png)
 
 [![Build Status](https://travis-ci.org/slotix/dataflowkit.svg?branch=master)](https://travis-ci.org/slotix/dataflowkit)
 [![GoDoc](https://godoc.org/github.com/slotix/dataflowkit?status.svg)](https://godoc.org/github.com/slotix/dataflowkit)
@@ -176,4 +176,4 @@ You are welcome to contribute to our project.
 - Please submit [your issues](https://github.com/slotix/dataflowkit/issues) 
 - Fork the [project](https://github.com/slotix/dataflowkit)
 
-![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/spider/Spider-White-BG.png)
+![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/Spider-White-BG.png)
