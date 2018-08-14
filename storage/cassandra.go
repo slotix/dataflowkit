@@ -96,7 +96,7 @@ func (c cassandra) readIntermediate(key string) ([]byte, error) {
 			return nil, fmt.Errorf("Failed to read key: %s. %s", key, err.Error())
 		}
 		for k, v := range get {
-			if string([]rune(v)[0]) == "[" {
+			if len(v) > 0 && string([]rune(v)[0]) == "[" {
 				var strArray []string
 				err := json.Unmarshal([]byte(v), &strArray)
 				if err != nil {
