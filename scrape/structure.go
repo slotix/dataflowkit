@@ -33,7 +33,7 @@ type paginator struct {
 	// Default value is 1.
 	// Set this value to 0 to indicate an unlimited number of pages to be scraped.
 	//
-	MaxPages       int  `json:"maxPages"`
+	MaxPages       int  `json:"-"`
 	InfiniteScroll bool `json:"infiniteScroll"`
 }
 

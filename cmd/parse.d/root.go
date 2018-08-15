@@ -123,7 +123,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
 	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "c", "127.0.0.1", "Cassandra host address")
 
-	RootCmd.Flags().IntVarP(&maxPages, "MAX_PAGES", "", 1, "The maximum number of pages to scrape")
+	RootCmd.Flags().IntVarP(&maxPages, "MAX_PAGES", "", 10, "The maximum number of pages to scrape")
 	RootCmd.Flags().BoolVarP(&paginateResults, "PAGINATE_RESULTS", "", false, "Paginated results are returned. Single list of combined results from every block on all pages is returned by default.")
 	RootCmd.Flags().IntVarP(&fetchDelay, "FETCH_DELAY", "", 500, "Specifies sleep time in milliseconds for multiple requests for the same domain.")
 	RootCmd.Flags().BoolVarP(&randomizeFetchDelay, "RANDOMIZE_FETCH_DELAY", "", true, "RandomizeFetchDelay setting decreases the chance of a crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay to 1.5 * FetchDelay seconds is used between consecutive requests to the same domain. If FetchDelay is zero this option has no effect.")

@@ -166,7 +166,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		}
 	case "json":
 		e = JSONEncoder{
-			//		paginateResults: *task.Payload.PaginateResults,
+		//		paginateResults: *task.Payload.PaginateResults,
 		}
 	case "xml":
 		e = XMLEncoder{}
@@ -400,7 +400,7 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 			}
 			// Repeat until we don't have any more URLs, or until we hit our page limit.
 			if len(url) != 0 &&
-				task.Payload.Paginator.MaxPages > 0 && tw.currentPageNum < task.Payload.Paginator.MaxPages {
+				task.Payload.Paginator.MaxPages > 0 && tw.currentPageNum < task.Payload.Paginator.MaxPages-1 {
 				paginatorPayload := task.Payload
 				paginatorPayload.Request.URL = url
 				//paginatorPayload.Request = paginatorPayload.initRequest(url)
@@ -410,9 +410,9 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 					return nil, err
 				}
 				curPageNum := tw.currentPageNum + 1
-				if tw.scraper.IsPath {
+				/* if tw.scraper.IsPath {
 					curPageNum = 0
-				}
+				} */
 				paginatorTW := taskWorker{
 					wg:             tw.wg,
 					currentPageNum: curPageNum,
@@ -446,7 +446,12 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 
 	// Divide this page into blocks
 	for i, blockSel := range blockSelections {
-		ref := fmt.Sprintf("%s-%d-%d", tw.UID, tw.currentPageNum, i)
+		// if scraper contain path then page ref should always be 0
+		curPageNum := tw.currentPageNum
+		if tw.scraper.IsPath {
+			curPageNum = 0
+		}
+		ref := fmt.Sprintf("%s-%d-%d", tw.UID, curPageNum, i)
 		block := blockStruct{
 			blockSelection:  blockSel,
 			key:             ref,
