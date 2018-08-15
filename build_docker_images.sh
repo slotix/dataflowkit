@@ -10,4 +10,3 @@ docker build --rm -f testserver/Dockerfile -t 'slotix/dfk-testserver' .
 #docker push slotix/dfk-fetch
 #docker push slotix/dfk-parse
 #docker push slotix/dfk-testserver
-#docker push slotix/dfk-webserver
