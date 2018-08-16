@@ -23,39 +23,31 @@
 
 [[constraint]]
   name = "github.com/PuerkitoBio/goquery"
-  version = "1.3.0"
+  version = "1.4.1"
 
 [[constraint]]
-  name = "github.com/alicebob/miniredis"
-  version = "2.3.2"
-
-[[constraint]]
-  name = "github.com/aws/aws-sdk-go"
-  version = "1.13.10"
-
-[[constraint]]
-  name = "github.com/clbanning/mxj"
-  version = "1.6.1"
-
-[[constraint]]
-  name = "github.com/garyburd/redigo"
-  version = "1.6.0"
+  branch = "master"
+  name = "github.com/alecthomas/template"
 
 [[constraint]]
   name = "github.com/go-kit/kit"
-  version = "0.6.0"
+  version = "0.7.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/gocql/gocql"
 
 [[constraint]]
   name = "github.com/gorilla/mux"
-  version = "1.6.1"
+  version = "1.6.2"
+
+[[constraint]]
+  name = "github.com/mafredri/cdp"
+  version = "0.18.5"
 
 [[constraint]]
   name = "github.com/peterbourgon/diskv"
   version = "2.0.1"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/pquerna/cachecontrol"
 
 [[constraint]]
   name = "github.com/segmentio/ksuid"
@@ -63,19 +55,19 @@
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
-  version = "1.0.4"
+  version = "1.0.6"
 
 [[constraint]]
   name = "github.com/spf13/cobra"
-  version = "0.0.1"
+  version = "0.0.3"
 
 [[constraint]]
   name = "github.com/spf13/viper"
-  branch = "master"
+  version = "1.1.0"
 
 [[constraint]]
   name = "github.com/stretchr/testify"
-  version = "1.2.1"
+  version = "1.2.2"
 
 [[constraint]]
   branch = "master"
@@ -86,5 +78,5 @@
   name = "golang.org/x/net"
 
 [[constraint]]
-  name = "gopkg.in/redsync.v1"
-  version = "1.0.1"
+  branch = "master"
+  name = "golang.org/x/sync"
