@@ -130,6 +130,18 @@ func init() {
 		//os.Setenv("DFK_FETCH", DFKFetch)
 	}
 
+	if os.Getenv("CHROME") != "" {
+		viper.Set("CHROME", os.Getenv("CHROME"))
+	} else {
+		viper.BindPFlag("CHROME", RootCmd.Flags().Lookup("CHROME"))
+	}
+
+	if os.Getenv("CASSANDRA") != "" {
+		viper.Set("CASSANDRA", os.Getenv("CASSANDRA"))
+	} else {
+		viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
+	}
+
 	if os.Getenv("DISKV_BASE_DIR") != "" {
 		//viper.BindEnv("DISKV_BASE_DIR")
 		viper.Set("DISKV_BASE_DIR", os.Getenv("DISKV_BASE_DIR"))
