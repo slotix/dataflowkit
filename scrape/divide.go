@@ -24,8 +24,8 @@ func attrOrDataValue(s *goquery.Selection) (value string) {
 		return ""
 	}
 	attr, exists := s.Attr("class")
+	attr = strings.TrimSpace(attr)
 	if exists && attr != "" { //in some cases tag is invalid f.e. <tr class>
-		attr = strings.TrimSpace(attr)
 		var re = regexp.MustCompile(`\n?\s{1,}`)
 		attr = "." + re.ReplaceAllString(attr, `.`)
 		return attr
