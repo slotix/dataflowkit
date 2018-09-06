@@ -162,7 +162,7 @@ cd $GOPATH/src/github.com/slotix/dataflowkit/parse/parse.d && go build && ./pars
 
 
 ## Front-End
-Try http://scrape.dataflowkit.org Front-end with Point-and-click interface to Dataflow kit services. It generates JSON config file and sends POST request to DFK Parser 
+Try https://dataflowkit.org/dfk Front-end with Point-and-click interface to Dataflow kit services. It generates JSON config file and sends POST request to DFK Parser 
 
 [![IMAGE ALT Dataflow kit web scraping framework](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/dfk-screenshot1.png)](https://youtu.be/5gRcftONmTU)
 
