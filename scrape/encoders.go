@@ -307,6 +307,9 @@ func (e CSVEncoder) formatFieldValue(block *map[string]interface{}, fieldName st
 	switch v := (*block)[fieldName].(type) {
 	case string:
 		formatedString = v
+		if strings.Contains(formatedString, ",") {
+			formatedString = fmt.Sprintf("\"%s\"", formatedString)
+		}
 	case []string:
 		formatedString = strings.Join(v, ";")
 	case int:
