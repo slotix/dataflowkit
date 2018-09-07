@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
-	"golang.org/x/net/publicsuffix"
 )
 
 // Service defines Fetch service interface
@@ -34,18 +32,18 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 		fetcher = newFetcher(Base)
 	}
 	var (
-		jar     http.CookieJar
+		//jar     http.CookieJar
 		cookies []byte
 		cArr    []*http.Cookie
 		s       storage.Store
 	)
 
-	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
+	/* jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
 	jar, err := cookiejar.New(jarOpts)
 	if err != nil {
 		logger.Error("Failed to create Cookie Jar")
 
-	}
+	} */
 	u, err := url.Parse(req.getURL())
 	if err != nil {
 		return nil, err
@@ -55,7 +53,7 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 		s = storage.NewStore(storageType)
 		cookies, err = s.Read(storage.Record{
 			Type: storage.COOKIES,
-			Key:  req.UserToken,
+			Key:  req.UserToken + u.Host,
 		})
 		if err != nil {
 			logger.Warningf("Failed to read cookie for %s. %s", req.UserToken, err.Error())
@@ -67,7 +65,7 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 				return nil, err
 			}
 
-			tempCarr := []*http.Cookie{}
+			/* tempCarr := []*http.Cookie{}
 			for i := 0; i < len(cArr); i++ {
 				c := cArr[i]
 				if u.Host == c.Domain {
@@ -76,24 +74,30 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 					i--
 				}
 			}
-			jar.SetCookies(u, tempCarr)
+			jar.SetCookies(u, tempCarr) */
+			fetcher.setCookies(u, cArr)
 		}
 	}
-	fetcher.setCookieJar(jar)
+	//fetcher.setCookieJar(jar)
 	res, err := fetcher.Fetch(req)
 	if err != nil {
 		return nil, err
 	}
 	if req.UserToken != "" {
-		jar = fetcher.getCookieJar()
-		cArr = append(cArr, jar.Cookies(u)...)
-		cookies, err = json.Marshal(cArr)
+		//jar = fetcher.getCookieJar()
+		cooks, err := fetcher.getCookies(u)
+		if err != nil {
+			logger.Warning(err)
+			return res, nil
+		}
+		//cArr = append(cArr, cooks...)
+		cookies, err = json.Marshal(cooks)
 		if err != nil {
 			return nil, err
 		}
 		err = s.Write(storage.Record{
 			Type:    storage.COOKIES,
-			Key:     req.UserToken,
+			Key:     req.UserToken + u.Host,
 			Value:   cookies,
 			ExpTime: 0,
 		})
