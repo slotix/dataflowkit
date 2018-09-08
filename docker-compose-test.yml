@@ -2,12 +2,10 @@ version: '3'
 
 services:
   chrome:
-    image: justinribeiro/chrome-headless
+    image: yukinying/chrome-headless-browser:65.0.3322.3
     cap_add:
       - SYS_ADMIN
-    restart: always
-    ports:
-      - "9222:9222"
+    entrypoint: /usr/bin/dumb-init -- /usr/bin/google-chrome-unstable --disable-gpu --headless --disable-dev-shm-usage --remote-debugging-address=0.0.0.0 --remote-debugging-port=9222 --user-data-dir=/data
 
   cassandra:
     #image: cassandra
