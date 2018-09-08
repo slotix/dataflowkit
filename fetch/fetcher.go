@@ -155,6 +155,8 @@ func (bf *BaseFetcher) response(r Request) (*http.Response, error) {
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 		req.Header.Add("Content-Length", strconv.Itoa(len(formData.Encode())))
 	}
+	//TODO: Add UA to requests
+	//req.Header.Add("User-Agent", "Dataflow kit - https://github.com/slotix/dataflowkit")
 	return bf.doRequest(req)
 }
 
@@ -468,6 +470,8 @@ func (f *ChromeFetcher) interceptRequest(ctx context.Context, formData string, k
 				interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
 				interceptedArgs.SetMethod("POST")
 				interceptedArgs.SetPostData(formData)
+				//TODO: add UserAgent Header here 
+				//req.Header.Add("User-Agent", "Dataflow kit - https://github.com/slotix/dataflowkit")
 				fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`, len(formData))
 				interceptedArgs.Headers = []byte(fData)
 				if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {

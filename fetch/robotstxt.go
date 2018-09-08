@@ -70,13 +70,13 @@ func AllowedByRobots(rawurl string, robotsData *robotstxt.RobotsData) bool {
 	if err != nil {
 		logger.Error("err")
 	}
-	return robotsData.TestAgent(parsedURL.Path, "DataflowKitBot")
+	return robotsData.TestAgent(parsedURL.Path, "Dataflow Kit")
 }
 
 //getCrawlDelay retrieves Crawl-delay directive from robots.txt. Crawl-delay is not in the standard robots.txt protocol, and according to Wikipedia, some bots have different interpretations for this value. That's why maybe many websites don't even bother defining the rate limits in robots.txt. Crawl-delay value does not have an effect on delays between consecutive requests to the same domain for the moment. FetchDelay and RandomizeFetchDelay from ScrapeOptions are used for throttling a crawler speed.
 func getCrawlDelay(r *robotstxt.RobotsData) time.Duration {
 	if r != nil {
-		group := r.FindGroup("DataflowKitBot")
+		group := r.FindGroup("Dataflow Kit")
 		return group.CrawlDelay
 	}
 	return 0
