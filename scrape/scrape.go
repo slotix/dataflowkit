@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/slotix/dataflowkit/storage"
@@ -76,16 +77,16 @@ func NewTask(p Payload) *Task {
 		Robots:       make(map[string]*robotstxt.RobotsData),
 		Parsed:       false,
 		BlockCounter: []int{},
+		requestCount: make(map[string]uint32),
 		storage:      storage.NewStore(storageType),
 		mx:           &sync.Mutex{},
 	}
 
 }
 
-// Parse processes specified task which parses fetched page.
+// Parse specified payload.
 func (task *Task) Parse() (io.ReadCloser, error) {
-
-	scraper, err := task.Payload.newScraper()
+	scraper, err := task.Payload.newScraper("initial")
 	if err != nil {
 		return nil, err
 	}
@@ -178,11 +179,12 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		return nil, err
 	}
 	fName := ioutil.NopCloser(bytes.NewReader(r))
+	//logger.Info("Requests: ", task.requestCount)
 	return fName, err
 }
 
 // Create a new scraper with the provided configuration.
-func (p Payload) newScraper() (*Scraper, error) {
+func (p Payload) newScraper(reqType string) (*Scraper, error) {
 	parts, err := p.fields2parts()
 	if err != nil {
 		return nil, err
@@ -206,6 +208,7 @@ func (p Payload) newScraper() (*Scraper, error) {
 
 	scraper := &Scraper{
 		Request:    p.Request,
+		reqType:    reqType,
 		DividePage: dividePageFunc,
 		Parts:      parts,
 		Paginator:  paginator,
@@ -284,7 +287,7 @@ func (p Payload) newExtractor(t string, f *Field, part *Part, params *map[string
 			detailsPayload.Paginator = f.Details.Paginator
 			detailsPayload.IsPath = f.Details.IsPath
 			//Request refers to  srarting URL here. Requests will be changed in Scrape function to Details pages afterwards
-			scraper, err := detailsPayload.newScraper()
+			scraper, err := detailsPayload.newScraper("details")
 			if err != nil {
 				return nil, err
 			}
@@ -372,6 +375,7 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 	resultChan := make(chan io.ReadCloser)
 	fi := fetchInfo{
 		request: req,
+		reqType: tw.scraper.reqType,
 		result:  resultChan,
 		err:     errorChan,
 	}
@@ -404,7 +408,7 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 				paginatorPayload := task.Payload
 				paginatorPayload.Request.URL = url
 				//paginatorPayload.Request = paginatorPayload.initRequest(url)
-				paginatorScraper, err := paginatorPayload.newScraper()
+				paginatorScraper, err := paginatorPayload.newScraper("paginator")
 				if err != nil {
 					tw.wg.Done()
 					return nil, err
@@ -713,6 +717,10 @@ func (task *Task) fetchWorker(fc chan *fetchInfo) {
 				time.Sleep(*task.Payload.FetchDelay)
 			}
 		}
+
+		count := task.requestCount[fetch.reqType]
+		task.requestCount[fetch.reqType] = atomic.AddUint32(&count, 1)
+
 		content, err := fetchContent(fetch.request)
 		if err != nil {
 			fetch.err <- err

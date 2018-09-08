@@ -128,6 +128,8 @@ type Part struct {
 //Scraper struct consolidates settings for scraping task.
 type Scraper struct {
 	Request fetch.Request
+	//reqType may be "initial", "details", or "paginator"
+	reqType string
 	// Paginator is the Paginator to use for this current scrape.
 	//
 	// If Paginator is nil, then no pagination is performed and it is assumed that
@@ -187,8 +189,11 @@ type Task struct {
 	// Block counter
 	BlockCounter []int
 	// storage using to write result into corresponding storage type
-	storage storage.Store
-	mx      *sync.Mutex
+	storage       storage.Store
+	//number of requests divided by request type "initial", "paginator", "details"
+	requestCount  map[string]uint32
+	responseCount uint32
+	mx            *sync.Mutex
 }
 
 type worker struct {
@@ -217,5 +222,6 @@ type blockStruct struct {
 type fetchInfo struct {
 	result  chan<- io.ReadCloser
 	request fetch.Request
+	reqType string
 	err     chan<- error
 }
