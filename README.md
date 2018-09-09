@@ -145,8 +145,11 @@ Click on image to see CLI in action.
 ### Manual way
 
 1. Start Chrome docker container 
+``` 
+docker run --init -it --rm -d --name chrome --shm-size=1024m -p=127.0.0.1:9222:9222 --cap-add=SYS_ADMIN \
+  yukinying/chrome-headless-browser:65.0.3322.3
+```
 
-``` docker run -d -it -rm -p 9222:9222 --cap-add=SYS_ADMIN justinribeiro/chrome-headless```
 
 [Headless Chrome](https://developers.google.com/web/updates/2017/04/headless-chrome) is used for fetching web pages to feed a Dataflow kit parser. 
 
