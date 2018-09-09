@@ -386,6 +386,7 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 		tw.wg.Done()
 		return nil, err
 	case content = <-resultChan:
+		//todo:increment response
 	}
 
 	// Create a goquery document.
@@ -717,9 +718,11 @@ func (task *Task) fetchWorker(fc chan *fetchInfo) {
 				time.Sleep(*task.Payload.FetchDelay)
 			}
 		}
-
+		
+		task.mx.Lock()
 		count := task.requestCount[fetch.reqType]
 		task.requestCount[fetch.reqType] = atomic.AddUint32(&count, 1)
+		task.mx.Unlock()
 
 		content, err := fetchContent(fetch.request)
 		if err != nil {
