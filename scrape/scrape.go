@@ -86,6 +86,7 @@ func NewTask(p Payload) *Task {
 
 // Parse specified payload.
 func (task *Task) Parse() (io.ReadCloser, error) {
+	begin := time.Now()
 	scraper, err := task.Payload.newScraper("initial")
 	if err != nil {
 		return nil, err
@@ -178,9 +179,18 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	fName := ioutil.NopCloser(bytes.NewReader(r))
-	//logger.Info("Requests: ", task.requestCount)
-	return fName, err
+	m := map[string]interface{}{
+		"Task ID":     task.ID,
+		"Requests":    task.requestCount,
+		"Responses":   task.responseCount,
+		"Output file": string(r),
+		"Took":        time.Since(begin).String(),
+	}
+	parseResults, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	return ioutil.NopCloser(bytes.NewReader(parseResults)), err
 }
 
 // Create a new scraper with the provided configuration.
@@ -386,7 +396,11 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 		tw.wg.Done()
 		return nil, err
 	case content = <-resultChan:
-		//todo:increment response
+		//increment Task response count
+		task.mx.Lock()
+		count := task.responseCount
+		task.responseCount = atomic.AddUint32(&count, 1)
+		task.mx.Unlock()
 	}
 
 	// Create a goquery document.
@@ -718,7 +732,7 @@ func (task *Task) fetchWorker(fc chan *fetchInfo) {
 				time.Sleep(*task.Payload.FetchDelay)
 			}
 		}
-		
+		//increment Task request count
 		task.mx.Lock()
 		count := task.requestCount[fetch.reqType]
 		task.requestCount[fetch.reqType] = atomic.AddUint32(&count, 1)
