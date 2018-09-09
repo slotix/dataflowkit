@@ -457,7 +457,7 @@ func (f *ChromeFetcher) interceptRequest(ctx context.Context, formData string, k
 
 			if r.Request.Method != "POST" {
 				interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
-				if r.ResourceType == page.ResourceTypeImage || r.ResourceType == page.ResourceTypeStylesheet || isExclude(r.Request.URL) {
+				if r.ResourceType == network.ResourceTypeImage || r.ResourceType == network.ResourceTypeStylesheet || isExclude(r.Request.URL) {
 					interceptedArgs.SetErrorReason(network.ErrorReasonAborted)
 				}
 				if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
