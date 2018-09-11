@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"go.uber.org/zap"
+
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
 )
@@ -41,7 +43,7 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 	/* jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
 	jar, err := cookiejar.New(jarOpts)
 	if err != nil {
-		logger.Error("Failed to create Cookie Jar")
+		logger.Error("failed to create Cookie Jar")
 
 	} */
 	u, err := url.Parse(req.getURL())
@@ -56,7 +58,10 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 			Key:  req.UserToken + u.Host,
 		})
 		if err != nil {
-			logger.Warningf("Failed to read cookie for %s. %s", req.UserToken, err.Error())
+			logger.Warn(
+				"Failed to read cookie. ",
+				zap.String("User Token", req.UserToken),
+				zap.Error(err))
 		}
 		cArr = []*http.Cookie{}
 		if len(cookies) != 0 {
@@ -103,7 +108,10 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 		})
 
 		if err != nil {
-			logger.Warningf("Failed to write cookie for %s. %s", req.UserToken, err.Error())
+			logger.Warn(
+				"Failed to write cookie. ",
+				zap.String("User Token", req.UserToken),
+				zap.Error(err))
 		}
 		s.Close()
 	}

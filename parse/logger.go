@@ -1,13 +1,12 @@
 package parse
 
 import (
-	"github.com/slotix/dataflowkit/logger"
-
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
-var logger *logrus.Logger
+var logger *zap.Logger
 
 func init() {
-	logger = log.NewLogger(true)
+	logger, _ = zap.NewDevelopment()
+
 }

@@ -4,16 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-	"github.com/slotix/dataflowkit/logger"
 	"github.com/spf13/viper"
 )
-
-var logger *logrus.Logger
-
-func init() {
-	logger = log.NewLogger(true)
-}
 
 //Storage types
 const (

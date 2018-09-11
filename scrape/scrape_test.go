@@ -2,6 +2,7 @@ package scrape
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"io/ioutil"
 	"os"
@@ -250,11 +251,14 @@ func TestParseDetails(t *testing.T) {
 	//JSON details output
 	task := NewTask(detailsPayload)
 	r, err := task.Parse()
-	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
-	resultFile := buf.Bytes()
-	actual, err := ioutil.ReadFile(filepath.Join("./", string(resultFile)))
+	str := make(map[string]interface{})
+	err = json.Unmarshal(buf.Bytes(), &str)
+	assert.NoError(t, err)
+
+	resultFile := str["Output file"]
+	actual, err := ioutil.ReadFile(filepath.Join("./", resultFile.(string)))
 	assert.NoError(t, err)
 	golden := filepath.Join("../testdata", "details.json")
 	if *update {
@@ -323,8 +327,11 @@ func TestParse(t *testing.T) {
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
-	resultFile := buf.Bytes()
-	actual, err := ioutil.ReadFile(filepath.Join("./", string(resultFile)))
+	str := make(map[string]interface{})
+	err = json.Unmarshal(buf.Bytes(), &str)
+	assert.NoError(t, err)
+	resultFile := str["Output file"]
+	actual, err := ioutil.ReadFile(filepath.Join("./", resultFile.(string)))
 	assert.NoError(t, err)
 	//t.Log(string(got))
 	golden := filepath.Join("../testdata", "res.json")
@@ -360,8 +367,11 @@ func TestParse(t *testing.T) {
 	assert.NoError(t, err)
 	buf = new(bytes.Buffer)
 	buf.ReadFrom(r)
-	resultFile = buf.Bytes()
-	actual, err = ioutil.ReadFile(filepath.Join("./", string(resultFile)))
+	str = make(map[string]interface{})
+	err = json.Unmarshal(buf.Bytes(), &str)
+	assert.NoError(t, err)
+	resultFile = str["Output file"]
+	actual, err = ioutil.ReadFile(filepath.Join("./", resultFile.(string)))
 	assert.NoError(t, err)
 	golden = filepath.Join("../testdata", "res.xml")
 	if *update {
@@ -470,8 +480,11 @@ func TestCSVEncode(t *testing.T) {
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
-	resultFile := buf.Bytes()
-	actual, err := ioutil.ReadFile(filepath.Join("./", string(resultFile)))
+	str := make(map[string]interface{})
+	err = json.Unmarshal(buf.Bytes(), &str)
+	assert.NoError(t, err)
+	resultFile := str["Output file"]
+	actual, err := ioutil.ReadFile(filepath.Join("./", resultFile.(string)))
 	assert.NoError(t, err)
 	golden := filepath.Join("../testdata", "CSVEncode.csv")
 	if *update {
@@ -500,8 +513,11 @@ func TestXMLEncode(t *testing.T) {
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
-	resultFile := buf.Bytes()
-	actual, err := ioutil.ReadFile(filepath.Join("./", string(resultFile)))
+	str := make(map[string]interface{})
+	err = json.Unmarshal(buf.Bytes(), &str)
+	assert.NoError(t, err)
+	resultFile := str["Output file"]
+	actual, err := ioutil.ReadFile(filepath.Join("./", resultFile.(string)))
 	assert.NoError(t, err)
 	golden := filepath.Join("../testdata", "XMLEncode.xml")
 	if *update {

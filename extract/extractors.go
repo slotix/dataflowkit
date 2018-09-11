@@ -9,19 +9,12 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/slotix/dataflowkit/logger"
 	"github.com/slotix/dataflowkit/utils"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/sirupsen/logrus"
+
 	"golang.org/x/net/html"
 )
-
-var logger *logrus.Logger
-
-func init() {
-	logger = log.NewLogger(true)
-}
 
 // The Extractor interface represents something that can extract data from
 // a selection.
@@ -289,7 +282,7 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 				//transform relative url to absolute url
 				val, err = utils.RelUrl(e.BaseURL, val)
 				if err != nil {
-					logger.Error(err)
+					logger.Error(err.Error())
 				}
 			}
 			filtered := filterText(val, e.Filters)

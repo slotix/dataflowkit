@@ -34,8 +34,9 @@ func newCassandra(host string) *cassandra {
 	cluster.Consistency = gocql.One
 	s, err := cluster.CreateSession()
 	if err != nil {
-		logger.Error(err)
+		logger.Error(err.Error())
 	}
+
 	return &cassandra{cluster: cluster, session: s}
 }
 

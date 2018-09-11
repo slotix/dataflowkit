@@ -101,7 +101,7 @@ func newFetcher(t Type) Fetcher {
 	case Chrome:
 		return newChromeFetcher()
 	default:
-		logger.Panicf("unhandled type: %#v", t)
+		logger.Panic(fmt.Sprintf("unhandled type: %#v", t))
 	}
 	panic("unreachable")
 }
@@ -115,7 +115,7 @@ func newBaseFetcher() *BaseFetcher {
 	if len(proxy) > 0 {
 		proxyURL, err := url.Parse(proxy)
 		if err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 			return nil
 		}
 		transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
@@ -243,7 +243,7 @@ func newChromeFetcher() *ChromeFetcher {
 	if len(proxy) > 0 {
 		proxyURL, err := url.Parse(proxy)
 		if err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 			return nil
 		}
 		transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
@@ -554,7 +554,7 @@ func (f *ChromeFetcher) interceptRequest(ctx context.Context, originURL string, 
 		case <-cl.Ready():
 			r, err := cl.Recv()
 			if err != nil {
-				logger.Error(err)
+				logger.Error(err.Error())
 				sig = true
 				continue
 			}
@@ -566,17 +566,23 @@ func (f *ChromeFetcher) interceptRequest(ctx context.Context, originURL string, 
 				fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`, len(formData))
 				interceptedArgs.Headers = []byte(fData)
 				if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
-					logger.Error(err)
+					logger.Error(err.Error())
 					sig = true
 					continue
 				}
 			} else {
 				interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
-				if r.ResourceType == page.ResourceTypeImage || r.ResourceType == page.ResourceTypeStylesheet || isExclude(r.Request.URL) {
+				if r.ResourceType == network.ResourceTypeImage || r.ResourceType == network.ResourceTypeStylesheet || isExclude(r.Request.URL) {
 					interceptedArgs.SetErrorReason(network.ErrorReasonAborted)
 				}
+				interceptedArgs.SetMethod("POST")
+				interceptedArgs.SetPostData(formData)
+				//TODO: add UserAgent Header here
+				//req.Header.Add("User-Agent", "Dataflow kit - https://github.com/slotix/dataflowkit")
+				fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`, len(formData))
+				interceptedArgs.Headers = []byte(fData)
 				if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
-					logger.Error(err)
+					logger.Error(err.Error())
 					sig = true
 					continue
 				}
