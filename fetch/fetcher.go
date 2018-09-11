@@ -575,12 +575,6 @@ func (f *ChromeFetcher) interceptRequest(ctx context.Context, originURL string, 
 				if r.ResourceType == network.ResourceTypeImage || r.ResourceType == network.ResourceTypeStylesheet || isExclude(r.Request.URL) {
 					interceptedArgs.SetErrorReason(network.ErrorReasonAborted)
 				}
-				interceptedArgs.SetMethod("POST")
-				interceptedArgs.SetPostData(formData)
-				//TODO: add UserAgent Header here
-				//req.Header.Add("User-Agent", "Dataflow kit - https://github.com/slotix/dataflowkit")
-				fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`, len(formData))
-				interceptedArgs.Headers = []byte(fData)
 				if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
 					logger.Error(err.Error())
 					sig = true
