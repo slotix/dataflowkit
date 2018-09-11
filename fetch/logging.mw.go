@@ -4,11 +4,11 @@ import (
 	"io"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 // LoggingMiddleware logs Service endpoints
-func LoggingMiddleware(logger *logrus.Logger) ServiceMiddleware {
+func LoggingMiddleware(logger *zap.Logger) ServiceMiddleware {
 	return func(next Service) Service {
 		return loggingMiddleware{next, logger}
 	}
@@ -18,23 +18,28 @@ func LoggingMiddleware(logger *logrus.Logger) ServiceMiddleware {
 // Add logger property to this type
 type loggingMiddleware struct {
 	Service
-	logger *logrus.Logger
+	logger *zap.Logger
 }
 
-// Fetch logs requests to Fetch endpoint
 func (mw loggingMiddleware) Fetch(req Request) (out io.ReadCloser, err error) {
 	defer func(begin time.Time) {
 		url := req.getURL()
+		out, err = mw.Service.Fetch(req)
 		if err == nil {
-			mw.logger.WithFields(
-				logrus.Fields{
-					"fetcher": req.Type,
-					"func":    "Fetch",
-					"took":    time.Since(begin),
-				}).Info("Fetch URL: ", url)
+			mw.logger.Info("Fetch",
+				zap.String("URL", url),
+				zap.String("fetcher", req.Type),
+				zap.Duration("took", time.Since(begin)),
+			)
+		} else {
+			mw.logger.Error("Fetch",
+				zap.String("URL", url),
+				zap.String("fetcher", req.Type),
+				zap.Error(err),
+				zap.Duration("took", time.Since(begin)),
+			)
 		}
-		//don't log errors here. They all will be reported at transport.go func encodeError()
 	}(time.Now())
-	out, err = mw.Service.Fetch(req)
+
 	return
 }

@@ -1,4 +1,4 @@
-package fetch
+package extract
 
 import (
 	"go.uber.org/zap"

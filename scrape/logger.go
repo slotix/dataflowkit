@@ -1,4 +1,4 @@
-package fetch
+package scrape
 
 import (
 	"go.uber.org/zap"
@@ -7,6 +7,6 @@ import (
 var logger *zap.Logger
 
 func init() {
-	logger, _ = zap.NewDevelopment()
+	logger, _ = zap.NewProduction()
 
 }

@@ -4,12 +4,12 @@ import (
 	"io"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/slotix/dataflowkit/scrape"
+	"go.uber.org/zap"
 )
 
 // LoggingMiddleware logs Parse Service endpoints
-func LoggingMiddleware(logger *logrus.Logger) ServiceMiddleware {
+func LoggingMiddleware(logger *zap.Logger) ServiceMiddleware {
 	return func(next Service) Service {
 		return loggingMiddleware{next, logger}
 	}
@@ -19,7 +19,7 @@ func LoggingMiddleware(logger *logrus.Logger) ServiceMiddleware {
 // Add logger property to this type
 type loggingMiddleware struct {
 	Service
-	logger *logrus.Logger
+	logger *zap.Logger
 }
 
 // Logging Parse Service
@@ -28,18 +28,16 @@ func (mw loggingMiddleware) Parse(payload scrape.Payload) (output io.ReadCloser,
 		output, err = mw.Service.Parse(payload)
 		url := payload.Request.URL
 		if err != nil {
-			mw.logger.WithFields(
-				logrus.Fields{
-					"err":     err,
-					"fetcher": payload.Request.Type,
-					"took":    time.Since(begin),
-				}).Error("Parse URL: ", url)
+			mw.logger.Info("Parse",
+				zap.String("URL", url),
+				zap.String("fetcher", payload.Request.Type),
+				zap.Error(err),
+				zap.Duration("took", time.Since(begin)))
 		} else {
-			mw.logger.WithFields(
-				logrus.Fields{
-					"fetcher": payload.Request.Type,
-					"took":    time.Since(begin),
-				}).Info("Parse URL: ", url)
+			mw.logger.Info("Parse",
+				zap.String("URL", url),
+				zap.String("fetcher", payload.Request.Type),
+				zap.Duration("took", time.Since(begin)))
 		}
 	}(time.Now())
 	return

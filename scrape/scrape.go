@@ -15,29 +15,22 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/slotix/dataflowkit/storage"
+	"go.uber.org/zap"
 
-	"github.com/sirupsen/logrus"
+	"github.com/slotix/dataflowkit/storage"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/segmentio/ksuid"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/fetch"
-	"github.com/slotix/dataflowkit/logger"
 	"github.com/slotix/dataflowkit/paginate"
 	"github.com/slotix/dataflowkit/utils"
 	"github.com/spf13/viper"
 	"github.com/temoto/robotstxt"
 )
 
-var logger *logrus.Logger
-
 var fetchCannel chan *fetchInfo
-
-func init() {
-	logger = log.NewLogger(true)
-}
 
 // NewTask creates new task to parse fetched page following the rules from Payload.
 func NewTask(p Payload) *Task {
@@ -328,7 +321,7 @@ func (p Payload) newExtractor(t string, f *Field, part *Part, params *map[string
 		e = &extract.OuterHtml{}
 
 	default:
-		logger.Error(errors.New(t + ": Unknown selector type"))
+		logger.Error(t + ": Unknown selector type")
 		return nil, nil
 	}
 	return &e, nil
@@ -339,7 +332,7 @@ func (task *Task) allowedByRobots(req fetch.Request) error {
 	host, err := req.Host()
 	if err != nil {
 		task.Errors = append(task.Errors, err)
-		logger.Error(err)
+		logger.Error(err.Error())
 		//return err
 	}
 	if _, ok := task.Robots[host]; !ok {
@@ -350,12 +343,8 @@ func (task *Task) allowedByRobots(req fetch.Request) error {
 				return err1
 			}
 			task.Errors = append(task.Errors, err)
-			logger.WithFields(
-				logrus.Fields{
-					"err": err,
-				}).Warn("Robots.txt URL: ", robotsURL)
-			//logger.Warning(err)
-			//return err
+			logger.Warn(err.Error(),
+				zap.String("Robots.txt URL", robotsURL))
 		}
 		task.Robots[host] = robots
 	}
@@ -505,7 +494,7 @@ func (p Payload) selectors() ([]string, error) {
 func fetchContent(req fetch.Request) (io.ReadCloser, error) {
 	svc, err := fetch.NewHTTPClient(viper.GetString("DFK_FETCH"))
 	if err != nil {
-		logger.Error(err)
+		logger.Error(err.Error())
 	}
 	return svc.Fetch(req)
 }
@@ -581,7 +570,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
 			extractedPartResults, err := part.Extractor.Extract(sel)
 			task.mx.Unlock()
 			if err != nil {
-				logger.Error(err)
+				logger.Error(err.Error())
 				return
 			}
 
@@ -646,7 +635,7 @@ func (task *Task) scrapeDetails(extractedPartResults interface{}, part *Part, wr
 		tw.scraper.Request.Type = task.Payload.Request.Type
 		_, err := task.scrape(&tw)
 		if err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 			return false
 		}
 		if wrk.scraper.IsPath {
@@ -660,7 +649,9 @@ func (task *Task) scrapeDetails(extractedPartResults interface{}, part *Part, wr
 		j, err := json.Marshal(tw.keys)
 		if err != nil {
 			//return nil, err
-			logger.Warning(fmt.Errorf("Failed to marshal details key. %s", err.Error()))
+			// logger.Warning(fmt.Errorf("Failed to marshal details key. %s", err.Error()))
+			logger.Warn("Failed to marshal details key. ",
+				zap.Error(err))
 			return false
 		}
 		err = task.storage.Write(storage.Record{
@@ -670,7 +661,9 @@ func (task *Task) scrapeDetails(extractedPartResults interface{}, part *Part, wr
 			ExpTime: 0,
 		})
 		if err != nil {
-			logger.Warning(fmt.Errorf("Failed to write %s. %s", string(uid), err.Error()))
+			// logger.Warning(fmt.Errorf("Failed to write %s. %s", string(uid), err.Error()))
+			logger.Warn("Failed to write ",
+				zap.String("UID", string(uid)), zap.Error(err))
 			return false
 		}
 	}
@@ -686,7 +679,7 @@ func (task *Task) saveToStorage(blockResults *map[string]interface{}, wrk *worke
 
 	output, err := json.Marshal(blockResults)
 	if err != nil {
-		logger.Error(err)
+		logger.Error(err.Error())
 	}
 	if !wrk.scraper.IsPath {
 		task.mx.Lock()
@@ -699,11 +692,11 @@ func (task *Task) saveToStorage(blockResults *map[string]interface{}, wrk *worke
 			keys := strings.Split(block.key, "-")
 			pageNum, err := strconv.Atoi(keys[1])
 			if err != nil {
-				logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()))
+				logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()).Error())
 			}
 			blockNum, err := strconv.Atoi(keys[2])
 			if err != nil {
-				logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()))
+				logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()).Error())
 			}
 			(*block.keys)[pageNum] = append((*block.keys)[pageNum], blockNum)
 		}
@@ -714,7 +707,7 @@ func (task *Task) saveToStorage(blockResults *map[string]interface{}, wrk *worke
 			ExpTime: 0,
 		})
 		if err != nil {
-			logger.Error(fmt.Errorf("Failed to write %s. %s", key, err.Error()))
+			logger.Error(fmt.Errorf("Failed to write %s. %s", key, err.Error()).Error())
 		}
 		task.mx.Unlock()
 	}

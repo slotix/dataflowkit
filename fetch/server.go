@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	"sync"
 	"time"
 
-	"github.com/slotix/dataflowkit/logger"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // Config provides basic configuration
@@ -28,7 +30,20 @@ func Start(cfg Config) *HTMLServer {
 	ctx := context.Background()
 	_, cancel := context.WithCancel(ctx)
 	defer cancel()
-	logger := log.NewLogger(false)
+	encoderCfg := zapcore.EncoderConfig{
+		TimeKey:        "ts",
+		MessageKey:     "msg",
+		LevelKey:       "level",
+		NameKey:        "fetcher",
+		EncodeLevel:    zapcore.CapitalColorLevelEncoder,
+		EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
+		EncodeName:     zapcore.FullNameEncoder,
+	}
+	core := zapcore.NewCore(zapcore.NewConsoleEncoder(encoderCfg), os.Stdout, zapcore.DebugLevel)
+	logger := zap.New(core)
+
+	defer logger.Sync() // flushes buffer, if any
 
 	var svc Service
 	svc = FetchService{}
@@ -40,7 +55,7 @@ func Start(cfg Config) *HTMLServer {
 		fetchEndpoint: makeFetchEndpoint(svc),
 	}
 
-	r := newHttpHandler(ctx, endpoints, logger)
+	r := newHttpHandler(ctx, endpoints)
 
 	// Create the HTML Server
 	htmlServer := HTMLServer{

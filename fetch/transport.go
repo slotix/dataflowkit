@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/sirupsen/logrus"
 
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
@@ -16,7 +15,7 @@ import (
 )
 
 // newHttpHandler mounts all of the service endpoints into an http.Handler.
-func newHttpHandler(ctx context.Context, endpoint endpoints, logger *logrus.Logger) http.Handler {
+func newHttpHandler(ctx context.Context, endpoint endpoints) http.Handler {
 	r := mux.NewRouter()
 	r.UseEncodedPath()
 	options := []httptransport.ServerOption{
@@ -65,7 +64,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	if err == nil {
 		panic("encodeError with nil error")
 	}
-
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
 	var httpStatus int

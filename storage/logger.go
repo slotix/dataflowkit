@@ -1,4 +1,4 @@
-package fetch
+package storage
 
 import (
 	"go.uber.org/zap"

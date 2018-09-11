@@ -19,16 +19,7 @@ import (
 	"net/url"
 	"strconv"
 	"time"
-
-	"github.com/sirupsen/logrus"
-	"github.com/slotix/dataflowkit/logger"
 )
-
-var logger *logrus.Logger
-
-func init() {
-	logger = log.NewLogger(true)
-}
 
 // GenerateMD5 returns MD5 hash of provided byte array.
 func GenerateMD5(b []byte) []byte {

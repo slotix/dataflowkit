@@ -96,7 +96,7 @@ func (e JSONEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]
 				// 	w.WriteString("],[")
 				// }
 			} else {
-				logger.Error(err)
+				logger.Error(err.Error())
 				continue
 			}
 		}
@@ -105,7 +105,7 @@ func (e JSONEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]
 		}
 		blockJSON, err := json.Marshal(block)
 		if err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 		}
 		if !writeComma {
 			writeComma = !writeComma
@@ -153,11 +153,11 @@ func (r *storageResultReader) init() {
 			Key:  r.payloadMD5,
 		})
 		if err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 		}
 		err = json.Unmarshal(keysJSON, &r.payloadMap)
 		if err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 		}
 	}
 	for k := range r.payloadMap {
@@ -279,7 +279,7 @@ func (e CSVEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]i
 			} else if err.Error() == errs.NextPage {
 				//next page
 			} else {
-				logger.Error(err)
+				logger.Error(err.Error())
 				//we have to continue 'cause we still have other records
 				continue
 			}
@@ -291,11 +291,11 @@ func (e CSVEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]i
 		sString = strings.TrimSuffix(sString, ",") + "\n"
 		_, err = w.WriteString(sString)
 		if err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 		}
 		err = w.Flush()
 		if err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 		}
 	}
 	s.Close()
@@ -354,7 +354,7 @@ func (e XMLEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]i
 			} else if err.Error() == errs.NextPage {
 				//next page
 			} else {
-				logger.Error(err)
+				logger.Error(err.Error())
 				//we have to continue 'cause we still have other records
 				continue
 			}
@@ -362,7 +362,7 @@ func (e XMLEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]i
 		e.writeXML(w, &block)
 		err = w.Flush()
 		if err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 		}
 	}
 	s.Close()

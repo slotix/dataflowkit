@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/sirupsen/logrus"
 
 	"context"
 
@@ -71,7 +70,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		//return 504 Status
 		httpStatus = http.StatusGatewayTimeout
 	}
-	logger.Error(err)
+	logger.Error(err.Error())
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(httpStatus)
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -103,7 +102,7 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // NewHttpHandler mounts all of the service endpoints into an http.Handler.
-func NewHttpHandler(ctx context.Context, endpoint Endpoints, logger *logrus.Logger) http.Handler {
+func NewHttpHandler(ctx context.Context, endpoint Endpoints) http.Handler {
 	r := mux.NewRouter()
 	options := []httptransport.ServerOption{
 		httptransport.ServerErrorEncoder(encodeError),

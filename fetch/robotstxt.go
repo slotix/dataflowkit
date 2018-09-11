@@ -68,7 +68,7 @@ func AllowedByRobots(rawurl string, robotsData *robotstxt.RobotsData) bool {
 	}
 	parsedURL, err := url.Parse(rawurl)
 	if err != nil {
-		logger.Error("err")
+		logger.Error("error parsing URL")
 	}
 	return robotsData.TestAgent(parsedURL.Path, "Dataflow Kit")
 }

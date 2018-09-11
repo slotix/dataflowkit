@@ -38,10 +38,7 @@ func TestFetchServiceMW(t *testing.T) {
 	htmlServer := Start(serverCfg)
 	defer htmlServer.Stop()
 
-	svc, err := NewHTTPClient(fetchServer)
-	if err != nil {
-		logger.Error(err)
-	}
+	svc, _ := NewHTTPClient(fetchServer)
 	svc = RobotsTxtMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
@@ -66,7 +63,7 @@ func TestFetchServiceMW(t *testing.T) {
 		ExpTime: 0,
 	}
 	//write cookies to storage
-	err = st.Write(rec)
+	err := st.Write(rec)
 	if err != nil {
 		t.Log(err)
 	}

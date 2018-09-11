@@ -91,10 +91,7 @@ func Test_service(t *testing.T) {
 	defer parseServer.Stop()
 
 	//create HTTPClient to send requests.
-	svc1, err := NewHTTPClient(parseServerAddr)
-	if err != nil {
-		logger.Error(err)
-	}
+	svc1, _ := NewHTTPClient(parseServerAddr)
 	result, err = svc1.Parse(payloadChrome)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)

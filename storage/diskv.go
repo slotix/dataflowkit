@@ -59,7 +59,7 @@ func (d DiskvConn) Expired(rec Record) bool {
 	//file last modification time
 	fStat, err := os.Stat(fullPath)
 	if err != nil {
-		logger.Error(err)
+		logger.Error(err.Error())
 		return true
 	}
 	mTime := fStat.ModTime().UTC()
