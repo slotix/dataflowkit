@@ -493,8 +493,17 @@ func fetchContent(req fetch.Request) (io.ReadCloser, error) {
 
 //partNames returns Part Names which are used as a header of output CSV
 func (s Scraper) partNames() []string {
+	scr := s
+	for scr.IsPath {
+		for _, part := range scr.Parts {
+			if len(part.Details.Parts) > 0 {
+				scr = part.Details
+				break
+			}
+		}
+	}
 	names := []string{}
-	for _, part := range s.Parts {
+	for _, part := range scr.Parts {
 		names = append(names, part.Name)
 	}
 	return names
