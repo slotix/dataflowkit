@@ -92,7 +92,7 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 		//jar = fetcher.getCookieJar()
 		cooks, err := fetcher.getCookies(u)
 		if err != nil {
-			logger.Warning(err)
+			logger.Warn(err.Error())
 			return res, nil
 		}
 		//cArr = append(cArr, cooks...)
