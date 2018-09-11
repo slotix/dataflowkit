@@ -10,12 +10,15 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"net/http/cookiejar"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
@@ -26,6 +29,7 @@ import (
 	"github.com/mafredri/cdp/rpcc"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/spf13/viper"
+	"golang.org/x/net/publicsuffix"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -50,6 +54,8 @@ type Fetcher interface {
 	Fetch(request Request) (io.ReadCloser, error)
 	getCookieJar() http.CookieJar
 	setCookieJar(jar http.CookieJar)
+	getCookies(u *url.URL) ([]*http.Cookie, error)
+	setCookies(u *url.URL, cookies []*http.Cookie) error
 }
 
 //Request struct contains request information sent to  Fetchers
@@ -84,6 +90,7 @@ type BaseFetcher struct {
 type ChromeFetcher struct {
 	cdpClient *cdp.Client
 	client    *http.Client
+	cookies   []*http.Cookie
 }
 
 //newFetcher creates instances of Fetcher for downloading a web page.
@@ -118,6 +125,12 @@ func newBaseFetcher() *BaseFetcher {
 	}
 	f := &BaseFetcher{
 		client: client,
+	}
+	jarOpts := &cookiejar.Options{PublicSuffixList: publicsuffix.List}
+	var err error
+	f.client.Jar, err = cookiejar.New(jarOpts)
+	if err != nil {
+		return nil
 	}
 	return f
 }
@@ -197,6 +210,15 @@ func (bf *BaseFetcher) getCookieJar() http.CookieJar { //*cookiejar.Jar {
 func (bf *BaseFetcher) setCookieJar(jar http.CookieJar) {
 
 	bf.client.Jar = jar
+}
+
+func (bf *BaseFetcher) getCookies(u *url.URL) ([]*http.Cookie, error) {
+	return bf.client.Jar.Cookies(u), nil
+}
+
+func (bf *BaseFetcher) setCookies(u *url.URL, cookies []*http.Cookie) error {
+	bf.client.Jar.SetCookies(u, cookies)
+	return nil
 }
 
 // parseFormData is used for converting formdata string to url.Values type
@@ -331,6 +353,14 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	); err != nil {
 		return nil, err
 	}
+	/* err = f.cookiejar2networkCookies(request.getURL())
+	if err != nil {
+		return nil, err
+	} */
+	err = f.loadCookies()
+	if err != nil {
+		return nil, err
+	}
 	domLoadTimeout := 60 * time.Second
 	if request.FormData == "" {
 		err = f.navigate(ctx, f.cdpClient.Page, "GET", request.getURL(), "", domLoadTimeout)
@@ -348,6 +378,15 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	u, err := url.Parse(request.getURL())
+	if err != nil {
+		return nil, err
+	}
+	f.cookies, err = f.saveCookies(u)
+	if err != nil {
+		return nil, err
 	}
 
 	// Fetch the document root node. We can pass nil here
@@ -418,7 +457,7 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 	}
 
 	kill := make(chan bool)
-	go f.interceptRequest(ctx, formData, kill)
+	go f.interceptRequest(ctx, url, formData, kill)
 	_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
 	if err != nil {
 		return err
@@ -435,7 +474,72 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 	return nil
 }
 
-func (f *ChromeFetcher) interceptRequest(ctx context.Context, formData string, kill chan bool) {
+func (f *ChromeFetcher) setCookies(u *url.URL, cookies []*http.Cookie) error {
+	f.cookies = cookies
+	return nil
+}
+
+func (f *ChromeFetcher) loadCookies() error {
+	/* 	u, err := url.Parse(cookiesURL)
+	   	if err != nil {
+	   		return err
+	   	} */
+	for _, c := range f.cookies {
+		c1 := network.SetCookieArgs{
+			Name:  c.Name,
+			Value: c.Value,
+			Path:  &c.Path,
+			/* Expires:  expire, */
+			Domain:   &c.Domain,
+			HTTPOnly: &c.HttpOnly,
+			Secure:   &c.Secure,
+		}
+		if !c.Expires.IsZero() {
+			duration := c.Expires.Sub(time.Unix(0, 0))
+			c1.Expires = network.TimeSinceEpoch(duration / time.Second)
+		}
+		_, err := f.cdpClient.Network.SetCookie(context.Background(), &c1)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (f *ChromeFetcher) getCookies(u *url.URL) ([]*http.Cookie, error) {
+	return f.cookies, nil
+}
+
+func (f *ChromeFetcher) saveCookies(u *url.URL) ([]*http.Cookie, error) {
+	ncookies, err := f.cdpClient.Network.GetCookies(context.Background(), &network.GetCookiesArgs{URLs: []string{u.String()}})
+	if err != nil {
+		return nil, err
+	}
+	cookies := []*http.Cookie{}
+	for _, c := range ncookies.Cookies {
+
+		c1 := http.Cookie{
+			Name:  c.Name,
+			Value: c.Value,
+			Path:  c.Path,
+			/* Expires:  expire, */
+			Domain:   c.Domain,
+			HttpOnly: c.HTTPOnly,
+			Secure:   c.Secure,
+		}
+		if c.Expires > -1 {
+			sec, dec := math.Modf(c.Expires)
+			expire := time.Unix(int64(sec), int64(dec*(1e9)))
+			/* logger.Info(expire.String())
+			logger.Info(expire.Format("2006-01-02 15:04:05")) */
+			c1.Expires = expire
+		}
+		cookies = append(cookies, &c1)
+	}
+	return cookies, nil
+}
+
+func (f *ChromeFetcher) interceptRequest(ctx context.Context, originURL string, formData string, kill chan bool) {
 	var sig = false
 	cl, err := f.cdpClient.Network.RequestIntercepted(ctx)
 	if err != nil {
@@ -455,9 +559,20 @@ func (f *ChromeFetcher) interceptRequest(ctx context.Context, formData string, k
 				continue
 			}
 
-			if r.Request.Method != "POST" {
+			if len(formData) > 0 && r.Request.URL == originURL && r.RedirectURL == nil {
 				interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
-				if r.ResourceType == network.ResourceTypeImage || r.ResourceType == network.ResourceTypeStylesheet || isExclude(r.Request.URL) {
+				interceptedArgs.SetMethod("POST")
+				interceptedArgs.SetPostData(formData)
+				fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`, len(formData))
+				interceptedArgs.Headers = []byte(fData)
+				if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
+					logger.Error(err)
+					sig = true
+					continue
+				}
+			} else {
+				interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
+				if r.ResourceType == page.ResourceTypeImage || r.ResourceType == page.ResourceTypeStylesheet || isExclude(r.Request.URL) {
 					interceptedArgs.SetErrorReason(network.ErrorReasonAborted)
 				}
 				if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
@@ -466,19 +581,6 @@ func (f *ChromeFetcher) interceptRequest(ctx context.Context, formData string, k
 					continue
 				}
 				continue
-			} else {
-				interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
-				interceptedArgs.SetMethod("POST")
-				interceptedArgs.SetPostData(formData)
-				//TODO: add UserAgent Header here 
-				//req.Header.Add("User-Agent", "Dataflow kit - https://github.com/slotix/dataflowkit")
-				fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`, len(formData))
-				interceptedArgs.Headers = []byte(fData)
-				if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
-					logger.Error(err)
-					sig = true
-					continue
-				}
 			}
 		case <-kill:
 			sig = true
