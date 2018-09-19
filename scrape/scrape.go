@@ -50,9 +50,11 @@ func NewTask(p Payload) *Task {
 		if p.Paginator.MaxPages == 0 {
 			p.Paginator.MaxPages = viper.GetInt("MAX_PAGES")
 		}
-		if p.Paginator.InfiniteScroll {
-			p.Request.InfiniteScroll = true
+		p.Request.PaginatorType = p.Paginator.Type
+		if p.Paginator.Type != "next" {
+			p.Request.MoreButtonSelector = p.Paginator.Selector
 			p.Request.Type = "chrome"
+			p.Request.PageCount = p.Paginator.MaxPages
 		}
 	}
 	if p.PaginateResults == nil {
@@ -400,7 +402,7 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 	}
 
 	if task.Payload.Paginator != nil {
-		if !task.Payload.Paginator.InfiniteScroll {
+		if task.Payload.Paginator.Type == "next" {
 			url, err = tw.scraper.Paginator.NextPage(url, doc.Selection)
 			if err != nil {
 				tw.wg.Done()

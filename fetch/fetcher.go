@@ -76,8 +76,12 @@ type Request struct {
 	FormData string `json:"formData,omitempty"`
 	//UserToken identifies user to keep personal cookies information.
 	UserToken string `json:"userToken"`
-	//InfiniteScroll option is used for fetching web pages with Continuous Scrolling
-	InfiniteScroll bool `json:"infiniteScroll"`
+	//PaginatorType option is used for identify paginator type.
+	PaginatorType string `json:"paginatorType"`
+	//MoreButtonSelector
+	MoreButtonSelector string `json:"moreButtonSelector"`
+	//PageNum
+	PageCount int
 }
 
 // BaseFetcher is a Fetcher that uses the Go standard library's http
@@ -372,9 +376,18 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	if request.InfiniteScroll {
+	if request.PaginatorType == "infinite" {
 		path := filepath.Join(viper.GetString("CHROME_SCRIPTS"), "scroll2bottom.js")
-		err = f.runJSFromFile(ctx, path)
+		// TODO: add max page count param
+		err = f.runJSFromFile(ctx, path, fmt.Sprintf("ScrollDown(%d);", request.PageCount))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if request.PaginatorType == "more" {
+		path := filepath.Join(viper.GetString("CHROME_SCRIPTS"), "scroll2bottom.js")
+		err = f.runJSFromFile(ctx, path, fmt.Sprintf(`ScrollDown(%d, "%s");`, request.PageCount, request.MoreButtonSelector))
 		if err != nil {
 			return nil, err
 		}
@@ -438,39 +451,39 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 		return err
 	}
 
-	/* if method == "GET" {
+	if method == "GET" {
 		_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
 		if err != nil {
 			return err
 		}
-	} else { */
-	ast := "*"
-	pattern := network.RequestPattern{URLPattern: &ast}
-	patterns := []network.RequestPattern{pattern}
+	} else {
+		ast := "*"
+		pattern := network.RequestPattern{URLPattern: &ast}
+		patterns := []network.RequestPattern{pattern}
 
-	f.cdpClient.Network.SetCacheDisabled(ctx, network.NewSetCacheDisabledArgs(true))
+		f.cdpClient.Network.SetCacheDisabled(ctx, network.NewSetCacheDisabledArgs(true))
 
-	interArgs := network.NewSetRequestInterceptionArgs(patterns)
-	err = f.cdpClient.Network.SetRequestInterception(ctx, interArgs)
-	if err != nil {
-		return err
+		interArgs := network.NewSetRequestInterceptionArgs(patterns)
+		err = f.cdpClient.Network.SetRequestInterception(ctx, interArgs)
+		if err != nil {
+			return err
+		}
+
+		kill := make(chan bool)
+		go f.interceptRequest(ctx, url, formData, kill)
+		_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
+		if err != nil {
+			return err
+		}
+		kill <- true
 	}
-
-	kill := make(chan bool)
-	go f.interceptRequest(ctx, url, formData, kill)
-	_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
-	if err != nil {
-		return err
-	}
-
-	//}
 	_, err = loadEventFired.Recv()
-	kill <- true
+
 	if err != nil {
 		return err
 	}
 	loadEventFired.Close()
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(750 * time.Millisecond)
 	return nil
 }
 
@@ -599,11 +612,13 @@ func isExclude(origin string) bool {
 	return false
 }
 
-func (f ChromeFetcher) runJSFromFile(ctx context.Context, path string) error {
+func (f ChromeFetcher) runJSFromFile(ctx context.Context, path string, entryPointFunction string) error {
 	exp, err := ioutil.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
+
+	exp = append(exp, entryPointFunction...)
 
 	compileReply, err := f.cdpClient.Runtime.CompileScript(context.Background(), &runtime.CompileScriptArgs{
 		Expression:    string(exp),

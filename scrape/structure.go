@@ -33,8 +33,9 @@ type paginator struct {
 	// Default value is 1.
 	// Set this value to 0 to indicate an unlimited number of pages to be scraped.
 	//
-	MaxPages       int  `json:"-"`
-	InfiniteScroll bool `json:"infiniteScroll"`
+	MaxPages int `json:"-"`
+	// Type identify paginator type (next link, infinite scroll or more button)
+	Type string `json:"type"`
 }
 
 // Extractor type represents Extractor types available for scraping.
@@ -189,7 +190,7 @@ type Task struct {
 	// Block counter
 	BlockCounter []int
 	// storage using to write result into corresponding storage type
-	storage       storage.Store
+	storage storage.Store
 	//number of requests divided by request type "initial", "paginator", "details"
 	requestCount  map[string]uint32
 	responseCount uint32
