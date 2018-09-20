@@ -457,8 +457,8 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 			return err
 		}
 	} else {
-		ast := "*"
-		pattern := network.RequestPattern{URLPattern: &ast}
+		/* ast := "*" */
+		pattern := network.RequestPattern{URLPattern: &url}
 		patterns := []network.RequestPattern{pattern}
 
 		f.cdpClient.Network.SetCacheDisabled(ctx, network.NewSetCacheDisabledArgs(true))
