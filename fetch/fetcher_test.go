@@ -120,7 +120,7 @@ func TestChromeFetcher_Fetch(t *testing.T) {
 	req = Request{
 		Type:           "chrome",
 		URL:            "http://testserver:12345/status/200",
-		InfiniteScroll: true,
+		//InfiniteScroll: true,
 	}
 	resp, err = fetcher.Fetch(req)
 	assert.Nil(t, err, "Expected no error")
