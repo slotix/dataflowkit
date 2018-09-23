@@ -226,9 +226,9 @@ func TestNewTask(t *testing.T) {
 	viper.Set("MAX_PAGES", 10)
 	task := NewTask(Payload{
 		Paginator: &paginator{
-			Selector:       ".paginatorrr",
-			Attribute:      "href",
-			InfiniteScroll: true,
+			Selector:  ".paginatorrr",
+			Attribute: "href",
+			//InfiniteScroll: true,
 		},
 	})
 	assert.NotEmpty(t, task.ID)
