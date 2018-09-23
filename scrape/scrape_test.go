@@ -21,7 +21,7 @@ var (
 	delayFetch time.Duration
 	//paginateResults                bool
 	personsPayload, detailsPayload, CSVPayload, XMLPayload Payload
-	update                                                 = flag.Bool("update", false, "update result files")
+	update                                                 = flag.Bool("update", true, "update result files")
 )
 
 func init() {
@@ -226,9 +226,9 @@ func TestNewTask(t *testing.T) {
 	viper.Set("MAX_PAGES", 10)
 	task := NewTask(Payload{
 		Paginator: &paginator{
-			Selector:       ".paginatorrr",
-			Attribute:      "href",
-			InfiniteScroll: true,
+			Selector:  ".paginatorrr",
+			Attribute: "href",
+			//InfiniteScroll: true,
 		},
 	})
 	assert.NotEmpty(t, task.ID)
