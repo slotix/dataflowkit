@@ -26,6 +26,7 @@ const (
 	deleteCacheRowQuery            = "DELETE FROM cache WHERE key=?"
 	deleteCookiesRowQuery          = "DELETE FROM cookies WHERE key=?"
 	getTTLQuery                    = "SELECT TTL(%s) from %s"
+	isExists                       = "SELECT count(*) FROM intermediatemaps WHERE payloadhash = ?"
 )
 
 func newCassandra(host string) *cassandra {
@@ -59,6 +60,16 @@ func (c cassandra) Write(rec Record) error {
 	query := fmt.Sprintf(writeQuery, rec.Type, rec.Key, string(rec.Value), rec.ExpTime)
 	err := c.session.Query(query).Exec()
 	return err
+}
+
+func (c cassandra) IsExists(key string) bool {
+	var isExist int
+	err := c.session.Query(isExists, key).Scan(&isExist)
+	if err != nil {
+		logger.Error(err.Error())
+		return false
+	}
+	return isExist > 0
 }
 
 func (c cassandra) writeIntermediate(key string, value []byte, expTime int64) error {
