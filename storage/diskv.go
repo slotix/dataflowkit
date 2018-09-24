@@ -81,8 +81,8 @@ func (d DiskvConn) Expired(rec Record) bool {
 }
 
 // IsExists checkes whether specified record exists
-func (d DiskvConn) IsExists(key string) bool {
-	return d.diskv.Has(key)
+func (d DiskvConn) IsExists(rec Record) bool {
+	return d.diskv.Has(rec.Key)
 }
 
 //Delete deletes specified key from Diskv storage.

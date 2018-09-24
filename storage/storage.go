@@ -31,7 +31,7 @@ type Store interface {
 	//expTime set Metadata Expires value for S3Storage
 	Write(rec Record) error
 	// IsExists checkes whether specified by key record exists
-	IsExists(key string) bool
+	IsExists(rec Record) bool
 	//Is key expired ? It checks if parse results storage item is expired. Set up  Expiration as "ITEM_EXPIRE_IN" environment variable.
 	//html pages cache stores this info in sResponse.Expires . It is not used for fetch endpoint.
 	Expired(rec Record) bool

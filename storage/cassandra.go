@@ -26,7 +26,7 @@ const (
 	deleteCacheRowQuery            = "DELETE FROM cache WHERE key=?"
 	deleteCookiesRowQuery          = "DELETE FROM cookies WHERE key=?"
 	getTTLQuery                    = "SELECT TTL(%s) from %s"
-	isExists                       = "SELECT count(*) FROM intermediatemaps WHERE payloadhash = ?"
+	isExistsQuery                  = "SELECT count(*) FROM %s WHERE payloadhash = %s"
 )
 
 func newCassandra(host string) *cassandra {
@@ -62,9 +62,13 @@ func (c cassandra) Write(rec Record) error {
 	return err
 }
 
-func (c cassandra) IsExists(key string) bool {
+func (c cassandra) IsExists(rec Record) bool {
+	if rec.Type == INTERMEDIATE {
+		return c.isExistIntermediate(rec)
+	}
+	query := fmt.Sprintf(isExistsQuery, rec.Type, rec.Key)
 	var isExist int
-	err := c.session.Query(isExists, key).Scan(&isExist)
+	err := c.session.Query(query).Scan(&isExist)
 	if err != nil {
 		logger.Error(err.Error())
 		return false
@@ -129,6 +133,23 @@ func (c cassandra) readIntermediate(key string) ([]byte, error) {
 	var val string
 	err := c.session.Query(readIntermediateMapQuery, key).Scan(&val)
 	return []byte(val), err
+}
+
+func (c cassandra) isExistIntermediate(rec Record) bool {
+	var query string
+	var isExists int
+	keys := strings.Split(string(rec.Key), "-")
+	if len(keys) > 1 {
+		query = fmt.Sprintf(isExistsQuery, "intermediate", rec.Key)
+	} else {
+		query = fmt.Sprintf(isExistsQuery, "intermediatemaps", rec.Key)
+	}
+	err := c.session.Query(query).Scan(&isExists)
+	if err != nil {
+		logger.Error(err.Error())
+		return false
+	}
+	return isExists > 0
 }
 
 // Expired returns Expired value of specified key from Cassandra.
