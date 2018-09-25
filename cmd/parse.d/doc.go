@@ -14,8 +14,9 @@ Here is a simple example for requesting Parse endpoint:
   {
    "name":"collection",
    "request":{
-      "url":"https://example.com"
-      "formData":"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
+      "userToken":"7383ef32-525c-55d9-ac12-1bac76e0c802",
+      "url":"https://example.com",
+      "type": "chrome"
    },
    "fields":[
       {
@@ -55,15 +56,12 @@ Here is a simple example for requesting Parse endpoint:
       }
    ],
    "paginator":{
+      "type":"next",
       "selector":".next",
-      "attr":"href",
-      "maxPages":3
+      "attr":"href"
    },
-   "format":"json",
-   "fetcherType": "chrome",
-   "paginateResults":false
+   "format":"json"
   }'
-
 
 Name
 
@@ -72,21 +70,18 @@ Collection name
 Request
 
 Request parameters are passed to Fetch Endpoint for downloading html pages.
-url holds the URL address of the web page to be downloaded. URL is required. All other fields including are optional.
-
-formData is a string value for passing form data parameters.
-For example it may be used for processing pages which require authentication.
-  "auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
-
+url holds the URL address of the web page to be downloaded. URL is required. All other fields are optional.
+userToken identifies every unique user making requests. Cookies are stored as key/value for each unique user to handle multiple requests to a domain.
+type specifies fetcher type which may be "base" or "chrome" value.
 
 Fields
 
 A set of fields used to extract data from a web page.
-A Field represents a given chunk of data to be extracted from every block in each page of a scrape.
+A Field represents a given chunk of data to be extracted from every block on each page.
 
-Field name is required, and will be used to aggregate results.
+Field name is required, and is used to aggregate results.
 
-Selector represents a CSS selector within the given block to process.  Pass in "." to use the root block's selector.
+Selector represents a CSS selector for data extraction within the given block. Pass in "." to use the root block's selector.
 
 Extractor contains the logic on how to extract some results from the selector that is provided to this Field.
 
@@ -95,31 +90,19 @@ Paginator
 Paginator is used to scrape multiple pages.
 If there is no paginator in Payload, then no pagination is performed and it is assumed that the initial URL is the only page.
 Paginator extracts the next page from a document by querying a given CSS selector and extracting the given HTML attribute from the resulting element.
+There are three paginator types.
+"Next link" paginator type is used on pages containing Next Button Paginator link.
+"Infinite scroll" automatically loads content while user scrolls page down.
+"Load more Button" looks like "Next link" but loads content on its click.
 
-Selector represents corresponding CSS selector for the next page along with
-Attr defining HTML attribute for the next page.
-MaxPages sets upper bound to maximum number of pages to scrape. The scrape will proceed until either this number of pages have been scraped, or until the paginator returns no further URLs.
-Default value is 1.
-Set maxPages value to 0 to indicate an unlimited number of pages to be scraped.
+Type represents paginator type. The following are available: "next", "more", "infinite"
+Selector represents corresponding CSS selector for the "Next" link or "Load more" Button paginator types page along with
+Attr belong exclusively to "Next" link paginator to define HTML element attribute for the next page.
+
 
 Format
 
 The following Output formats are available: CSV, JSON, XML
-
-fetcherType
-
-fetcherType represents fetcher which is used for document download.
-Set it to either "chrome" or "base" value.
-If omitted in Payload, default fetcher type is defined as FETCHER_TYPE variable of parse.d service.
-fetcherType from Payload structure takes precedence over FETCHER_TYPE flag value.
-
-
-paginateResults
-
-Paginated results are returned if paginateResults is true.
-Single list of combined results from every block on all pages is returned by default.
-Paginated results are applicable for JSON and XML output formats.
-Combined list of results is always returned for CSV format.
 */
 //
 // Flags and configuration settings
@@ -129,10 +112,6 @@ Combined list of results is always returned for CSV format.
 //
 //    DFK_FETCH: HTTP listen address of Fetch service (defaults to "127.0.0.1:8000")
 //
-//    FETCHER_TYPE: represent fetcher which is used for document download.
-//    Set up it to either `base` or `chrome` values
-//    fetcherType from Payload structure takes precedence over FETCHER_TYPE flag value.
-//
 //Storage settings
 //
 //    STORAGE_TYPE: Storage backend for intermediary data passed to Dataflow
@@ -140,10 +119,12 @@ Combined list of results is always returned for CSV format.
 //    Types: Diskv, Cassandra
 //    (defaults to "Diskv"). It is case insensitive.
 //
-//    ITEM_EXPIRE_IN: Default value for item expiration in seconds (defaults to 3600)
+//    ITEM_EXPIRE_IN: Default value for item expiration in seconds (defaults to 86400)
 //
 //    DISKV_BASE_DIR: diskv base directory for storing parsed results (defaults to "diskv").
+//    RESULTS_DIR: Directory for storing results (defaults to "results").
 //    Find more information about Diskv storage at https://github.com/peterbourgon/diskv
+//    CASSANDRA: Cassandra host address (defaults to "127.0.0.1")
 //
 //Crawler settings
 //    MAX_PAGES: The maximum number of pages to scrape. The scrape will proceed

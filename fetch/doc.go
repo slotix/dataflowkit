@@ -13,7 +13,7 @@
 //
 // Currently two types of fetcher are available : Chrome Fetcher and Base Fetcher.
 //
-// Base fetcher is used for downloading html web page using Go standard library's http.
+// Base fetcher is used for downloading html web page using Go standard Http library.
 //
 // Chrome Fetcher connects to Headless Chrome which renders JavaScript pages.
 //

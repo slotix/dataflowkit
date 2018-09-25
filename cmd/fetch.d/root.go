@@ -57,7 +57,7 @@ var (
 var RootCmd = &cobra.Command{
 	Use:   "dataflowkit",
 	Short: "Dataflow Kit html fetcher",
-	Long:  `Dataflow Kit fetch service retrieves html pages from websites and passes content to DFK parser service.`,
+	Long:  `Dataflow Kit fetch service downloads html web pages and passes content to Dataflow Kit parse service.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Checking services ... ")
 		services := []healthcheck.Checker{
