@@ -95,13 +95,11 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	// Array of page keys
 	wg := sync.WaitGroup{}
 	uid := string(utils.GenerateCRC32([]byte(task.Payload.PayloadMD5)))
-	mx := sync.Mutex{}
 	tw := taskWorker{
 		wg:              &wg,
 		currentPageNum:  0,
 		scraper:         scraper,
 		UID:             uid,
-		mx:              &mx,
 		useBlockCounter: false,
 		keys:            make(map[int][]int),
 	}
@@ -430,7 +428,6 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 					currentPageNum: curPageNum,
 					scraper:        paginatorScraper,
 					UID:            tw.UID,
-					mx:             tw.mx,
 					keys:           tw.keys,
 				}
 				tw.wg.Add(1)

@@ -207,7 +207,6 @@ type taskWorker struct {
 	UID             string
 	currentPageNum  int
 	scraper         *Scraper
-	mx              *sync.Mutex
 	useBlockCounter bool
 	keys            map[int][]int
 }
