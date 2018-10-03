@@ -66,9 +66,9 @@ func NewTask(p Payload) *Task {
 	//tQueue := make(chan *Scraper, 100)
 	storageType := viper.GetString("STORAGE_TYPE")
 	return &Task{
-		ID:           id.String(),
-		Payload:      p,
-		Errors:       []error{},
+		ID:      id.String(),
+		Payload: p,
+		//Errors:       []error{},
 		Robots:       make(map[string]*robotstxt.RobotsData),
 		Parsed:       false,
 		BlockCounter: []int{},
@@ -107,6 +107,11 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	}
 	wg.Add(1)
 	_, err = task.scrape(&tw)
+	switch err.(type) {
+	//don't try to fetch a page with chrome fetcher if forbiddenByRobots error returned
+	case *errs.ForbiddenByRobots:
+		return nil, err
+	}
 	wg.Wait()
 	if !task.Parsed {
 		logger.Info("Failed to scrape with base fetcher. Reinitializing to scrape with Chrome fetcher.")
@@ -333,9 +338,7 @@ func (task *Task) allowedByRobots(req fetch.Request) error {
 	//get Robotstxt Data
 	host, err := req.Host()
 	if err != nil {
-		task.Errors = append(task.Errors, err)
-		logger.Error(err.Error())
-		//return err
+		return err
 	}
 	if _, ok := task.Robots[host]; !ok {
 		robots, err := fetch.RobotstxtData(req.URL)
@@ -344,7 +347,6 @@ func (task *Task) allowedByRobots(req fetch.Request) error {
 			if err1 != nil {
 				return err1
 			}
-			task.Errors = append(task.Errors, err)
 			logger.Warn(err.Error(),
 				zap.String("Robots.txt URL", robotsURL))
 		}
@@ -353,7 +355,7 @@ func (task *Task) allowedByRobots(req fetch.Request) error {
 
 	//check if scraping of current url is not forbidden
 	if !fetch.AllowedByRobots(req.URL, task.Robots[host]) {
-		task.Errors = append(task.Errors, &errs.ForbiddenByRobots{req.URL})
+		return &errs.ForbiddenByRobots{req.URL}
 	}
 	return nil
 }

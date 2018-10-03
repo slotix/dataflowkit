@@ -8,17 +8,22 @@
 
 // Fetcher service of the Dataflow kit downloads html content from web pages to feed Dataflow kit scrapers.
 //
-// Currently two types of fetcher are available : Headless Chrome Fetcher and Base Fetcher.
+// Currently two fetcher types are available : Headless Chrome Fetcher and Base Fetcher. 
 //
-// Base fetcher is used for downloading html web page using Go standard library's http.
+// Base fetcher is used for html web page download with Go standard Http library.
 //
-// Chrome Fetcher connects to Headless Chrome which renders JavaScript pages.
+// Chrome Fetcher connects to Headless Chrome which processes JavaScript pages and returns rendered content.
 //
 // Accessing Fetcher endpoints
 //
 // Examples
-//		fetch a web page using CDP
-//		curl -XPOST  localhost:8000/fetch -d '{"type":"chrome", "url":"http://example.com"}'
+//		fetch a web page using Chrome Fetcher
+//		curl -XPOST  localhost:8000/fetch -d '{"type":"chrome", "url":"http://example.com","formData":"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"}'
+//Set type to either "chrome" or "base" value.
+//formData is a string value for passing form data parameters.
+//For example it may be used for processing pages which require authentication.
+//"auth_key=880ea6a14ea49e853634fbdc5015a024&referer=http%3A%2F%2Fexample.com%2F&ips_username=user&ips_password=userpassword&rememberMe=1"
+//
 //		fetch a web page with base fetcher. For base fetcher type parameter may be omitted.
 //		curl -XPOST  localhost:8000/fetch -d '{"url":"http://example.com"}'
 //

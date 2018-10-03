@@ -78,9 +78,10 @@ type Request struct {
 	UserToken string `json:"userToken"`
 	//PaginatorType option is used for identify paginator type.
 	PaginatorType string `json:"paginatorType"`
-	//MoreButtonSelector
+	//MoreButtonSelector CSS selector of "More" Button element on a web page
 	MoreButtonSelector string `json:"moreButtonSelector"`
-	//PageNum
+	//PageCount sets number of pages to scrape. The scrape will proceed until either this number of pages have been reached, or until the paginator returns no further URLs or no more content could be loaded.
+	//PageCount parameter is used during scrape process and never used directly in Fetch service
 	PageCount int
 }
 

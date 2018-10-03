@@ -182,7 +182,7 @@ type Task struct {
 	// Always contains at least one element - the initial URL.
 	//Failed pages should be rescheduled for download at the end if during a scrape one of the following statuses returned [500, 502, 503, 504, 408]
 	//once the spider has finished crawling all other (non failed) pages.
-	Errors []error
+	//Errors []error
 	//TaskQueue chan *Scraper
 	Robots map[string]*robotstxt.RobotsData
 	//Results

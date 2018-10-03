@@ -5,7 +5,7 @@ import (
 )
 
 //VERSION represents the current version of the service
-var VERSION = "0.5"
+var VERSION = "0.8"
 var buildTime = "No buildstamp"
 
 func main() {

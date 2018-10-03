@@ -39,7 +39,7 @@ func TestFetchServiceMW(t *testing.T) {
 	defer htmlServer.Stop()
 
 	svc, _ := NewHTTPClient(fetchServer)
-	svc = RobotsTxtMiddleware()(svc)
+	//svc = RobotsTxtMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
 
 	cArr := []*http.Cookie{
@@ -140,14 +140,14 @@ func TestFetchServiceMW(t *testing.T) {
 	assert.Error(t, err, "Expected error")
 
 	//disallowed by robots
-	_, err = svc.Fetch(Request{
-		Type:      "base",
-		URL:       tsURL + "/redirect",
-		Method:    "GET",
-		UserToken: "12345",
-	})
+	// _, err = svc.Fetch(Request{
+	// 	Type:      "base",
+	// 	URL:       tsURL + "/redirect",
+	// 	Method:    "GET",
+	// 	UserToken: "12345",
+	// })
 
-	assert.Error(t, err, "Expected error")
+	// assert.Error(t, err, "Expected error")
 
 	//Test Chrome Fetcher
 	//svcChrome := FetchService{}
