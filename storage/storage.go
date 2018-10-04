@@ -56,6 +56,9 @@ func NewStore(sType string) Store {
 	case "cassandra":
 		cassandraHost := viper.GetString("CASSANDRA")
 		return newCassandra(cassandraHost)
+	case "mongodb":
+		mongoHost := viper.GetString("MONGO")
+		return newMongo(mongoHost)
 	default:
 		panic(errors.New("no storage type specified"))
 		// case "s3": //AWS S3

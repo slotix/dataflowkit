@@ -42,6 +42,7 @@ var (
 	resultsDir         string
 
 	cassandraHost string
+	mongoHost     string
 
 	maxPages            int
 	paginateResults     bool
@@ -117,11 +118,12 @@ func init() {
 
 	RootCmd.Flags().StringVarP(&DFKParse, "DFK_PARSE", "p", "127.0.0.1:8001", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
-	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: Diskv, Cassandra")
+	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "mongodb", "Storage backend for intermediary data passed to html parser. Types: Diskv, Cassandra")
 	RootCmd.Flags().StringVarP(&resultsDir, "RESULTS_DIR", "", "results", "Directory for storing results")
 	RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 86400, "Default value for item expiration in seconds")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
 	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "c", "127.0.0.1", "Cassandra host address")
+	RootCmd.Flags().StringVarP(&mongoHost, "MONGO", "", "127.0.0.1", "MongoDB host address")
 
 	RootCmd.Flags().IntVarP(&maxPages, "MAX_PAGES", "", 10, "The maximum number of pages to scrape")
 	RootCmd.Flags().BoolVarP(&paginateResults, "PAGINATE_RESULTS", "", false, "Paginated results are returned. Single list of combined results from every block on all pages is returned by default.")
@@ -152,11 +154,18 @@ func init() {
 		viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	}
 
+	if os.Getenv("MONGO") != "" {
+		viper.Set("MONGO", os.Getenv("MONGO"))
+	} else {
+		viper.BindPFlag("MONGO", RootCmd.Flags().Lookup("MONGO"))
+	}
+
 	viper.BindPFlag("RESULTS_DIR", RootCmd.Flags().Lookup("RESULTS_DIR"))
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
 	viper.BindPFlag("ITEM_EXPIRE_IN", RootCmd.Flags().Lookup("ITEM_EXPIRE_IN"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
+	viper.BindPFlag("MONGO", RootCmd.Flags().Lookup("MONGO"))
 
 	viper.BindPFlag("MAX_PAGES", RootCmd.Flags().Lookup("MAX_PAGES"))
 	viper.BindPFlag("PAGINATE_RESULTS", RootCmd.Flags().Lookup("PAGINATE_RESULTS"))
