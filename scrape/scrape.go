@@ -2,6 +2,7 @@ package scrape
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,8 +30,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/temoto/robotstxt"
 )
-
-var fetchCannel chan *fetchInfo
 
 // NewTask creates new task to parse fetched page following the rules from Payload.
 func NewTask(p Payload) *Task {
@@ -65,6 +64,7 @@ func NewTask(p Payload) *Task {
 	id := ksuid.New()
 	//tQueue := make(chan *Scraper, 100)
 	storageType := viper.GetString("STORAGE_TYPE")
+	ctx, cancel := context.WithCancel(context.Background())
 	return &Task{
 		ID:      id.String(),
 		Payload: p,
@@ -75,6 +75,9 @@ func NewTask(p Payload) *Task {
 		requestCount: make(map[string]uint32),
 		storage:      storage.NewStore(storageType),
 		mx:           &sync.Mutex{},
+		jobDone:      sync.WaitGroup{},
+		ctx:          ctx,
+		Cancel:       cancel,
 	}
 
 }
@@ -88,49 +91,53 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	}
 	//scrape request and return results.
 
-	fetchCannel = make(chan *fetchInfo, 100)
-	for i := 0; i < 50; i++ {
-		go task.fetchWorker(fetchCannel)
+	task.fetchChannel = make(chan *fetchInfo, viper.GetInt("FETCH_CHANNEL_SIZE"))
+	for i := 0; i < viper.GetInt("FETCH_WORKER_NUM"); i++ {
+		go task.fetchWorker(task.fetchChannel)
 	}
-	// Array of page keys
-	wg := sync.WaitGroup{}
+	task.blockChannel = make(chan *blockStruct, viper.GetInt("BLOCK_CHANNEL_SIZE"))
+	for i := 0; i < viper.GetInt("BLOCK_WORKER_NUM"); i++ {
+		go task.blockWorker(task.blockChannel)
+	}
+
+	defer task.closeTask()
+
 	uid := string(utils.GenerateCRC32([]byte(task.Payload.PayloadMD5)))
 	tw := taskWorker{
-		wg:              &wg,
 		currentPageNum:  0,
 		scraper:         scraper,
 		UID:             uid,
 		useBlockCounter: false,
 		keys:            make(map[int][]int),
 	}
-	wg.Add(1)
+	task.jobDone.Add(1)
 	_, err = task.scrape(&tw)
+	task.jobDone.Wait()
 	switch err.(type) {
 	//don't try to fetch a page with chrome fetcher if forbiddenByRobots error returned
 	case *errs.ForbiddenByRobots:
 		return nil, err
+	case *errs.Cancel:
+		return nil, err
 	}
-	wg.Wait()
 	if !task.Parsed {
 		logger.Info("Failed to scrape with base fetcher. Reinitializing to scrape with Chrome fetcher.")
 		if task.Payload.Request.Type == "chrome" {
-			close(fetchCannel)
 			return nil, err
 		}
 		task.Payload.Request.Type = "chrome"
 		scraper.Request.Type = "chrome"
-		//request := task.Payload.initRequest("")
-		//task.Payload.Request = request
-		//scraper.Request = request
-		wg.Add(1)
+		task.jobDone.Add(1)
 		_, err = task.scrape(&tw)
-		wg.Wait()
+		task.jobDone.Wait()
+		if err != nil {
+			return nil, err
+		}
+
 		if !task.Parsed {
-			close(fetchCannel)
 			return nil, err
 		}
 	}
-	close(fetchCannel)
 
 	if len(task.BlockCounter) > 0 {
 		tw.keys[0] = task.BlockCounter
@@ -258,13 +265,13 @@ func (p Payload) fields2parts() ([]Part, error) {
 	}
 	// Validate payload fields
 	if len(parts) == 0 {
-		return nil, &errs.BadPayload{errs.ErrNoParts}
+		return nil, &errs.BadPayload{ParserError: errs.ErrNoParts}
 	}
 
 	for _, part := range parts {
 		if len(part.Name) == 0 || len(part.Selector) == 0 {
 			e := fmt.Sprintf(errs.ErrNoPartOrSelectorProvided, part.Name+part.Selector)
-			return nil, &errs.BadPayload{e}
+			return nil, &errs.BadPayload{ParserError: e}
 		}
 
 	}
@@ -353,20 +360,20 @@ func (task *Task) allowedByRobots(req fetch.Request) error {
 
 	//check if scraping of current url is not forbidden
 	if !fetch.AllowedByRobots(req.URL, task.Robots[host]) {
-		return &errs.ForbiddenByRobots{req.URL}
+		return &errs.ForbiddenByRobots{URL: req.URL}
 	}
 	return nil
 }
 
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
 func (task *Task) scrape(tw *taskWorker) (*Results, error) {
-
+	defer task.jobDone.Done()
 	req := tw.scraper.Request
 	url := req.URL
 
 	err := task.allowedByRobots(req)
 	if err != nil {
-		//tw.wg.Done()
+		task.Cancel()
 		return nil, err
 	}
 
@@ -380,11 +387,11 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 		result:  resultChan,
 		err:     errorChan,
 	}
-	fetchCannel <- &fi
+	task.fetchChannel <- &fi
 	var content io.ReadCloser
 	select {
 	case err := <-errorChan:
-		tw.wg.Done()
+		task.Cancel()
 		return nil, err
 	case content = <-resultChan:
 		//increment Task response count
@@ -392,12 +399,14 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 		count := task.responseCount
 		task.responseCount = atomic.AddUint32(&count, 1)
 		task.mx.Unlock()
+	case <-task.ctx.Done():
+		return nil, &errs.Cancel{}
 	}
 
 	// Create a goquery document.
 	doc, err := goquery.NewDocumentFromReader(content)
 	if err != nil {
-		tw.wg.Done()
+		task.Cancel()
 		return nil, err
 	}
 
@@ -405,7 +414,7 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 		if task.Payload.Paginator.Type == "next" {
 			url, err = tw.scraper.Paginator.NextPage(url, doc.Selection)
 			if err != nil {
-				tw.wg.Done()
+				task.Cancel()
 				return nil, err
 			}
 			// Repeat until we don't have any more URLs, or until we hit our page limit.
@@ -416,7 +425,7 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 				//paginatorPayload.Request = paginatorPayload.initRequest(url)
 				paginatorScraper, err := paginatorPayload.newScraper("paginator")
 				if err != nil {
-					tw.wg.Done()
+					task.Cancel()
 					return nil, err
 				}
 				curPageNum := tw.currentPageNum + 1
@@ -424,13 +433,12 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 					curPageNum = 0
 				} */
 				paginatorTW := taskWorker{
-					wg:             tw.wg,
 					currentPageNum: curPageNum,
 					scraper:        paginatorScraper,
 					UID:            tw.UID,
 					keys:           tw.keys,
 				}
-				tw.wg.Add(1)
+				task.jobDone.Add(1)
 				go task.scrape(&paginatorTW)
 			}
 		}
@@ -439,21 +447,24 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 		// 	url = ""
 		// }
 	}
-	blocks := make(chan *blockStruct)
-	wg := sync.WaitGroup{}
-	wrk := &worker{
-		wg:      &wg,
-		scraper: tw.scraper,
-	}
 
 	blockSelections := tw.scraper.DividePage(doc.Selection)
-
-	for i := 0; i < 25; i++ {
-		wg.Add(1)
-		go task.blockWorker(blocks, wrk)
+	if len(blockSelections) == 0 {
+		return nil, &errs.NoBlocksToParse{URL: req.URL}
 	}
 
+	/* for i := 0; i < 25; i++ {
+		go task.blockWorker(blocks)
+	}
+	*/
 	// Divide this page into blocks
+	var detailsChannel chan *blockStruct
+	var detailsWG sync.WaitGroup
+	if tw.scraper.reqType == "details" {
+		detailsChannel = make(chan *blockStruct)
+		detailsWG = sync.WaitGroup{}
+		go task.blockWorker(detailsChannel)
+	}
 	for i, blockSel := range blockSelections {
 		// if scraper contain path then page ref should always be 0
 		curPageNum := tw.currentPageNum
@@ -467,12 +478,26 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 			hash:            tw.UID,
 			useBlockCounter: tw.useBlockCounter,
 			keys:            &tw.keys,
+			scraper:         tw.scraper,
 		}
-		blocks <- &block
+		if tw.scraper.reqType != "details" {
+			task.blockChannel <- &block
+			task.jobDone.Add(1)
+		} else {
+			block.wg = &detailsWG
+			detailsWG.Add(1)
+			detailsChannel <- &block
+		}
+		if i == 5 {
+			logger.Info("Canceling")
+			task.Cancel()
+			return nil, &errs.Cancel{}
+		}
 	}
-	close(blocks)
-	wg.Wait()
-	tw.wg.Done()
+	if tw.scraper.reqType == "details" {
+		detailsWG.Wait()
+		close(detailsChannel)
+	}
 	return nil, err
 
 }
@@ -486,7 +511,7 @@ func (p Payload) selectors() ([]string, error) {
 		}
 	}
 	if len(selectors) == 0 {
-		return nil, &errs.BadPayload{errs.ErrNoSelectors}
+		return nil, &errs.BadPayload{ParserError: errs.ErrNoSelectors}
 	}
 	return selectors, nil
 }
@@ -554,59 +579,72 @@ func (task Task) startTime() (*time.Time, error) {
 	return &idTime, nil
 }
 
-func (task *Task) blockWorker(blocks chan *blockStruct, wrk *worker) {
-	defer wrk.wg.Done()
-	url := wrk.scraper.Request.URL
+func (task *Task) blockWorker(blocks chan *blockStruct) {
+	//defer wrk.wg.Done()
 	for block := range blocks {
-		blockResults := map[string]interface{}{}
-
-		// Process each part of this block
-		for _, part := range wrk.scraper.Parts {
-			sel := block.blockSelection
-			if part.Selector != "." {
-				sel = sel.Find(part.Selector)
-			}
-			//update base URL to reflect attr relative URL change
-			/* switch part.Extractor.(type) {
-			case *extract.Attr: */
-			attr, ok := part.Extractor.(*extract.Attr)
-			if ok && (attr.Attr == "href" || attr.Attr == "src") {
+		select {
+		default:
+			blockResults := map[string]interface{}{}
+			// Process each part of this block
+			for _, part := range block.scraper.Parts {
+				sel := block.blockSelection
+				if part.Selector != "." {
+					sel = sel.Find(part.Selector)
+				}
+				//update base URL to reflect attr relative URL change
+				/* switch part.Extractor.(type) {
+				case *extract.Attr: */
+				attr, ok := part.Extractor.(*extract.Attr)
+				if ok && (attr.Attr == "href" || attr.Attr == "src") {
+					task.mx.Lock()
+					attr.BaseURL = block.scraper.Request.URL
+					task.mx.Unlock()
+				}
+				/* } */
 				task.mx.Lock()
-				attr.BaseURL = url
+				extractedPartResults, err := part.Extractor.Extract(sel)
 				task.mx.Unlock()
-			}
-			/* } */
-			task.mx.Lock()
-			extractedPartResults, err := part.Extractor.Extract(sel)
-			task.mx.Unlock()
-			if err != nil {
-				logger.Error(err.Error())
-				return
-			}
+				if err != nil {
+					logger.Error(err.Error())
+					return
+				}
 
-			// A nil response from an extractor means that we don't even include it in
-			// the results.
-			if extractedPartResults == nil {
-				continue
-			}
-			if !wrk.scraper.IsPath {
-				blockResults[part.Name] = extractedPartResults
-			}
-			//********* details
-			if len(part.Details.Parts) > 0 {
-				if !task.scrapeDetails(extractedPartResults, &part, wrk, block, &blockResults) {
+				// A nil response from an extractor means that we don't even include it in
+				// the results.
+				if extractedPartResults == nil {
 					continue
 				}
+				if !block.scraper.IsPath {
+					blockResults[part.Name] = extractedPartResults
+				}
+				//********* details
+				if len(part.Details.Parts) > 0 {
+					if !task.scrapeDetails(extractedPartResults, &part, block, &blockResults) {
+						continue
+					}
+				}
+				//********* end details
 			}
-			//********* end details
-		}
-		if len(blockResults) > 0 {
-			task.saveToStorage(&blockResults, wrk, block)
+			if len(blockResults) > 0 {
+				task.saveToStorage(&blockResults, block)
+			}
+			if block.wg != nil {
+				block.wg.Done()
+			} else {
+				task.jobDone.Done()
+			}
+		case <-task.ctx.Done():
+			if block.wg != nil {
+				block.wg.Done()
+			} else {
+				task.jobDone.Done()
+			}
+			//return
 		}
 	}
 }
 
-func (task *Task) scrapeDetails(extractedPartResults interface{}, part *Part, wrk *worker, block *blockStruct, blockResults *map[string]interface{}) bool {
+func (task *Task) scrapeDetails(extractedPartResults interface{}, part *Part, block *blockStruct, blockResults *map[string]interface{}) bool {
 	var requests []fetch.Request
 
 	switch extractedPartResults.(type) {
@@ -624,31 +662,28 @@ func (task *Task) scrapeDetails(extractedPartResults interface{}, part *Part, wr
 		//check if domain is the same for initial URL and details' URLs
 		//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
 
-		wg := sync.WaitGroup{}
 		var uid string
 		ubc := false
-		if wrk.scraper.IsPath {
+		if block.scraper.IsPath {
 			uid = block.hash
 			ubc = true
 		} else {
 			uid = string(utils.GenerateCRC32([]byte(r.URL)))
 		}
 		tw := taskWorker{
-			wg:              &wg,
 			currentPageNum:  0,
 			scraper:         &part.Details,
 			UID:             uid,
 			useBlockCounter: ubc,
 			keys:            make(map[int][]int),
 		}
-		wg.Add(1)
 		tw.scraper.Request.Type = task.Payload.Request.Type
+		task.jobDone.Add(1)
 		_, err := task.scrape(&tw)
 		if err != nil {
-			logger.Error(err.Error())
 			return false
 		}
-		if wrk.scraper.IsPath {
+		if block.scraper.IsPath {
 			return false
 		}
 		(*blockResults)[part.Name+"_details"] = uid //generate uid resDetails.AllBlocks()
@@ -680,7 +715,7 @@ func (task *Task) scrapeDetails(extractedPartResults interface{}, part *Part, wr
 	return true
 }
 
-func (task *Task) saveToStorage(blockResults *map[string]interface{}, wrk *worker, block *blockStruct) {
+func (task *Task) saveToStorage(blockResults *map[string]interface{}, block *blockStruct) {
 	task.mx.Lock()
 	if !task.Parsed {
 		task.Parsed = true
@@ -691,7 +726,7 @@ func (task *Task) saveToStorage(blockResults *map[string]interface{}, wrk *worke
 	if err != nil {
 		logger.Error(err.Error())
 	}
-	if !wrk.scraper.IsPath {
+	if !block.scraper.IsPath {
 		task.mx.Lock()
 		key := block.key
 		if block.useBlockCounter {
@@ -748,4 +783,10 @@ func (task *Task) fetchWorker(fc chan *fetchInfo) {
 			fetch.result <- content
 		}
 	}
+}
+
+func (task *Task) closeTask() {
+	close(task.fetchChannel)
+	close(task.blockChannel)
+	task.storage.Close()
 }

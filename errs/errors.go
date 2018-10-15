@@ -8,6 +8,10 @@
 
 package errs
 
+import (
+	"fmt"
+)
+
 // BadRequest 400 The server cannot or will not process the request due to an apparent client error (e.g., malformed request syntax, size too large, invalid request message framing, or deceptive request routing).
 type BadRequest struct {
 	Err error
@@ -138,4 +142,20 @@ type Error struct {
 
 func (e *Error) Error() string {
 	return e.Err
+}
+
+// Cancel error inform about operation canceled by user
+type Cancel struct {
+}
+
+func (c *Cancel) Error() string {
+	return "Operation canceled."
+}
+
+type NoBlocksToParse struct {
+	URL string
+}
+
+func (e *NoBlocksToParse) Error() string {
+	return fmt.Sprintf("No blocks found for current page. URL: %s", e.URL)
 }

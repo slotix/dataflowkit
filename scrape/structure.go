@@ -1,6 +1,7 @@
 package scrape
 
 import (
+	"context"
 	"io"
 	"sync"
 	"time"
@@ -195,15 +196,15 @@ type Task struct {
 	requestCount  map[string]uint32
 	responseCount uint32
 	mx            *sync.Mutex
-}
 
-type worker struct {
-	wg      *sync.WaitGroup
-	scraper *Scraper
+	fetchChannel chan *fetchInfo
+	blockChannel chan *blockStruct
+	jobDone      sync.WaitGroup
+	ctx          context.Context
+	Cancel       context.CancelFunc
 }
 
 type taskWorker struct {
-	wg              *sync.WaitGroup
 	UID             string
 	currentPageNum  int
 	scraper         *Scraper
@@ -217,6 +218,8 @@ type blockStruct struct {
 	hash            string
 	useBlockCounter bool
 	keys            *map[int][]int
+	wg              *sync.WaitGroup
+	scraper         *Scraper
 }
 
 type fetchInfo struct {

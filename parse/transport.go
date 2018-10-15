@@ -70,7 +70,6 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 		//return 504 Status
 		httpStatus = http.StatusGatewayTimeout
 	}
-	logger.Error(err.Error())
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(httpStatus)
 	json.NewEncoder(w).Encode(map[string]interface{}{

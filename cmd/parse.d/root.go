@@ -49,6 +49,11 @@ var (
 	fetchDelay          int
 	randomizeFetchDelay bool
 	ignoreFetchDelay    bool
+
+	fetchChannelSize int
+	blockChannelSize int
+	fetchWorkerNum   int
+	blockWorkerNum   int
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -131,6 +136,11 @@ func init() {
 	RootCmd.Flags().BoolVarP(&randomizeFetchDelay, "RANDOMIZE_FETCH_DELAY", "", true, "RandomizeFetchDelay setting decreases the chance of a crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay to 1.5 * FetchDelay seconds is used between consecutive requests to the same domain. If FetchDelay is zero this option has no effect.")
 	RootCmd.Flags().BoolVarP(&ignoreFetchDelay, "IGNORE_FETCH_DELAY", "", false, "Ignores fetchDelay setting intended for debug purpose. Please set it to false in Production")
 
+	RootCmd.Flags().IntVar(&fetchChannelSize, "FETCH_CHANNEL_SIZE", 100, "The size of fetcher pool")
+	RootCmd.Flags().IntVar(&fetchWorkerNum, "FETCH_WORKER_NUM", 50, "The number of fetcher workers")
+	RootCmd.Flags().IntVar(&blockChannelSize, "BLOCK_CHANNEL_SIZE", 20, "The size of block pool")
+	RootCmd.Flags().IntVar(&blockWorkerNum, "BLOCK_WORKER_NUM", 20, "The number of block workers")
+
 	//viper.AutomaticEnv() // read in environment variables that match
 
 	//Environment variable takes precedence over flag value
@@ -173,4 +183,8 @@ func init() {
 	viper.BindPFlag("RANDOMIZE_FETCH_DELAY", RootCmd.Flags().Lookup("RANDOMIZE_FETCH_DELAY"))
 	viper.BindPFlag("IGNORE_FETCH_DELAY", RootCmd.Flags().Lookup("IGNORE_FETCH_DELAY"))
 
+	viper.BindPFlag("FETCH_CHANNEL_SIZE", RootCmd.Flags().Lookup("FETCH_CHANNEL_SIZE"))
+	viper.BindPFlag("FETCH_WORKER_NUM", RootCmd.Flags().Lookup("FETCH_WORKER_NUM"))
+	viper.BindPFlag("BLOCK_CHANNEL_SIZE", RootCmd.Flags().Lookup("BLOCK_CHANNEL_SIZE"))
+	viper.BindPFlag("BLOCK_WORKER_NUM", RootCmd.Flags().Lookup("BLOCK_WORKER_NUM"))
 }
