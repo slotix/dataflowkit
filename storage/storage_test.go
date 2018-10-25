@@ -8,7 +8,7 @@ import (
 
 func TestNewStore(t *testing.T) {
 
-	for _, sType := range []string{ /*"S3", "Spaces",*/ "Diskv", "Cassandra"} {
+	for _, sType := range []string{ /*"S3", "Spaces",*/ "Diskv", "Cassandra", "mongodb"} {
 		store := NewStore(sType)
 		assert.NotNil(t, store)
 	}
