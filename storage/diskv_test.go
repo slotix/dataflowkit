@@ -21,6 +21,9 @@ func Test_diskv(t *testing.T) {
 	err := d.Write(rec)
 	assert.NoError(t, err, "Expected no error")
 
+	isExists := d.IsExists(rec)
+	assert.Equal(t, true, isExists, "Is rec exists in db")
+
 	value, _ := d.Read(Record{
 		Type: rec.Type,
 		Key:  rec.Key,

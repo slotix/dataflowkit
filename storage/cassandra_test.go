@@ -43,6 +43,11 @@ func Test_cassandra(t *testing.T) {
 		err = c.Write(r)
 		assert.NoError(t, err, "Expected no error")
 	}
+
+	//todo: doesn't pass the test
+	// isExists := c.IsExists(rec)
+	// assert.Equal(t, true, isExists, "Is rec exists in db")
+
 	value, _ := c.Read(Record{
 		Type: rec.Type,
 		Key:  rec.Key,
