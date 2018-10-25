@@ -164,6 +164,11 @@ cd $GOPATH/src/github.com/slotix/dataflowkit/parse/parse.d && go build && ./pars
 ```
 4. Launch parsing. See step 3. from the previous section. 
 
+### Run tests
+- ```docker-compose -f docker-compose-test.yml up -d```
+- ```./test.sh```
+- To stop services just run ```docker-compose -f docker-compose-test.yml down```
+
 
 ## Front-End
 Try https://dataflowkit.org/dfk Front-end with Point-and-click interface to Dataflow kit services. It generates JSON config file and sends POST request to DFK Parser 
@@ -180,9 +185,5 @@ You are welcome to contribute to our project.
 - Please submit [your issues](https://github.com/slotix/dataflowkit/issues) 
 - Fork the [project](https://github.com/slotix/dataflowkit)
 
-## Run tests
-- ```docker-compose -f docker-compose-test.yml up -d```
-- ```./test.sh```
-- To stop services just run ```docker-compose -f docker-compose-test.yml down```
 
 ![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/Spider-White-BG.png)
