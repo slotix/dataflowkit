@@ -1,6 +1,6 @@
 # Dataflow kit
 
-![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/logo-mini.png)
+![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/logo.png)
 
 [![Build Status](https://travis-ci.org/slotix/dataflowkit.svg?branch=master)](https://travis-ci.org/slotix/dataflowkit)
 [![GoDoc](https://godoc.org/github.com/slotix/dataflowkit?status.svg)](https://godoc.org/github.com/slotix/dataflowkit)
@@ -10,7 +10,7 @@
 
 Dataflow kit is a Web Scraping framework for Gophers. DFK extracts structured data from web pages, following the specified extractors.
 
-It can be used in many ways for data mining, data processing or archiving.
+You can use it in many ways for data mining, data processing or archiving.
 
 - Dataflow kit is fast. It takes about 4-6 seconds to fetch and then parse 50 pages.
 - Dataflow kit is suitable to process quite large volumes of data. Our tests show the time needed to parse appr. 4 millions of pages is about 7 hours. 
@@ -26,7 +26,8 @@ It can be used in many ways for data mining, data processing or archiving.
 - Managing delays between requests per domain; 
 - Following robots.txt directives; 
 - Various storage types support. 
-The following storage type are available Diskv, Cassandra;
+The following storage type are available Diskv, Mongodb, Cassandra;
+Storage interface is flexible enough to add more storage types easily.
 - Save results as CSV, JSON, XML;
 
 
@@ -44,12 +45,12 @@ Chrome fetcher is intended for rendering dynamic javascript based content. It se
 Fetchers pass retrieved data to parse.d service. 
 
 ## Parse service
-**parse.d** is the service that extracts data from downloaded web page following the rules described in configuration JSON file. Extracted data is returned in CSV, JSON or XML format.
+**parse.d** is the service that extracts data from downloaded web page following the rules listed in configuration JSON file. Extracted data is returned in CSV, JSON or XML format.
 
 *Note: Sometimes Parse service cannot extract data from some pages retrieved by default Base fetcher. Empty results may be returned while parsing Java Script generated pages. Parse service then attempts to force Chrome fetcher to render the same dynamic javascript driven content automatically. Have a look at https://scrape.dataflowkit.org/persons/page-0 which is a sample of JavaScript driven web page.*   
 
 ## Installation
-Using [dep](https://github.com/golang/dep)
+Using [dep](https://github.com/golang/dep){:target="_blank"}
 ```
 dep ensure -add github.com/slotix/dataflowkit@master
 ```
@@ -61,7 +62,7 @@ go get -u github.com/slotix/dataflowkit
 ## Usage
 
 ### Docker
-1. Install [Docker](https://www.docker.com) and [Docker Compose](https://docs.docker.com/compose/install/)
+1. Install [Docker](https://www.docker.com){:target="_blank"} and [Docker Compose](https://docs.docker.com/compose/install/){:target="_blank"}
 
 2. Start services.
 
@@ -151,7 +152,7 @@ docker run --init -it --rm -d --name chrome --shm-size=1024m -p=127.0.0.1:9222:9
 ```
 
 
-[Headless Chrome](https://developers.google.com/web/updates/2017/04/headless-chrome) is used for fetching web pages to feed a Dataflow kit parser. 
+[Headless Chrome](https://developers.google.com/web/updates/2017/04/headless-chrome){:target="_blank"} is used for fetching web pages to feed a Dataflow kit parser. 
 
 2. Build and run fetch.d service
 ```
@@ -178,5 +179,10 @@ This is Free Software, released under the BSD 3-Clause License.
 You are welcome to contribute to our project. 
 - Please submit [your issues](https://github.com/slotix/dataflowkit/issues) 
 - Fork the [project](https://github.com/slotix/dataflowkit)
+
+## Run tests
+- ```docker-compose -f docker-compose-test.yml up -d```
+- ```./test.sh```
+- To stop services just run ```docker-compose -f docker-compose-test.yml down```
 
 ![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/Spider-White-BG.png)
