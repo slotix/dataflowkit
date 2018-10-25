@@ -16,19 +16,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.uber.org/zap"
-
-	"github.com/slotix/dataflowkit/storage"
-
 	"github.com/PuerkitoBio/goquery"
 	"github.com/segmentio/ksuid"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/extract"
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/paginate"
+	"github.com/slotix/dataflowkit/storage"
 	"github.com/slotix/dataflowkit/utils"
 	"github.com/spf13/viper"
 	"github.com/temoto/robotstxt"
+	"go.uber.org/zap"
 )
 
 // NewTask creates new task to parse fetched page following the rules from Payload.
@@ -173,7 +171,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		}
 	case "json":
 		e = JSONEncoder{
-		//		paginateResults: *task.Payload.PaginateResults,
+			//		paginateResults: *task.Payload.PaginateResults,
 		}
 	case "xml":
 		e = XMLEncoder{}
@@ -487,11 +485,6 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 			block.wg = &detailsWG
 			detailsWG.Add(1)
 			detailsChannel <- &block
-		}
-		if i == 5 {
-			logger.Info("Canceling")
-			task.Cancel()
-			return nil, &errs.Cancel{}
 		}
 	}
 	if tw.scraper.reqType == "details" {
