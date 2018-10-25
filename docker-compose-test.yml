@@ -5,9 +5,18 @@ services:
     image: yukinying/chrome-headless-browser:65.0.3322.3
     cap_add:
       - SYS_ADMIN
-    entrypoint: /usr/bin/dumb-init -- /usr/bin/google-chrome-unstable --disable-gpu --headless --disable-dev-shm-usage --remote-debugging-address=0.0.0.0 --remote-debugging-port=9222 --user-data-dir=/data
+    entrypoint: /usr/bin/dumb-init -- /usr/bin/google-chrome-unstable --disable-gpu --headless --disable-dev-shm-usage --remote-debugging-address=0.0.0.0 --remote-debugging-port=9222 #--proxy-server=XX.YY.ZZ.TT:8888 --proxy-bypass-list=127.0.0.1 --proxy-bypass-list=0.0.0.0 --user-data-dir=/data --blink-settings=imagesEnabled=false
     ports:
       - "9222:9222"
+
+
+  mongo:
+    image: mvertes/alpine-mongo
+    ports: 
+      - "27017:27017"
+    volumes:
+      - ./storage/mongo/db:/data/db
+
 
   cassandra:
     #image: cassandra
