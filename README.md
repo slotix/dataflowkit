@@ -50,7 +50,7 @@ Fetchers pass retrieved data to parse.d service.
 *Note: Sometimes Parse service cannot extract data from some pages retrieved by default Base fetcher. Empty results may be returned while parsing Java Script generated pages. Parse service then attempts to force Chrome fetcher to render the same dynamic javascript driven content automatically. Have a look at https://scrape.dataflowkit.org/persons/page-0 which is a sample of JavaScript driven web page.*   
 
 ## Installation
-Using [dep](https://github.com/golang/dep){:target="_blank"}
+Using [dep](https://github.com/golang/dep)
 ```
 dep ensure -add github.com/slotix/dataflowkit@master
 ```
@@ -62,7 +62,7 @@ go get -u github.com/slotix/dataflowkit
 ## Usage
 
 ### Docker
-1. Install [Docker](https://www.docker.com){:target="_blank"} and [Docker Compose](https://docs.docker.com/compose/install/){:target="_blank"}
+1. Install [Docker](https://www.docker.com) and [Docker Compose](https://docs.docker.com/compose/install/)
 
 2. Start services.
 
@@ -152,7 +152,7 @@ docker run --init -it --rm -d --name chrome --shm-size=1024m -p=127.0.0.1:9222:9
 ```
 
 
-[Headless Chrome](https://developers.google.com/web/updates/2017/04/headless-chrome){:target="_blank"} is used for fetching web pages to feed a Dataflow kit parser. 
+[Headless Chrome](https://developers.google.com/web/updates/2017/04/headless-chrome) is used for fetching web pages to feed a Dataflow kit parser. 
 
 2. Build and run fetch.d service
 ```
