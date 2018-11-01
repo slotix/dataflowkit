@@ -58,10 +58,9 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 			Key:  req.UserToken + u.Host,
 		})
 		if err != nil {
-			logger.Warn(
-				"Failed to read cookie. ",
-				zap.String("User Token", req.UserToken),
-				zap.Error(err))
+			logger.Warn(err.Error(),
+				zap.String("User Token", req.UserToken))
+
 		}
 		cArr = []*http.Cookie{}
 		if len(cookies) != 0 {

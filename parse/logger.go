@@ -7,6 +7,7 @@ import (
 var logger *zap.Logger
 
 func init() {
-	logger, _ = zap.NewDevelopment()
-
+	cfg := zap.NewProductionConfig()
+	cfg.DisableStacktrace = true
+	logger, _ = cfg.Build()
 }
