@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_cassandra(t *testing.T) {
-	c := newCassandra("127.0.0.1")
+func Test_mongo(t *testing.T) {
+	m := newMongo("127.0.0.1")
 	//Delete all values from redis if any
-	err := c.DeleteAll()
+	err := m.DeleteAll()
 	assert.NoError(t, err, "Expected no error")
 	//write records
 	testValue := []byte("testValue")
@@ -30,32 +30,29 @@ func Test_cassandra(t *testing.T) {
 		Value:   []byte(`{"selector1_text":"Selector1_value"}`),
 		ExpTime: 100,
 	},
-		{
-			Type: INTERMEDIATE,
-			Key:  "PayloadHash",
-			Value: []byte(`"6eafe89a"
-			: {"0":[0,1,2,3]}`),
-			ExpTime: 100,
-		}}
+	// {
+	// 	Type: INTERMEDIATE,
+	// 	Key:  "PayloadHash",
+	// 	Value: []byte(`"6eafe89a":{"0":[0,1,2,3]}`),
+	// 	ExpTime: 100,
+	// }
+	}
 
 	rec := recs[0]
 	for _, r := range recs {
-		err = c.Write(r)
+		err = m.Write(r)
 		assert.NoError(t, err, "Expected no error")
 	}
-
-	//todo: doesn't pass the test
-	// isExists := c.IsExists(rec)
-	// assert.Equal(t, true, isExists, "Is rec exists in db")
-
-	value, _ := c.Read(Record{
+	isExists := m.IsExists(rec)
+	assert.Equal(t, true, isExists, "Is rec exists in db")
+	value, _ := m.Read(Record{
 		Type: rec.Type,
 		Key:  rec.Key,
 	})
 	assert.Equal(t, testValue, value, "Expected equal")
 	//read records
 	for _, r := range recs {
-		value, err := c.Read(r)
+		value, err := m.Read(r)
 		assert.NoError(t, err, "Expected no error")
 		assert.NotNil(t, value, "Expected NotNil")
 	}
@@ -67,11 +64,11 @@ func Test_cassandra(t *testing.T) {
 		Value:   testValue,
 		ExpTime: 0,
 	}
-	err = c.Write(recEmptyKey)
-	assert.Error(t, err, "Expected empty key error")
+	err = m.Write(recEmptyKey)
+	assert.NoError(t, err, "Expected no error")
 
 	//Invalid Intermediary value
-	err = c.Write(Record{
+	err = m.Write(Record{
 		Type:    INTERMEDIATE,
 		Key:     "PayloadHash-0-0",
 		Value:   []byte(`InvalidJSON`),
@@ -91,36 +88,35 @@ func Test_cassandra(t *testing.T) {
 	// assert.Error(t, err, "Read Intermediate error")
 
 	// Read NonExistent key
-	_, err = c.Read(Record{
+	_, err = m.Read(Record{
 		Type: INTERMEDIATE,
 		Key:  "NonExistentPayload-100-100",
 	})
 	assert.Error(t, err, "Expected error")
 
-	expired := c.Expired(rec)
+	expired := m.Expired(rec)
 	assert.Equal(t, expired, false, "Expected non expired value")
 
 	for _, r := range recs {
-		err = c.Delete(r)
+		err = m.Delete(r)
 		assert.NoError(t, err, "Expected no error")
 	}
 	//delete nonexistant record
-	err = c.Delete(Record{
+	err = m.Delete(Record{
 		Type: INTERMEDIATE,
 		Key:  "Payload-100-100",
 	})
-	assert.NoError(t, err, "Expected no error. When delete a non-existent value Cassandra will never complain")
+	assert.Error(t, err, "Not found error")
 
 	//Add two values to storage
-	c.Write(rec)
-	c.Write(Record{
+	m.Write(rec)
+	m.Write(Record{
 		Type:  COOKIES,
 		Key:   "cookie1",
 		Value: []byte("Cookie=Value"),
 	})
 	//erase all items
-	err = c.DeleteAll()
+	err = m.DeleteAll()
 	assert.NoError(t, err, "Expected no error")
-	c.Close()
-
+	m.Close()
 }

@@ -53,6 +53,7 @@ coverage.txt
 coverage.out
 
 storage/cassandra/db
+storage/mongo
 
 webserver
 examples/diesel*

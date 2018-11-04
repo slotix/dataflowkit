@@ -148,14 +148,35 @@ func TestFetchServiceMW(t *testing.T) {
 	// })
 
 	// assert.Error(t, err, "Expected error")
+	//remove cookies from storage
+	err = st.Delete(rec)
+	if err != nil {
+		t.Log(err)
+	}
+	
+}
 
+
+func TestChromeFetchServiceMW(t *testing.T) {
+	//start fetch server
+	fetchServer := viper.GetString("DFK_FETCH")
+	serverCfg := Config{
+		Host: fetchServer,
+	}
+	htmlServer := Start(serverCfg)
+	defer htmlServer.Stop()
+
+	svc, _ := NewHTTPClient(fetchServer)
+	//svc = RobotsTxtMiddleware()(svc)
+	svc = LoggingMiddleware(logger)(svc)
+	
 	//Test Chrome Fetcher
 	//svcChrome := FetchService{}
-	_, err = svc.Fetch(Request{
+	_, err := svc.Fetch(Request{
 		Type:      "chrome",
 		URL:       "http://testserver:12345",
 		FormData:  "",
-		UserToken: userToken,
+		UserToken: "12345",
 	})
 	assert.Nil(t, err, "Expected no error")
 
@@ -171,7 +192,7 @@ func TestFetchServiceMW(t *testing.T) {
 	//Test decodeChromeFetcherContent
 	//Chrome returns empty result for erroneous pages: <html><head></head><body></body></html>
 	//And returns no error
-	data, err = svc.Fetch(Request{
+	data, err := svc.Fetch(Request{
 		Type: "chrome",
 		URL:  "http://testserver:12345/status/404",
 		//URL:    "http://httpbin.org/status/404",
@@ -182,10 +203,5 @@ func TestFetchServiceMW(t *testing.T) {
 	buf.ReadFrom(data)
 	s := buf.String()
 	t.Log(s)
-
-	//remove cookies from storage
-	err = st.Delete(rec)
-	if err != nil {
-		t.Log(err)
-	}
+	
 }
