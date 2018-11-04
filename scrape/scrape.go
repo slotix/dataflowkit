@@ -203,11 +203,13 @@ func (p Payload) newScraper(reqType string) (*Scraper, error) {
 		return nil, err
 	}
 	var paginator paginate.Paginator
+	paginatorType := ""
 	if p.Paginator == nil {
 		paginator = &dummyPaginator{}
 
 	} else {
 		paginator = paginate.BySelector(p.Paginator.Selector, p.Paginator.Attribute)
+		paginatorType = p.Paginator.Type
 	}
 
 	selectors, err := p.selectors()
@@ -220,12 +222,13 @@ func (p Payload) newScraper(reqType string) (*Scraper, error) {
 	dividePageFunc = DividePageByIntersection(selectors)
 
 	scraper := &Scraper{
-		Request:    p.Request,
-		reqType:    reqType,
-		DividePage: dividePageFunc,
-		Parts:      parts,
-		Paginator:  paginator,
-		IsPath:     p.IsPath,
+		Request:       p.Request,
+		reqType:       reqType,
+		DividePage:    dividePageFunc,
+		Parts:         parts,
+		Paginator:     paginator,
+		IsPath:        p.IsPath,
+		paginatorType: paginatorType,
 	}
 
 	// All set!
@@ -408,42 +411,40 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 		return nil, err
 	}
 
-	if task.Payload.Paginator != nil {
-		if task.Payload.Paginator.Type == "next" {
-			url, err = tw.scraper.Paginator.NextPage(url, doc.Selection)
-			if err != nil {
-				task.Cancel()
-				return nil, err
-			}
-			// Repeat until we don't have any more URLs, or until we hit our page limit.
-			if len(url) != 0 &&
-				task.Payload.Paginator.MaxPages > 0 && tw.currentPageNum < task.Payload.Paginator.MaxPages-1 {
-				paginatorPayload := task.Payload
-				paginatorPayload.Request.URL = url
-				//paginatorPayload.Request = paginatorPayload.initRequest(url)
-				paginatorScraper, err := paginatorPayload.newScraper("paginator")
-				if err != nil {
-					task.Cancel()
-					return nil, err
-				}
-				curPageNum := tw.currentPageNum + 1
-				/* if tw.scraper.IsPath {
-					curPageNum = 0
-				} */
-				paginatorTW := taskWorker{
-					currentPageNum: curPageNum,
-					scraper:        paginatorScraper,
-					UID:            tw.UID,
-					keys:           tw.keys,
-				}
-				task.jobDone.Add(1)
-				go task.scrape(&paginatorTW)
-			}
+	if tw.scraper.paginatorType == "next" {
+		url, err = tw.scraper.Paginator.NextPage(url, doc.Selection)
+		if err != nil {
+			task.Cancel()
+			return nil, err
 		}
-		//todo: test this case
-		// } else {
-		// 	url = ""
-		// }
+		// Repeat until we don't have any more URLs, or until we hit our page limit.
+		if len(url) != 0 &&
+			viper.GetInt("MAX_PAGES") > 0 && tw.currentPageNum < viper.GetInt("MAX_PAGES")-1 {
+			paginatorScraper := Scraper{
+				DividePage:    tw.scraper.DividePage,
+				IsPath:        tw.scraper.IsPath,
+				Paginator:     tw.scraper.Paginator,
+				paginatorType: tw.scraper.paginatorType,
+				Parts:         tw.scraper.Parts,
+				reqType:       tw.scraper.reqType,
+				Request:       tw.scraper.Request,
+			}
+			paginatorScraper.Request.URL = url
+			paginatorScraper.reqType = "paginator"
+			curPageNum := tw.currentPageNum + 1
+			if tw.useBlockCounter {
+				curPageNum = 0
+			}
+			paginatorTW := taskWorker{
+				currentPageNum:  curPageNum,
+				scraper:         &paginatorScraper,
+				UID:             tw.UID,
+				keys:            tw.keys,
+				useBlockCounter: tw.useBlockCounter,
+			}
+			task.jobDone.Add(1)
+			go task.scrape(&paginatorTW)
+		}
 	}
 
 	blockSelections := tw.scraper.DividePage(doc.Selection)
@@ -451,10 +452,6 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 		return nil, &errs.NoBlocksToParse{URL: req.URL}
 	}
 
-	/* for i := 0; i < 25; i++ {
-		go task.blockWorker(blocks)
-	}
-	*/
 	// Divide this page into blocks
 	var detailsChannel chan *blockStruct
 	var detailsWG sync.WaitGroup
