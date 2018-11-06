@@ -165,9 +165,9 @@ cd $GOPATH/src/github.com/slotix/dataflowkit/parse/parse.d && go build && ./pars
 4. Launch parsing. See step 3. from the previous section. 
 
 ### Run tests
-- ```docker-compose -f docker-compose-test.yml up -d```
+- ```docker-compose -f test-docker-compose.yml up -d```
 - ```./test.sh```
-- To stop services just run ```docker-compose -f docker-compose-test.yml down```
+- To stop services just run ```docker-compose -f test-docker-compose.yml down```
 
 
 ## Front-End

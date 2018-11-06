@@ -13,7 +13,6 @@
                     "href",
                     "text"
                 ],
-                "displayAs": 2,
                 "params": {
                     "includeIfEmpty": false
                 }
@@ -42,13 +41,10 @@
                 }
             }
         }
-
     ],
     "paginator": {
         "selector": ".next a",
-        "attr": "href",
-        "maxPages": 10
+        "attr": "href"
     },
-    "format": "json",
-    "paginatedResults": true
+    "format": "json"
 }

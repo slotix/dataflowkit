@@ -1,0 +1,80 @@
+{
+    "name": "battlemerchant_full",
+    "request": {
+      "url": "https://battlemerchant.com/",
+      "userToken": "5a08cc1a-15d9-2e95-7b56-a45b141c7d3c",
+      "type": ""
+    },
+    "fields": [
+      {
+        "name": "category",
+        "selector": "#categorymenu a",
+        "details": {
+          "name": "categoryDetails",
+          "request": {
+            "url": "https://battlemerchant.com/Sonderangebote:::82.html"
+          },
+          "fields": [
+            {
+              "name": "image",
+              "selector": ".productImageBorder",
+              "extractor": {
+                "types": [
+                  "src",
+                  "alt"
+                ],
+                "params": {
+                  "includeIfEmpty": false
+                }
+              }
+            },
+            {
+              "name": "title",
+              "selector": "#content h2 a",
+              "extractor": {
+                "types": [
+                  "href",
+                  "text"
+                ],
+                "params": {
+                  "includeIfEmpty": false
+                }
+              }
+            },
+            {
+              "name": "price",
+              "selector": ".price",
+              "extractor": {
+                "types": [
+                  "text"
+                ],
+                "params": {
+                  "regexp": "",
+                  "includeIfEmpty": false
+                }
+              }
+            }
+          ],
+          "paginator": {
+            "selector": "br+ .pagination .pageResults:last-child",
+            "attr": "href",
+            "type": "next"
+          },
+          "format": "json",
+          "path": false,
+          "preview": true
+        },
+        "type": 2,
+        "extractor": {
+          "types": [
+            "path"
+          ],
+          "params": {
+            "includeIfEmpty": false
+          }
+        }
+      }
+    ],
+    "format": "json",
+    "path": true
+  }
