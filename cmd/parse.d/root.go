@@ -136,10 +136,10 @@ func init() {
 	RootCmd.Flags().BoolVarP(&randomizeFetchDelay, "RANDOMIZE_FETCH_DELAY", "", true, "RandomizeFetchDelay setting decreases the chance of a crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay to 1.5 * FetchDelay seconds is used between consecutive requests to the same domain. If FetchDelay is zero this option has no effect.")
 	RootCmd.Flags().BoolVarP(&ignoreFetchDelay, "IGNORE_FETCH_DELAY", "", false, "Ignores fetchDelay setting intended for debug purpose. Please set it to false in Production")
 
-	RootCmd.Flags().IntVar(&fetchChannelSize, "FETCH_CHANNEL_SIZE", 100, "The size of fetcher pool")
+	RootCmd.Flags().IntVar(&fetchChannelSize, "FETCH_CHANNEL_SIZE", 50, "The size of fetcher pool")
 	RootCmd.Flags().IntVar(&fetchWorkerNum, "FETCH_WORKER_NUM", 50, "The number of fetcher workers")
-	RootCmd.Flags().IntVar(&blockChannelSize, "BLOCK_CHANNEL_SIZE", 20, "The size of block pool")
-	RootCmd.Flags().IntVar(&blockWorkerNum, "BLOCK_WORKER_NUM", 20, "The number of block workers")
+	RootCmd.Flags().IntVar(&blockChannelSize, "BLOCK_CHANNEL_SIZE", 50, "The size of block pool")
+	RootCmd.Flags().IntVar(&blockWorkerNum, "BLOCK_WORKER_NUM", 50, "The number of block workers")
 
 	//viper.AutomaticEnv() // read in environment variables that match
 

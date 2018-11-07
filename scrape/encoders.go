@@ -173,7 +173,7 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 	//blockMap := make(map[string]interface{})
 	var err error
 	var nextPage bool
-	if r.block >= len(r.payloadMap[r.keys[r.page]]) {
+	if r.block >= len(r.payloadMap[r.page]) {
 		if r.page+1 < len(r.keys) {
 			//achieve next page
 			r.page++
@@ -325,6 +325,9 @@ func (e CSVEncoder) formatFieldValue(block *map[string]interface{}, fieldName st
 	case []interface{}:
 		values := make([]string, len(v))
 		for i, value := range v {
+			if strings.Contains(value.(string), ",") {
+				value = fmt.Sprintf("\"%s\"", value)
+			}
 			values[i] = fmt.Sprint(value)
 		}
 		formatedString = strings.Join(values, ";")

@@ -6,13 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/slotix/dataflowkit/storage"
-
-	"github.com/slotix/dataflowkit/fetch"
-
 	"github.com/PuerkitoBio/goquery"
 	"github.com/slotix/dataflowkit/extract"
+	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/paginate"
+	"github.com/slotix/dataflowkit/storage"
 	"github.com/temoto/robotstxt"
 )
 
@@ -161,6 +159,9 @@ type Scraper struct {
 	// scrape.
 	//Opts ScrapeOptions
 	IsPath bool
+
+	// could be more button, infinite or next button
+	paginatorType string
 }
 
 // Results describes the results of a scrape.  It contains a list of all
