@@ -2,6 +2,7 @@ package scrape
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -17,7 +18,7 @@ import (
 )
 
 // EncodeToFile save parsed data to specified file.
-func EncodeToFile(e *encoder, ext string, payloadMD5 string, blockMap ...*map[int][]int) ([]byte, error) {
+func EncodeToFile(ctx context.Context, e *encoder, ext string, payloadMD5 string, blockMap ...*map[int][]int) ([]byte, error) {
 	path := viper.GetString("RESULTS_DIR")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		os.Mkdir(path, 0700)
@@ -38,8 +39,8 @@ func EncodeToFile(e *encoder, ext string, payloadMD5 string, blockMap ...*map[in
 		keys = blockMap[0]
 	}
 	w := bufio.NewWriter(fo)
-	(*e).encode(w, payloadMD5, keys)
-	return []byte(sFileName), nil
+	err = (*e).encode(ctx, w, payloadMD5, keys)
+	return []byte(sFileName), err
 }
 
 // func EncodeToByteArray(e *encoder, payloadMD5 string, blockMap ...*map[int][]int) ([]byte, error) {
@@ -55,7 +56,7 @@ func EncodeToFile(e *encoder, ext string, payloadMD5 string, blockMap ...*map[in
 // }
 
 type encoder interface {
-	encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error
+	encode(ctx context.Context, w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error
 }
 
 // CSVEncoder transforms parsed data to CSV format.
@@ -73,7 +74,7 @@ type JSONEncoder struct {
 type XMLEncoder struct {
 }
 
-func (e JSONEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error {
+func (e JSONEncoder) encode(ctx context.Context, w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error {
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	// make a write buffer
@@ -85,38 +86,40 @@ func (e JSONEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]
 	reader := newStorageReader(&s, payloadMD5, keys)
 	writeComma := false
 	for {
-		block, err := reader.Read()
-		if err != nil {
-			if err.Error() == errs.EOF {
-				w.WriteString("]")
-				break
-			} else if err.Error() == errs.NextPage {
-				//next page
-				// if e.paginateResults {
-				// 	w.WriteString("],[")
-				// }
-			} else {
-				logger.Error(err.Error())
-				continue
+		select {
+		default:
+			block, err := reader.Read()
+			if err != nil {
+				if err.Error() == errs.EOF {
+					w.WriteString("]")
+					s.Close()
+					return w.Flush()
+				} else if err.Error() == errs.NextPage {
+					//next page
+					// if e.paginateResults {
+					// 	w.WriteString("],[")
+					// }
+				} else {
+					logger.Error(err.Error())
+					continue
+				}
 			}
+			if writeComma {
+				w.WriteString(",")
+			}
+			blockJSON, err := json.Marshal(block)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+			if !writeComma {
+				writeComma = !writeComma
+			}
+			w.Write(blockJSON)
+		case <-ctx.Done():
+			s.Close()
+			return &errs.Cancel{}
 		}
-		if writeComma {
-			w.WriteString(",")
-		}
-		blockJSON, err := json.Marshal(block)
-		if err != nil {
-			logger.Error(err.Error())
-		}
-		if !writeComma {
-			writeComma = !writeComma
-		}
-		w.Write(blockJSON)
 	}
-	// if e.paginateResults {
-	// 	w.WriteString("]")
-	// }
-	s.Close()
-	return w.Flush()
 }
 
 type storageResultReader struct {
@@ -250,7 +253,7 @@ func (r *storageResultReader) getValue() (map[string]interface{}, error) {
 	return blockMap, nil
 }
 
-func (e CSVEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error {
+func (e CSVEncoder) encode(ctx context.Context, w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error {
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 
@@ -272,34 +275,40 @@ func (e CSVEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]i
 	reader := newStorageReader(&s, payloadMD5, keys)
 
 	for {
-		block, err := reader.Read()
-		if err != nil {
-			if err.Error() == errs.EOF {
-				break
-			} else if err.Error() == errs.NextPage {
-				//next page
-			} else {
-				logger.Error(err.Error())
-				//we have to continue 'cause we still have other records
-				continue
+		select {
+		default:
+			block, err := reader.Read()
+			if err != nil {
+				if err.Error() == errs.EOF {
+					s.Close()
+					return w.Flush()
+				} else if err.Error() == errs.NextPage {
+					//next page
+				} else {
+					logger.Error(err.Error())
+					//we have to continue 'cause we still have other records
+					continue
+				}
 			}
-		}
-		sString = ""
-		for _, fieldName := range e.partNames {
-			sString += e.formatFieldValue(&block, fieldName)
-		}
-		sString = strings.TrimSuffix(sString, ",") + "\n"
-		_, err = w.WriteString(sString)
-		if err != nil {
-			logger.Error(err.Error())
-		}
-		err = w.Flush()
-		if err != nil {
-			logger.Error(err.Error())
+			sString = ""
+			for _, fieldName := range e.partNames {
+				sString += e.formatFieldValue(&block, fieldName)
+			}
+			sString = strings.TrimSuffix(sString, ",") + "\n"
+			_, err = w.WriteString(sString)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+			err = w.Flush()
+			if err != nil {
+				logger.Error(err.Error())
+			}
+		case <-ctx.Done():
+			s.Close()
+			return &errs.Cancel{}
 		}
 	}
-	s.Close()
-	return w.Flush()
+
 }
 
 func (e CSVEncoder) formatFieldValue(block *map[string]interface{}, fieldName string) string {
@@ -335,7 +344,7 @@ func (e CSVEncoder) formatFieldValue(block *map[string]interface{}, fieldName st
 	return fmt.Sprintf("%s,", formatedString)
 }
 
-func (e XMLEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error {
+func (e XMLEncoder) encode(ctx context.Context, w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error {
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	//write xml headers
@@ -350,35 +359,46 @@ func (e XMLEncoder) encode(w *bufio.Writer, payloadMD5 string, keys *map[int][]i
 	reader := newStorageReader(&s, payloadMD5, keys)
 
 	for {
-		block, err := reader.Read()
-		if err != nil {
-			if err.Error() == errs.EOF {
-				break
-			} else if err.Error() == errs.NextPage {
-				//next page
-			} else {
-				logger.Error(err.Error())
-				//we have to continue 'cause we still have other records
-				continue
+		select {
+		default:
+			block, err := reader.Read()
+			if err != nil {
+				if err.Error() == errs.EOF {
+					s.Close()
+					w.WriteString("</root>")
+					return w.Flush()
+				} else if err.Error() == errs.NextPage {
+					//next page
+				} else {
+					logger.Error(err.Error())
+					//we have to continue 'cause we still have other records
+					continue
+				}
 			}
-		}
-		e.writeXML(w, &block)
-		err = w.Flush()
-		if err != nil {
-			logger.Error(err.Error())
+			e.writeXML(w, &block)
+			err = w.Flush()
+			if err != nil {
+				logger.Error(err.Error())
+			}
+		case <-ctx.Done():
+			s.Close()
+			return &errs.Cancel{}
 		}
 	}
-	s.Close()
-	w.WriteString("</root>")
-	return w.Flush()
 }
 
 func (e XMLEncoder) writeXML(w io.Writer, block *map[string]interface{}) {
 	for field, value := range *block {
 		if strings.Contains(field, "details") {
-			v := value.(map[string]interface{})
 			w.Write([]byte(fmt.Sprintf("<%s>", field)))
-			e.writeXML(w, &v)
+			switch details := value.(type) {
+			case map[string]interface{}:
+				e.writeXML(w, &details)
+			case []map[string]interface{}:
+				for _, detail := range details {
+					e.writeXML(w, &detail)
+				}
+			}
 			w.Write([]byte(fmt.Sprintf("</%s>", field)))
 		} else {
 			nodeName := fmt.Sprintf("<%s>", field)
