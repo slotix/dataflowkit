@@ -178,7 +178,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	default:
 		return nil, errors.New("invalid output format specified")
 	}
-	r, err := EncodeToFile(&e, task.Payload.Format, string(uid))
+	r, err := EncodeToFile(task.ctx, &e, task.Payload.Format, string(uid))
 	if err != nil {
 		return nil, err
 	}
@@ -453,12 +453,12 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 	}
 
 	// Divide this page into blocks
-	var detailsChannel chan *blockStruct
-	var detailsWG sync.WaitGroup
-	if tw.scraper.reqType == "details" {
-		detailsChannel = make(chan *blockStruct)
-		detailsWG = sync.WaitGroup{}
-		go task.blockWorker(detailsChannel)
+	var miscChannel chan *blockStruct
+	var miscWG sync.WaitGroup
+	if tw.scraper.reqType != "initial" {
+		miscChannel = make(chan *blockStruct)
+		miscWG = sync.WaitGroup{}
+		go task.blockWorker(miscChannel)
 	}
 	for i, blockSel := range blockSelections {
 		// if scraper contain path then page ref should always be 0
@@ -475,18 +475,21 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 			keys:            &tw.keys,
 			scraper:         tw.scraper,
 		}
-		if tw.scraper.reqType != "details" {
+		if tw.scraper.reqType == "initial" {
 			task.blockChannel <- &block
 			task.jobDone.Add(1)
 		} else {
-			block.wg = &detailsWG
-			detailsWG.Add(1)
-			detailsChannel <- &block
+			block.wg = &miscWG
+			miscWG.Add(1)
+			miscChannel <- &block
 		}
 	}
-	if tw.scraper.reqType == "details" {
-		detailsWG.Wait()
-		close(detailsChannel)
+	if tw.scraper.reqType != "initial" {
+		miscWG.Wait()
+		close(miscChannel)
+		if tw.scraper.reqType == "paginator" {
+			task.updateKeys(tw.UID, tw.keys)
+		}
 	}
 	return nil, err
 
@@ -678,23 +681,7 @@ func (task *Task) scrapeDetails(extractedPartResults interface{}, part *Part, bl
 		}
 		(*blockResults)[part.Name+"_details"] = uid //generate uid resDetails.AllBlocks()
 		// Sort keys to keep an order before write them into storage.
-		for k := range tw.keys {
-			sort.Slice(tw.keys[k], func(i, j int) bool { return tw.keys[k][i] < tw.keys[k][j] })
-		}
-		j, err := json.Marshal(tw.keys)
-		if err != nil {
-			//return nil, err
-			// logger.Warning(fmt.Errorf("Failed to marshal details key. %s", err.Error()))
-			logger.Warn("Failed to marshal details key. ",
-				zap.Error(err))
-			return false
-		}
-		err = task.storage.Write(storage.Record{
-			Type:    storage.INTERMEDIATE,
-			Key:     string(uid),
-			Value:   j,
-			ExpTime: 0,
-		})
+		err = task.updateKeys(uid, tw.keys)
 		if err != nil {
 			// logger.Warning(fmt.Errorf("Failed to write %s. %s", string(uid), err.Error()))
 			logger.Warn("Failed to write ",
@@ -773,6 +760,26 @@ func (task *Task) fetchWorker(fc chan *fetchInfo) {
 			fetch.result <- content
 		}
 	}
+}
+
+func (task *Task) updateKeys(uid string, keys map[int][]int) error {
+	for k := range keys {
+		sort.Slice(keys[k], func(i, j int) bool { return keys[k][i] < keys[k][j] })
+	}
+	j, err := json.Marshal(keys)
+	if err != nil {
+		return err
+	}
+	err = task.storage.Write(storage.Record{
+		Type:    storage.INTERMEDIATE,
+		Key:     string(uid),
+		Value:   j,
+		ExpTime: 0,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (task *Task) closeTask() {
