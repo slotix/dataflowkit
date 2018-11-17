@@ -1,7 +1,6 @@
-
 # Gopkg.toml example
 #
-# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
+# Refer to https://golang.github.io/dep/docs/Gopkg.toml.html
 # for detailed Gopkg.toml documentation.
 #
 # required = ["github.com/user/thing/cmd/thing"]
@@ -17,21 +16,30 @@
 #   source = "github.com/myfork/project2"
 #
 # [[override]]
-#  name = "github.com/x/y"
-#  version = "2.4.0"
+#   name = "github.com/x/y"
+#   version = "2.4.0"
+#
+# [prune]
+#   non-go = false
+#   go-tests = true
+#   unused-packages = true
 
 
 [[constraint]]
   name = "github.com/PuerkitoBio/goquery"
-  version = "1.4.1"
+  version = "1.5.0"
 
 [[constraint]]
   branch = "master"
   name = "github.com/alecthomas/template"
 
 [[constraint]]
+  branch = "master"
+  name = "github.com/globalsign/mgo"
+
+[[constraint]]
   name = "github.com/go-kit/kit"
-  version = "0.7.0"
+  version = "0.8.0"
 
 [[constraint]]
   branch = "master"
@@ -43,7 +51,7 @@
 
 [[constraint]]
   name = "github.com/mafredri/cdp"
-  version = "0.19.0"
+  version = "0.20.0"
 
 [[constraint]]
   name = "github.com/peterbourgon/diskv"
@@ -51,7 +59,7 @@
 
 [[constraint]]
   name = "github.com/segmentio/ksuid"
-  version = "1.0.1"
+  version = "1.0.2"
 
 [[constraint]]
   name = "github.com/spf13/cobra"
@@ -59,7 +67,7 @@
 
 [[constraint]]
   name = "github.com/spf13/viper"
-  version = "1.2.0"
+  version = "1.2.1"
 
 [[constraint]]
   name = "github.com/stretchr/testify"
@@ -80,3 +88,7 @@
 [[constraint]]
   branch = "master"
   name = "golang.org/x/sync"
+
+[prune]
+  go-tests = true
+  unused-packages = true
