@@ -71,7 +71,7 @@ var RootCmd = &cobra.Command{
 		}
 		if allAlive {
 			if URL == "" {
-				fmt.Fprintf(os.Stderr, "error: %v\n", &errs.BadRequest{errors.New("no remote address specified")})
+				fmt.Fprintf(os.Stderr, "error: %v\n", errs.StatusError{400, errors.New("no remote address specified")})
 				os.Exit(1)
 			}
 			cx, cancel := context.WithCancel(context.Background())

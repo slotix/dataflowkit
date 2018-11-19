@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"regexp"
 	"sort"
 	"strconv"
@@ -111,12 +112,14 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	task.jobDone.Add(1)
 	_, err = task.scrape(&tw)
 	task.jobDone.Wait()
-	switch err.(type) {
+	switch e := err.(type) {
 	//don't try to fetch a page with chrome fetcher if forbiddenByRobots error returned
-	case *errs.ForbiddenByRobots:
-		return nil, err
-	case *errs.Cancel:
-		return nil, err
+	case errs.Error:
+		if e.Status() == http.StatusForbidden {
+			return nil, e
+		}
+	case errs.Cancel:
+		return nil, e
 	}
 	if !task.Parsed {
 		logger.Info("Failed to scrape with base fetcher. Reinitializing to scrape with Chrome fetcher.")
@@ -266,13 +269,13 @@ func (p Payload) fields2parts() ([]Part, error) {
 	}
 	// Validate payload fields
 	if len(parts) == 0 {
-		return nil, &errs.BadPayload{ParserError: errs.ErrNoParts}
+		return nil, errs.BadPayload{errs.ErrNoParts}
 	}
 
 	for _, part := range parts {
 		if len(part.Name) == 0 || len(part.Selector) == 0 {
 			e := fmt.Sprintf(errs.ErrNoPartOrSelectorProvided, part.Name+part.Selector)
-			return nil, &errs.BadPayload{ParserError: e}
+			return nil, errs.BadPayload{e}
 		}
 
 	}
@@ -361,7 +364,7 @@ func (task *Task) allowedByRobots(req fetch.Request) error {
 
 	//check if scraping of current url is not forbidden
 	if !fetch.AllowedByRobots(req.URL, task.Robots[host]) {
-		return &errs.ForbiddenByRobots{URL: req.URL}
+		return errs.StatusError{403, errors.New(http.StatusText(http.StatusForbidden))}
 	}
 	return nil
 }
@@ -504,7 +507,7 @@ func (p Payload) selectors() ([]string, error) {
 		}
 	}
 	if len(selectors) == 0 {
-		return nil, &errs.BadPayload{ParserError: errs.ErrNoSelectors}
+		return nil, errs.BadPayload{errs.ErrNoSelectors}
 	}
 	return selectors, nil
 }

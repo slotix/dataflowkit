@@ -21,7 +21,7 @@ import (
 func DecodeParseRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var p scrape.Payload
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		return nil, &errs.BadRequest{err}
+		return nil, err
 	}
 	return p, nil
 }
@@ -46,35 +46,20 @@ func EncodeParseResponse(_ context.Context, w http.ResponseWriter, response inte
 
 // encodeError encodes erroneous responses and writes http status header.
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
-	if err == nil {
-		panic("encodeError with nil error")
-	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	var httpStatus int
-	switch err.(type) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	switch e := err.(type) {
+	case errs.Error:
+		// We can retrieve the status here and write out a specific
+		// HTTP status code.
+		http.Error(w, e.Error(), e.Status())
+	//case errs.BadPayload:
+	//	http.Error(w, e.Error(), e.Status())
 	default:
-		httpStatus = http.StatusInternalServerError
-	case *errs.BadRequest,
-		*errs.BadPayload,
-		*errs.Error:
-		//return 400 Status
-		httpStatus = http.StatusBadRequest
-	case *errs.ForbiddenByRobots,
-		*errs.Forbidden:
-		//return 403 Status
-		httpStatus = http.StatusForbidden
-	case *errs.NotFound:
-		//return 404 Status
-		httpStatus = http.StatusNotFound
-	case *errs.GatewayTimeout:
-		//return 504 Status
-		httpStatus = http.StatusGatewayTimeout
+		// Any error types we don't specifically look out for default
+		// to serving a HTTP 500
+		http.Error(w, err.Error(),
+			http.StatusInternalServerError)
 	}
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.WriteHeader(httpStatus)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"error": err.Error(),
-	})
 }
 
 // Endpoints wrapper

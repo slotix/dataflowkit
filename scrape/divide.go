@@ -81,7 +81,7 @@ func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Sel
 		}
 	}
 	if selectorAncestor.Length() == 0 {
-		return nil, &errs.BadPayload{errs.ErrNoCommonAncestor}
+		return nil, errs.BadPayload{errs.ErrNoCommonAncestor}
 	}
 	fullPath := goquery.NodeName(selectorAncestor)
 	parents := selectorAncestor.ParentsUntilSelection(doc.Find("body"))

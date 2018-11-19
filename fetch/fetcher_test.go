@@ -118,8 +118,8 @@ func TestChromeFetcher_Fetch(t *testing.T) {
 
 	//test runJSFromFile
 	req = Request{
-		Type:           "chrome",
-		URL:            "http://testserver:12345/status/200",
+		Type: "chrome",
+		URL:  "http://testserver:12345/status/200",
 		//InfiniteScroll: true,
 	}
 	resp, err = fetcher.Fetch(req)

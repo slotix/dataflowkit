@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -153,7 +154,7 @@ func (bf *BaseFetcher) Fetch(request Request) (io.ReadCloser, error) {
 func (bf *BaseFetcher) response(r Request) (*http.Response, error) {
 	//URL validation
 	if _, err := url.ParseRequestURI(r.getURL()); err != nil {
-		return nil, &errs.BadRequest{err}
+		return nil, err 
 	}
 	var err error
 	var req *http.Request
@@ -181,29 +182,17 @@ func (bf *BaseFetcher) response(r Request) (*http.Response, error) {
 func (bf *BaseFetcher) doRequest(req *http.Request) (*http.Response, error) {
 	resp, err := bf.client.Do(req)
 	if err != nil {
-		return nil, &errs.BadRequest{err}
+		return nil, err 
 	}
 	switch resp.StatusCode {
 	case 200:
-		return resp, err
-	case 404:
-		return nil, &errs.NotFound{req.URL.String()}
-	case 403:
-		return nil, &errs.Forbidden{req.URL.String()}
-	case 400:
-		return nil, &errs.BadRequest{err}
-	case 401:
-		return nil, &errs.Unauthorized{}
-	case 407:
-		return nil, &errs.ProxyAuthenticationRequired{}
-	case 500:
-		return nil, &errs.InternalServerError{}
-	case 502:
-		return nil, &errs.BadGateway{}
-	case 504:
-		return nil, &errs.GatewayTimeout{}
+		return resp, nil
+	
 	default:
-		return nil, &errs.Error{"Unknown Error"}
+		return nil, errs.StatusError{
+			resp.StatusCode,
+			errors.New(http.StatusText(resp.StatusCode)),
+		}
 	}
 }
 
@@ -211,7 +200,7 @@ func (bf *BaseFetcher) getCookieJar() http.CookieJar { //*cookiejar.Jar {
 	return bf.client.Jar
 }
 
-//func (bf *BaseFetcher) setCookieJar(jar *cookiejar.Jar) {
+
 func (bf *BaseFetcher) setCookieJar(jar http.CookieJar) {
 
 	bf.client.Jar = jar
@@ -297,7 +286,7 @@ func (c *LogCodec) ReadResponse(resp *rpcc.Response) error {
 func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	//URL validation
 	if _, err := url.ParseRequestURI(strings.TrimSpace(request.getURL())); err != nil {
-		return nil, &errs.BadRequest{err}
+		return nil, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -358,10 +347,7 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	); err != nil {
 		return nil, err
 	}
-	/* err = f.cookiejar2networkCookies(request.getURL())
-	if err != nil {
-		return nil, err
-	} */
+	
 	err = f.loadCookies()
 	if err != nil {
 		return nil, err
@@ -457,6 +443,19 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 		if err != nil {
 			return err
 		}
+		
+		// navReply, err := pageClient.Navigate(ctx, page.NewNavigateArgs(url))
+		// if navReply.ErrorText != nil {
+		// 	switch *navReply.ErrorText {
+		// 	case "net::ERR_NAME_NOT_RESOLVED":
+		// 		return errs.StatusError{105, errors.New("The server could not be found")}
+		// 	default:
+		// 		return fmt.Errorf("%s", *navReply.ErrorText)
+		// 	}
+		// }
+		// if err != nil {
+		// 	return err
+		// }
 	} else {
 		/* ast := "*" */
 		pattern := network.RequestPattern{URLPattern: &url}
