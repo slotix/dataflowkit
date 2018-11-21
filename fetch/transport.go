@@ -1,15 +1,13 @@
 package fetch
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 
-	"context"
-
 	"github.com/go-kit/kit/endpoint"
-
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
 	"github.com/slotix/dataflowkit/errs"
@@ -62,6 +60,7 @@ func encodeFetcherContent(ctx context.Context, w http.ResponseWriter, response i
 // encodeError encodes erroneous responses and writes http status header.
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	switch e := err.(type) {
 	case errs.Error:
 		// We can retrieve the status here and write out a specific
