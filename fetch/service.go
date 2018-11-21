@@ -6,10 +6,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"go.uber.org/zap"
-
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 // Service defines Fetch service interface
@@ -53,6 +52,7 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 	if req.UserToken != "" {
 		storageType := viper.GetString("STORAGE_TYPE")
 		s = storage.NewStore(storageType)
+		defer s.Close()
 		cookies, err = s.Read(storage.Record{
 			Type: storage.COOKIES,
 			Key:  req.UserToken + u.Host,
@@ -112,7 +112,6 @@ func (fs FetchService) Fetch(req Request) (io.ReadCloser, error) {
 				zap.String("User Token", req.UserToken),
 				zap.Error(err))
 		}
-		s.Close()
 	}
 	return res, nil
 }

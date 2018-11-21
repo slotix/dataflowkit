@@ -13,13 +13,12 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
-
-	"net/http/cookiejar"
 
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
@@ -154,7 +153,7 @@ func (bf *BaseFetcher) Fetch(request Request) (io.ReadCloser, error) {
 func (bf *BaseFetcher) response(r Request) (*http.Response, error) {
 	//URL validation
 	if _, err := url.ParseRequestURI(r.getURL()); err != nil {
-		return nil, err 
+		return nil, err
 	}
 	var err error
 	var req *http.Request
@@ -182,12 +181,12 @@ func (bf *BaseFetcher) response(r Request) (*http.Response, error) {
 func (bf *BaseFetcher) doRequest(req *http.Request) (*http.Response, error) {
 	resp, err := bf.client.Do(req)
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
 	switch resp.StatusCode {
 	case 200:
 		return resp, nil
-	
+
 	default:
 		return nil, errs.StatusError{
 			resp.StatusCode,
@@ -199,7 +198,6 @@ func (bf *BaseFetcher) doRequest(req *http.Request) (*http.Response, error) {
 func (bf *BaseFetcher) getCookieJar() http.CookieJar { //*cookiejar.Jar {
 	return bf.client.Jar
 }
-
 
 func (bf *BaseFetcher) setCookieJar(jar http.CookieJar) {
 
@@ -320,24 +318,6 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	// Create a new CDP Client that uses conn.
 	f.cdpClient = cdp.NewClient(conn)
 
-	// Give enough capacity to avoid blocking any event listeners
-	abort := make(chan error, 2)
-	// Watch the abort channel.
-	go func() {
-		select {
-		case <-ctx.Done():
-		case err := <-abort:
-			fmt.Printf("aborted: %s\n", err.Error())
-			cancel()
-		}
-	}()
-	// Setup event handlers early because domain events can be sent as
-	// soon as Enable is called on the domain.
-	// if err = abortOnErrors(ctx, c, scriptID, abort); err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
-
 	if err = runBatch(
 		// Enable all the domain events that we're interested in.
 		func() error { return f.cdpClient.DOM.Enable(ctx) },
@@ -347,7 +327,7 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	); err != nil {
 		return nil, err
 	}
-	
+
 	err = f.loadCookies()
 	if err != nil {
 		return nil, err
@@ -422,9 +402,7 @@ var _ Fetcher = &ChromeFetcher{}
 // navigate to the URL and wait for DOMContentEventFired. An error is
 // returned if timeout happens before DOMContentEventFired.
 func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, method, url string, formData string, timeout time.Duration) error {
-	var cancel context.CancelFunc
-	ctx, cancel = context.WithTimeout(ctx, timeout)
-	defer cancel()
+	defer time.Sleep(750 * time.Millisecond)
 
 	// Make sure Page events are enabled.
 	err := pageClient.Enable(ctx)
@@ -437,25 +415,19 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 	if err != nil {
 		return err
 	}
+	defer loadEventFired.Close()
+
+	loadingFailed, err := f.cdpClient.Network.LoadingFailed(ctx)
+	if err != nil {
+		return err
+	}
+	defer loadingFailed.Close()
 
 	if method == "GET" {
 		_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
 		if err != nil {
 			return err
 		}
-		
-		// navReply, err := pageClient.Navigate(ctx, page.NewNavigateArgs(url))
-		// if navReply.ErrorText != nil {
-		// 	switch *navReply.ErrorText {
-		// 	case "net::ERR_NAME_NOT_RESOLVED":
-		// 		return errs.StatusError{105, errors.New("The server could not be found")}
-		// 	default:
-		// 		return fmt.Errorf("%s", *navReply.ErrorText)
-		// 	}
-		// }
-		// if err != nil {
-		// 	return err
-		// }
 	} else {
 		/* ast := "*" */
 		pattern := network.RequestPattern{URLPattern: &url}
@@ -477,13 +449,19 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 		}
 		kill <- true
 	}
-	_, err = loadEventFired.Recv()
-
-	if err != nil {
-		return err
+	select {
+	case <-loadEventFired.Ready():
+		_, err = loadEventFired.Recv()
+		if err != nil {
+			return err
+		}
+	case <-loadingFailed.Ready():
+		reply, err := loadingFailed.Recv()
+		if err != nil {
+			return err
+		}
+		return errs.StatusError{400, errors.New(reply.ErrorText)}
 	}
-	loadEventFired.Close()
-	time.Sleep(750 * time.Millisecond)
 	return nil
 }
 
