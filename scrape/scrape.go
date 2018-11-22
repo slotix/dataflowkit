@@ -178,6 +178,8 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		}
 	case "xml":
 		e = XMLEncoder{}
+	case "xls":
+		e = XLSXEncoder{partNames: scraper.partNames()}
 	default:
 		return nil, errors.New("invalid output format specified")
 	}

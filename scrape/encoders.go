@@ -15,6 +15,7 @@ import (
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
+	"github.com/tealeg/xlsx"
 )
 
 // EncodeToFile save parsed data to specified file.
@@ -72,6 +73,10 @@ type JSONEncoder struct {
 
 // XMLEncoder transforms parsed data to XML format.
 type XMLEncoder struct {
+}
+
+type XLSXEncoder struct {
+	partNames []string
 }
 
 func (e JSONEncoder) encode(ctx context.Context, w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error {
@@ -434,6 +439,51 @@ func floatArrayToString(a []float64, delim string) string {
 	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
 	//return strings.Trim(strings.Join(strings.Split(fmt.Sprint(a), " "), delim), "[]")
 	//return strings.Trim(strings.Join(strings.Fields(fmt.Sprint(a)), delim), "[]")
+}
+
+func (e XLSXEncoder) encode(ctx context.Context, w *bufio.Writer, payloadMD5 string, keys *map[int][]int) error {
+	file := xlsx.NewFile()
+	sh, err := file.AddSheet("sheet")
+	if err != nil {
+		return err
+	}
+	row := sh.AddRow()
+	for _, headerName := range e.partNames {
+		cell := row.AddCell()
+		cell.SetString(headerName)
+	}
+
+	storageType := viper.GetString("STORAGE_TYPE")
+	s := storage.NewStore(storageType)
+	defer s.Close()
+	reader := newStorageReader(&s, payloadMD5, keys)
+	csv := CSVEncoder{partNames: e.partNames}
+	for {
+		select {
+		default:
+			block, err := reader.Read()
+			if err != nil {
+				if err.Error() == errs.EOF {
+					return file.Write(w)
+				} else if err.Error() == errs.NextPage {
+					//next page
+				} else {
+					logger.Error(err.Error())
+					//we have to continue 'cause we still have other records
+					continue
+				}
+			}
+			row = sh.AddRow()
+			for _, fieldName := range e.partNames {
+				cell := row.AddCell()
+				sString := csv.formatFieldValue(&block, fieldName)
+				cell.SetString(sString)
+			}
+		case <-ctx.Done():
+			return &errs.Cancel{}
+		}
+	}
+	return nil
 }
 
 //encodeCSV writes data to w *csv.Writer.
