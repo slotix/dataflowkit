@@ -156,11 +156,11 @@ docker run --init -it --rm -d --name chrome --shm-size=1024m -p=127.0.0.1:9222:9
 
 2. Build and run fetch.d service
 ```
-cd $GOPATH/src/github.com/slotix/dataflowkit/fetch/fetch.d && go build && ./fetch.d
+cd $GOPATH/src/github.com/slotix/dataflowkit/cmd/fetch.d && go build && ./fetch.d
 ```
 3. In new terminal window build and run parse.d service
 ```
-cd $GOPATH/src/github.com/slotix/dataflowkit/parse/parse.d && go build && ./parse.d
+cd $GOPATH/src/github.com/slotix/dataflowkit/cmd/parse.d && go build && ./parse.d
 ```
 4. Launch parsing. See step 3. from the previous section. 
 
