@@ -123,7 +123,7 @@ func init() {
 
 	RootCmd.Flags().StringVarP(&DFKParse, "DFK_PARSE", "p", "127.0.0.1:8001", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
-	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "mongodb", "Storage backend for intermediary data passed to html parser. Types: Diskv, Cassandra")
+	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: Diskv, Cassandra")
 	RootCmd.Flags().StringVarP(&resultsDir, "RESULTS_DIR", "", "results", "Directory for storing results")
 	RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 86400, "Default value for item expiration in seconds")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
