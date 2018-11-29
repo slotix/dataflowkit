@@ -129,7 +129,7 @@ Here is the sample json configuration file:
 	"paginateResults":false
 }
 ```
-Read more information about scraper configuration JSON files at our [GoDoc reference](https://godoc.org/github.com/slotix/dataflowkit/parse/parse.d)
+Read more information about scraper configuration JSON files at our [GoDoc reference](https://godoc.org/github.com/slotix/dataflowkit/cmd/parse.d)
 
 Extractors and filters are described at  [https://godoc.org/github.com/slotix/dataflowkit/extract](https://godoc.org/github.com/slotix/dataflowkit/extract)
 
