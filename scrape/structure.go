@@ -203,6 +203,7 @@ type Task struct {
 	jobDone      sync.WaitGroup
 	ctx          context.Context
 	Cancel       context.CancelFunc
+	statePool    map[string]scrapeState
 }
 
 type taskWorker struct {
@@ -228,4 +229,9 @@ type fetchInfo struct {
 	request fetch.Request
 	reqType string
 	err     chan<- error
+}
+
+type scrapeState struct {
+	url   string
+	state error
 }

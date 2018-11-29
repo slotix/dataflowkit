@@ -1,6 +1,7 @@
 package scrape
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -9,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -77,6 +79,7 @@ func NewTask(p Payload) *Task {
 		jobDone:      sync.WaitGroup{},
 		ctx:          ctx,
 		Cancel:       cancel,
+		statePool:    make(map[string]scrapeState),
 	}
 
 }
@@ -164,6 +167,10 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	}
 
 	task.storage.Close()
+
+	w := bufio.NewWriter(os.Stdout)
+	task.printLog(w)
+	w.Flush()
 
 	var e encoder
 	switch strings.ToLower(task.Payload.Format) {
@@ -374,6 +381,9 @@ func (task *Task) allowedByRobots(req fetch.Request) error {
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
 func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 	defer task.jobDone.Done()
+	if _, scraped := task.statePool[tw.UID]; scraped {
+		return nil, nil
+	}
 	req := tw.scraper.Request
 	url := req.URL
 
@@ -397,7 +407,9 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 	var content io.ReadCloser
 	select {
 	case err := <-errorChan:
-		task.Cancel()
+		task.mx.Lock()
+		task.statePool[tw.UID] = scrapeState{url: tw.scraper.Request.URL, state: err}
+		task.mx.Unlock()
 		return nil, err
 	case content = <-resultChan:
 		//increment Task response count
@@ -406,20 +418,21 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 		task.responseCount = atomic.AddUint32(&count, 1)
 		task.mx.Unlock()
 	case <-task.ctx.Done():
+		task.statePool[tw.UID] = scrapeState{url: tw.scraper.Request.URL, state: err}
 		return nil, &errs.Cancel{}
 	}
 
 	// Create a goquery document.
 	doc, err := goquery.NewDocumentFromReader(content)
 	if err != nil {
-		task.Cancel()
+		task.statePool[tw.UID] = scrapeState{url: tw.scraper.Request.URL, state: err}
 		return nil, err
 	}
 
 	if tw.scraper.paginatorType == "next" {
 		url, err = tw.scraper.Paginator.NextPage(url, doc.Selection)
 		if err != nil {
-			task.Cancel()
+			task.statePool[tw.UID] = scrapeState{url: tw.scraper.Request.URL, state: err}
 			return nil, err
 		}
 		// Repeat until we don't have any more URLs, or until we hit our page limit.
@@ -454,6 +467,7 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 
 	blockSelections := tw.scraper.DividePage(doc.Selection)
 	if len(blockSelections) == 0 {
+		task.statePool[tw.UID] = scrapeState{url: tw.scraper.Request.URL, state: err}
 		return nil, &errs.NoBlocksToParse{URL: req.URL}
 	}
 
@@ -496,6 +510,7 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 			task.updateKeys(tw.UID, tw.keys)
 		}
 	}
+	task.statePool[tw.UID] = scrapeState{url: tw.scraper.Request.URL, state: &errs.OK{}}
 	return nil, err
 
 }
@@ -689,8 +704,7 @@ func (task *Task) scrapeDetails(extractedPartResults interface{}, part *Part, bl
 		err = task.updateKeys(uid, tw.keys)
 		if err != nil {
 			// logger.Warning(fmt.Errorf("Failed to write %s. %s", string(uid), err.Error()))
-			logger.Warn("Failed to write ",
-				zap.String("UID", string(uid)), zap.Error(err))
+			task.statePool[tw.UID] = scrapeState{url: tw.scraper.Request.URL, state: err}
 			return false
 		}
 	}
@@ -791,4 +805,10 @@ func (task *Task) closeTask() {
 	close(task.fetchChannel)
 	close(task.blockChannel)
 	task.storage.Close()
+}
+
+func (task *Task) printLog(w io.Writer) {
+	for _, state := range task.statePool {
+		w.Write([]byte(fmt.Sprintf("URL: %s State: %s", state.url, state.state.Error())))
+	}
 }

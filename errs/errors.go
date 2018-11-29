@@ -87,3 +87,10 @@ type NoBlocksToParse struct {
 func (e *NoBlocksToParse) Error() string {
 	return fmt.Sprintf("No blocks found for current page. URL: %s", e.URL)
 }
+
+type OK struct {
+}
+
+func (e *OK) Error() string {
+	return "Scrape success.\n"
+}
