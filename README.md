@@ -8,7 +8,7 @@
 [![codecov](https://codecov.io/gh/slotix/dataflowkit/branch/master/graph/badge.svg)](https://codecov.io/gh/slotix/dataflowkit)
 
 
-DFK is a Web Scraping framework for Gophers. It extracts structured data from web pages, following the specified CSS Selectors.
+DFK is a Web Scraping framework for Gophers. It extracts data from web pages, following the specified CSS Selectors.
 
 You can use it in many ways for data mining, data processing or archiving.
 
@@ -25,10 +25,9 @@ You can use it in many ways for data mining, data processing or archiving.
 - Following links and detailed pages processing;
 - Managing delays between requests per domain; 
 - Following robots.txt directives; 
-- Various storage types support. 
-The following storage type are available Diskv, Mongodb, Cassandra;
+- Various storage types support including Diskv, Mongodb, Cassandra; 
 Storage interface is flexible enough to add more storage types easily.
-- Save results as CSV, JSON, XML;
+- Save results as CSV, MS Excel, JSON, XML;
 
 
 DFK consists of two general services for fetching and parsing web pages content.
@@ -45,7 +44,7 @@ Chrome fetcher is intended for rendering dynamic javascript based content. It se
 Fetchers pass retrieved data to parse.d service. 
 
 ## Parse service
-**parse.d** is the service that extracts data from downloaded web page following the rules listed in configuration JSON file. Extracted data is returned in CSV, JSON or XML format.
+**parse.d** is the service that extracts data from downloaded web page following the rules listed in configuration JSON file. Extracted data is returned in CSV, MS Excel, JSON or XML format.
 
 *Note: Sometimes Parse service cannot extract data from some pages retrieved by default Base fetcher. Empty results may be returned while parsing Java Script generated pages. Parse service then attempts to force Chrome fetcher to render the same dynamic javascript driven content automatically. Have a look at https://scrape.dataflowkit.org/persons/page-0 which is a sample of JavaScript driven web page.*   
 
@@ -156,11 +155,11 @@ docker run --init -it --rm -d --name chrome --shm-size=1024m -p=127.0.0.1:9222:9
 
 2. Build and run fetch.d service
 ```
-cd $GOPATH/src/github.com/slotix/dataflowkit/fetch/fetch.d && go build && ./fetch.d
+cd $GOPATH/src/github.com/slotix/dataflowkit/cmd/fetch.d && go build && ./fetch.d
 ```
 3. In new terminal window build and run parse.d service
 ```
-cd $GOPATH/src/github.com/slotix/dataflowkit/parse/parse.d && go build && ./parse.d
+cd $GOPATH/src/github.com/slotix/dataflowkit/cmd/parse.d && go build && ./parse.d
 ```
 4. Launch parsing. See step 3. from the previous section. 
 
@@ -173,7 +172,7 @@ cd $GOPATH/src/github.com/slotix/dataflowkit/parse/parse.d && go build && ./pars
 ## Front-End
 Try https://dataflowkit.org/dfk Front-end with Point-and-click interface to Dataflow kit services. It generates JSON config file and sends POST request to DFK Parser 
 
-[![IMAGE ALT Dataflow kit web scraping framework](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/dfk-screenshot1.png)](https://youtu.be/5gRcftONmTU)
+[![IMAGE ALT Dataflow kit web scraping framework](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/dfk-screenshot1.png)](https://youtu.be/SKBkclf1FxA)
 
 Click on image to see Dataflow kit in action.
 
