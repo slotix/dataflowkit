@@ -59,17 +59,19 @@ func encodeFetcherContent(ctx context.Context, w http.ResponseWriter, response i
 
 // encodeError encodes erroneous responses and writes http status header.
 func encodeError(_ context.Context, err error, w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	switch e := err.(type) {
 	case errs.Error:
 		// We can retrieve the status here and write out a specific
 		// HTTP status code.
 		http.Error(w, e.Error(), e.Status())
+	/* case context.DeadlineExceeded:
+	http.Error(w, "Fetch timeout", 400) */
 	default:
 		// Any error types we don't specifically look out for default
 		// to serving a HTTP 500
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, e.Error(), http.StatusInternalServerError)
 	}
 }
 

@@ -65,7 +65,9 @@ func encodeRequest(ctx context.Context, r *http.Request, request interface{}) er
 
 func decodeFetcherContent(ctx context.Context, r *http.Response) (interface{}, error) {
 	if r.StatusCode != http.StatusOK {
-		return nil, errors.New(r.Status)
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(r.Body)
+		return nil, errors.New(buf.String())
 	}
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {

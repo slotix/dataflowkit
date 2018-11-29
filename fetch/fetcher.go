@@ -312,9 +312,6 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	}
 	defer conn.Close() // Cleanup.
 	defer devt.Close(ctx, pt)
-	// if err != nil {
-	// 	return nil, err
-	// }
 	// Create a new CDP Client that uses conn.
 	f.cdpClient = cdp.NewClient(conn)
 
@@ -404,27 +401,35 @@ var _ Fetcher = &ChromeFetcher{}
 func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, method, url string, formData string, timeout time.Duration) error {
 	defer time.Sleep(750 * time.Millisecond)
 
+	ctxTimeout, cancelTimeout := context.WithTimeout(context.Background(), timeout)
+
 	// Make sure Page events are enabled.
-	err := pageClient.Enable(ctx)
+	err := pageClient.Enable(ctxTimeout)
 	if err != nil {
 		return err
 	}
 
 	// Navigate to GitHub, block until ready.
-	loadEventFired, err := pageClient.LoadEventFired(ctx)
+	loadEventFired, err := pageClient.LoadEventFired(ctxTimeout)
 	if err != nil {
 		return err
 	}
 	defer loadEventFired.Close()
 
-	loadingFailed, err := f.cdpClient.Network.LoadingFailed(ctx)
+	loadingFailed, err := f.cdpClient.Network.LoadingFailed(ctxTimeout)
 	if err != nil {
 		return err
 	}
 	defer loadingFailed.Close()
 
+	exceptionThrown, err := f.cdpClient.Runtime.ExceptionThrown(ctxTimeout)
+	if err != nil {
+		return err
+	}
+	defer exceptionThrown.Close()
+
 	if method == "GET" {
-		_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
+		_, err = pageClient.Navigate(ctxTimeout, page.NewNavigateArgs(url))
 		if err != nil {
 			return err
 		}
@@ -433,23 +438,29 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 		pattern := network.RequestPattern{URLPattern: &url}
 		patterns := []network.RequestPattern{pattern}
 
-		f.cdpClient.Network.SetCacheDisabled(ctx, network.NewSetCacheDisabledArgs(true))
+		f.cdpClient.Network.SetCacheDisabled(ctxTimeout, network.NewSetCacheDisabledArgs(true))
 
 		interArgs := network.NewSetRequestInterceptionArgs(patterns)
-		err = f.cdpClient.Network.SetRequestInterception(ctx, interArgs)
+		err = f.cdpClient.Network.SetRequestInterception(ctxTimeout, interArgs)
 		if err != nil {
 			return err
 		}
 
 		kill := make(chan bool)
-		go f.interceptRequest(ctx, url, formData, kill)
-		_, err = pageClient.Navigate(ctx, page.NewNavigateArgs(url))
+		go f.interceptRequest(ctxTimeout, url, formData, kill)
+		_, err = pageClient.Navigate(ctxTimeout, page.NewNavigateArgs(url))
 		if err != nil {
 			return err
 		}
 		kill <- true
 	}
 	select {
+	case <-exceptionThrown.Ready():
+		ev, err := exceptionThrown.Recv()
+		if err != nil {
+			return err
+		}
+		return errs.StatusError{400, errors.New(ev.ExceptionDetails.Error())}
 	case <-loadEventFired.Ready():
 		_, err = loadEventFired.Recv()
 		if err != nil {
@@ -461,6 +472,11 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 			return err
 		}
 		return errs.StatusError{400, errors.New(reply.ErrorText)}
+	case <-ctx.Done():
+		cancelTimeout()
+		return nil /*
+			case <-ctxTimeout.Done():
+				return errs.StatusError{400, errors.New("Fetch timeout")} */
 	}
 	return nil
 }

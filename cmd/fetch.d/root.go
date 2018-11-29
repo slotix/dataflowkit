@@ -30,7 +30,6 @@ import (
 
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/healthcheck"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -49,8 +48,10 @@ var (
 	diskvBaseDir    string
 
 	cassandraHost string
+	mongoHost     string
 
 	excludeResources []string
+	fetchTimeout     int
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -117,9 +118,11 @@ func init() {
 	RootCmd.Flags().StringVarP(&fetchProxy, "PROXY", "p", "", "Proxy address http://username:password@proxy-host:port")
 
 	//set here default type of storage
-	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage type. Types: Diskv, Cassandra")
+	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage type. Types: Diskv, Cassandra, MongoDB")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
 	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "", "127.0.0.1", "Cassandra host address")
+	RootCmd.Flags().StringVarP(&mongoHost, "MONGO", "", "127.0.0.1", "MongoDB host address")
+	RootCmd.Flags().IntVar(&fetchTimeout, "FETCH_TIMEOUT", 60, "Sets fetch timeout")
 
 	RootCmd.Flags().StringSliceVar(&excludeResources, "EXCLUDERES", nil, "Exclude resources from fetch.")
 
@@ -156,6 +159,8 @@ func init() {
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
+	viper.BindPFlag("MONGO", RootCmd.Flags().Lookup("MONGO"))
+	viper.BindPFlag("FETCH_TIMEOUT", RootCmd.Flags().Lookup("FETCH_TIMEOUT"))
 
 	viper.BindPFlag("EXCLUDERES", RootCmd.Flags().Lookup("EXCLUDERES"))
 
