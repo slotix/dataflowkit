@@ -8,7 +8,7 @@
 [![codecov](https://codecov.io/gh/slotix/dataflowkit/branch/master/graph/badge.svg)](https://codecov.io/gh/slotix/dataflowkit)
 
 
-DFK is a Web Scraping framework for Gophers. It extracts data from web pages, following the specified CSS Selectors.
+Dataflow kit ("DFK") is a Web Scraping framework for Gophers. It extracts data from web pages, following the specified CSS Selectors.
 
 You can use it in many ways for data mining, data processing or archiving.
 
