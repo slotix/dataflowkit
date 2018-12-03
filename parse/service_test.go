@@ -67,6 +67,10 @@ func init() {
 	viper.Set("FETCHER_TYPE", "base")
 	viper.Set("RESULTS_DIR", "results")
 	viper.Set("CHROME", "http://127.0.0.1:9222")
+	viper.Set("FETCH_CHANNEL_SIZE", 20)
+	viper.Set("FETCH_WORKER_NUM",20)
+	viper.Set("BLOCK_CHANNEL_SIZE",20)
+	viper.Set("BLOCK_WORKER_NUM",20)
 }
 func Test_service(t *testing.T) {
 	//start fetch server

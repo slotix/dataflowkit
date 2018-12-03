@@ -381,9 +381,11 @@ func (task *Task) allowedByRobots(req fetch.Request) error {
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
 func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 	defer task.jobDone.Done()
+	task.mx.Lock()
 	if _, scraped := task.statePool[tw.UID]; scraped {
 		return nil, nil
 	}
+	task.mx.Unlock()
 	req := tw.scraper.Request
 	url := req.URL
 

@@ -30,6 +30,10 @@ func init() {
 	viper.Set("STORAGE_TYPE", "diskv")
 	viper.Set("RESULTS_DIR", "results")
 	viper.Set("RANDOMIZE_FETCH_DELAY", true)
+	viper.Set("FETCH_CHANNEL_SIZE", 20)
+	viper.Set("FETCH_WORKER_NUM", 20)
+	viper.Set("BLOCK_CHANNEL_SIZE", 20)
+	viper.Set("BLOCK_WORKER_NUM", 20)
 	//delayFetch = 500 * time.Millisecond
 	delayFetch = 0
 	//paginateResults = false
