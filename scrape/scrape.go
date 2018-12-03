@@ -131,6 +131,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		}
 		task.Payload.Request.Type = "chrome"
 		scraper.Request.Type = "chrome"
+		delete(task.statePool, tw.UID)
 		task.jobDone.Add(1)
 		_, err = task.scrape(&tw)
 		task.jobDone.Wait()
@@ -382,8 +383,8 @@ func (task *Task) allowedByRobots(req fetch.Request) error {
 func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 	defer task.jobDone.Done()
 	task.mx.Lock()
-	if _, scraped := task.statePool[tw.UID]; scraped {
-		return nil, nil
+	if err, scraped := task.statePool[tw.UID]; scraped {
+		return nil, err.state
 	}
 	task.mx.Unlock()
 	req := tw.scraper.Request
@@ -420,21 +421,27 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 		task.responseCount = atomic.AddUint32(&count, 1)
 		task.mx.Unlock()
 	case <-task.ctx.Done():
+		task.mx.Lock()
 		task.statePool[tw.UID] = scrapeState{url: tw.scraper.Request.URL, state: err}
+		task.mx.Unlock()
 		return nil, &errs.Cancel{}
 	}
 
 	// Create a goquery document.
 	doc, err := goquery.NewDocumentFromReader(content)
 	if err != nil {
+		task.mx.Lock()
 		task.statePool[tw.UID] = scrapeState{url: tw.scraper.Request.URL, state: err}
+		task.mx.Unlock()
 		return nil, err
 	}
 
 	if tw.scraper.paginatorType == "next" {
 		url, err = tw.scraper.Paginator.NextPage(url, doc.Selection)
 		if err != nil {
+			task.mx.Lock()
 			task.statePool[tw.UID] = scrapeState{url: tw.scraper.Request.URL, state: err}
+			task.mx.Unlock()
 			return nil, err
 		}
 		// Repeat until we don't have any more URLs, or until we hit our page limit.
@@ -469,7 +476,9 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 
 	blockSelections := tw.scraper.DividePage(doc.Selection)
 	if len(blockSelections) == 0 {
+		task.mx.Lock()
 		task.statePool[tw.UID] = scrapeState{url: tw.scraper.Request.URL, state: err}
+		task.mx.Unlock()
 		return nil, &errs.NoBlocksToParse{URL: req.URL}
 	}
 
@@ -512,7 +521,9 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 			task.updateKeys(tw.UID, tw.keys)
 		}
 	}
+	task.mx.Lock()
 	task.statePool[tw.UID] = scrapeState{url: tw.scraper.Request.URL, state: &errs.OK{}}
+	task.mx.Unlock()
 	return nil, err
 
 }
