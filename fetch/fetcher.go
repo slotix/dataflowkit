@@ -422,11 +422,11 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 	}
 	defer loadingFailed.Close()
 
-	exceptionThrown, err := f.cdpClient.Runtime.ExceptionThrown(ctxTimeout)
-	if err != nil {
-		return err
-	}
-	defer exceptionThrown.Close()
+	// exceptionThrown, err := f.cdpClient.Runtime.ExceptionThrown(ctxTimeout)
+	// if err != nil {
+	// 	return err
+	// }
+	//defer exceptionThrown.Close()
 
 	if method == "GET" {
 		_, err = pageClient.Navigate(ctxTimeout, page.NewNavigateArgs(url))
@@ -455,12 +455,12 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 		kill <- true
 	}
 	select {
-	case <-exceptionThrown.Ready():
-		ev, err := exceptionThrown.Recv()
-		if err != nil {
-			return err
-		}
-		return errs.StatusError{400, errors.New(ev.ExceptionDetails.Error())}
+	// case <-exceptionThrown.Ready():
+	// 	ev, err := exceptionThrown.Recv()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	return errs.StatusError{400, errors.New(ev.ExceptionDetails.Error())}
 	case <-loadEventFired.Ready():
 		_, err = loadEventFired.Recv()
 		if err != nil {
