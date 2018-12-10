@@ -189,8 +189,6 @@ type Task struct {
 	Robots map[string]*robotstxt.RobotsData
 	//Results
 	Parsed bool
-	// Block counter
-	BlockCounter []int
 	// storage using to write result into corresponding storage type
 	storage storage.Store
 	//number of requests divided by request type "initial", "paginator", "details"

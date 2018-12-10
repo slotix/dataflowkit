@@ -72,7 +72,6 @@ func NewTask(p Payload) *Task {
 		//Errors:       []error{},
 		Robots:       make(map[string]*robotstxt.RobotsData),
 		Parsed:       false,
-		BlockCounter: []int{},
 		requestCount: make(map[string]uint32),
 		storage:      storage.NewStore(storageType),
 		mx:           &sync.Mutex{},
@@ -95,7 +94,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 
 	task.fetchChannel = make(chan *fetchInfo, viper.GetInt("FETCH_CHANNEL_SIZE"))
 	for i := 0; i < viper.GetInt("FETCH_WORKER_NUM"); i++ {
-		go task.fetchWorker(task.fetchChannel)
+		go task.fetchWorker()
 	}
 	task.blockChannel = make(chan *blockStruct, viper.GetInt("BLOCK_CHANNEL_SIZE"))
 	for i := 0; i < viper.GetInt("BLOCK_WORKER_NUM"); i++ {
@@ -144,13 +143,8 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		}
 	}
 
-	if len(task.BlockCounter) > 0 {
-		tw.keys[0] = task.BlockCounter
-	} else {
-		// We have to sort a keys to keep an order
-		for k := range tw.keys {
-			sort.Slice(tw.keys[k], func(i, j int) bool { return tw.keys[k][i] < tw.keys[k][j] })
-		}
+	for k := range tw.keys {
+		sort.Slice(tw.keys[k], func(i, j int) bool { return tw.keys[k][i] < tw.keys[k][j] })
 	}
 
 	j, err := json.Marshal(tw.keys)
@@ -382,11 +376,11 @@ func (task *Task) allowedByRobots(req fetch.Request) error {
 // scrape is a core function which follows the rules listed in task payload, processes all pages/ details pages. It stores parsed results to Task.Results
 func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 	defer task.jobDone.Done()
-	task.mx.Lock()
+	/* task.mx.Lock()
 	if err, scraped := task.statePool[tw.UID]; scraped {
 		return nil, err.state
 	}
-	task.mx.Unlock()
+	task.mx.Unlock() */
 	req := tw.scraper.Request
 	url := req.URL
 
@@ -689,19 +683,22 @@ func (task *Task) scrapeDetails(extractedPartResults interface{}, part *Part, bl
 		//If original host is the same as details' host sleep for some time before  fetching of details page  to avoid ban and other sanctions
 
 		var uid string
+		var blockKeys map[int][]int
 		ubc := false
 		if block.scraper.IsPath {
 			uid = block.hash
 			ubc = true
+			blockKeys = *block.keys
 		} else {
 			uid = string(utils.GenerateCRC32([]byte(r.URL)))
+			blockKeys = make(map[int][]int)
 		}
 		tw := taskWorker{
 			currentPageNum:  0,
 			scraper:         &part.Details,
 			UID:             uid,
 			useBlockCounter: ubc,
-			keys:            make(map[int][]int),
+			keys:            blockKeys,
 		}
 		tw.scraper.Request.Type = task.Payload.Request.Type
 		task.jobDone.Add(1)
@@ -738,22 +735,29 @@ func (task *Task) saveToStorage(blockResults *map[string]interface{}, block *blo
 	if !block.scraper.IsPath {
 		task.mx.Lock()
 		key := block.key
-		if block.useBlockCounter {
+		/* if block.useBlockCounter {
 			blockNum := len(task.BlockCounter)
 			key = fmt.Sprintf("%s-0-%d", block.hash, blockNum)
 			task.BlockCounter = append(task.BlockCounter, blockNum)
-		} else {
-			keys := strings.Split(block.key, "-")
-			pageNum, err := strconv.Atoi(keys[1])
-			if err != nil {
-				logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()).Error())
-			}
-			blockNum, err := strconv.Atoi(keys[2])
-			if err != nil {
-				logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()).Error())
-			}
-			(*block.keys)[pageNum] = append((*block.keys)[pageNum], blockNum)
+		} else { */
+		keys := strings.Split(block.key, "-")
+		pageNum, err := strconv.Atoi(keys[1])
+		if err != nil {
+			logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()).Error())
 		}
+		var blockNum int
+		if block.useBlockCounter {
+			blockNum = len((*block.keys)[pageNum])
+			key = fmt.Sprintf("%s-0-%d", block.hash, blockNum)
+		} else {
+			blockNum, err = strconv.Atoi(keys[2])
+			if err != nil {
+				logger.Error(fmt.Errorf("Failed to convert string to int %s. %s", string(key[1]), err.Error()).Error())
+			}
+		}
+
+		(*block.keys)[pageNum] = append((*block.keys)[pageNum], blockNum)
+		//}
 		err = task.storage.Write(storage.Record{
 			Type:    storage.INTERMEDIATE,
 			Key:     key,
@@ -767,8 +771,8 @@ func (task *Task) saveToStorage(blockResults *map[string]interface{}, block *blo
 	}
 }
 
-func (task *Task) fetchWorker(fc chan *fetchInfo) {
-	for fetch := range fc {
+func (task *Task) fetchWorker() {
+	for fetch := range task.fetchChannel {
 		if !viper.GetBool("IGNORE_FETCH_DELAY") {
 			if *task.Payload.RandomizeFetchDelay {
 				//Sleep for time equal to FetchDelay * random value between 500 and 1500 msec
@@ -795,9 +799,11 @@ func (task *Task) fetchWorker(fc chan *fetchInfo) {
 }
 
 func (task *Task) updateKeys(uid string, keys map[int][]int) error {
+	task.mx.Lock()
 	for k := range keys {
 		sort.Slice(keys[k], func(i, j int) bool { return keys[k][i] < keys[k][j] })
 	}
+	task.mx.Unlock()
 	j, err := json.Marshal(keys)
 	if err != nil {
 		return err
