@@ -61,10 +61,18 @@ func DividePageByIntersection(selectors []string) DividePageFunc {
 }
 
 func getCommonAncestor(doc *goquery.Selection, selectors []string) (*goquery.Selection, error) {
-	selectorAncestor := doc.Find(selectors[0]).First().Parent()
-	if len(selectors) > 1 {
-		bFound := false
-		selectorsSlice := selectors[1:]
+	var selectorAncestor *goquery.Selection
+	var index int
+	for i, selector := range selectors {
+		selectorAncestor = doc.Find(selector).First().Parent()
+		if selectorAncestor.Length() > 0 {
+			index = i
+			break
+		}
+	}
+	bFound := false
+	selectorsSlice := selectors[index:]
+	if len(selectorsSlice) > 0 {
 		for !bFound {
 			for _, f := range selectorsSlice {
 				sel := doc.Find(f).First()
