@@ -16,10 +16,11 @@ func TestHealthCheckHandler(t *testing.T) {
 		FetchConn{Host: host},
 		ChromeConn{Host: "http://localhost:9222"},
 		CassandraConn{Host: "127.0.0.1"},
+		MongoConn{Host: "127.0.0.1"},
 	}
 	status := CheckServices(checkers...)
 	t.Log(status)
-	eq := reflect.DeepEqual(map[string]string{"DFK Parse Service": "Ok", "DFK Fetch Service": "Ok", "Headless Chrome": "Ok", "Cassandra": "Ok"}, status)
+	eq := reflect.DeepEqual(map[string]string{"DFK Parse Service": "Ok", "DFK Fetch Service": "Ok", "Headless Chrome": "Ok", "Cassandra": "Ok", "MongoDB": "Ok"}, status)
 	assert.Equal(t, eq, true)
 
 	checkers = []Checker{

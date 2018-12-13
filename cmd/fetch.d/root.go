@@ -66,9 +66,15 @@ var RootCmd = &cobra.Command{
 				Host: chrome,
 			},
 		}
-		if storageType == "Cassandra" {
+		sType := strings.ToLower(storageType)
+		if sType == "cassandra" {
 			services = append(services, healthcheck.CassandraConn{
 				Host: cassandraHost})
+		}
+		if sType == "mongodb" {
+			services = append(services, healthcheck.MongoConn{
+				Host: mongoHost,
+			})
 		}
 		status := healthcheck.CheckServices(services...)
 		allAlive := true

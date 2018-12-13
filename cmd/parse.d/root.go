@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/slotix/dataflowkit/healthcheck"
 	"github.com/slotix/dataflowkit/parse"
@@ -70,9 +71,15 @@ var RootCmd = &cobra.Command{
 				Host: viper.GetString("DFK_FETCH"),
 			},
 		}
-		if storageType == "Cassandra" {
+		sType := strings.ToLower(storageType)
+		if sType == "cassandra" {
 			services = append(services, healthcheck.CassandraConn{
 				Host: cassandraHost,
+			})
+		}
+		if sType == "mongodb" {
+			services = append(services, healthcheck.MongoConn{
+				Host: mongoHost,
 			})
 		}
 
@@ -123,7 +130,7 @@ func init() {
 
 	RootCmd.Flags().StringVarP(&DFKParse, "DFK_PARSE", "p", "127.0.0.1:8001", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
-	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: Diskv, Cassandra")
+	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: Diskv, MongoDB, Cassandra")
 	RootCmd.Flags().StringVarP(&resultsDir, "RESULTS_DIR", "", "results", "Directory for storing results")
 	RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 86400, "Default value for item expiration in seconds")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
