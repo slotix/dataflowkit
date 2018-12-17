@@ -614,11 +614,15 @@ func (task *Task) blockWorker(blocks chan *blockStruct) {
 				//update base URL to reflect attr relative URL change
 				/* switch part.Extractor.(type) {
 				case *extract.Attr: */
+				retryImageIfFail := false
 				attr, ok := part.Extractor.(*extract.Attr)
-				if ok && (attr.Attr == "href" || attr.Attr == "src") {
+				if ok && (attr.Attr == "href" || attr.Attr == "src" || attr.Attr == "style") {
 					task.mx.Lock()
 					attr.BaseURL = block.scraper.Request.URL
 					task.mx.Unlock()
+					if attr.Attr == "src" || attr.Attr == "style" {
+						retryImageIfFail = true
+					}
 				}
 				/* } */
 				task.mx.Lock()
@@ -628,11 +632,33 @@ func (task *Task) blockWorker(blocks chan *blockStruct) {
 					logger.Error(err.Error())
 					return
 				}
-
 				// A nil response from an extractor means that we don't even include it in
 				// the results.
 				if extractedPartResults == nil {
-					continue
+					if retryImageIfFail {
+						task.mx.Lock()
+						attr, _ := part.Extractor.(*extract.Attr)
+						attr.Attr = "style"
+						extractedPartResults, err = part.Extractor.Extract(sel)
+						if err != nil {
+							logger.Error(err.Error())
+							continue
+						}
+						task.mx.Unlock()
+						if extractedPartResults == nil {
+							continue
+						}
+					} else {
+						continue
+					}
+				}
+				if retryImageIfFail {
+					imgSrc, ok := extractedPartResults.(string)
+					if ok {
+						nStart := strings.Index(imgSrc, "url(") + len("url(")
+						nEnd := strings.Index(imgSrc, ")")
+						extractedPartResults = imgSrc[nStart:nEnd]
+					}
 				}
 				if !block.scraper.IsPath {
 					blockResults[part.Name] = extractedPartResults
