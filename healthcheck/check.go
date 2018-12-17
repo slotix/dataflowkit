@@ -17,6 +17,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/globalsign/mgo"
 	"github.com/gocql/gocql"
 	"github.com/mafredri/cdp/devtool"
 )
@@ -36,6 +37,11 @@ type ChromeConn struct {
 
 // CassandraConn struct implements methods for Cassandra connection satisfying Checker interface
 type CassandraConn struct {
+	Host string
+}
+
+// MongoConn struct implements methods for MongoDB connection satisfying Checker interface
+type MongoConn struct {
 	Host string
 }
 
@@ -63,6 +69,10 @@ func (ChromeConn) String() string {
 
 func (CassandraConn) String() string {
 	return "Cassandra"
+}
+
+func (MongoConn) String() string {
+	return "MongoDB"
 }
 
 func (p ParseConn) isAlive() error {
@@ -132,6 +142,15 @@ func (c CassandraConn) isAlive() error {
 	cluster.Keyspace = "dfk"
 	cluster.Consistency = gocql.One
 	s, err := cluster.CreateSession()
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	return nil
+}
+
+func (c MongoConn) isAlive() error {
+	s, err := mgo.Dial(c.Host)
 	if err != nil {
 		return err
 	}
