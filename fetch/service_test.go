@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/slotix/dataflowkit/storage"
 	"github.com/spf13/viper"
@@ -153,9 +154,8 @@ func TestFetchServiceMW(t *testing.T) {
 	if err != nil {
 		t.Log(err)
 	}
-	
-}
 
+}
 
 func TestChromeFetchServiceMW(t *testing.T) {
 	//start fetch server
@@ -165,11 +165,12 @@ func TestChromeFetchServiceMW(t *testing.T) {
 	}
 	htmlServer := Start(serverCfg)
 	defer htmlServer.Stop()
+	time.Sleep(500 * time.Millisecond)
 
 	svc, _ := NewHTTPClient(fetchServer)
 	//svc = RobotsTxtMiddleware()(svc)
 	svc = LoggingMiddleware(logger)(svc)
-	
+
 	//Test Chrome Fetcher
 	//svcChrome := FetchService{}
 	_, err := svc.Fetch(Request{
@@ -203,5 +204,5 @@ func TestChromeFetchServiceMW(t *testing.T) {
 	buf.ReadFrom(data)
 	s := buf.String()
 	t.Log(s)
-	
+
 }
