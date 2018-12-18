@@ -1,6 +1,6 @@
 # Dataflow kit
 
-![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/logo.png)
+![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/logo-whitebg.png)
 
 [![Build Status](https://travis-ci.org/slotix/dataflowkit.svg?branch=master)](https://travis-ci.org/slotix/dataflowkit)
 [![GoDoc](https://godoc.org/github.com/slotix/dataflowkit?status.svg)](https://godoc.org/github.com/slotix/dataflowkit)
@@ -12,8 +12,29 @@ Dataflow kit ("DFK") is a Web Scraping framework for Gophers. It extracts data f
 
 You can use it in many ways for data mining, data processing or archiving.
 
-- Dataflow kit is fast. It takes about 4-6 seconds to fetch and then parse 50 pages.
-- Dataflow kit is suitable to process quite large volumes of data. Our tests show the time needed to parse appr. 4 millions of pages is about 7 hours. 
+## The Web Scraping Pipeline
+Web-scraping pipeline consists of 3 general components:
+
+- **Downloading** an HTML web-page. (Fetch Service)
+- **Parsing** an HTML page and retrieving data we're interested in (Parse Service)
+- **Encoding** parsed data to CSV, MS Excel, JSON or XML format.
+
+## Fetch service
+**fetch.d** server is intended for html web pages content download. 
+Depending on Fetcher type, web page content is downloaded using either Base Fetcher or Chrome fetcher. 
+
+Base fetcher uses standard golang http client to fetch pages as is. 
+It works faster than Chrome fetcher. But Base fetcher cannot render dynamic javascript driven web pages. 
+
+Chrome fetcher is intended for rendering dynamic javascript based content. It sends requests to Chrome running in headless mode.  
+
+A fetched web page is passed to parse.d service. 
+
+## Parse service
+**parse.d** is the service that extracts data from downloaded web page following the rules listed in configuration JSON file. Extracted data is returned in CSV, MS Excel, JSON or XML format.
+
+*Note: Sometimes Parse service cannot extract data from some pages retrieved by default Base fetcher. Empty results may be returned while parsing Java Script generated pages. Parse service then attempts to force Chrome fetcher to render the same dynamic javascript driven content automatically. Have a look at https://scrape.dataflowkit.org/persons/page-0 which is a sample of JavaScript driven web page.*   
+
 
 ## Dataflow kit benefits:
 
@@ -25,28 +46,11 @@ You can use it in many ways for data mining, data processing or archiving.
 - Following links and detailed pages processing;
 - Managing delays between requests per domain; 
 - Following robots.txt directives; 
-- Various storage types support including Diskv, Mongodb, Cassandra; 
-Storage interface is flexible enough to add more storage types easily.
-- Save results as CSV, MS Excel, JSON, XML;
+- Saving intermediate data in Diskv, Mongodb or Cassandra. Storage interface is flexible enough to add more storage types easily;
+- Encode results to CSV, MS Excel, JSON, XML formats;
 
-
-DFK consists of two general services for fetching and parsing web pages content.
-
-## Fetch service
-**fetch.d** server is intended for html web pages content download. 
-Depending on Fetcher type, web page content is downloaded using either Base Fetcher or Chrome fetcher. 
-
-Base fetcher uses standard golang http client to fetch pages as is. 
-It works faster than Chrome fetcher. But Base fetcher cannot render dynamic javascript driven web pages. 
-
-Chrome fetcher is intended for rendering dynamic javascript based content. It sends requests to Chrome running in headless mode.  
-
-Fetchers pass retrieved data to parse.d service. 
-
-## Parse service
-**parse.d** is the service that extracts data from downloaded web page following the rules listed in configuration JSON file. Extracted data is returned in CSV, MS Excel, JSON or XML format.
-
-*Note: Sometimes Parse service cannot extract data from some pages retrieved by default Base fetcher. Empty results may be returned while parsing Java Script generated pages. Parse service then attempts to force Chrome fetcher to render the same dynamic javascript driven content automatically. Have a look at https://scrape.dataflowkit.org/persons/page-0 which is a sample of JavaScript driven web page.*   
+- Dataflow kit is fast. It takes about 4-6 seconds to fetch and then parse 50 pages.
+- Dataflow kit is suitable to process quite large volumes of data. Our tests show the time needed to parse appr. 4 millions of pages is about 7 hours. 
 
 ## Installation
 Using [dep](https://github.com/golang/dep)
