@@ -652,7 +652,7 @@ func (task *Task) blockWorker(blocks chan *blockStruct) {
 						continue
 					}
 				}
-				if retryImageIfFail {
+				if retryImageIfFail && attr.Attr == "style" {
 					imgSrc, ok := extractedPartResults.(string)
 					if ok {
 						nStart := strings.Index(imgSrc, "url(") + len("url(")
