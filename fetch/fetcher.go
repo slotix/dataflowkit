@@ -83,6 +83,7 @@ type Request struct {
 	//PageCount sets number of pages to scrape. The scrape will proceed until either this number of pages have been reached, or until the paginator returns no further URLs or no more content could be loaded.
 	//PageCount parameter is used during scrape process and never used directly in Fetch service
 	PageCount int
+	Actions   string `json:"actions"`
 }
 
 // BaseFetcher is a Fetcher that uses the Go standard library's http
@@ -343,7 +344,7 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	if request.PaginatorType == "infinite" {
 		path := filepath.Join(viper.GetString("CHROME_SCRIPTS"), "scroll2bottom.js")
 		// TODO: add max page count param
-		err = f.runJSFromFile(ctx, path, fmt.Sprintf("ScrollDown(%d);", request.PageCount))
+		err = f.RunJSFromFile(ctx, path, fmt.Sprintf("ScrollDown(%d);", request.PageCount))
 		if err != nil {
 			return nil, err
 		}
@@ -351,10 +352,14 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 
 	if request.PaginatorType == "more" {
 		path := filepath.Join(viper.GetString("CHROME_SCRIPTS"), "scroll2bottom.js")
-		err = f.runJSFromFile(ctx, path, fmt.Sprintf(`ScrollDown(%d, "%s");`, request.PageCount, request.MoreButtonSelector))
+		err = f.RunJSFromFile(ctx, path, fmt.Sprintf(`ScrollDown(%d, "%s");`, request.PageCount, request.MoreButtonSelector))
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if err := f.runActions(ctx, request.Actions); err != nil {
+		logger.Warn(err.Error())
 	}
 
 	u, err := url.Parse(request.getURL())
@@ -383,6 +388,23 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	readCloser := ioutil.NopCloser(strings.NewReader(result.OuterHTML))
 	return readCloser, nil
 
+}
+
+func (f *ChromeFetcher) runActions(ctx context.Context, actionsJSON string) error {
+	acts := []map[string]json.RawMessage{}
+	err := json.Unmarshal([]byte(actionsJSON), &acts)
+	if err != nil {
+		return err
+	}
+	for _, actionMap := range acts {
+		for actionType, params := range actionMap {
+			action, err := NewAction(actionType, params)
+			if err == nil {
+				return action.Execute(ctx, f)
+			}
+		}
+	}
+	return nil
 }
 
 func (f *ChromeFetcher) setCookieJar(jar http.CookieJar) {
@@ -606,7 +628,7 @@ func isExclude(origin string) bool {
 	return false
 }
 
-func (f ChromeFetcher) runJSFromFile(ctx context.Context, path string, entryPointFunction string) error {
+func (f ChromeFetcher) RunJSFromFile(ctx context.Context, path string, entryPointFunction string) error {
 	exp, err := ioutil.ReadFile(path)
 	if err != nil {
 		panic(err)
@@ -614,7 +636,7 @@ func (f ChromeFetcher) runJSFromFile(ctx context.Context, path string, entryPoin
 
 	exp = append(exp, entryPointFunction...)
 
-	compileReply, err := f.cdpClient.Runtime.CompileScript(context.Background(), &runtime.CompileScriptArgs{
+	compileReply, err := f.cdpClient.Runtime.CompileScript(ctx, &runtime.CompileScriptArgs{
 		Expression:    string(exp),
 		PersistScript: true,
 	})

@@ -25,3 +25,12 @@ async function ScrollDown(pageCount, buttonCSSSelector = '') {
     }
   }
 }
+
+function clickElement(selector) {
+  let elem = document.querySelector(selector);
+  if (elem !== null) {
+    elem.click();
+  } else {
+  	console.log('Element not found');
+  }
+}
