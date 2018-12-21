@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -76,14 +75,8 @@ type Request struct {
 	FormData string `json:"formData,omitempty"`
 	//UserToken identifies user to keep personal cookies information.
 	UserToken string `json:"userToken"`
-	//PaginatorType option is used for identify paginator type.
-	PaginatorType string `json:"paginatorType"`
-	//MoreButtonSelector CSS selector of "More" Button element on a web page
-	MoreButtonSelector string `json:"moreButtonSelector"`
-	//PageCount sets number of pages to scrape. The scrape will proceed until either this number of pages have been reached, or until the paginator returns no further URLs or no more content could be loaded.
-	//PageCount parameter is used during scrape process and never used directly in Fetch service
-	PageCount int
-	Actions   string `json:"actions"`
+	// Actions contains the list of action we have to perform on page
+	Actions string `json:"actions"`
 }
 
 // BaseFetcher is a Fetcher that uses the Go standard library's http
@@ -339,23 +332,6 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	}
 	if err != nil {
 		return nil, err
-	}
-
-	if request.PaginatorType == "infinite" {
-		path := filepath.Join(viper.GetString("CHROME_SCRIPTS"), "scroll2bottom.js")
-		// TODO: add max page count param
-		err = f.RunJSFromFile(ctx, path, fmt.Sprintf("ScrollDown(%d);", request.PageCount))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if request.PaginatorType == "more" {
-		path := filepath.Join(viper.GetString("CHROME_SCRIPTS"), "scroll2bottom.js")
-		err = f.RunJSFromFile(ctx, path, fmt.Sprintf(`ScrollDown(%d, "%s");`, request.PageCount, request.MoreButtonSelector))
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	if err := f.runActions(ctx, request.Actions); err != nil {

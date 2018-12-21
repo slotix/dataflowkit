@@ -50,11 +50,9 @@ func NewTask(p Payload) *Task {
 		if p.Paginator.MaxPages == 0 {
 			p.Paginator.MaxPages = viper.GetInt("MAX_PAGES")
 		}
-		p.Request.PaginatorType = p.Paginator.Type
 		if p.Paginator.Type != "next" {
-			p.Request.MoreButtonSelector = p.Paginator.Selector
+			p.Request.Actions = fmt.Sprintf(`{"paginate":{"maxpage":%d, "element":"%s"}}`, p.Paginator.MaxPages, p.Paginator.Selector)
 			p.Request.Type = "chrome"
-			p.Request.PageCount = p.Paginator.MaxPages
 		}
 	}
 	if p.PaginateResults == nil {

@@ -13,17 +13,19 @@ import (
 // {"click":{"element":".element"}}]
 
 func NewAction(actionType string, params json.RawMessage) (Action, error) {
+	var action Action
+	var err error
 	switch actionType {
 	case "click":
-		action := ClickAction{}
-		err := json.Unmarshal(params, &action)
-		if err != nil {
-			return nil, err
-		}
-		return &action, nil
+		action = &ClickAction{}
+		err = json.Unmarshal(params, &action)
+	case "paginate":
+		action = &PaginateAction{}
+		err = json.Unmarshal(params, &action)
 	default:
-		return nil, fmt.Errorf("Failed to create new action. Unknown or undefined action type")
+		err = fmt.Errorf("Failed to create new action. Unknown or undefined action type")
 	}
+	return action, err
 }
 
 type Action interface {
@@ -37,4 +39,14 @@ type ClickAction struct {
 func (a *ClickAction) Execute(ctx context.Context, f *ChromeFetcher) error {
 	path := filepath.Join(viper.GetString("CHROME_SCRIPTS"), "scroll2bottom.js")
 	return f.RunJSFromFile(ctx, path, fmt.Sprintf(`clickElement("%s");`, a.Element))
+}
+
+type PaginateAction struct {
+	MaxPage int    `json:"maxpage"`
+	Element string `json:"element"`
+}
+
+func (pa *PaginateAction) Execute(ctx context.Context, f *ChromeFetcher) error {
+	path := filepath.Join(viper.GetString("CHROME_SCRIPTS"), "scroll2bottom.js")
+	return f.RunJSFromFile(ctx, path, fmt.Sprintf(`ScrollDown(%d, "%s");`, pa.MaxPage, pa.Element))
 }
