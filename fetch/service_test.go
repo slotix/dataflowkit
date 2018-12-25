@@ -38,6 +38,7 @@ func TestFetchServiceMW(t *testing.T) {
 	}
 	htmlServer := Start(serverCfg)
 	defer htmlServer.Stop()
+	time.Sleep(500 * time.Millisecond)
 
 	svc, _ := NewHTTPClient(fetchServer)
 	//svc = RobotsTxtMiddleware()(svc)
