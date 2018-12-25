@@ -176,6 +176,11 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		e = JSONEncoder{
 			//		paginateResults: *task.Payload.PaginateResults,
 		}
+	// TODO: implemetation ndJSON payload
+	case "ndjson":
+		e = JSONEncoder{
+			ndJSON: true,
+		}
 	case "xml":
 		e = XMLEncoder{}
 	case "xls":
