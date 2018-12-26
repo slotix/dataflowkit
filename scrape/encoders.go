@@ -68,7 +68,7 @@ type CSVEncoder struct {
 
 // JSONEncoder transforms parsed data to JSON format.
 type JSONEncoder struct {
-	ndJSON bool
+	JSONL bool
 	//	paginateResults bool
 }
 
@@ -87,7 +87,7 @@ func (e JSONEncoder) encode(ctx context.Context, w *bufio.Writer, payloadMD5 str
 	// if e.paginateResults {
 	// 	w.WriteString("[")
 	// }
-	if !e.ndJSON {
+	if !e.JSONL {
 		w.WriteString("[")
 	}
 
@@ -99,7 +99,7 @@ func (e JSONEncoder) encode(ctx context.Context, w *bufio.Writer, payloadMD5 str
 			block, err := reader.Read()
 			if err != nil {
 				if err.Error() == errs.EOF {
-					if !e.ndJSON {
+					if !e.JSONL {
 						w.WriteString("]")
 					}
 					s.Close()
@@ -114,18 +114,18 @@ func (e JSONEncoder) encode(ctx context.Context, w *bufio.Writer, payloadMD5 str
 					continue
 				}
 			}
-			if !e.ndJSON && writeComma {
+			if !e.JSONL && writeComma {
 				w.WriteString(",")
 			}
 			blockJSON, err := json.Marshal(block)
 			if err != nil {
 				logger.Error(err.Error())
 			}
-			if !writeComma && !e.ndJSON {
+			if !writeComma && !e.JSONL {
 				writeComma = !writeComma
 			}
 			w.Write(blockJSON)
-			if e.ndJSON {
+			if e.JSONL {
 				w.WriteString("\n")
 			}
 		case <-ctx.Done():
