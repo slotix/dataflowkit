@@ -20,8 +20,8 @@ var (
 	//	randFalse  = false
 	delayFetch time.Duration
 	//paginateResults                bool
-	personsPayload, detailsPayload, CSVPayload, XMLPayload Payload
-	update                                                 = flag.Bool("update", true, "update result files")
+	personsPayload, detailsPayload, JSONPayload, CSVPayload, XMLPayload Payload
+	update                                                              = flag.Bool("update", true, "update result files")
 )
 
 func init() {
@@ -155,6 +155,38 @@ func init() {
 		Format: "json",
 		//PaginateResults: &paginateResults,
 	}
+	JSONPayload = Payload{
+		Name: "persons Cards",
+		Request: fetch.Request{
+			Type: "base",
+			URL:  "http://testserver:12345/persons/page-0",
+		},
+		Fields: []Field{
+			{
+				Name:     "Names",
+				Selector: "#cards a",
+				Extractor: Extractor{
+					Types: []string{"text", "href", "const", "outerHtml", "unknownSelectorType"},
+					Params: map[string]interface{}{
+						"value": "--- NAME ---",
+					},
+				},
+			},
+			{
+				Name:     "Images",
+				Selector: ".card-img-top",
+				Extractor: Extractor{
+					Types: []string{"src", "alt", "width", "height"},
+				},
+			},
+		},
+		Paginator: &paginator{
+			Selector:  "nav:nth-child(4) :nth-child(2) .page-link",
+			Attribute: "href",
+			MaxPages:  2,
+		},
+		Format: "",
+	}
 	CSVPayload = Payload{
 		Name: "persons details",
 		Request: fetch.Request{
@@ -253,6 +285,7 @@ func TestParseDetails(t *testing.T) {
 	defer fetchServer.Stop()
 
 	//JSON details output
+	detailsPayload.Format = "json"
 	task := NewTask(detailsPayload)
 	r, err := task.Parse()
 	buf := new(bytes.Buffer)
@@ -264,7 +297,7 @@ func TestParseDetails(t *testing.T) {
 	resultFile := str["Output file"]
 	actual, err := ioutil.ReadFile(filepath.Join("./", resultFile.(string)))
 	assert.NoError(t, err)
-	golden := filepath.Join("../testdata", "details.json")
+	golden := filepath.Join("../testdata/scrape", "details.json")
 	if *update {
 		ioutil.WriteFile(golden, actual, 0644)
 	}
@@ -338,31 +371,13 @@ func TestParse(t *testing.T) {
 	actual, err := ioutil.ReadFile(filepath.Join("./", resultFile.(string)))
 	assert.NoError(t, err)
 	//t.Log(string(got))
-	golden := filepath.Join("../testdata", "res.json")
+	golden := filepath.Join("../testdata/scrape", "result.json")
 	if *update {
 		ioutil.WriteFile(golden, actual, 0644)
 	}
 	expected, err := ioutil.ReadFile(golden)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
-
-	//CSV
-	// personsPayload.Format = "csv"
-	// task = NewTask(personsPayload)
-	// r, err = task.Parse()
-	// assert.NoError(t, err)
-	// buf = new(bytes.Buffer)
-	// buf.ReadFrom(r)
-	// resultFile = buf.Bytes()
-	// actual, err = ioutil.ReadFile(filepath.Join("./", string(resultFile)))
-	// assert.NoError(t, err)
-	// golden = filepath.Join("../testdata", "res.csv")
-	// if *update {
-	// 	ioutil.WriteFile(golden, actual, 0644)
-	// }
-	// expected, err = ioutil.ReadFile(golden)
-	// assert.NoError(t, err)
-	// assert.Equal(t, expected, actual)
 
 	//xml
 	personsPayload.Format = "xml"
@@ -377,7 +392,7 @@ func TestParse(t *testing.T) {
 	resultFile = str["Output file"]
 	actual, err = ioutil.ReadFile(filepath.Join("./", resultFile.(string)))
 	assert.NoError(t, err)
-	golden = filepath.Join("../testdata", "res.xml")
+	golden = filepath.Join("../testdata/scrape", "result.xml")
 	if *update {
 		ioutil.WriteFile(golden, actual, 0644)
 	}
@@ -469,6 +484,85 @@ func TestParseErrs(t *testing.T) {
 	os.RemoveAll("./results")
 }
 
+func TestJSONEncode(t *testing.T) {
+	JSONPayload.Format = "json"
+	viper.Set("RANDOMIZE_FETCH_DELAY", false)
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host: fetchServerAddr,
+	}
+	fetchServer := fetch.Start(fetchServerCfg)
+	defer fetchServer.Stop()
+
+	task := NewTask(JSONPayload)
+	r, err := task.Parse()
+
+	assert.NoError(t, err)
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+	str := make(map[string]interface{})
+	err = json.Unmarshal(buf.Bytes(), &str)
+	assert.NoError(t, err)
+	resultFile := str["Output file"]
+	filename := resultFile.(string)
+	assert.Equal(t, filename[len(filename)-4:], "json")
+	actual, err := ioutil.ReadFile(filepath.Join("./", resultFile.(string)))
+	assert.NoError(t, err)
+	//t.Log(string(got))
+	golden := filepath.Join("../testdata/scrape", "encode.json")
+	if *update {
+		ioutil.WriteFile(golden, actual, 0644)
+	}
+	expected, err := ioutil.ReadFile(golden)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
+
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+}
+
+func TestJSONLEncode(t *testing.T) {
+	JSONPayload.Format = "jsonl"
+	viper.Set("RANDOMIZE_FETCH_DELAY", false)
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host: fetchServerAddr,
+	}
+	fetchServer := fetch.Start(fetchServerCfg)
+	defer fetchServer.Stop()
+
+	task := NewTask(JSONPayload)
+	r, err := task.Parse()
+
+	assert.NoError(t, err)
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+	str := make(map[string]interface{})
+	err = json.Unmarshal(buf.Bytes(), &str)
+	assert.NoError(t, err)
+	resultFile := str["Output file"]
+	filename := resultFile.(string)
+	assert.Equal(t, filename[len(filename)-5:], "jsonl")
+	actual, err := ioutil.ReadFile(filepath.Join("./", resultFile.(string)))
+	assert.NoError(t, err)
+	golden := filepath.Join("../testdata/scrape", "encode.jsonl")
+	if *update {
+		ioutil.WriteFile(golden, actual, 0644)
+	}
+	expected, err := ioutil.ReadFile(golden)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
+
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+}
+
 func TestCSVEncode(t *testing.T) {
 	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
@@ -481,6 +575,7 @@ func TestCSVEncode(t *testing.T) {
 
 	task := NewTask(CSVPayload)
 	r, err := task.Parse()
+
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
@@ -488,9 +583,11 @@ func TestCSVEncode(t *testing.T) {
 	err = json.Unmarshal(buf.Bytes(), &str)
 	assert.NoError(t, err)
 	resultFile := str["Output file"]
+	filename := resultFile.(string)
+	assert.Equal(t, filename[len(filename)-3:], "csv")
 	actual, err := ioutil.ReadFile(filepath.Join("./", resultFile.(string)))
 	assert.NoError(t, err)
-	golden := filepath.Join("../testdata", "CSVEncode.csv")
+	golden := filepath.Join("../testdata/scrape", "encode.csv")
 	if *update {
 		ioutil.WriteFile(golden, actual, 0644)
 	}
@@ -501,6 +598,10 @@ func TestCSVEncode(t *testing.T) {
 	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 }
+
+// TODO: TestXMLEncode && TestXLSEncode
+//  XML - order of fields in both xml files is not identical. Structure compare required.
+//  XLS - structure compare required because of metadata
 
 func TestXMLEncode(t *testing.T) {
 	os.RemoveAll("./diskv")
@@ -523,7 +624,7 @@ func TestXMLEncode(t *testing.T) {
 	resultFile := str["Output file"]
 	actual, err := ioutil.ReadFile(filepath.Join("./", resultFile.(string)))
 	assert.NoError(t, err)
-	golden := filepath.Join("../testdata", "XMLEncode.xml")
+	golden := filepath.Join("../testdata/scrape", "encode.xml")
 	if *update {
 		ioutil.WriteFile(golden, actual, 0644)
 	}
