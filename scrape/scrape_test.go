@@ -21,7 +21,7 @@ var (
 	delayFetch time.Duration
 	//paginateResults                bool
 	personsPayload, detailsPayload, JSONPayload, CSVPayload, XMLPayload Payload
-	update                                                              = flag.Bool("update", true, "update result files")
+	update                                                              = flag.Bool("update", false, "update result files")
 )
 
 func init() {
