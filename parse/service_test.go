@@ -2,6 +2,7 @@ package parse
 
 import (
 	"testing"
+	"time"
 
 	"github.com/slotix/dataflowkit/fetch"
 	"github.com/slotix/dataflowkit/scrape"
@@ -68,9 +69,9 @@ func init() {
 	viper.Set("RESULTS_DIR", "results")
 	viper.Set("CHROME", "http://127.0.0.1:9222")
 	viper.Set("FETCH_CHANNEL_SIZE", 20)
-	viper.Set("FETCH_WORKER_NUM",20)
-	viper.Set("BLOCK_CHANNEL_SIZE",20)
-	viper.Set("BLOCK_WORKER_NUM",20)
+	viper.Set("FETCH_WORKER_NUM", 20)
+	viper.Set("BLOCK_CHANNEL_SIZE", 20)
+	viper.Set("BLOCK_WORKER_NUM", 20)
 }
 func Test_service(t *testing.T) {
 	//start fetch server
@@ -81,6 +82,7 @@ func Test_service(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	//Stop server
 	defer fetchServer.Stop()
+	time.Sleep(500 * time.Millisecond)
 	svc := ParseService{}
 	result, err := svc.Parse(payloadBase)
 	assert.NoError(t, err)
@@ -93,6 +95,7 @@ func Test_service(t *testing.T) {
 	}
 	parseServer := Start(serverCfg)
 	defer parseServer.Stop()
+	time.Sleep(500 * time.Millisecond)
 
 	//create HTTPClient to send requests.
 	svc1, _ := NewHTTPClient(parseServerAddr)
