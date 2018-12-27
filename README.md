@@ -17,7 +17,7 @@ Web-scraping pipeline consists of 3 general components:
 
 - **Downloading** an HTML web-page. (Fetch Service)
 - **Parsing** an HTML page and retrieving data we're interested in (Parse Service)
-- **Encoding** parsed data to CSV, MS Excel, JSON or XML format.
+- **Encoding** parsed data to CSV, MS Excel, JSON, [JSON Lines](https://hackernoon.com/json-lines-format-76353b4e588d) or XML format.
 
 ## Fetch service
 **fetch.d** server is intended for html web pages content download. 
