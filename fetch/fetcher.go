@@ -59,6 +59,7 @@ type Fetcher interface {
 
 //Request struct contains request information sent to  Fetchers
 type Request struct {
+	// Type defines Fetcher type. It may be "chrome" or "base". Defaults to "base". 
 	Type string `json:"type"`
 	//	URL to be retrieved
 	URL string `json:"url"`
