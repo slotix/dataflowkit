@@ -14,6 +14,7 @@ type mongodb struct {
 }
 
 func newMongo(host string) *mongodb {
+	//todo: mgo.DialWithInfo() pass credentials to Mongo
 	s, err := mgo.Dial(host)
 	if err != nil {
 		log.Fatal(err)
