@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	//kitprometheus "github.com/go-kit/kit/metrics/prometheus"
+	//stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -45,9 +47,24 @@ func Start(cfg Config) *HTMLServer {
 
 	defer logger.Sync() // flushes buffer, if any
 
+	//declare metrics
+	// fieldKeys := []string{"method"}
+	// requestCount := kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
+	// 	Namespace: "dfk",
+	// 	Subsystem: "parse_service",
+	// 	Name:      "request_count",
+	// 	Help:      "Number of requests received.",
+	// }, fieldKeys)
+	// requestLatency := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
+	// 	Namespace: "dfk",
+	// 	Subsystem: "parse_service",
+	// 	Name:      "request_latency_microseconds",
+	// 	Help:      "Total duration of requests in microseconds.",
+	// }, fieldKeys)
 	var svc Service
 	svc = ParseService{}
 	svc = LoggingMiddleware(logger)(svc)
+	// svc = Metrics(requestCount, requestLatency)(svc)
 
 	endpoints := Endpoints{
 		ParseEndpoint: MakeParseEndpoint(svc),
