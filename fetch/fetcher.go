@@ -469,7 +469,9 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 		if err != nil {
 			return err
 		}
-		return errs.StatusError{400, errors.New(reply.ErrorText)}
+		if reply.Type == network.ResourceTypeDocument {
+			return errs.StatusError{400, errors.New(reply.ErrorText)}
+		}
 	case <-ctx.Done():
 		cancelTimeout()
 		return nil /*
