@@ -78,6 +78,8 @@ type Payload struct {
 	//FetcherType string `json:"fetcherType"`
 	//Format represents output format (CSV, JSON, XML)
 	Format string `json:"format"`
+	//Compressed represents if result will be compressed into GZip
+	Compressor string `json:"compressor"`
 	//Paginator is used to scrape multiple pages.
 	//If Paginator is nil, then no pagination is performed and it is assumed that the initial URL is the only page.
 	Paginator *paginator `json:"paginator"`
@@ -232,4 +234,12 @@ type fetchInfo struct {
 type scrapeState struct {
 	url   string
 	state error
+}
+
+type encodeInfo struct {
+	payloadMD5    string
+	extension     string
+	compressor    string
+	compressLevel int
+	keys          []*map[int][]int
 }

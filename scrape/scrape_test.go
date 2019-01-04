@@ -2,6 +2,7 @@ package scrape
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"flag"
 	"io/ioutil"
@@ -721,4 +722,52 @@ func TestIntArrayToString(t *testing.T) {
 func TestFloatArrayToString(t *testing.T) {
 	str := floatArrayToString([]float64{1.1, 2.2, 3.3, 4.4, 5.5}, ";")
 	assert.Equal(t, "1.1;2.2;3.3;4.4;5.5", str)
+}
+
+func TestGZipJSONEncode(t *testing.T) {
+	JSONPayload.Format = "json"
+	JSONPayload.Compressor = GZIP_COMPRESS
+	viper.Set("RANDOMIZE_FETCH_DELAY", false)
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host: fetchServerAddr,
+	}
+	fetchServer := fetch.Start(fetchServerCfg)
+	defer fetchServer.Stop()
+
+	task := NewTask(JSONPayload)
+	r, err := task.Parse()
+
+	assert.NoError(t, err)
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+	str := make(map[string]interface{})
+	err = json.Unmarshal(buf.Bytes(), &str)
+	assert.NoError(t, err)
+	resultFile := str["Output file"]
+	filename := resultFile.(string)
+	assert.Equal(t, filename[len(filename)-2:], GZIP_COMPRESS)
+
+	actual := filepath.Join("./", resultFile.(string))
+
+	fo, err := os.OpenFile(actual, os.O_RDONLY, 0660)
+	assert.NoError(t, err)
+	gr, err := gzip.NewReader(fo)
+	assert.NoError(t, err)
+	bb, err := ioutil.ReadAll(gr)
+	assert.NoError(t, err)
+	assert.NoError(t, fo.Close())
+
+	//t.Log(string(got))
+	golden := filepath.Join("../testdata/scrape", "encode.json")
+	expected, err := ioutil.ReadFile(golden)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, bb)
+
+	JSONPayload.Compressor = ""
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
 }

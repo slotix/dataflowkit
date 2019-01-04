@@ -164,7 +164,6 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	w := bufio.NewWriter(os.Stdout)
 	task.printLog(w)
 	w.Flush()
-
 	var e encoder
 	switch strings.ToLower(task.Payload.Format) {
 	case "csv":
@@ -184,11 +183,18 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	case "xml":
 		e = XMLEncoder{}
 	case "xls":
-		e = XLSXEncoder{partNames: scraper.partNames()}
+		e = XLSXEncoder{
+			partNames: scraper.partNames(),
+		}
 	default:
 		return nil, errors.New("invalid output format specified")
 	}
-	r, err := EncodeToFile(task.ctx, &e, task.Payload.Format, string(uid))
+	r, err := EncodeToFile(task.ctx, &e, encodeInfo{
+		payloadMD5: string(uid),
+		extension:  task.Payload.Format,
+		compressor: strings.ToLower(task.Payload.Compressor),
+		// compressLevel: 0,
+	})
 	if err != nil {
 		return nil, err
 	}
