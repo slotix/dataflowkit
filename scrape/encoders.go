@@ -62,7 +62,7 @@ func EncodeToFile(ctx context.Context, e *encoder, info encodeInfo) ([]byte, err
 	if len(info.keys) > 0 {
 		keys = info.keys[0]
 	}
-	err = (*e).encode(ctx, &w, info.payloadMD5, keys)
+	err = (*e).encode(ctx, w, info.payloadMD5, keys)
 	return []byte(sFileName), err
 }
 
@@ -89,7 +89,7 @@ func getFilename(resultPath string, timestamp string, info encodeInfo) (ext stri
 // }
 
 type encoder interface {
-	encode(ctx context.Context, w *io.Writer, payloadMD5 string, keys *map[int][]int) error
+	encode(ctx context.Context, w io.Writer, payloadMD5 string, keys *map[int][]int) error
 }
 
 // CSVEncoder transforms parsed data to CSV format.
@@ -112,7 +112,7 @@ type XLSXEncoder struct {
 	partNames []string
 }
 
-func (e JSONEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string, keys *map[int][]int) error {
+func (e JSONEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, keys *map[int][]int) error {
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	// make a write buffer
@@ -120,7 +120,7 @@ func (e JSONEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string
 	// 	w.WriteString("[")
 	// }
 	if !e.JSONL {
-		(*w).Write([]byte("["))
+		io.WriteString(w, "[")
 	}
 
 	reader := newStorageReader(&s, payloadMD5, keys)
@@ -132,7 +132,7 @@ func (e JSONEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string
 			if err != nil {
 				if err.Error() == errs.EOF {
 					if !e.JSONL {
-						(*w).Write([]byte("]"))
+						io.WriteString(w, "]")
 					}
 					s.Close()
 					return nil
@@ -147,7 +147,7 @@ func (e JSONEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string
 				}
 			}
 			if !e.JSONL && writeComma {
-				(*w).Write([]byte(","))
+				io.WriteString(w, ",")
 			}
 			blockJSON, err := json.Marshal(block)
 			if err != nil {
@@ -156,9 +156,9 @@ func (e JSONEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string
 			if !writeComma && !e.JSONL {
 				writeComma = !writeComma
 			}
-			(*w).Write(blockJSON)
+			w.Write(blockJSON)
 			if e.JSONL {
-				(*w).Write([]byte("\n"))
+				io.WriteString(w, "\n")
 			}
 		case <-ctx.Done():
 			s.Close()
@@ -298,7 +298,7 @@ func (r *storageResultReader) getValue() (map[string]interface{}, error) {
 	return blockMap, nil
 }
 
-func (e CSVEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string, keys *map[int][]int) error {
+func (e CSVEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, keys *map[int][]int) error {
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 
@@ -308,7 +308,7 @@ func (e CSVEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string,
 		sString += fmt.Sprintf("%s,", headerName)
 	}
 	sString = strings.TrimSuffix(sString, ",") + "\n"
-	_, err := (*w).Write([]byte(sString))
+	_, err := io.WriteString(w, sString)
 	if err != nil {
 		return err
 	}
@@ -340,7 +340,7 @@ func (e CSVEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string,
 				sString += e.formatFieldValue(&block, fieldName)
 			}
 			sString = strings.TrimSuffix(sString, ",") + "\n"
-			_, err = (*w).Write([]byte(sString))
+			_, err = io.WriteString(w, sString)
 			if err != nil {
 				logger.Error(err.Error())
 			}
@@ -389,11 +389,11 @@ func (e CSVEncoder) formatFieldValue(block *map[string]interface{}, fieldName st
 	return fmt.Sprintf("%s,", formatedString)
 }
 
-func (e XMLEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string, keys *map[int][]int) error {
+func (e XMLEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, keys *map[int][]int) error {
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	//write xml headers
-	_, err := (*w).Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><root>`))
+	_, err := io.WriteString(w, `<?xml version="1.0" encoding="UTF-8"?><root>`)
 	if err != nil {
 		return err
 	}
@@ -410,7 +410,7 @@ func (e XMLEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string,
 			if err != nil {
 				if err.Error() == errs.EOF {
 					s.Close()
-					(*w).Write([]byte("</root>"))
+					io.WriteString(w, "</root>")
 					return nil
 				} else if err.Error() == errs.NextPage {
 					//next page
@@ -420,7 +420,7 @@ func (e XMLEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string,
 					continue
 				}
 			}
-			e.writeXML(*w, &block)
+			e.writeXML(w, &block)
 			//err = w.Flush()
 			//if err != nil {
 			//	logger.Error(err.Error())
@@ -435,7 +435,7 @@ func (e XMLEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string,
 func (e XMLEncoder) writeXML(w io.Writer, block *map[string]interface{}) {
 	for field, value := range *block {
 		if strings.Contains(field, "details") {
-			w.Write([]byte(fmt.Sprintf("<%s>", field)))
+			io.WriteString(w, fmt.Sprintf("<%s>", field))
 			switch details := value.(type) {
 			case map[string]interface{}:
 				e.writeXML(w, &details)
@@ -444,10 +444,9 @@ func (e XMLEncoder) writeXML(w io.Writer, block *map[string]interface{}) {
 					e.writeXML(w, &detail)
 				}
 			}
-			w.Write([]byte(fmt.Sprintf("</%s>", field)))
+			io.WriteString(w, fmt.Sprintf("</%s>", field))
 		} else {
-			nodeName := fmt.Sprintf("<%s>", field)
-			w.Write([]byte(nodeName))
+			io.WriteString(w, fmt.Sprintf("<%s>", field))
 			// have to escape predefined entities to obtain valid xml
 			v, ok := value.(string)
 			if ok {
@@ -458,13 +457,12 @@ func (e XMLEncoder) writeXML(w io.Writer, block *map[string]interface{}) {
 					if ok {
 						xml.Escape(w, []byte(v))
 						if i < len(value.([]interface{}))-1 {
-							w.Write([]byte(";"))
+							io.WriteString(w, ";")
 						}
 					}
 				}
 			}
-			nodeName = fmt.Sprintf("</%s>", field)
-			w.Write([]byte(nodeName))
+			io.WriteString(w, fmt.Sprintf("</%s>", field))
 		}
 	}
 }
@@ -481,7 +479,7 @@ func floatArrayToString(a []float64, delim string) string {
 	//return strings.Trim(strings.Join(strings.Fields(fmt.Sprint(a)), delim), "[]")
 }
 
-func (e XLSXEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string, keys *map[int][]int) error {
+func (e XLSXEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, keys *map[int][]int) error {
 	file := xlsx.NewFile()
 	sh, err := file.AddSheet("sheet")
 	if err != nil {
@@ -504,7 +502,7 @@ func (e XLSXEncoder) encode(ctx context.Context, w *io.Writer, payloadMD5 string
 			block, err := reader.Read()
 			if err != nil {
 				if err.Error() == errs.EOF {
-					return file.Write(*w)
+					return file.Write(w)
 				} else if err.Error() == errs.NextPage {
 					//next page
 				} else {
