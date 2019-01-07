@@ -67,14 +67,12 @@
   revision = "eeefdecb41b842af6dc652aaea4026e8403e62df"
 
 [[projects]]
-  digest = "1:77807273cec5183f6d766542c6f30494a1146e988837c35c3279101bffef4747"
+  digest = "1:16ee7533e9a6dba069e70ba54a020e81e1880fbe6141f290bfae645abbee1d28"
   name = "github.com/go-kit/kit"
   packages = [
     "endpoint",
     "log",
     "metrics",
-    "metrics/internal/lv",
-    "metrics/prometheus",
     "transport/http",
   ]
   pruneopts = "UT"
@@ -540,7 +538,6 @@
     "github.com/globalsign/mgo/bson",
     "github.com/go-kit/kit/endpoint",
     "github.com/go-kit/kit/metrics",
-    "github.com/go-kit/kit/metrics/prometheus",
     "github.com/go-kit/kit/transport/http",
     "github.com/gocql/gocql",
     "github.com/gorilla/mux",
@@ -552,7 +549,6 @@
     "github.com/mafredri/cdp/protocol/runtime",
     "github.com/mafredri/cdp/rpcc",
     "github.com/peterbourgon/diskv",
-    "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/segmentio/ksuid",
     "github.com/spf13/cobra",
