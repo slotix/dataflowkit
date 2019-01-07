@@ -182,7 +182,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 		}
 	case "xml":
 		e = XMLEncoder{}
-	case "xls":
+	case "xlsx":
 		e = XLSXEncoder{
 			partNames: scraper.partNames(),
 		}
