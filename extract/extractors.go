@@ -6,7 +6,6 @@ package extract
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"regexp"
 
 	"github.com/slotix/dataflowkit/utils"
@@ -168,28 +167,31 @@ type Regex struct {
 
 // Extract returns Regex'ed  value from specified selection.
 func (e Regex) Extract(sel *goquery.Selection) (interface{}, error) {
-	if e.Regex == nil {
-		return nil, errors.New("no regex given")
-	}
-	if e.Regex.NumSubexp() == 0 {
-		return nil, errors.New("regex has no subexpressions")
-	}
-
+	//if e.Regex == nil {
+	//	return nil, errors.New("no regex given")
+	//}
+	//if e.Regex.NumSubexp() == 0 {
+	//	return nil, errors.New("regex has no subexpressions")
+	//}
+	//
+	//var subexp int
+	//if e.Subexpression == 0 {
+	//	if e.Regex.NumSubexp() != 1 {
+	//		e := fmt.Errorf(
+	//			"regex has more than one subexpression (%d), but which to "+
+	//				"extract was not specified",
+	//			e.Regex.NumSubexp())
+	//		return nil, e
+	//	}
+	//
+	//	subexp = 1
+	//} else {
+	//	subexpЕ = e.Subexpression
+	//}
 	var subexp int
-	if e.Subexpression == 0 {
-		if e.Regex.NumSubexp() != 1 {
-			e := fmt.Errorf(
-				"regex has more than one subexpression (%d), but which to "+
-					"extract was not specified",
-				e.Regex.NumSubexp())
-			return nil, e
-		}
-
+	if subexp = e.Subexpression; subexp == 0 {
 		subexp = 1
-	} else {
-		subexp = e.Subexpression
 	}
-
 	results := []string{}
 
 	// For each part in the selector...

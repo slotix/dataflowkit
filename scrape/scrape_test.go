@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"flag"
 	"io/ioutil"
 	"os"
@@ -768,6 +769,50 @@ func TestGZipJSONEncode(t *testing.T) {
 	assert.Equal(t, expected, bb)
 
 	JSONPayload.Compressor = ""
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+}
+
+func TestParseDetailsWithRegex(t *testing.T) {
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+	viper.Set("RANDOMIZE_FETCH_DELAY", true)
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host: fetchServerAddr,
+	}
+	fetchServer := fetch.Start(fetchServerCfg)
+	defer fetchServer.Stop()
+
+	pp := &(detailsPayload.Fields[0].Details.Fields[0].Extractor.Params)
+	ss := (*pp)["regexp"]
+	detailsPayload.Format = "json"
+
+	//empty field case
+	(*pp)["regexp"] = ""
+	task := NewTask(detailsPayload)
+	_, actualErr := task.Parse()
+	if assert.Error(t, actualErr) {
+		expected := errors.New("no regex given")
+		assert.Equal(t, expected, actualErr)
+	}
+
+	//more than 1 subexpression case
+	(*pp)["regexp"] = "(Some([a-z]+)!)"
+	task = NewTask(detailsPayload)
+	_, actualErr = task.Parse()
+	if assert.Error(t, actualErr) {
+		expected := errors.New("regex extractor doesn't support subexpressions")
+		assert.Equal(t, expected, actualErr)
+	}
+
+	//no parens pass
+	(*pp)["regexp"] = "[\\d]+\\s"
+	task = NewTask(detailsPayload)
+	_, actualErr = task.Parse()
+	assert.NoError(t, actualErr)
+
+	(*pp)["regexp"] = ss
 	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 }

@@ -336,7 +336,16 @@ func (p Payload) newExtractor(t string, f *Field, part *Part, params *map[string
 	case "regex":
 		r := &extract.Regex{}
 		regExp := (*params)["regexp"]
+		if regExp == "" {
+			return nil, fmt.Errorf("no regex given")
+		}
 		r.Regex = regexp.MustCompile(regExp.(string))
+		if r.Regex.NumSubexp() == 0 {
+			r.Regex = regexp.MustCompile("(" + regExp.(string) + ")")
+		}
+		if r.Regex.NumSubexp() > 1 {
+			return nil, fmt.Errorf("regex extractor doesn't support subexpressions")
+		}
 		//it is obligatory parameter and we don't need to add it again in further fillStruct() func. So we can delete it here
 		delete((*params), "regexp")
 		e = r
