@@ -59,7 +59,7 @@ type Fetcher interface {
 
 //Request struct contains request information sent to  Fetchers
 type Request struct {
-	// Type defines Fetcher type. It may be "chrome" or "base". Defaults to "base". 
+	// Type defines Fetcher type. It may be "chrome" or "base". Defaults to "base".
 	Type string `json:"type"`
 	//	URL to be retrieved
 	URL string `json:"url"`
@@ -368,6 +368,9 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 }
 
 func (f *ChromeFetcher) runActions(ctx context.Context, actionsJSON string) error {
+	if len(actionsJSON) == 0 {
+		return nil
+	}
 	acts := []map[string]json.RawMessage{}
 	err := json.Unmarshal([]byte(actionsJSON), &acts)
 	if err != nil {
