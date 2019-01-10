@@ -91,9 +91,7 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	//scrape request and return results.
 
 	task.fetchChannel = make(chan *fetchInfo, viper.GetInt("FETCH_CHANNEL_SIZE"))
-	for i := 0; i < viper.GetInt("FETCH_WORKER_NUM"); i++ {
-		go task.fetchWorker()
-	}
+	go task.fetchWorker()
 	task.blockChannel = make(chan *blockStruct, viper.GetInt("BLOCK_CHANNEL_SIZE"))
 	for i := 0; i < viper.GetInt("BLOCK_WORKER_NUM"); i++ {
 		go task.blockWorker(task.blockChannel)
@@ -365,7 +363,7 @@ func (p Payload) newExtractor(t string, f *Field, part *Part, params *map[string
 	return &e, nil
 }
 
-func (task *Task) allowedByRobots(req fetch.Request) error {
+func (task *Task) allowedByRobots(req fetch.Request, initFetchWorkers bool) error {
 	//get Robotstxt Data
 	host, err := req.Host()
 	if err != nil {
@@ -388,6 +386,17 @@ func (task *Task) allowedByRobots(req fetch.Request) error {
 	if !fetch.AllowedByRobots(req.URL, task.Robots[host]) {
 		return errs.StatusError{403, errors.New(http.StatusText(http.StatusForbidden))}
 	}
+
+	if initFetchWorkers {
+		crawlDelay := int(fetch.GetCrawlDelay(task.Robots[host]) / time.Second)
+		if crawlDelay == 0 {
+			crawlDelay = 1
+		}
+		fetchWorkersNumber := viper.GetInt("FETCH_WORKER_NUM") / crawlDelay
+		for i := 0; i < fetchWorkersNumber; i++ {
+			go task.fetchWorker()
+		}
+	}
 	return nil
 }
 
@@ -402,7 +411,7 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 	req := tw.scraper.Request
 	url := req.URL
 
-	err := task.allowedByRobots(req)
+	err := task.allowedByRobots(req, tw.scraper.reqType == "initial")
 	if err != nil {
 		task.Cancel()
 		return nil, err
