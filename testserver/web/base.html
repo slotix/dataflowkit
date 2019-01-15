@@ -68,6 +68,30 @@
 </head>
 
 <body>
+    <header class="navbar navbar-expand navbar-dark bg-dark">
+        <a class="navbar-brand" href="/">Dataflow Kit</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
+             <div class="collapse navbar-collapse justify-content-between" id="navbar">
+                <div class="navbar-nav">
+                    <span></span>
+                    {{/*<a class="nav-item nav-link" href="#">Dataflow Kit</a>*/}}
+                </div>
+            <div class="navbar-nav">
+
+                {{if .User}}
+                    <span class="nav-item nav-link text-warning">{{.User}}</span>
+                    <a class="btn btn-primary" href="/logout">Logout</a>
+                {{else}}
+                    <a class="btn btn-success" href="/login">Login</a>
+                {{end}}
+
+            </div>
+            </div>
+        </div>
+    </header>
     <div class="container mb-5">
         <h1>{{.Header}}</h1>
         <div class="alert alert-info" role="alert">
