@@ -7,11 +7,10 @@ import (
 	"bytes"
 	"errors"
 	"regexp"
-
-	"github.com/slotix/dataflowkit/utils"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-
+	"github.com/slotix/dataflowkit/utils"
 	"golang.org/x/net/html"
 )
 
@@ -291,6 +290,25 @@ func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
 			results = append(results, filtered)
 		}
 	})
+
+	// try extract background image from style if present
+	if len(results) == 0 && e.Attr == "src" {
+		sel.Each(func(i int, s *goquery.Selection) {
+			if val, found := s.Attr("style"); found {
+				nStart := strings.Index(val, "url(") + len("url(")
+				nEnd := strings.Index(val, ")")
+				val = val[nStart:nEnd]
+				var err error
+				//transform relative url to absolute url
+				val, err = utils.RelUrl(e.BaseURL, val)
+				if err != nil {
+					logger.Error(err.Error())
+				}
+				filtered := filterText(val, e.Filters)
+				results = append(results, filtered)
+			}
+		})
+	}
 
 	if len(results) == 0 && !e.IncludeIfEmpty {
 		return nil, nil
