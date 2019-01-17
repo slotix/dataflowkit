@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,6 +27,7 @@ var (
 	indexTpl        *template.Template
 	personDetailTpl *template.Template
 	personTableTpl  *template.Template
+	loginFormTpl    *template.Template
 	personsJSON     string
 	persons         []Person
 	port            = flag.String("p", ":12345", "HTTP(S) listen address")
@@ -54,6 +57,7 @@ func init() {
 	personTableTpl = template.Must(template.ParseFiles(*baseDir+"/persons-table.html", *baseDir+"/base.html"))
 	indexTpl = template.Must(template.ParseFiles(*baseDir+"/index.html", *baseDir+"/base.html"))
 	personDetailTpl = template.Must(template.New(*baseDir+"/base.html").Funcs(funcMap).ParseFiles(*baseDir+"/p_detail.html", *baseDir+"/base.html"))
+	loginFormTpl = template.Must(template.ParseFiles(*baseDir+"/base.html", *baseDir+"/login_form.html"))
 
 	dat, err := ioutil.ReadFile(*baseDir + "/data/persons.json")
 	if err != nil {
@@ -93,11 +97,42 @@ func Start(cfg Config) *HTMLServer {
 	// Setup Handlers
 	r := mux.NewRouter()
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Conent-Type", "text/html")
+		var user string
+		identifyUser(&w, r, &user)
+		w.Header().Set("Content-Type", "text/html")
 		vars := map[string]interface{}{
 			"Header": "Web Scraping Playground",
+			"User":   user,
 		}
 		render(w, r, indexTpl, "base", vars)
+	})
+	r.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		var user string
+		identifyUser(&w, r, &user)
+		w.Header().Set("Content-Type", "text/html")
+		vars := map[string]interface{}{
+			"User": user,
+		}
+		if user != "" {
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+		if r.Method == "POST" {
+			username := strings.Trim(r.FormValue("username"), " ")
+			if username != "" {
+				registerUser(&w, r, username)
+			}
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+		render(w, r, loginFormTpl, "base", vars)
+	})
+	r.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+		if cookie, err := r.Cookie("sessionId"); err == nil {
+			cookie.MaxAge = -1
+			http.SetCookie(w, cookie)
+		}
+		http.Redirect(w, r, "/", http.StatusFound)
 	})
 	r.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Conent-Type", "text/html")
@@ -186,6 +221,31 @@ func Start(cfg Config) *HTMLServer {
 	return &htmlServer
 }
 
+func identifyUser(w *http.ResponseWriter, r *http.Request, user *string) {
+	if cookie, err := r.Cookie("sessionId"); err != nil {
+		return
+	} else {
+		if bUser, err := base64.StdEncoding.DecodeString(cookie.Value); err != nil {
+			cookie.MaxAge = -1
+			http.SetCookie(*w, cookie)
+			return
+		} else {
+			*user = string(bUser)
+		}
+	}
+}
+
+func registerUser(w *http.ResponseWriter, r *http.Request, user string) {
+	cookie := http.Cookie{
+		Name:     "sessionId",
+		Value:    base64.StdEncoding.EncodeToString([]byte(user)),
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Now().Add(365 * 24 * time.Hour),
+	}
+	http.SetCookie(*w, &cookie)
+}
+
 // Stop turns off the HTML Server
 func (htmlServer *HTMLServer) Stop() error {
 	// Create a context to attempt a graceful 5 second shutdown.
@@ -271,6 +331,8 @@ func Div(a, b string) string {
 }
 
 func personsHandler(w http.ResponseWriter, r *http.Request) {
+	var user string
+	identifyUser(&w, r, &user)
 	w.Header().Set("Conent-Type", "text/html")
 	v := mux.Vars(r)
 	page, err := strconv.Atoi(v["page"])
@@ -284,11 +346,14 @@ func personsHandler(w http.ResponseWriter, r *http.Request) {
 		"Page":         page,
 		"PersonsCount": personCount,
 		"ItemsPerPage": 10,
+		"User":         user,
 	}
 	render(w, r, personsTpl, "base", vars)
 }
 
 func personTableHandler(w http.ResponseWriter, r *http.Request) {
+	var user string
+	identifyUser(&w, r, &user)
 	w.Header().Set("Conent-Type", "text/html")
 	//v := mux.Vars(r)
 	// page, err := strconv.Atoi(v["page"])
@@ -297,6 +362,7 @@ func personTableHandler(w http.ResponseWriter, r *http.Request) {
 	// }
 	vars := map[string]interface{}{
 		"Header": "Persons Table",
+		"User":   user,
 		//"Data":         string(personsJSON),
 		//"Page":         page,
 		//"PersonsCount": personCount,
@@ -322,6 +388,8 @@ func ToStringSlice(data []byte) []string {
 }
 
 func personDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	var user string
+	identifyUser(&w, r, &user)
 	w.Header().Set("Conent-Type", "text/html")
 	v := mux.Vars(r)
 	id, err := strconv.Atoi(v["id"])
@@ -335,6 +403,7 @@ func personDetailsHandler(w http.ResponseWriter, r *http.Request) {
 		"Phones":       ToStringSlice(persons[id].Phone),
 		"PersonsCount": personCount,
 		"ItemsPerPage": "10",
+		"User":         user,
 	}
 	render(w, r, personDetailTpl, "base", vars)
 }

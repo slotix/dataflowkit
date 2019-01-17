@@ -50,6 +50,7 @@ var (
 	fetchDelay          int
 	randomizeFetchDelay bool
 	ignoreFetchDelay    bool
+	ignoreRobotstxt     bool
 
 	fetchChannelSize int
 	blockChannelSize int
@@ -140,6 +141,7 @@ func init() {
 	RootCmd.Flags().IntVarP(&maxPages, "MAX_PAGES", "", 10, "The maximum number of pages to scrape")
 	RootCmd.Flags().BoolVarP(&paginateResults, "PAGINATE_RESULTS", "", false, "Paginated results are returned. Single list of combined results from every block on all pages is returned by default.")
 	RootCmd.Flags().IntVarP(&fetchDelay, "FETCH_DELAY", "", 500, "Specifies sleep time in milliseconds for multiple requests for the same domain.")
+	RootCmd.Flags().BoolVarP(&ignoreRobotstxt, "IGNORE_ROBOTSTXT", "", false, "Skips check of robots.txt permissions")
 	RootCmd.Flags().BoolVarP(&randomizeFetchDelay, "RANDOMIZE_FETCH_DELAY", "", true, "RandomizeFetchDelay setting decreases the chance of a crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay to 1.5 * FetchDelay seconds is used between consecutive requests to the same domain. If FetchDelay is zero this option has no effect.")
 	RootCmd.Flags().BoolVarP(&ignoreFetchDelay, "IGNORE_FETCH_DELAY", "", false, "Ignores fetchDelay setting intended for debug purpose. Please set it to false in Production")
 
@@ -183,13 +185,13 @@ func init() {
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
 	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
 	viper.BindPFlag("MONGO", RootCmd.Flags().Lookup("MONGO"))
-
 	viper.BindPFlag("MAX_PAGES", RootCmd.Flags().Lookup("MAX_PAGES"))
 	viper.BindPFlag("PAGINATE_RESULTS", RootCmd.Flags().Lookup("PAGINATE_RESULTS"))
 	viper.BindPFlag("FETCH_DELAY", RootCmd.Flags().Lookup("FETCH_DELAY"))
 	viper.BindPFlag("RANDOMIZE_FETCH_DELAY", RootCmd.Flags().Lookup("RANDOMIZE_FETCH_DELAY"))
 	viper.BindPFlag("IGNORE_FETCH_DELAY", RootCmd.Flags().Lookup("IGNORE_FETCH_DELAY"))
-
+	viper.BindPFlag("IGNORE_ROBOTSTXT", RootCmd.Flags().Lookup("IGNORE_ROBOTSTXT"))
+	
 	viper.BindPFlag("FETCH_CHANNEL_SIZE", RootCmd.Flags().Lookup("FETCH_CHANNEL_SIZE"))
 	viper.BindPFlag("FETCH_WORKER_NUM", RootCmd.Flags().Lookup("FETCH_WORKER_NUM"))
 	viper.BindPFlag("BLOCK_CHANNEL_SIZE", RootCmd.Flags().Lookup("BLOCK_CHANNEL_SIZE"))
