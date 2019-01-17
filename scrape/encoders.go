@@ -361,7 +361,10 @@ func (e CSVEncoder) formatFieldValue(block *map[string]interface{}, fieldName st
 	switch v := (*block)[fieldName].(type) {
 	case string:
 		formatedString = v
-		if strings.Contains(formatedString, ",") {
+		if strings.Contains(formatedString, `"`) {
+			formatedString = strings.Replace(formatedString, `"`, `""`, -1)
+		}
+		if strings.Contains(formatedString, ",") || strings.Contains(formatedString, "\n") {
 			formatedString = fmt.Sprintf("\"%s\"", formatedString)
 		}
 	case []string:
@@ -379,12 +382,15 @@ func (e CSVEncoder) formatFieldValue(block *map[string]interface{}, fieldName st
 	case []interface{}:
 		values := make([]string, len(v))
 		for i, value := range v {
-			if strings.Contains(value.(string), ",") {
-				value = fmt.Sprintf("\"%s\"", value)
+			if strings.Contains(value.(string), `"`) {
+				value = strings.Replace(value.(string), `"`, `""`, -1)
 			}
 			values[i] = fmt.Sprint(value)
 		}
 		formatedString = strings.Join(values, ";")
+		if strings.Contains(formatedString, ",") || strings.Contains(formatedString, "\n") {
+			formatedString = fmt.Sprintf("\"%s\"", formatedString)
+		}
 	}
 	return fmt.Sprintf("%s,", formatedString)
 }
