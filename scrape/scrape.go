@@ -411,10 +411,13 @@ func (task *Task) scrape(tw *taskWorker) (*Results, error) {
 	req := tw.scraper.Request
 	url := req.URL
 
-	err := task.allowedByRobots(req, tw.scraper.reqType == "initial")
-	if err != nil {
-		task.Cancel()
-		return nil, err
+	var err error
+	if !viper.GetBool("IGNORE_ROBOTSTXT") {
+		err = task.allowedByRobots(req, tw.scraper.reqType == "initial")
+		if err != nil {
+			task.Cancel()
+			return nil, err
+		}
 	}
 
 	//call remote fetcher to download web page
