@@ -91,7 +91,13 @@ func (task *Task) Parse() (io.ReadCloser, error) {
 	//scrape request and return results.
 
 	task.fetchChannel = make(chan *fetchInfo, viper.GetInt("FETCH_CHANNEL_SIZE"))
-	go task.fetchWorker()
+	if viper.GetBool("IGNORE_ROBOTSTXT") {
+		for i := 0; i < viper.GetInt("FETCH_WORKER_NUM"); i++ {
+			go task.fetchWorker()
+		}
+	} else {
+		go task.fetchWorker()
+	}
 	task.blockChannel = make(chan *blockStruct, viper.GetInt("BLOCK_CHANNEL_SIZE"))
 	for i := 0; i < viper.GetInt("BLOCK_WORKER_NUM"); i++ {
 		go task.blockWorker(task.blockChannel)
