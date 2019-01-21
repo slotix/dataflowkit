@@ -186,7 +186,7 @@ This is Free Software, released under the BSD 3-Clause License.
 ## Contributing
 You are welcome to contribute to our project. 
 - Please submit [your issues](https://github.com/slotix/dataflowkit/issues) 
-- Fork the [project](https://github.com/slotix/dataflowkit)
+- Fork the [project](https://github.com/slotix/dataflowkit/fork)
 
 
 ![alt tag](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/Spider-White-BG.png)
