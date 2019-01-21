@@ -343,7 +343,7 @@ func (f *ChromeFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	f.cookies, err = f.saveCookies(u)
+	f.cookies, err = f.saveCookies(u, &ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -521,8 +521,8 @@ func (f *ChromeFetcher) getCookies(u *url.URL) ([]*http.Cookie, error) {
 	return f.cookies, nil
 }
 
-func (f *ChromeFetcher) saveCookies(u *url.URL) ([]*http.Cookie, error) {
-	ncookies, err := f.cdpClient.Network.GetCookies(context.Background(), &network.GetCookiesArgs{URLs: []string{u.String()}})
+func (f *ChromeFetcher) saveCookies(u *url.URL, ctx *context.Context) ([]*http.Cookie, error) {
+	ncookies, err := f.cdpClient.Network.GetCookies(*ctx, &network.GetCookiesArgs{URLs: []string{u.String()}})
 	if err != nil {
 		return nil, err
 	}
@@ -546,6 +546,9 @@ func (f *ChromeFetcher) saveCookies(u *url.URL) ([]*http.Cookie, error) {
 			c1.Expires = expire
 		}
 		cookies = append(cookies, &c1)
+		domain := string(c1.Domain)
+		Url := u.String()
+		f.cdpClient.Network.DeleteCookies(*ctx, &network.DeleteCookiesArgs{Name: c.Name, Domain: &domain, URL: &Url, Path: &c1.Path})
 	}
 	return cookies, nil
 }
