@@ -473,7 +473,8 @@ func (f *ChromeFetcher) navigate(ctx context.Context, pageClient cdp.Page, metho
 		if err != nil {
 			return err
 		}
-		if reply.Type == network.ResourceTypeDocument {
+		canceled := reply.Canceled != nil && *reply.Canceled
+		if !canceled && reply.Type == network.ResourceTypeDocument {
 			return errs.StatusError{400, errors.New(reply.ErrorText)}
 		}
 	case <-ctx.Done():
@@ -573,12 +574,19 @@ func (f *ChromeFetcher) interceptRequest(ctx context.Context, originURL string, 
 				continue
 			}
 
-			if len(formData) > 0 && r.Request.URL == originURL && r.RedirectURL == nil {
-				interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID)
-				interceptedArgs.SetMethod("POST")
-				interceptedArgs.SetPostData(formData)
-				fData := fmt.Sprintf(`{"Content-Type":"application/x-www-form-urlencoded","Content-Length":%d}`, len(formData))
-				interceptedArgs.Headers = []byte(fData)
+			lengthFormData := len(formData)
+			if lengthFormData > 0 && r.Request.URL == originURL && r.RedirectURL == nil {
+
+				interceptedArgs := network.NewContinueInterceptedRequestArgs(r.InterceptionID).
+					SetMethod("POST").
+					SetPostData(formData)
+
+				headers, _ := json.Marshal(map[string]string{
+					"Content-Type":   "application/x-www-form-urlencoded",
+					"Content-Length": strconv.Itoa(lengthFormData),
+				})
+				interceptedArgs.Headers = headers
+
 				if err = f.cdpClient.Network.ContinueInterceptedRequest(ctx, interceptedArgs); err != nil {
 					logger.Error(err.Error())
 					sig = true
