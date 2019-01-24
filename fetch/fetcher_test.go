@@ -1,9 +1,13 @@
 package fetch
 
 import (
+	"bytes"
 	"io/ioutil"
+	"math/rand"
 	"net/url"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 
@@ -147,4 +151,28 @@ func TestInvalidFetcher(t *testing.T) {
 	}()
 	fetcher := newFetcher(fType)
 	assert.NotNil(t, fetcher)
+}
+
+func TestAuthFetcher(t *testing.T) {
+	viper.Set("PROXY", "")
+	fetcher := newFetcher(Chrome)
+
+	randSrc := rand.NewSource(time.Now().UnixNano())
+	nRand := rand.New(randSrc)
+	randValue := strconv.Itoa(nRand.Intn(1000))
+	username := "AnyUserNameAcceptable_" + randValue
+	req := Request{
+		Type:     "chrome",
+		URL:      "http://testserver:12345/login",
+		FormData: "username=" + username + "&password=123",
+	}
+
+	content, err := fetcher.Fetch(req)
+	assert.NoError(t, err)
+
+	pageContent, err := ioutil.ReadAll(content)
+	assert.NoError(t, err)
+
+	assert.Equal(t, true, bytes.Contains(pageContent, []byte(">"+username+"<")))
+
 }
