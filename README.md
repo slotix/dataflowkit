@@ -33,7 +33,7 @@ A fetched web page is passed to parse.d service.
 ## Parse service
 **parse.d** is the service that extracts data from downloaded web page following the rules listed in configuration JSON file. Extracted data is returned in CSV, MS Excel, JSON or XML format.
 
-*Note: Sometimes Parse service cannot extract data from some pages retrieved by default Base fetcher. Empty results may be returned while parsing Java Script generated pages. Parse service then attempts to force Chrome fetcher to render the same dynamic javascript driven content automatically. Have a look at https://scrape.dataflowkit.org/persons/page-0 which is a sample of JavaScript driven web page.*   
+*Note: Sometimes Parse service cannot extract data from some pages retrieved by default Base fetcher. Empty results may be returned while parsing Java Script generated pages. Parse service then attempts to force Chrome fetcher to render the same dynamic javascript driven content automatically. Have a look at https://scrape.dataflowkit.com/persons/page-0 which is a sample of JavaScript driven web page.*   
 
 
 ## Dataflow kit benefits:
@@ -174,7 +174,7 @@ cd $GOPATH/src/github.com/slotix/dataflowkit/cmd/parse.d && go build && ./parse.
 
 
 ## Front-End
-Try https://dataflowkit.org/dfk Front-end with Point-and-click interface to Dataflow kit services. It generates JSON config file and sends POST request to DFK Parser 
+Try https://dataflowkit.com/dfk Front-end with Point-and-click interface to Dataflow kit services. It generates JSON config file and sends POST request to DFK Parser 
 
 [![IMAGE ALT Dataflow kit web scraping framework](https://raw.githubusercontent.com/slotix/dataflowkit/master/images/dfk-screenshot1.png)](https://youtu.be/SKBkclf1FxA)
 
