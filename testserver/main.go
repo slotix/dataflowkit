@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,12 +23,18 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const PERSONS_PER_PAGE = 6
+
 var (
 	personsTpl      *template.Template
 	indexTpl        *template.Template
 	personDetailTpl *template.Template
 	personTableTpl  *template.Template
 	loginFormTpl    *template.Template
+	citiesTpl       *template.Template
+	countriesTpl    *template.Template
+	personsV2       *template.Template
+	errorTpl        *template.Template
 	personsJSON     string
 	persons         []Person
 	port            = flag.String("p", ":12345", "HTTP(S) listen address")
@@ -47,6 +54,8 @@ type Person struct {
 	Company string          `json:"Company"`
 	Counter string          `json:"Counter"`
 	Bio     string          `json:"Bio"`
+	Country string          `json:"Country"`
+	City    string          `json:"City"`
 }
 
 func init() {
@@ -58,7 +67,10 @@ func init() {
 	indexTpl = template.Must(template.ParseFiles(*baseDir+"/index.html", *baseDir+"/base.html"))
 	personDetailTpl = template.Must(template.New(*baseDir+"/base.html").Funcs(funcMap).ParseFiles(*baseDir+"/p_detail.html", *baseDir+"/base.html"))
 	loginFormTpl = template.Must(template.ParseFiles(*baseDir+"/base.html", *baseDir+"/login_form.html"))
-
+	citiesTpl = template.Must(template.ParseFiles(*baseDir+"/base.html", *baseDir+"/cities.html"))
+	countriesTpl = template.Must(template.ParseFiles(*baseDir+"/base.html", *baseDir+"/countries.html"))
+	personsV2 = template.Must(template.New(*baseDir+"/base.html").Funcs(funcMap).ParseFiles(*baseDir+"/base.html", *baseDir+"/persons_v2.html"))
+	errorTpl = template.Must(template.ParseFiles(*baseDir+"/base.html", *baseDir+"/error.html"))
 	dat, err := ioutil.ReadFile(*baseDir + "/data/persons.json")
 	if err != nil {
 		fmt.Println(err)
@@ -135,9 +147,14 @@ func Start(cfg Config) *HTMLServer {
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
 	r.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Conent-Type", "text/html")
+		w.Header().Set("Content-Type", "text/html")
 		w.Write([]byte(`<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>`))
 	})
+
+	r.HandleFunc("/countries", countriesHandler)
+	r.HandleFunc("/country/{country}", countryHandler)
+	r.HandleFunc("/country/{country}/city/{city}", personsV2PagedHandler)
+	r.HandleFunc("/country/{country}/city/{city}/page/{page}", personsV2PagedHandler)
 	r.HandleFunc("/persons/page-{page}", personsHandler)
 	r.HandleFunc("/persons/{id}", personDetailsHandler)
 	r.HandleFunc("/persons-table", personTableHandler)
@@ -221,6 +238,23 @@ func Start(cfg Config) *HTMLServer {
 	return &htmlServer
 }
 
+// Returns Person slice of required page with per_page elements
+func getPagedPersons(p []Person, page int, per_page int) (result []Person, err error) {
+	if page < 1 {
+		return nil, fmt.Errorf("Page doesn't exist")
+	}
+	length := len(p)
+	low := (page - 1) * per_page
+	if length <= low {
+		return nil, fmt.Errorf("Page doesn't exist")
+	}
+	high := low + per_page
+	if high > length {
+		high = length
+	}
+	return p[low:high], nil
+}
+
 func identifyUser(w *http.ResponseWriter, r *http.Request, user *string) {
 	if cookie, err := r.Cookie("sessionId"); err != nil {
 		return
@@ -295,10 +329,18 @@ func main() {
 }
 
 var funcMap = template.FuncMap{
-	"inc":    Inc,
-	"dec":    Dec,
-	"mult":   Mult,
-	"divide": Div,
+	"inc":      Inc,
+	"dec":      Dec,
+	"mult":     Mult,
+	"divide":   Div,
+	"seqPages": SeqPages,
+}
+
+func SeqPages(totalPages int) (result []int) {
+	for i := 1; i <= totalPages; i++ {
+		result = append(result, i)
+	}
+	return result
 }
 
 // Dec decrease input value and return result as a string
@@ -333,7 +375,7 @@ func Div(a, b string) string {
 func personsHandler(w http.ResponseWriter, r *http.Request) {
 	var user string
 	identifyUser(&w, r, &user)
-	w.Header().Set("Conent-Type", "text/html")
+	w.Header().Set("Content-Type", "text/html")
 	v := mux.Vars(r)
 	page, err := strconv.Atoi(v["page"])
 	if err != nil {
@@ -354,7 +396,7 @@ func personsHandler(w http.ResponseWriter, r *http.Request) {
 func personTableHandler(w http.ResponseWriter, r *http.Request) {
 	var user string
 	identifyUser(&w, r, &user)
-	w.Header().Set("Conent-Type", "text/html")
+	w.Header().Set("Content-Type", "text/html")
 	//v := mux.Vars(r)
 	// page, err := strconv.Atoi(v["page"])
 	// if err != nil {
@@ -390,22 +432,136 @@ func ToStringSlice(data []byte) []string {
 func personDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	var user string
 	identifyUser(&w, r, &user)
-	w.Header().Set("Conent-Type", "text/html")
+	w.Header().Set("Content-Type", "text/html")
 	v := mux.Vars(r)
-	id, err := strconv.Atoi(v["id"])
-	if err != nil {
+	id, err := v["id"]
+	if err != true {
 		fmt.Println(err)
 	}
-	//fmt.Print(string(dat))
-	vars := map[string]interface{}{
-		"Header":       "Person Details: " + persons[id].Name,
-		"Person":       persons[id],
-		"Phones":       ToStringSlice(persons[id].Phone),
-		"PersonsCount": personCount,
-		"ItemsPerPage": "10",
-		"User":         user,
+	personIndex := -1
+	for index, person := range persons {
+		if person.Counter == id {
+			personIndex = index
+			break
+		}
 	}
-	render(w, r, personDetailTpl, "base", vars)
+	if personIndex != -1 {
+		vars := map[string]interface{}{
+			"Header":       "Person Details: " + persons[personIndex].Name,
+			"Person":       persons[personIndex],
+			"Phones":       ToStringSlice(persons[personIndex].Phone),
+			"PersonsCount": personCount,
+			"ItemsPerPage": "10",
+			"User":         user,
+		}
+		render(w, r, personDetailTpl, "base", vars)
+	} else {
+		vars := map[string]interface{}{
+			"Error": "Person not found!",
+			"User":  user,
+		}
+		render(w, r, errorTpl, "base", vars)
+	}
+}
+
+func countriesHandler(w http.ResponseWriter, r *http.Request) {
+	var user string
+	identifyUser(&w, r, &user)
+	w.Header().Set("Content-Type", "text/html")
+	countriesSet := make(map[string]interface{})
+	for _, person := range persons {
+		countriesSet[person.Country] = struct{}{}
+	}
+	countries := make([]string, 0, len(countriesSet))
+	for country := range countriesSet {
+		countries = append(countries, country)
+	}
+	//sort.Strings(countries)
+	vars := map[string]interface{}{
+		"User":      user,
+		"Countries": countries,
+	}
+	render(w, r, countriesTpl, "base", vars)
+}
+
+func countryHandler(w http.ResponseWriter, r *http.Request) {
+	var user string
+	identifyUser(&w, r, &user)
+	w.Header().Set("Content-Type", "text/html")
+	v := mux.Vars(r)
+	country := v["country"]
+	citiesSet := make(map[string]interface{})
+	for _, person := range persons {
+		if person.Country == country {
+			citiesSet[person.City] = struct{}{}
+		}
+	}
+	cities := make([]string, 0)
+	for city := range citiesSet {
+		cities = append(cities, city)
+	}
+	if len(cities) != 0 {
+		vars := map[string]interface{}{
+			"User":    user,
+			"Country": country,
+			"Cities":  cities,
+		}
+		render(w, r, citiesTpl, "base", vars)
+	} else {
+		vars := map[string]interface{}{
+			"User":  user,
+			"Error": "No persons for the country " + country,
+		}
+		render(w, r, errorTpl, "base", vars)
+	}
+}
+
+func personsV2PagedHandler(w http.ResponseWriter, r *http.Request) {
+	var user string
+	identifyUser(&w, r, &user)
+	w.Header().Set("Content-Type", "text/html")
+	v := mux.Vars(r)
+	country := v["country"]
+	city := v["city"]
+	currentPage := 1
+	if value, exists := v["page"]; exists {
+		var err error
+		currentPage, err = strconv.Atoi(value)
+		if err != nil {
+			vars := map[string]interface{}{
+				"User":  user,
+				"Error": "Wrong page index",
+			}
+			render(w, r, errorTpl, "base", vars)
+			return
+		}
+	}
+	personsSet := make([]Person, 0)
+	for _, person := range persons {
+		if person.City == city && person.Country == country {
+			personsSet = append(personsSet, person)
+		}
+	}
+	totalPages := int(math.Ceil(float64(len(personsSet)) / PERSONS_PER_PAGE))
+	pagedPersons, err := getPagedPersons(personsSet, currentPage, PERSONS_PER_PAGE)
+	if err != nil {
+		vars := map[string]interface{}{
+			"User":  user,
+			"Error": err.Error(),
+		}
+		render(w, r, errorTpl, "base", vars)
+		return
+	}
+	vars := map[string]interface{}{
+		"User":         user,
+		"Country":      country,
+		"City":         city,
+		"Persons":      pagedPersons,
+		"TotalPages":   totalPages,
+		"CurrentPage":  currentPage,
+		"TotalPersons": len(personsSet),
+	}
+	render(w, r, personsV2, "base", vars)
 }
 
 // Render a template, or server error.

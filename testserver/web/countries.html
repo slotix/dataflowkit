@@ -1,0 +1,15 @@
+{{define "content"}}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/">Home</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">By countries</li>
+        </ol>
+    </nav>
+    <ul class="list-group">
+        {{ range $index, $country := .Countries }}
+            <li class="list-group-item"><a href="/country/{{ $country }}">{{ $country }}</a></li>
+        {{ end }}
+    </ul>
+{{end}}
