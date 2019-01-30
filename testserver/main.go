@@ -159,7 +159,7 @@ func Start(cfg Config) *HTMLServer {
 	r.HandleFunc("/persons/{id}", personDetailsHandler)
 	r.HandleFunc("/persons-table", personTableHandler)
 	r.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Conent-Type", "text/html")
+		w.Header().Set("Content-Type", "text/html")
 		w.Write([]byte("\n\t\tUser-agent: *\n\t\tAllow: /allowed\n\t\tDisallow: /disallowed\n\t\tDisallow: /redirect\n\t\t"))
 	})
 	r.HandleFunc("/allowed", func(w http.ResponseWriter, r *http.Request) {
@@ -434,9 +434,9 @@ func personDetailsHandler(w http.ResponseWriter, r *http.Request) {
 	identifyUser(&w, r, &user)
 	w.Header().Set("Content-Type", "text/html")
 	v := mux.Vars(r)
-	id, err := v["id"]
-	if err != true {
-		fmt.Println(err)
+	id, exists := v["id"]
+	if exists != true {
+		fmt.Println("id is empty")
 	}
 	personIndex := -1
 	for index, person := range persons {
