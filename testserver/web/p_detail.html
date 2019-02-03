@@ -21,6 +21,36 @@
         <div class="card-text">
             <div class="row lead">
                 <div class="col-2">
+                    <strong>Country:</strong>
+                </div>
+                <div class="col-5">
+                    <a href="/country/{{ .Person.Country }}">{{ .Person.Country}}</a>
+                </div>
+            </div>
+        </div>
+        <div class="card-text">
+            <div class="row lead">
+                <div class="col-2">
+                    <strong>City:</strong>
+                </div>
+                <div class="col-5">
+                    <a href="/country/{{ .Person.Country }}/city/{{ .Person.City }}">{{ .Person.City}}</a>
+                </div>
+            </div>
+        </div>
+        <div class="card-text">
+            <div class="row lead">
+                <div class="col-2">
+                    <strong>Email:</strong>
+                </div>
+                <div class="col-5">
+                    {{ .Person.Email}}
+                </div>
+            </div>
+        </div>
+        <div class="card-text">
+            <div class="row lead">
+                <div class="col-2">
                     <strong>Phones:</strong>
                 </div>
                 <div class="col-10">

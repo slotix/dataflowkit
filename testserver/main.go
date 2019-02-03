@@ -63,7 +63,7 @@ func init() {
 	// personsTpl = template.Must(template.ParseFiles(*baseDir+"/persons.html", *baseDir+"/base.html"))
 	// personsTpl = personsTpl.Funcs(funcMap)
 	personsTpl = template.Must(template.New(*baseDir+"/base.html").Funcs(funcMap).ParseFiles(*baseDir+"/persons.html", *baseDir+"/base.html"))
-	personTableTpl = template.Must(template.ParseFiles(*baseDir+"/persons-table.html", *baseDir+"/base.html"))
+	personTableTpl = template.Must(template.New(*baseDir+"/base.html").Funcs(funcMap).ParseFiles(*baseDir+"/persons-table.html", *baseDir+"/base.html"))
 	indexTpl = template.Must(template.ParseFiles(*baseDir+"/index.html", *baseDir+"/base.html"))
 	personDetailTpl = template.Must(template.New(*baseDir+"/base.html").Funcs(funcMap).ParseFiles(*baseDir+"/p_detail.html", *baseDir+"/base.html"))
 	loginFormTpl = template.Must(template.ParseFiles(*baseDir+"/base.html", *baseDir+"/login_form.html"))
@@ -334,6 +334,7 @@ var funcMap = template.FuncMap{
 	"mult":     Mult,
 	"divide":   Div,
 	"seqPages": SeqPages,
+	"toString": ToStringSlice,
 }
 
 func SeqPages(totalPages int) (result []int) {
@@ -397,18 +398,10 @@ func personTableHandler(w http.ResponseWriter, r *http.Request) {
 	var user string
 	identifyUser(&w, r, &user)
 	w.Header().Set("Content-Type", "text/html")
-	//v := mux.Vars(r)
-	// page, err := strconv.Atoi(v["page"])
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
 	vars := map[string]interface{}{
-		"Header": "Persons Table",
-		"User":   user,
-		//"Data":         string(personsJSON),
-		//"Page":         page,
-		//"PersonsCount": personCount,
-		//"ItemsPerPage": 10,
+		"Header":  "Persons Table",
+		"User":    user,
+		"Persons": persons,
 	}
 	render(w, r, personTableTpl, "base", vars)
 }
