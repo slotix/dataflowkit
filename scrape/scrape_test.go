@@ -160,7 +160,7 @@ func init() {
 	JSONPayload = Payload{
 		Name: "persons Cards",
 		Request: fetch.Request{
-			Type: "chrome",
+			Type: "base",
 			URL:  "http://testserver:12345/persons/page-0",
 		},
 		Fields: []Field{
