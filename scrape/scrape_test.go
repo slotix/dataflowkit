@@ -22,8 +22,8 @@ var (
 	//	randFalse  = false
 	delayFetch time.Duration
 	//paginateResults                bool
-	personsPayload, detailsPayload, JSONPayload, CSVPayload, XMLPayload Payload
-	update                                                              = flag.Bool("update", false, "update result files")
+	personsPayload, detailsPayload, JSONPayload, CSVPayload, XMLPayload, deepExtractPayload Payload
+	update                                                                                  = flag.Bool("update", false, "update result files")
 )
 
 func init() {
@@ -257,6 +257,131 @@ func init() {
 			},
 		},
 		Format: "xml",
+	}
+	deepExtractPayload = Payload{
+		Name: "scrape.dataflowkit",
+		Request: fetch.Request{
+			URL:       "http://127.0.0.1:12345/",
+			UserToken: "",
+			Type:      "base",
+		},
+		Fields: []Field{
+			{
+				Name:     "Country_Button",
+				Selector: ".mr-5~ .mr-5+ .btn-primary",
+				Details: &details{
+					IsPath: true,
+					Fields: []Field{
+						{
+							Name:     "Countries",
+							Selector: ".list-group-item a",
+							Details: &details{
+								IsPath: true,
+								Fields: []Field{
+									{
+										Name:     "Cities",
+										Selector: ".list-group-item a",
+										Details: &details{
+											IsPath: true,
+											Paginator: &paginator{
+												Selector:  ".page-item:last-child .page-link",
+												Attribute: "href",
+												Type:      "next",
+											},
+											Fields: []Field{
+												{
+													Name:     "Persons",
+													Selector: "#cards a",
+													Details: &details{
+														IsPath: false,
+														Fields: []Field{
+															{
+																Name:     "Phone",
+																Selector: "span+ span",
+																Extractor: Extractor{
+																	Types: []string{"text"},
+																	Params: map[string]interface{}{
+																		"includeIfEmpty": false,
+																	},
+																	Filters: []string{"Trim"},
+																},
+															},
+															{
+																Name:     "Country",
+																Selector: ".card-text:nth-child(1) a",
+																Extractor: Extractor{
+																	Types: []string{"text"},
+																	Params: map[string]interface{}{
+																		"includeIfEmpty": false,
+																	},
+																	Filters: []string{"Trim"},
+																},
+															},
+															{
+																Name:     "City",
+																Selector: ".card-text+ .card-text a",
+																Extractor: Extractor{
+																	Types: []string{"text"},
+																	Params: map[string]interface{}{
+																		"includeIfEmpty": false,
+																	},
+																	Filters: []string{"Trim"},
+																},
+															},
+															{
+																Name:     "Title",
+																Selector: ".display-4",
+																Extractor: Extractor{
+																	Types: []string{"text"},
+																	Params: map[string]interface{}{
+																		"includeIfEmpty": false,
+																	},
+																	Filters: []string{"Trim"},
+																},
+															},
+														},
+													},
+													Extractor: Extractor{
+														Types: []string{"path"},
+														Params: map[string]interface{}{
+															"includeIfEmpty": false,
+														},
+														Filters: []string{"Trim"},
+													},
+												},
+											},
+										},
+										Extractor: Extractor{
+											Types: []string{"path"},
+											Params: map[string]interface{}{
+												"includeIfEmpty": false,
+											},
+											Filters: []string{"Trim"},
+										},
+									},
+								},
+							},
+							Extractor: Extractor{
+								Types: []string{"path"},
+								Params: map[string]interface{}{
+									"includeIfEmpty": false,
+								},
+								Filters: []string{"Trim"},
+							},
+						},
+					},
+				},
+				Extractor: Extractor{
+					Types: []string{"path"},
+					Params: map[string]interface{}{
+						"includeIfEmpty": false,
+					},
+					Filters: []string{"Trim"},
+				},
+			},
+		},
+		Format: "json",
+		IsPath: true,
 	}
 }
 
@@ -813,6 +938,61 @@ func TestParseDetailsWithRegex(t *testing.T) {
 	assert.NoError(t, actualErr)
 
 	(*pp)["regexp"] = ss
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+}
+
+func TestPathParse(t *testing.T) {
+	viper.Set("MAX_PAGES", 100)
+	os.RemoveAll("./diskv")
+	os.RemoveAll("./results")
+	viper.Set("RANDOMIZE_FETCH_DELAY", true)
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host: fetchServerAddr,
+	}
+	fetchServer := fetch.Start(fetchServerCfg)
+	defer fetchServer.Stop()
+
+	task := NewTask(deepExtractPayload)
+	r, err := task.Parse()
+	assert.NoError(t, err)
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+	str := make(map[string]interface{})
+	err = json.Unmarshal(buf.Bytes(), &str)
+	assert.NoError(t, err)
+	resultFile := str["Output file"].(string)
+
+	actualText, err := ioutil.ReadFile(filepath.Join("./", resultFile))
+	assert.NoError(t, err)
+
+	var actualJSON []map[string]string
+	err = json.Unmarshal([]byte(actualText), &actualJSON)
+	assert.NoError(t, err)
+
+	// 100 - expected persons after Parse of deepExtractPayload
+	assert.Equal(t, 100, len(actualJSON))
+
+	for _, item := range actualJSON {
+		value, exists := item["Phone_text"]
+		assert.Equal(t, true, exists)
+		assert.NotEqual(t, "", value)
+
+		value, exists = item["Country_text"]
+		assert.Equal(t, true, exists)
+		assert.NotEqual(t, "", value)
+
+		value, exists = item["City_text"]
+		assert.Equal(t, true, exists)
+		assert.NotEqual(t, "", value)
+
+		value, exists = item["Title_text"]
+		assert.Equal(t, true, exists)
+		assert.NotEqual(t, "", value)
+	}
+
 	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 }
