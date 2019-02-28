@@ -215,14 +215,14 @@ func Start(cfg Config) *HTMLServer {
 	if !cfg.HTTPS {
 		// Start HTTP listener
 		go func() {
-			fmt.Printf("\nTest Server : Service started : Host=%v\n", htmlServer.server.Addr)
+			fmt.Printf("\nTest Server : Service started (HTTP): Host=%v\n", htmlServer.server.Addr)
 			htmlServer.server.ListenAndServe()
 			htmlServer.wg.Done()
 		}()
 	} else {
 		// Start HTTPS listener
 		go func() {
-			fmt.Printf("\nTest Server : Service started : Host=%v\n", htmlServer.server.Addr)
+			fmt.Printf("\nTest Server : Service started (HTTPS) : Host=%v\n", htmlServer.server.Addr)
 			htmlServer.server.ListenAndServeTLS(
 				*certFile,
 				*keyFile,

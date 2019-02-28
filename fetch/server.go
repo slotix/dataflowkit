@@ -15,7 +15,8 @@ import (
 
 // Config provides basic configuration
 type Config struct {
-	Host string
+	Host    string
+	Version string
 }
 
 // HTMLServer represents the web service that serves up HTML
@@ -70,7 +71,10 @@ func Start(cfg Config) *HTMLServer {
 	htmlServer.wg.Add(1)
 
 	go func() {
-		fmt.Printf("Starting Fetch Server %s\n", htmlServer.server.Addr)
+		fmt.Printf("\n%s\nStarting ...%s",
+			cfg.Version,
+			htmlServer.server.Addr,
+		)
 		htmlServer.server.ListenAndServe()
 		htmlServer.wg.Done()
 	}()
