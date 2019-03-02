@@ -151,7 +151,7 @@ Click on image to see CLI in action.
 1. Start Chrome docker container 
 ``` 
 docker run --init -it --rm -d --name chrome --shm-size=1024m -p=127.0.0.1:9222:9222 --cap-add=SYS_ADMIN \
-  yukinying/chrome-headless-browser:65.0.3322.3
+  yukinying/chrome-headless-browser
 ```
 
 
