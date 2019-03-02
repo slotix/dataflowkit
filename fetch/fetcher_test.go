@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/slotix/dataflowkit/utf8encoding"
 	"github.com/spf13/viper"
 
 	"github.com/stretchr/testify/assert"
@@ -175,4 +176,32 @@ func TestAuthFetcher(t *testing.T) {
 
 	assert.Equal(t, true, bytes.Contains(pageContent, []byte(">"+username+"<")))
 
+}
+func TestBaseFetcher_Encoding(t *testing.T) {
+	viper.Set("PROXY", "")
+	fetcher := newFetcher(Base)
+	req := Request{
+		URL: tsURL + "/static/html/utf8.html",
+		//URL: "https://www.tvojlekar.sk/lekari.php",
+		Method: "GET",
+	}
+	html, err := fetcher.Fetch(req)
+	assert.NoError(t, err, "Expected no error")
+	_, name, _, err := utf8encoding.ReaderToUtf8Encoding(html)
+	assert.NoError(t, err, "Expected no error")
+	// data, err := ioutil.ReadAll(r)
+	// t.Log(string(data))
+	assert.Equal(t,"utf-8", name, "Expected UTF-8 page")
+	
+	req = Request{
+		URL: tsURL + "/static/html/win1250.html",
+		Method: "GET",
+	}
+	html, err = fetcher.Fetch(req)
+	assert.NoError(t, err, "Expected no error")
+	_, name, _, err = utf8encoding.ReaderToUtf8Encoding(html)
+	assert.NoError(t, err, "Expected no error")
+	// data, err := ioutil.ReadAll(r)
+	// t.Log(string(data))
+	assert.Equal(t,"windows-1250", name, "Expected Win1250 page")
 }

@@ -406,6 +406,8 @@ func personTableHandler(w http.ResponseWriter, r *http.Request) {
 	render(w, r, personTableTpl, "base", vars)
 }
 
+
+
 // ToStringSlice convert input data to string slice
 func ToStringSlice(data []byte) []string {
 	var v []string
