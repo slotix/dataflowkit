@@ -1,9 +1,9 @@
-APP?=fetch.d
+APP?=testserver
 GOOS?=linux
 GOARCH?=amd64
-PORT?=8000
-IMAGE?=slotix/dfk-fetch
-RELEASE?=0.9.0
+PORT?=12345
+IMAGE?=slotix/dfk-testserver
+RELEASE?=0.9.1
 LATEST?=latest
 COMMIT?=$(shell git rev-parse --short HEAD)
 BUILD_TIME?=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
