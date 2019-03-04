@@ -135,13 +135,18 @@ func newBaseFetcher() *BaseFetcher {
 	return f
 }
 
-// Fetch retrieves document from the remote server. It returns web page content along with cache and expiration information.
+// Fetch retrieves document from the remote server.
 func (bf *BaseFetcher) Fetch(request Request) (io.ReadCloser, error) {
 	resp, err := bf.response(request)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Body, nil
+	//Converting fetched content to UTF-8
+	utf8Res, _, _, err := readerToUtf8Encoding(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return utf8Res, nil
 }
 
 //Response return response after document fetching using BaseFetcher
