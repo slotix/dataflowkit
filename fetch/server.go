@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-
 	"sync"
 	"time"
 
@@ -49,7 +48,7 @@ func Start(cfg Config) *HTMLServer {
 	svc = FetchService{}
 
 	//svc = RobotsTxtMiddleware()(svc)
-	svc = LoggingMiddleware(logger)(svc)
+	//svc = LoggingMiddleware(logger)(svc)
 
 	endpoints := endpoints{
 		fetchEndpoint: makeFetchEndpoint(svc),

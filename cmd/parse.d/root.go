@@ -52,10 +52,8 @@ var (
 	ignoreFetchDelay    bool
 	ignoreRobotstxt     bool
 
-	fetchChannelSize int
-	blockChannelSize int
-	fetchWorkerNum   int
-	blockWorkerNum   int
+	payloadWorkersNum int
+	payloadPoolSize   int
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -73,11 +71,6 @@ var RootCmd = &cobra.Command{
 			},
 		}
 		sType := strings.ToLower(storageType)
-		if sType == "cassandra" {
-			services = append(services, healthcheck.CassandraConn{
-				Host: cassandraHost,
-			})
-		}
 		if sType == "mongodb" {
 			services = append(services, healthcheck.MongoConn{
 				Host: mongoHost,
@@ -131,11 +124,10 @@ func init() {
 
 	RootCmd.Flags().StringVarP(&DFKParse, "DFK_PARSE", "p", "127.0.0.1:8001", "HTTP listen address")
 	RootCmd.Flags().StringVarP(&DFKFetch, "DFK_FETCH", "f", "127.0.0.1:8000", "DFK Fetch service address")
-	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage backend for intermediary data passed to html parser. Types: Diskv, MongoDB, Cassandra")
+	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "MongoDB", "Storage backend for intermediary data passed to html parser. Types: Diskv, MongoDB")
 	RootCmd.Flags().StringVarP(&resultsDir, "RESULTS_DIR", "", "results", "Directory for storing results")
 	RootCmd.Flags().Int64VarP(&storageItemExpires, "ITEM_EXPIRE_IN", "", 86400, "Default value for item expiration in seconds")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
-	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "c", "127.0.0.1", "Cassandra host address")
 	RootCmd.Flags().StringVarP(&mongoHost, "MONGO", "", "127.0.0.1", "MongoDB host address")
 
 	RootCmd.Flags().IntVarP(&maxPages, "MAX_PAGES", "", 10, "The maximum number of pages to scrape")
@@ -145,10 +137,8 @@ func init() {
 	RootCmd.Flags().BoolVarP(&randomizeFetchDelay, "RANDOMIZE_FETCH_DELAY", "", true, "RandomizeFetchDelay setting decreases the chance of a crawler being blocked. This way a random delay ranging from 0.5 * FetchDelay to 1.5 * FetchDelay seconds is used between consecutive requests to the same domain. If FetchDelay is zero this option has no effect.")
 	RootCmd.Flags().BoolVarP(&ignoreFetchDelay, "IGNORE_FETCH_DELAY", "", false, "Ignores fetchDelay setting intended for debug purpose. Please set it to false in Production")
 
-	RootCmd.Flags().IntVar(&fetchChannelSize, "FETCH_CHANNEL_SIZE", 60, "The size of fetcher pool")
-	RootCmd.Flags().IntVar(&fetchWorkerNum, "FETCH_WORKER_NUM", 60, "The number of fetcher workers")
-	RootCmd.Flags().IntVar(&blockChannelSize, "BLOCK_CHANNEL_SIZE", 50, "The size of block pool")
-	RootCmd.Flags().IntVar(&blockWorkerNum, "BLOCK_WORKER_NUM", 50, "The number of block workers")
+	RootCmd.Flags().IntVar(&payloadPoolSize, "PAYLOAD_POOL_SIZE", 100, "The size of payload pool")
+	RootCmd.Flags().IntVar(&payloadWorkersNum, "PAYLOAD_WORKERS_NUM", 50, "The number of block workers")
 
 	//viper.AutomaticEnv() // read in environment variables that match
 
@@ -183,17 +173,14 @@ func init() {
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
 	viper.BindPFlag("ITEM_EXPIRE_IN", RootCmd.Flags().Lookup("ITEM_EXPIRE_IN"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
-	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
 	viper.BindPFlag("MONGO", RootCmd.Flags().Lookup("MONGO"))
 	viper.BindPFlag("MAX_PAGES", RootCmd.Flags().Lookup("MAX_PAGES"))
-	viper.BindPFlag("PAGINATE_RESULTS", RootCmd.Flags().Lookup("PAGINATE_RESULTS"))
+	viper.BindPFlag("PAGINATE_RESULTS", RootCmd.Flags().Lookup("PAGINATE_RESULTS")) //not used
 	viper.BindPFlag("FETCH_DELAY", RootCmd.Flags().Lookup("FETCH_DELAY"))
-	viper.BindPFlag("RANDOMIZE_FETCH_DELAY", RootCmd.Flags().Lookup("RANDOMIZE_FETCH_DELAY"))
+	viper.BindPFlag("RANDOMIZE_FETCH_DELAY", RootCmd.Flags().Lookup("RANDOMIZE_FETCH_DELAY")) //not used
 	viper.BindPFlag("IGNORE_FETCH_DELAY", RootCmd.Flags().Lookup("IGNORE_FETCH_DELAY"))
-	viper.BindPFlag("IGNORE_ROBOTSTXT", RootCmd.Flags().Lookup("IGNORE_ROBOTSTXT"))
-	
-	viper.BindPFlag("FETCH_CHANNEL_SIZE", RootCmd.Flags().Lookup("FETCH_CHANNEL_SIZE"))
-	viper.BindPFlag("FETCH_WORKER_NUM", RootCmd.Flags().Lookup("FETCH_WORKER_NUM"))
-	viper.BindPFlag("BLOCK_CHANNEL_SIZE", RootCmd.Flags().Lookup("BLOCK_CHANNEL_SIZE"))
-	viper.BindPFlag("BLOCK_WORKER_NUM", RootCmd.Flags().Lookup("BLOCK_WORKER_NUM"))
+	viper.BindPFlag("IGNORE_ROBOTSTXT", RootCmd.Flags().Lookup("IGNORE_ROBOTSTXT")) //not used
+
+	viper.BindPFlag("PAYLOAD_POOL_SIZE", RootCmd.Flags().Lookup("PAYLOAD_POOL_SIZE"))
+	viper.BindPFlag("PAYLOAD_WORKERS_NUM", RootCmd.Flags().Lookup("PAYLOAD_WORKERS_NUM"))
 }

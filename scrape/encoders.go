@@ -76,18 +76,6 @@ func getFilename(resultPath string, timestamp string, info encodeInfo) (ext stri
 	return path.Join(resultPath, info.payloadMD5+"_"+timestamp+"."+ext)
 }
 
-// func EncodeToByteArray(e *encoder, payloadMD5 string, blockMap ...*map[int][]int) ([]byte, error) {
-// 	result := ""
-// 	buf := bytes.NewBufferString(result)
-// 	w := bufio.NewWriter(buf)
-// 	var keys *map[int][]int
-// 	if len(blockMap) > 0 {
-// 		keys = blockMap[0]
-// 	}
-// 	(*e).encode(w, payloadMD5, keys)
-// 	return buf.Bytes(), nil
-// }
-
 type encoder interface {
 	encode(ctx context.Context, w io.Writer, payloadMD5 string, keys *map[int][]int) error
 }
@@ -115,15 +103,12 @@ type XLSXEncoder struct {
 func (e JSONEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, keys *map[int][]int) error {
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
-	// make a write buffer
-	// if e.paginateResults {
-	// 	w.WriteString("[")
-	// }
+
 	if !e.JSONL {
 		io.WriteString(w, "[")
 	}
 
-	reader := newStorageReader(&s, payloadMD5, keys)
+	reader := newStorageReader(&s, payloadMD5 /* , keys */)
 	writeComma := false
 	for {
 		select {
@@ -173,75 +158,37 @@ type storageResultReader struct {
 	page       int
 	keys       []int
 	block      int
-	payloadMap map[int][]int
 }
 
-func newStorageReader(store *storage.Store, md5Hash string, extractPageKeys *map[int][]int) *storageResultReader {
+func newStorageReader(store *storage.Store, md5Hash string) *storageResultReader {
 	reader := &storageResultReader{
 		storage:    store,
 		payloadMD5: md5Hash,
-		payloadMap: make(map[int][]int),
 		block:      0,
 		page:       0,
 	}
-	if extractPageKeys != nil {
-		reader.payloadMap = *extractPageKeys
-	}
-	reader.init()
 	return reader
 }
 
-// have return error
-func (r *storageResultReader) init() {
-	r.page = 0
-	r.block = 0
-	if len(r.payloadMap) == 0 {
-		keysJSON, err := (*r.storage).Read(storage.Record{
-			Type: storage.INTERMEDIATE,
-			Key:  r.payloadMD5,
-		})
-		if err != nil {
-			logger.Error(err.Error())
-		}
-		err = json.Unmarshal(keysJSON, &r.payloadMap)
-		if err != nil {
-			logger.Error(err.Error())
-		}
-	}
-	for k := range r.payloadMap {
-		r.keys = append(r.keys, k)
-	}
-}
-
-// func (r *storageResultReader) initManualKeys(blocks []int) {
-// 	r.keys = blocks
-// }
-
 func (r *storageResultReader) Read() (map[string]interface{}, error) {
-	//blockMap := make(map[string]interface{})
 	var err error
-	var nextPage bool
-	if r.block >= len(r.payloadMap[r.page]) {
-		if r.page+1 < len(r.keys) {
-			//achieve next page
-			r.page++
-			r.block = 0
-			nextPage = true
-		} else {
-			//achieve EOF
-			return nil, &errs.ErrStorageResult{Err: errs.EOF}
-		}
-	}
 	blockMap, err := r.getValue()
 	if err != nil {
-		// have to try get next block value
-		r.block++
-		return nil, err
+		// have to try get next page value
+		r.page++
+		blockMap, err = r.getValue()
+		// if there is no value - EOF
+		// else it is possible we have to return a error
+		// to separate values in file
+		// errs.ErrStorageResult{Err: errs.NextPage}
+		if err != nil {
+			return nil, &errs.ErrStorageResult{Err: errs.EOF}
+		}
 	}
 	for field, value := range blockMap {
 		if strings.Contains(field, "details") {
 			details := []map[string]interface{}{}
-			detailsReader := newStorageReader(r.storage, value.(string), nil)
+			detailsReader := newStorageReader(r.storage, value.(string) /* , nil */)
 			for {
 				detailsBlock, detailsErr := detailsReader.Read()
 				if detailsErr != nil {
@@ -274,20 +221,18 @@ func (r *storageResultReader) Read() (map[string]interface{}, error) {
 		}
 	}
 	r.block++
-	if nextPage {
-		err = &errs.ErrStorageResult{Err: errs.NextPage}
-	}
 	return blockMap, err
 }
 
 func (r *storageResultReader) getValue() (map[string]interface{}, error) {
-	key := fmt.Sprintf("%s-%d-%d", r.payloadMD5, r.page, r.payloadMap[r.page][r.block])
+	key := fmt.Sprintf("%s-%d-%d", r.payloadMD5, r.page, r.block)
 	blockJSON, err := (*r.storage).Read(storage.Record{
 		Type: storage.INTERMEDIATE,
 		Key:  key,
 	})
 
 	if err != nil {
+		logger.Sugar().Errorf(fmt.Sprintf(errs.NoKey, key))
 		return nil, err //&errs.ErrStorageResult{Err: fmt.Sprintf(errs.NoKey, key)}
 	}
 	blockMap := make(map[string]interface{})
@@ -312,12 +257,8 @@ func (e CSVEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, 
 	if err != nil {
 		return err
 	}
-	//err = w.Flush()
-	//if err != nil {
-	//	return err
-	//}
 
-	reader := newStorageReader(&s, payloadMD5, keys)
+	reader := newStorageReader(&s, payloadMD5)
 
 	for {
 		select {
@@ -344,10 +285,6 @@ func (e CSVEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, 
 			if err != nil {
 				logger.Error(err.Error())
 			}
-			//err = w.Flush()
-			//if err != nil {
-			//	logger.Error(err.Error())
-			//}
 		case <-ctx.Done():
 			s.Close()
 			return &errs.Cancel{}
@@ -403,11 +340,8 @@ func (e XMLEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, 
 	if err != nil {
 		return err
 	}
-	//err = w.Flush()
-	//if err != nil {
-	//	return err
-	//}
-	reader := newStorageReader(&s, payloadMD5, keys)
+
+	reader := newStorageReader(&s, payloadMD5)
 
 	for {
 		select {
@@ -427,10 +361,6 @@ func (e XMLEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, 
 				}
 			}
 			e.writeXML(w, &block)
-			//err = w.Flush()
-			//if err != nil {
-			//	logger.Error(err.Error())
-			//}
 		case <-ctx.Done():
 			s.Close()
 			return &errs.Cancel{}
@@ -500,7 +430,7 @@ func (e XLSXEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string,
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 	defer s.Close()
-	reader := newStorageReader(&s, payloadMD5, keys)
+	reader := newStorageReader(&s, payloadMD5)
 	csv := CSVEncoder{partNames: e.partNames}
 	for {
 		select {
@@ -529,82 +459,3 @@ func (e XLSXEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string,
 	}
 	return nil
 }
-
-//encodeCSV writes data to w *csv.Writer.
-//header represent an array of fields for csv.
-//rows store csv records to be written.
-//comma is a separator between record fields. Default value is ","
-// func encodeCSV(header []string, rows []map[string]interface{}, comma string, w *csv.Writer) error {
-// 	if comma == "" {
-// 		comma = ","
-// 	}
-// 	w.Comma = rune(comma[0])
-// 	//Add Header string to csv or no
-// 	if len(header) > 0 {
-// 		if err := w.Write(header); err != nil {
-// 			return err
-// 		}
-// 	}
-// 	r := make([]string, len(header))
-// 	for _, row := range rows {
-// 		for i, column := range header {
-// 			switch v := row[column].(type) {
-// 			case string:
-// 				r[i] = v
-// 			case []string:
-// 				r[i] = strings.Join(v, ";")
-// 			case int:
-// 				r[i] = strconv.FormatInt(int64(v), 10)
-// 			case []int:
-// 				r[i] = intArrayToString(v, ";")
-// 			case []float64:
-// 				r[i] = floatArrayToString(v, ";")
-// 			case float64:
-// 				r[i] = strconv.FormatFloat(v, 'f', -1, 64)
-// 			case nil:
-// 				r[i] = ""
-// 			}
-// 		}
-// 		if err := w.Write(r); err != nil {
-// 			return err
-// 		}
-// 	}
-// 	return nil
-// }
-
-//encodeXML writes data blocks to XML file.
-// func encodeXML(blocks []map[string]interface{}, buf *bytes.Buffer) error {
-// 	mxj.XMLEscapeChars(true)
-// 	//write header to xml
-// 	buf.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>`))
-// 	buf.Write([]byte("<root>"))
-// 	for _, elem := range blocks {
-// 		nm := make(map[string]interface{})
-// 		for key, value := range elem {
-// 			out := []string{}
-// 			//[]int and []float slices should be passed as []string
-// 			switch v := value.(type) {
-// 			case []int:
-// 				for _, i := range v {
-// 					out = append(out, strconv.Itoa(i))
-// 				}
-// 				nm[key] = out
-// 				elem = nm
-// 			case []float64:
-// 				for _, i := range v {
-// 					out = append(out, strconv.FormatFloat(i, 'f', -1, 64))
-// 				}
-// 				nm[key] = out
-// 				elem = nm
-// 			}
-// 		}
-// 		m := mxj.Map(elem)
-// 		//err := m.XmlIndentWriter(&buf, "", "  ", "object")
-// 		err := m.XmlWriter(buf, "element")
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
-// 	buf.Write([]byte("</root>"))
-// 	return nil
-// }

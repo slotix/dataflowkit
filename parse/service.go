@@ -20,8 +20,8 @@ type ServiceMiddleware func(Service) Service
 
 //Parse service processes fetched page following the rules from Payload.
 func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
-	task := scrape.NewTask(p)
-	r, err := task.Parse()
+	task := scrape.NewTask()
+	r, err := task.Parse(p)
 	if err != nil {
 		return nil, err
 	}

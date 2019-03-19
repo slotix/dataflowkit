@@ -17,40 +17,6 @@ services:
     volumes:
       - ./storage/mongo/db:/data/db
 
-
-  cassandra:
-    #image: cassandra
-    build: ./storage/cassandra
-    restart: always
-    environment:
-      # define cluster topology
-      - CASSANDRA_CLUSTER_NAME=dfk-db
-      - CASSANDRA_DC=dfk-east
-      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
-
-      # define gossip entrypoints
-      #- CASSANDRA_SEEDS=cassandra,cassandra2,cassandra3
-      - CASSANDRA_SEEDS=cassandra 
-
-      # define heap size for local development
-      - MAX_HEAP_SIZE=500M
-      - HEAP_NEWSIZE=100M
-
-      # open JMX port for access by Reaper
-      # WARNING: this is unsafe in production without proper firewall settings
-      - LOCAL_JMX=yes    
-
-    ports:
-      - "7199:7199" # JMX
-      - "7000:7000" # cluster communication
-      - "7001:7001" # cluster communication (SSL)
-      - "9042:9042" # native protocol clients
-      - "9160:9160" # thrift clients
-    volumes:
-      - ./storage/cassandra/db:/var/lib/cassandra
-      - ./storage/cassandra/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-    
-
   testserver:
     #build: ./testserver
     image: slotix/dfk-testserver

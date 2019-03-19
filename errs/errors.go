@@ -8,9 +8,7 @@
 
 package errs
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // Error represents a handler error. It provides methods for a HTTP status
 // code and embeds the built-in error interface.
@@ -80,17 +78,11 @@ func (c Cancel) Error() string {
 	return "Operation canceled."
 }
 
-type NoBlocksToParse struct {
+type ParseError struct {
 	URL string
+	Err error
 }
 
-func (e *NoBlocksToParse) Error() string {
-	return fmt.Sprintf("No blocks found for current page. URL: %s", e.URL)
-}
-
-type OK struct {
-}
-
-func (e *OK) Error() string {
-	return "Scrape success.\n"
+func (e ParseError) Error() string {
+	return fmt.Sprintf("%s : %s", e.URL, e.Err.Error())
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"errors"
 	"flag"
 	"io/ioutil"
 	"os"
@@ -29,13 +28,12 @@ var (
 func init() {
 	viper.Set("CHROME", "http://127.0.0.1:9222")
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
-	viper.Set("STORAGE_TYPE", "diskv")
+	viper.Set("STORAGE_TYPE", "mongodb")
 	viper.Set("RESULTS_DIR", "results")
-	viper.Set("RANDOMIZE_FETCH_DELAY", true)
-	viper.Set("FETCH_CHANNEL_SIZE", 20)
-	viper.Set("FETCH_WORKER_NUM", 20)
-	viper.Set("BLOCK_CHANNEL_SIZE", 20)
-	viper.Set("BLOCK_WORKER_NUM", 20)
+	viper.Set("MAX_PAGES", 2)
+	viper.Set("IGNORE_FETCH_DELAY", true)
+	viper.Set("PAYLOAD_POOL_SIZE", 100)
+	viper.Set("PAYLOAD_WORKERS_NUM", 50)
 	//delayFetch = 500 * time.Millisecond
 	delayFetch = 0
 	//paginateResults = false
@@ -47,31 +45,18 @@ func init() {
 		},
 		Fields: []Field{
 			{
-				Name:     "Names",
-				Selector: "#cards a",
-				Extractor: Extractor{
-					Types: []string{"text", "href", "const", "outerHtml", "unknownSelectorType"},
-					Params: map[string]interface{}{
-						"value": "--- NAME ---",
-					},
-				},
+				Name:        "Names",
+				CSSSelector: "#cards a",
+				Attrs:       []string{"text", "href", "outerHtml"},
 			},
 			{
-				Name:     "Images",
-				Selector: ".card-img-top",
-				Extractor: Extractor{
-					Types: []string{"src", "alt", "width", "height"},
-				},
+				Name:        "Images",
+				CSSSelector: ".card-img-top",
+				Attrs:       []string{"src", "alt", "width", "height"},
 			},
 		},
-		Paginator: &paginator{
-			Selector:  "nav:nth-child(4) :nth-child(2) .page-link",
-			Attribute: "href",
-			MaxPages:  2,
-		},
-		//	PaginateResults: &paginateResults,
-		//RandomizeFetchDelay: &randFalse,
-		Format: "json",
+		Paginator: "nav:nth-child(4) :nth-child(2) .page-link",
+		Format:    "json",
 	}
 	detailsPayload = Payload{
 		Name: "persons details",
@@ -81,70 +66,48 @@ func init() {
 		},
 		Fields: []Field{
 			{
-				Name:     "Links",
-				Selector: "#cards a",
-				Extractor: Extractor{
-					Types: []string{"path"},
-					//Filters: []string{"trim"},
-				},
-				Details: &details{
+				Name:        "Links",
+				CSSSelector: "#cards a",
+				Attrs:       []string{"text", "href"},
+				Details: Payload{
 					Fields: []Field{
 						{
-							Name:     "Number",
-							Selector: ".display-4",
-							Extractor: Extractor{
-								Types: []string{"regex"},
-								Params: map[string]interface{}{
-									"regexp": "([\\d]+)\\s",
-								},
-								Filters: []string{"trim"},
-							},
+							Name:        "Number",
+							CSSSelector: ".display-4",
+							Attrs:       []string{"text"},
+							Filters:     []Filter{Filter{"trim", ""}},
 						},
 						{
-							Name:     "Name",
-							Selector: ".display-4",
-							Extractor: Extractor{
-								Types:   []string{"text"},
-								Filters: []string{"trim"},
-							},
+							Name:        "Name",
+							CSSSelector: ".display-4",
+							Attrs:       []string{"text"},
+							Filters:     []Filter{Filter{"trim", ""}},
 						},
 						{
-							Name:     "Company",
-							Selector: ".card-text:nth-child(3) .col-5",
-							Extractor: Extractor{
-								Types:   []string{"text"},
-								Filters: []string{"trim"},
-							},
+							Name:        "Company",
+							CSSSelector: ".card-text:nth-child(3) .col-5",
+							Attrs:       []string{"text"},
+							Filters:     []Filter{Filter{"trim", ""}},
 						},
 						{
-							Name:     "Phones",
-							Selector: ".col-10 span",
-							Extractor: Extractor{
-								// Types: []string{"regex"},
-								// Params: map[string]interface{}{
-								// 	"regexp": "([\\d\\.]+)",
-								// },
-								Types:   []string{"text"},
-								Filters: []string{"trim"},
-							},
+							Name:        "Phones",
+							CSSSelector: ".col-10 span",
+							Attrs:       []string{"text"},
+							Filters:     []Filter{Filter{"trim", ""}},
 						},
 						{
-							Name:     "Email",
-							Selector: ".card-text:nth-child(2) .col-5",
-							Extractor: Extractor{
-								Types:   []string{"text"},
-								Filters: []string{"trim"},
-							},
+							Name:        "Email",
+							CSSSelector: ".card-text:nth-child(2) .col-5",
+							Attrs:       []string{"text"},
+							Filters:     []Filter{Filter{"trim", ""}},
 						},
 					},
 				},
 			},
 			{
-				Name:     "Count",
-				Selector: ".badge-primary",
-				Extractor: Extractor{
-					Types: []string{"count"},
-				},
+				Name:        "Count",
+				CSSSelector: ".badge-primary",
+				Attrs:       []string{"text"},
 			},
 		},
 		// Paginator: &paginator{
@@ -160,74 +123,42 @@ func init() {
 	JSONPayload = Payload{
 		Name: "persons Cards",
 		Request: fetch.Request{
-			Type: "base",
+			Type: "chrome",
 			URL:  "http://testserver:12345/persons/page-0",
 		},
 		Fields: []Field{
 			{
-				Name:     "Names",
-				Selector: "#cards a",
-				Extractor: Extractor{
-					Types: []string{"text", "href", "const", "outerHtml", "unknownSelectorType"},
-					Params: map[string]interface{}{
-						"value": "--- NAME ---",
-					},
-				},
+				Name:        "Names",
+				CSSSelector: "#cards a",
+				Attrs:       []string{"text", "href", "outerHtml"},
 			},
 			{
-				Name:     "Images",
-				Selector: ".card-img-top",
-				Extractor: Extractor{
-					Types: []string{"src", "alt", "width", "height"},
-				},
+				Name:        "Images",
+				CSSSelector: ".card-img-top",
+				Attrs:       []string{"src", "alt", "width", "height"},
 			},
 		},
-		Paginator: &paginator{
-			Selector:  "nav:nth-child(4) :nth-child(2) .page-link",
-			Attribute: "href",
-			MaxPages:  2,
-		},
-		Format: "",
+		Paginator: "nav:nth-child(4) :nth-child(2) .page-link",
+		Format:    "",
 	}
 	CSVPayload = Payload{
 		Name: "persons details",
 		Request: fetch.Request{
-			Type: "base",
-			URL:  "http://127.0.0.1:12345/persons/3",
+			Type: "chrome",
+			URL:  "http://testserver:12345/persons/3",
 		},
 		Fields: []Field{
 			{
-				Name:     "Name",
-				Selector: ".display-4",
-				Extractor: Extractor{
-					Types:   []string{"text"},
-					Filters: []string{"trim"},
-				},
+				Name:        "Name",
+				CSSSelector: ".display-4",
+				Attrs:       []string{"text"},
+				Filters:     []Filter{Filter{"trim", ""}},
 			},
 			{
-				Name:     "Phones",
-				Selector: ".col-10 span",
-				Extractor: Extractor{
-					Types:   []string{"text"},
-					Filters: []string{"trim"},
-				},
-			},
-			{
-				Name:     "PhoneCount",
-				Selector: ".col-10 span",
-				Extractor: Extractor{
-					Types: []string{"count"},
-				},
-			},
-			{
-				Name:     "Const",
-				Selector: ".col-10 span",
-				Extractor: Extractor{
-					Types: []string{"const", "unknownSelectorType"},
-					Params: map[string]interface{}{
-						"value": "--- CONST ---",
-					},
-				},
+				Name:        "Phones",
+				CSSSelector: ".col-10 span",
+				Attrs:       []string{"text"},
+				Filters:     []Filter{Filter{"trim", ""}},
 			},
 		},
 		Format: "csv",
@@ -235,25 +166,21 @@ func init() {
 	XMLPayload = Payload{
 		Name: "persons details",
 		Request: fetch.Request{
-			Type: "base",
-			URL:  "http://127.0.0.1:12345/persons/3",
+			Type: "chrome",
+			URL:  "http://testserver:12345/persons/3",
 		},
 		Fields: []Field{
 			{
-				Name:     "Name",
-				Selector: ".display-4",
-				Extractor: Extractor{
-					Types:   []string{"text"},
-					Filters: []string{"trim"},
-				},
+				Name:        "Name",
+				CSSSelector: ".display-4",
+				Attrs:       []string{"text"},
+				Filters:     []Filter{Filter{"trim", ""}},
 			},
 			{
-				Name:     "Phones",
-				Selector: ".col-10 span",
-				Extractor: Extractor{
-					Types:   []string{"text"},
-					Filters: []string{"trim"},
-				},
+				Name:        "Phones",
+				CSSSelector: ".col-10 span",
+				Attrs:       []string{"text"},
+				Filters:     []Filter{Filter{"trim", ""}},
 			},
 		},
 		Format: "xml",
@@ -261,123 +188,79 @@ func init() {
 	deepExtractPayload = Payload{
 		Name: "scrape.dataflowkit",
 		Request: fetch.Request{
-			URL:       "http://127.0.0.1:12345/",
+			URL:       "http://testserver:12345/",
 			UserToken: "",
-			Type:      "base",
+			Type:      "chrome",
 		},
 		Fields: []Field{
 			{
-				Name:     "Country_Button",
-				Selector: ".mr-5~ .mr-5+ .btn-primary",
-				Details: &details{
+				Name:        "Country_Button",
+				CSSSelector: ".mr-5~ .mr-5+ .btn-primary",
+				Details: Payload{
 					IsPath: true,
 					Fields: []Field{
 						{
-							Name:     "Countries",
-							Selector: ".list-group-item a",
-							Details: &details{
+							Name:        "Countries",
+							CSSSelector: ".list-group-item a",
+							Details: Payload{
 								IsPath: true,
 								Fields: []Field{
 									{
-										Name:     "Cities",
-										Selector: ".list-group-item a",
-										Details: &details{
-											IsPath: true,
-											Paginator: &paginator{
-												Selector:  ".page-item:last-child .page-link",
-												Attribute: "href",
-												Type:      "next",
-											},
+										Name:        "Cities",
+										CSSSelector: ".list-group-item a",
+										Details: Payload{
+											IsPath:    true,
+											Paginator: ".page-item:last-child .page-link",
 											Fields: []Field{
 												{
-													Name:     "Persons",
-													Selector: "#cards a",
-													Details: &details{
+													Name:        "Persons",
+													CSSSelector: "#cards a",
+													Details: Payload{
 														IsPath: false,
 														Fields: []Field{
 															{
-																Name:     "Phone",
-																Selector: "span+ span",
-																Extractor: Extractor{
-																	Types: []string{"text"},
-																	Params: map[string]interface{}{
-																		"includeIfEmpty": false,
-																	},
-																	Filters: []string{"Trim"},
-																},
+																Name:        "Phone",
+																CSSSelector: "span+ span",
+																Attrs:       []string{"text"},
+																Filters:     []Filter{Filter{"trim", ""}},
 															},
 															{
-																Name:     "Country",
-																Selector: ".card-text:nth-child(1) a",
-																Extractor: Extractor{
-																	Types: []string{"text"},
-																	Params: map[string]interface{}{
-																		"includeIfEmpty": false,
-																	},
-																	Filters: []string{"Trim"},
-																},
+																Name:        "Country",
+																CSSSelector: ".card-text:nth-child(1) a",
+																Attrs:       []string{"text"},
+																Filters:     []Filter{Filter{"trim", ""}},
 															},
 															{
-																Name:     "City",
-																Selector: ".card-text+ .card-text a",
-																Extractor: Extractor{
-																	Types: []string{"text"},
-																	Params: map[string]interface{}{
-																		"includeIfEmpty": false,
-																	},
-																	Filters: []string{"Trim"},
-																},
+																Name:        "City",
+																CSSSelector: ".card-text+ .card-text a",
+																Attrs:       []string{"text"},
+																Filters:     []Filter{Filter{"trim", ""}},
 															},
 															{
-																Name:     "Title",
-																Selector: ".display-4",
-																Extractor: Extractor{
-																	Types: []string{"text"},
-																	Params: map[string]interface{}{
-																		"includeIfEmpty": false,
-																	},
-																	Filters: []string{"Trim"},
-																},
+																Name:        "Title",
+																CSSSelector: ".display-4",
+																Attrs:       []string{"text"},
+																Filters:     []Filter{Filter{"trim", ""}},
 															},
 														},
 													},
-													Extractor: Extractor{
-														Types: []string{"path"},
-														Params: map[string]interface{}{
-															"includeIfEmpty": false,
-														},
-														Filters: []string{"Trim"},
-													},
+													Attrs:   []string{"path"},
+													Filters: []Filter{Filter{"trim", ""}},
 												},
 											},
 										},
-										Extractor: Extractor{
-											Types: []string{"path"},
-											Params: map[string]interface{}{
-												"includeIfEmpty": false,
-											},
-											Filters: []string{"Trim"},
-										},
+										Attrs:   []string{"path"},
+										Filters: []Filter{Filter{"trim", ""}},
 									},
 								},
 							},
-							Extractor: Extractor{
-								Types: []string{"path"},
-								Params: map[string]interface{}{
-									"includeIfEmpty": false,
-								},
-								Filters: []string{"Trim"},
-							},
+							Attrs:   []string{"path"},
+							Filters: []Filter{Filter{"trim", ""}},
 						},
 					},
 				},
-				Extractor: Extractor{
-					Types: []string{"path"},
-					Params: map[string]interface{}{
-						"includeIfEmpty": false,
-					},
-					Filters: []string{"Trim"},
-				},
+				Attrs:   []string{"path"},
+				Filters: []Filter{Filter{"trim", ""}},
 			},
 		},
 		Format: "json",
@@ -386,24 +269,12 @@ func init() {
 }
 
 func TestNewTask(t *testing.T) {
-	viper.Set("MAX_PAGES", 10)
-	task := NewTask(Payload{
-		Paginator: &paginator{
-			Selector:  ".paginatorrr",
-			Attribute: "href",
-			//InfiniteScroll: true,
-		},
-	})
-	assert.NotEmpty(t, task.ID)
-	start, err := task.startTime()
-	assert.NoError(t, err)
-	assert.NotNil(t, start, "task start time is not nil")
+	task := NewTask()
+	assert.NotEmpty(t, task.storage)
 }
 
 func TestParseDetails(t *testing.T) {
-	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
-	viper.Set("RANDOMIZE_FETCH_DELAY", true)
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host: fetchServerAddr,
@@ -413,8 +284,9 @@ func TestParseDetails(t *testing.T) {
 
 	//JSON details output
 	detailsPayload.Format = "json"
-	task := NewTask(detailsPayload)
-	r, err := task.Parse()
+	task := NewTask()
+	task.storage.DeleteAll()
+	r, err := task.Parse(detailsPayload)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
 	str := make(map[string]interface{})
@@ -470,13 +342,11 @@ func TestParseDetails(t *testing.T) {
 	// assert.NoError(t, err)
 	// assert.Equal(t, expected, actual)
 
-	os.RemoveAll("./diskv")
+	task.storage.DeleteAll()
 	os.RemoveAll("./results")
 }
 
 func TestParse(t *testing.T) {
-	viper.Set("RANDOMIZE_FETCH_DELAY", false)
-	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
@@ -486,8 +356,9 @@ func TestParse(t *testing.T) {
 	defer fetchServer.Stop()
 
 	//JSON output
-	task := NewTask(personsPayload)
-	r, err := task.Parse()
+	task := NewTask()
+	task.storage.DeleteAll()
+	r, err := task.Parse(personsPayload)
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
@@ -508,8 +379,8 @@ func TestParse(t *testing.T) {
 
 	//xml
 	personsPayload.Format = "xml"
-	task = NewTask(personsPayload)
-	r, err = task.Parse()
+	task = NewTask()
+	r, err = task.Parse(personsPayload)
 	assert.NoError(t, err)
 	buf = new(bytes.Buffer)
 	buf.ReadFrom(r)
@@ -528,19 +399,11 @@ func TestParse(t *testing.T) {
 	//todo: order of fields in both xml files is not identical. So it is not possible to compare them easily.
 	//assert.Equal(t, expected, actual)
 
-	os.RemoveAll("./diskv")
+	task.storage.DeleteAll()
 	os.RemoveAll("./results")
 }
-func TestParseErrs(t *testing.T) {
-	os.RemoveAll("./diskv")
-	os.RemoveAll("./results")
-	fetchServerAddr := viper.GetString("DFK_FETCH")
-	fetchServerCfg := fetch.Config{
-		Host: fetchServerAddr,
-	}
-	fetchServer := fetch.Start(fetchServerCfg)
-	defer fetchServer.Stop()
 
+func TestParseErrs(t *testing.T) {
 	///// No selectors
 	badP := Payload{
 		Name: "No Selectors",
@@ -550,9 +413,9 @@ func TestParseErrs(t *testing.T) {
 		Format: "json",
 	}
 
-	task := NewTask(badP)
-	_, err := task.Parse()
-	assert.Error(t, err, "400: no parts found")
+	task := NewTask()
+	_, err := task.Parse(badP)
+	assert.Error(t, err, "Bad payload: No fields to scrape")
 
 	///// ErrNoPartOrSelectorProvided
 	badP = Payload{
@@ -562,26 +425,27 @@ func TestParseErrs(t *testing.T) {
 		},
 		Fields: []Field{
 			{
-				Name:     "Alert",
-				Selector: "",
-				Extractor: Extractor{
-					Types: []string{"text"},
-				},
+				Name:        "Alert",
+				CSSSelector: "",
+				Attrs:       []string{"text"},
 			},
 			{
-				Name:     "",
-				Selector: ".alert-info",
-				Extractor: Extractor{
-					Types: []string{"text"},
-				},
+				Name:        "",
+				CSSSelector: ".alert-info",
+				Attrs:       []string{"text"},
 			},
 		},
 		Format: "json",
 	}
 
-	task = NewTask(badP)
-	_, err = task.Parse()
-	assert.Error(t, err, "errs.ErrNoPartOrSelectorProvided")
+	task = NewTask()
+	_, err = task.Parse(badP)
+	assert.Error(t, err, "Bad payload: Field 0 has no css selector")
+
+	badP.Fields[0].CSSSelector = "selector"
+	task = NewTask()
+	_, err = task.Parse(badP)
+	assert.Error(t, err, "Bad payload: Field 1 has no name")
 
 	//Bad output format
 	badOF := Payload{
@@ -592,29 +456,22 @@ func TestParseErrs(t *testing.T) {
 		},
 		Fields: []Field{
 			{
-				Name:     "Alert",
-				Selector: ".alert-info",
-				Extractor: Extractor{
-					Types: []string{"text"},
-				},
+				Name:        "Alert",
+				CSSSelector: ".alert-info",
+				Attrs:       []string{"text"},
 			},
 		},
 		//		PaginateResults: &paginateResults,
 		Format: "BadOutputFormat",
 	}
-	task = NewTask(badOF)
+	task = NewTask()
 
-	_, err = task.Parse()
-	assert.Error(t, err, "invalid output format specified")
-
-	os.RemoveAll("./diskv")
-	os.RemoveAll("./results")
+	_, err = task.Parse(badOF)
+	assert.Error(t, err, "Bad payload: Unsupported output format BadOutputFormat")
 }
 
 func TestJSONEncode(t *testing.T) {
 	JSONPayload.Format = "json"
-	viper.Set("RANDOMIZE_FETCH_DELAY", false)
-	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 
 	fetchServerAddr := viper.GetString("DFK_FETCH")
@@ -624,8 +481,9 @@ func TestJSONEncode(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
-	task := NewTask(JSONPayload)
-	r, err := task.Parse()
+	task := NewTask()
+	task.storage.DeleteAll()
+	r, err := task.Parse(JSONPayload)
 
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
@@ -647,14 +505,12 @@ func TestJSONEncode(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
 
-	os.RemoveAll("./diskv")
+	task.storage.DeleteAll()
 	os.RemoveAll("./results")
 }
 
 func TestJSONLEncode(t *testing.T) {
 	JSONPayload.Format = "jsonl"
-	viper.Set("RANDOMIZE_FETCH_DELAY", false)
-	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 
 	fetchServerAddr := viper.GetString("DFK_FETCH")
@@ -664,8 +520,9 @@ func TestJSONLEncode(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
-	task := NewTask(JSONPayload)
-	r, err := task.Parse()
+	task := NewTask()
+	task.storage.DeleteAll()
+	r, err := task.Parse(JSONPayload)
 
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
@@ -686,12 +543,11 @@ func TestJSONLEncode(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
 
-	os.RemoveAll("./diskv")
+	task.storage.DeleteAll()
 	os.RemoveAll("./results")
 }
 
 func TestCSVEncode(t *testing.T) {
-	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
@@ -700,8 +556,9 @@ func TestCSVEncode(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
-	task := NewTask(CSVPayload)
-	r, err := task.Parse()
+	task := NewTask()
+	task.storage.DeleteAll()
+	r, err := task.Parse(CSVPayload)
 
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
@@ -722,7 +579,7 @@ func TestCSVEncode(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
 
-	os.RemoveAll("./diskv")
+	task.storage.DeleteAll()
 	os.RemoveAll("./results")
 }
 
@@ -731,7 +588,6 @@ func TestCSVEncode(t *testing.T) {
 //  XLS - structure compare required because of metadata
 
 func TestXMLEncode(t *testing.T) {
-	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
@@ -740,8 +596,9 @@ func TestXMLEncode(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
-	task := NewTask(XMLPayload)
-	r, err := task.Parse()
+	task := NewTask()
+	task.storage.DeleteAll()
+	r, err := task.Parse(XMLPayload)
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
@@ -759,13 +616,12 @@ func TestXMLEncode(t *testing.T) {
 	assert.NoError(t, err)
 	//assert.Equal(t, expected, actual)
 
-	os.RemoveAll("./diskv")
+	task.storage.DeleteAll()
 	os.RemoveAll("./results")
 }
 
 //TestParseSwitchFetchers switch fetchers from type "base" to type "chrome" automatically in case of java scripts on a target web page need to be rendered.
 func TestParseSwitchFetchers(t *testing.T) {
-	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	fetchServerAddr := viper.GetString("DFK_FETCH")
@@ -783,61 +639,20 @@ func TestParseSwitchFetchers(t *testing.T) {
 		},
 		Fields: []Field{
 			{
-				Name:     "Names",
-				Selector: "#cards a",
-				Extractor: Extractor{
-					Types: []string{"text"},
-				},
+				Name:        "Names",
+				CSSSelector: "#cards a",
+				Attrs:       []string{"text"},
 			},
 		},
 		Format: "json",
 	}
-	task := NewTask(p)
-	r, err := task.Parse()
+	task := NewTask()
+	task.storage.DeleteAll()
+	r, err := task.Parse(p)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
-	os.RemoveAll("./diskv")
+	task.storage.DeleteAll()
 	os.RemoveAll("./results")
-}
-
-func TestScraper_partNames(t *testing.T) {
-	s := Scraper{}
-	s.Parts = []Part{
-		{Name: "1"},
-		{Name: "2"},
-		{Name: "3"},
-		{Name: "4"},
-	}
-	parts := s.partNames()
-	assert.Equal(t, []string{"1", "2", "3", "4"}, parts)
-
-}
-
-func TestPayload_selectors(t *testing.T) {
-	p1 := Payload{
-		Fields: []Field{
-			{Selector: "sel1"},
-			{Selector: "sel2"},
-			{Selector: "sel3"},
-			{Selector: "sel4"},
-		},
-	}
-	p2 := Payload{
-		Fields: []Field{
-			{},
-			{},
-			{},
-			{},
-		},
-	}
-
-	s1, err := p1.selectors()
-	assert.NoError(t, err)
-	assert.Equal(t, []string{"sel1", "sel2", "sel3", "sel4"}, s1)
-	s2, err := p2.selectors()
-	assert.Error(t, err)
-	assert.Equal(t, []string(nil), s2)
-
 }
 
 func TestIntArrayToString(t *testing.T) {
@@ -853,8 +668,6 @@ func TestFloatArrayToString(t *testing.T) {
 func TestGZipJSONEncode(t *testing.T) {
 	JSONPayload.Format = "json"
 	JSONPayload.Compressor = GZIP_COMPRESS
-	viper.Set("RANDOMIZE_FETCH_DELAY", false)
-	os.RemoveAll("./diskv")
 	os.RemoveAll("./results")
 
 	fetchServerAddr := viper.GetString("DFK_FETCH")
@@ -864,8 +677,9 @@ func TestGZipJSONEncode(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
-	task := NewTask(JSONPayload)
-	r, err := task.Parse()
+	task := NewTask()
+	task.storage.DeleteAll()
+	r, err := task.Parse(JSONPayload)
 
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
@@ -894,59 +708,31 @@ func TestGZipJSONEncode(t *testing.T) {
 	assert.Equal(t, expected, bb)
 
 	JSONPayload.Compressor = ""
-	os.RemoveAll("./diskv")
+	task.storage.DeleteAll()
 	os.RemoveAll("./results")
 }
 
-func TestParseDetailsWithRegex(t *testing.T) {
-	os.RemoveAll("./diskv")
-	os.RemoveAll("./results")
-	viper.Set("RANDOMIZE_FETCH_DELAY", true)
-	fetchServerAddr := viper.GetString("DFK_FETCH")
-	fetchServerCfg := fetch.Config{
-		Host: fetchServerAddr,
-	}
-	fetchServer := fetch.Start(fetchServerCfg)
-	defer fetchServer.Stop()
+func TestFilters(t *testing.T) {
+	filter := Filter{"regex", ""}
+	res, err := filter.Apply("")
+	assert.Error(t, err, "Data source is empty")
 
-	pp := &(detailsPayload.Fields[0].Details.Fields[0].Extractor.Params)
-	ss := (*pp)["regexp"]
-	detailsPayload.Format = "json"
+	res, err = filter.Apply("abc")
+	assert.Error(t, err, "No regex given")
 
-	//empty field case
-	(*pp)["regexp"] = ""
-	task := NewTask(detailsPayload)
-	_, actualErr := task.Parse()
-	if assert.Error(t, actualErr) {
-		expected := errors.New("no regex given")
-		assert.Equal(t, expected, actualErr)
-	}
+	filter.Param = "(\\d)(\\d+)"
+	res, err = filter.Apply("1234")
+	assert.Error(t, err, "Regex filter doesn't support subexpressions")
 
-	//more than 1 subexpression case
-	(*pp)["regexp"] = "(Some([a-z]+)!)"
-	task = NewTask(detailsPayload)
-	_, actualErr = task.Parse()
-	if assert.Error(t, actualErr) {
-		expected := errors.New("regex extractor doesn't support subexpressions")
-		assert.Equal(t, expected, actualErr)
-	}
-
-	//no parens pass
-	(*pp)["regexp"] = "[\\d]+\\s"
-	task = NewTask(detailsPayload)
-	_, actualErr = task.Parse()
-	assert.NoError(t, actualErr)
-
-	(*pp)["regexp"] = ss
-	os.RemoveAll("./diskv")
-	os.RemoveAll("./results")
+	filter.Param = "\\d"
+	res, err = filter.Apply("1234")
+	assert.NoError(t, err)
+	assert.Equal(t, "1;2;3;4;", res)
 }
 
 func TestPathParse(t *testing.T) {
-	viper.Set("MAX_PAGES", 100)
-	os.RemoveAll("./diskv")
+	viper.Set("MAX_PAGES", 10)
 	os.RemoveAll("./results")
-	viper.Set("RANDOMIZE_FETCH_DELAY", true)
 	fetchServerAddr := viper.GetString("DFK_FETCH")
 	fetchServerCfg := fetch.Config{
 		Host: fetchServerAddr,
@@ -954,8 +740,9 @@ func TestPathParse(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
-	task := NewTask(deepExtractPayload)
-	r, err := task.Parse()
+	task := NewTask()
+	task.storage.DeleteAll()
+	r, err := task.Parse(deepExtractPayload)
 	assert.NoError(t, err)
 
 	buf := new(bytes.Buffer)
@@ -992,7 +779,6 @@ func TestPathParse(t *testing.T) {
 		assert.Equal(t, true, exists)
 		assert.NotEqual(t, "", value)
 	}
-
-	os.RemoveAll("./diskv")
+	task.storage.DeleteAll()
 	os.RemoveAll("./results")
 }

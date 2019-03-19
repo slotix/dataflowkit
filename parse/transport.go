@@ -1,15 +1,13 @@
 package parse
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/go-kit/kit/endpoint"
-
-	"context"
-
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
 	stdprometheus "github.com/prometheus/client_golang/prometheus/promhttp"

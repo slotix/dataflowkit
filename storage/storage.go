@@ -44,7 +44,7 @@ type Store interface {
 }
 
 // NewStore creates New initialized Store instance with predefined parameters
-// Storage Types: S3, Spaces, Redis, Diskv, Cassandra
+// Storage Types: S3, Spaces, Redis, Diskv
 func NewStore(sType string) Store {
 	switch strings.ToLower(sType) {
 	case "diskv":
@@ -53,9 +53,6 @@ func NewStore(sType string) Store {
 		var cacheSizeMax uint64
 		cacheSizeMax = 1024 * 1024
 		return newDiskvConn(baseDir, cacheSizeMax)
-	case "cassandra":
-		cassandraHost := viper.GetString("CASSANDRA")
-		return newCassandra(cassandraHost)
 	case "mongodb":
 		mongoHost := viper.GetString("MONGO")
 		return newMongo(mongoHost)

@@ -18,7 +18,6 @@ import (
 	"net/http"
 
 	"github.com/globalsign/mgo"
-	"github.com/gocql/gocql"
 	"github.com/mafredri/cdp/devtool"
 )
 
@@ -32,11 +31,6 @@ type Checker interface {
 
 // ChromeConn struct implements methods for Headless chrome connection satisfying Checker interface
 type ChromeConn struct {
-	Host string
-}
-
-// CassandraConn struct implements methods for Cassandra connection satisfying Checker interface
-type CassandraConn struct {
 	Host string
 }
 
@@ -65,10 +59,6 @@ func (ParseConn) String() string {
 
 func (ChromeConn) String() string {
 	return "Headless Chrome"
-}
-
-func (CassandraConn) String() string {
-	return "Cassandra"
 }
 
 func (MongoConn) String() string {
@@ -134,18 +124,6 @@ func (c ChromeConn) isAlive() error {
 	if err != nil || version.Browser == "" {
 		return err
 	}
-	return nil
-}
-
-func (c CassandraConn) isAlive() error {
-	cluster := gocql.NewCluster(c.Host)
-	cluster.Keyspace = "dfk"
-	cluster.Consistency = gocql.One
-	s, err := cluster.CreateSession()
-	if err != nil {
-		return err
-	}
-	defer s.Close()
 	return nil
 }
 

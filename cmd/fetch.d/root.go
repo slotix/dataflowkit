@@ -67,10 +67,6 @@ var RootCmd = &cobra.Command{
 			},
 		}
 		sType := strings.ToLower(storageType)
-		if sType == "cassandra" {
-			services = append(services, healthcheck.CassandraConn{
-				Host: cassandraHost})
-		}
 		if sType == "mongodb" {
 			services = append(services, healthcheck.MongoConn{
 				Host: mongoHost,
@@ -124,9 +120,8 @@ func init() {
 	RootCmd.Flags().StringVarP(&fetchProxy, "PROXY", "p", "", "Proxy address http://username:password@proxy-host:port")
 
 	//set here default type of storage
-	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "Diskv", "Storage type. Types: Diskv, Cassandra, MongoDB")
+	RootCmd.Flags().StringVarP(&storageType, "STORAGE_TYPE", "", "MongoDB", "Storage type. Types: Diskv, MongoDB")
 	RootCmd.Flags().StringVarP(&diskvBaseDir, "DISKV_BASE_DIR", "", "diskv", "diskv base directory for storing fetch results")
-	RootCmd.Flags().StringVarP(&cassandraHost, "CASSANDRA", "", "127.0.0.1", "Cassandra host address")
 	RootCmd.Flags().StringVarP(&mongoHost, "MONGO", "", "127.0.0.1", "MongoDB host address")
 	RootCmd.Flags().IntVar(&fetchTimeout, "FETCH_TIMEOUT", 60, "Sets fetch timeout")
 
@@ -145,12 +140,6 @@ func init() {
 		viper.BindPFlag("CHROME", RootCmd.Flags().Lookup("CHROME"))
 	}
 
-	if os.Getenv("CASSANDRA") != "" {
-		viper.Set("CASSANDRA", os.Getenv("CASSANDRA"))
-	} else {
-		viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
-	}
-
 	if os.Getenv("DISKV_BASE_DIR") != "" {
 		//viper.BindEnv("DISKV_BASE_DIR")
 		viper.Set("DISKV_BASE_DIR", os.Getenv("DISKV_BASE_DIR"))
@@ -164,7 +153,6 @@ func init() {
 	viper.BindPFlag("CHROME_SCRIPTS", RootCmd.Flags().Lookup("CHROME_SCRIPTS"))
 	viper.BindPFlag("STORAGE_TYPE", RootCmd.Flags().Lookup("STORAGE_TYPE"))
 	viper.BindPFlag("DISKV_BASE_DIR", RootCmd.Flags().Lookup("DISKV_BASE_DIR"))
-	viper.BindPFlag("CASSANDRA", RootCmd.Flags().Lookup("CASSANDRA"))
 	viper.BindPFlag("MONGO", RootCmd.Flags().Lookup("MONGO"))
 	viper.BindPFlag("FETCH_TIMEOUT", RootCmd.Flags().Lookup("FETCH_TIMEOUT"))
 

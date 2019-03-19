@@ -22,19 +22,15 @@ var (
 		},
 		Fields: []scrape.Field{
 			{
-				Name:     "Name",
-				Selector: "#cards a",
-				Extractor: scrape.Extractor{
-					Types:   []string{"text", "href"},
-					Filters: []string{"trim"},
-				},
+				Name:        "Name",
+				CSSSelector: "#cards a",
+				Attrs:       []string{"text", "href"},
+				Filters:     []scrape.Filter{scrape.Filter{"trim", ""}},
 			},
 			{
-				Name:     "Image",
-				Selector: ".card-img-top",
-				Extractor: scrape.Extractor{
-					Types: []string{"src", "alt"},
-				},
+				Name:        "Image",
+				CSSSelector: ".card-img-top",
+				Attrs:       []string{"src", "alt"},
 			},
 		},
 		Format: "json",
@@ -49,12 +45,10 @@ var (
 		},
 		Fields: []scrape.Field{
 			{
-				Name:     "alert",
-				Selector: ".alert-info",
-				Extractor: scrape.Extractor{
-					Types:   []string{"text"},
-					Filters: []string{"trim"},
-				},
+				Name:        "alert",
+				CSSSelector: ".alert-info",
+				Attrs:       []string{"text"},
+				Filters:     []scrape.Filter{scrape.Filter{"trim", ""}},
 			},
 		},
 		Format: "json",
@@ -64,14 +58,12 @@ var (
 func init() {
 	viper.Set("DFK_FETCH", "127.0.0.1:8000")
 	viper.Set("DFK_PARSE", "127.0.0.1:8001")
-	viper.Set("STORAGE_TYPE", "Diskv")
+	viper.Set("STORAGE_TYPE", "MongoDB")
 	viper.Set("FETCHER_TYPE", "base")
 	viper.Set("RESULTS_DIR", "results")
 	viper.Set("CHROME", "http://127.0.0.1:9222")
-	viper.Set("FETCH_CHANNEL_SIZE", 20)
-	viper.Set("FETCH_WORKER_NUM", 20)
-	viper.Set("BLOCK_CHANNEL_SIZE", 20)
-	viper.Set("BLOCK_WORKER_NUM", 20)
+	viper.Set("PAYLOAD_POOL_SIZE", 50)
+	viper.Set("PAYLOAD_WORKERS_NUM", 100)
 }
 func Test_service(t *testing.T) {
 	//start fetch server
