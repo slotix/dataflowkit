@@ -176,3 +176,27 @@ func TestAuthFetcher(t *testing.T) {
 	assert.Equal(t, true, bytes.Contains(pageContent, []byte(">"+username+"<")))
 
 }
+
+//readerToUtf8Encoding function is called in BaseFetcher.Fetch There is no need to call it for Chrome fetcher
+func Test_BaseFetcher_Utf8Encoding(t *testing.T) {
+	viper.Set("PROXY", "")
+	fetcher := newFetcher(Base)
+	req := Request{
+		URL: tsURL + "/static/html/utf8.html",
+		//URL: "https://www.tvojlekar.sk/lekari.php",
+		Method: "GET",
+	}
+	html, err := fetcher.Fetch(req)
+	assert.NoError(t, err, "Expected no error")
+	data, err := ioutil.ReadAll(html)
+	t.Log(string(data))
+
+	req = Request{
+		URL:    tsURL + "/static/html/win1250.html",
+		Method: "GET",
+	}
+	html, err = fetcher.Fetch(req)
+	assert.NoError(t, err, "Expected no error")
+	data, err = ioutil.ReadAll(html)
+	t.Log(string(data))
+}

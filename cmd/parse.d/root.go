@@ -77,42 +77,41 @@ var RootCmd = &cobra.Command{
 			})
 		}
 
-		status := healthcheck.CheckServices(services...)
-		allAlive := true
+		//status := healthcheck.CheckServices(services...)
+		//allAlive := true
 
-		for k, v := range status {
-			fmt.Printf("%s: %s\n", k, v)
-			if v != "Ok" {
-				allAlive = false
-			}
+		// for k, v := range status {
+		// 	fmt.Printf("%s: %s\n", k, v)
+		// 	if v != "Ok" {
+		// 		allAlive = false
+		// 	}
+		// }
+		//	if allAlive {
+		if skipStorageMW {
+			fmt.Printf("Storage %s\n", "None")
+		} else {
+			fmt.Printf("Storage %s\n", storageType)
 		}
-		if allAlive {
-			if skipStorageMW {
-				fmt.Printf("Storage %s\n", "None")
-			} else {
-				fmt.Printf("Storage %s\n", storageType)
-			}
-			parseServer := viper.GetString("DFK_PARSE")
-			serverCfg := parse.Config{
-				Host: parseServer, //"localhost:5000",
-			}
-			htmlServer := parse.Start(serverCfg)
-			defer htmlServer.Stop()
-
-			sigChan := make(chan os.Signal, 1)
-			signal.Notify(sigChan, os.Interrupt)
-			<-sigChan
-
-			fmt.Println("main : shutting down")
+		parseServer := viper.GetString("DFK_PARSE")
+		serverCfg := parse.Config{
+			Host:    parseServer, //"localhost:5000",
+			Version: Version,
 		}
+		htmlServer := parse.Start(serverCfg)
+		defer htmlServer.Stop()
+
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt)
+		<-sigChan
+
+		fmt.Println("main : shutting down")
+		//	}
 	},
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(version string) {
-	VERSION = version
-
+func Execute() {
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)

@@ -10,7 +10,6 @@ import (
 	"github.com/go-kit/kit/endpoint"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
-	stdprometheus "github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/slotix/dataflowkit/errs"
 	"github.com/slotix/dataflowkit/scrape"
 )
@@ -101,6 +100,6 @@ func NewHttpHandler(ctx context.Context, endpoint Endpoints) http.Handler {
 	r.Methods("GET").Path("/ping").HandlerFunc(HealthCheckHandler)
 
 	// GET /metrics
-	r.Path("/metrics").Handler(stdprometheus.Handler())
+	//r.Path("/metrics").Handler(stdprometheus.Handler())
 	return r
 }
