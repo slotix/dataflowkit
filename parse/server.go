@@ -16,9 +16,8 @@ import (
 
 // Config provides basic configuration
 type Config struct {
-	Host         string
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
+	Host    string
+	Version string
 }
 
 // HTMLServer represents the web service that serves up HTML
@@ -77,8 +76,6 @@ func Start(cfg Config) *HTMLServer {
 		server: &http.Server{
 			Addr:           cfg.Host,
 			Handler:        r,
-			ReadTimeout:    cfg.ReadTimeout,
-			WriteTimeout:   cfg.WriteTimeout,
 			MaxHeaderBytes: 1 << 20,
 		},
 	}
@@ -86,7 +83,10 @@ func Start(cfg Config) *HTMLServer {
 	htmlServer.wg.Add(1)
 
 	go func() {
-		fmt.Printf("Starting Parse Server %s\n", htmlServer.server.Addr)
+		fmt.Printf("\n%s\nStarting ...%s",
+			cfg.Version,
+			htmlServer.server.Addr,
+		)
 		htmlServer.server.ListenAndServe()
 		htmlServer.wg.Done()
 	}()

@@ -36,6 +36,6 @@ var versionCmd = &cobra.Command{
 	Long: `Dataflow Kit Fetcher CLI version 
     and Build time information`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Dataflow Kit fetcher CLI v%s", VERSION)
+		fmt.Print(Version)
 	},
 }
