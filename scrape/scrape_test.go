@@ -21,8 +21,8 @@ var (
 	//	randFalse  = false
 	delayFetch time.Duration
 	//paginateResults                bool
-	personsPayload, detailsPayload, JSONPayload, CSVPayload, XMLPayload, deepExtractPayload Payload
-	update                                                                                  = flag.Bool("update", false, "update result files")
+	personsPayload, detailsPayload, JSONPayload, CSVPayload, XMLPayload, deepExtractPayload, pathDetailsPaginator Payload
+	update                                                                                                        = flag.Bool("update", false, "update result files")
 )
 
 func init() {
@@ -265,6 +265,58 @@ func init() {
 		},
 		Format: "json",
 		IsPath: true,
+	}
+	pathDetailsPaginator = Payload{
+		Name: "details paginator",
+		Request: fetch.Request{
+			URL:       "http://testserver:12345/country/United%20States",
+			UserToken: "",
+			Type:      "",
+			Actions:   "",
+		},
+		Fields: []Field{
+			Field{
+				Name:        "selector1",
+				CSSSelector: ".list-group-item a",
+				Details: Payload{
+					Name: "selector1details",
+					Request: fetch.Request{
+						URL:       "http://testserver:12345/country/United%20States/city/San%20Jose",
+						UserToken: "",
+						Type:      "",
+						Actions:   "",
+					},
+					Fields: []Field{
+						Field{
+							Name:        "selector1",
+							CSSSelector: ".badge-primary",
+							Attrs:       []string{"text"},
+							Filters: []Filter{
+								Filter{Name: "trim"},
+							},
+						},
+						Field{
+							Name:        "selector2",
+							CSSSelector: "#cards a",
+							Attrs:       []string{"href", "text"},
+							Filters: []Filter{
+								Filter{Name: "trim"},
+							},
+						},
+					},
+					Paginator: ".active~ .page-item+ .page-item .page-link",
+					Format:    "",
+					IsPath:    false,
+				},
+				Attrs: []string{"path"},
+				Filters: []Filter{
+					Filter{Name: "trim"},
+				},
+			},
+		},
+		Paginator: "",
+		Format:    "json",
+		IsPath:    true,
 	}
 }
 
@@ -728,6 +780,40 @@ func TestFilters(t *testing.T) {
 	res, err = filter.Apply("1234")
 	assert.NoError(t, err)
 	assert.Equal(t, "1;2;3;4;", res)
+}
+
+func TestPathPaginator(t *testing.T) {
+	os.RemoveAll("./results")
+	fetchServerAddr := viper.GetString("DFK_FETCH")
+	fetchServerCfg := fetch.Config{
+		Host: fetchServerAddr,
+	}
+	fetchServer := fetch.Start(fetchServerCfg)
+	defer fetchServer.Stop()
+
+	task := NewTask()
+	task.storage.DeleteAll()
+	r, err := task.Parse(pathDetailsPaginator)
+	assert.NoError(t, err)
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+	str := make(map[string]interface{})
+	err = json.Unmarshal(buf.Bytes(), &str)
+	assert.NoError(t, err)
+	resultFile := str["Output file"].(string)
+
+	actualText, err := ioutil.ReadFile(filepath.Join("./", resultFile))
+	assert.NoError(t, err)
+
+	var actualJSON []map[string]string
+	err = json.Unmarshal([]byte(actualText), &actualJSON)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 25, len(actualJSON))
+
+	task.storage.DeleteAll()
+	os.RemoveAll("./results")
 }
 
 func TestPathParse(t *testing.T) {

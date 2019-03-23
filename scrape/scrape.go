@@ -26,7 +26,7 @@ import (
 
 func (f *Field) extract(content *goquery.Selection, results *map[string]interface{}, baseURL string) error {
 	for _, attr := range f.Attrs {
-		values := []interface{}{}
+		values := []string{}
 		var err error
 		content.Find(f.CSSSelector).Each(func(index int, s *goquery.Selection) {
 			switch strings.ToLower(attr) {
@@ -424,13 +424,21 @@ func (task *Task) paginate(ctx context.Context, in <-chan flow, nextPageSelector
 					viper.GetInt("MAX_PAGES") > 0 && currentPageNum < viper.GetInt("MAX_PAGES")-1 {
 					// TODO clone request to use same settings
 					currentPageNum++
+					paginatorLink := ""
+					switch paginator["paginator_href"].(type) {
+					case string:
+						paginatorLink = paginator["paginator_href"].(string)
+					case []string:
+						paginatorLink = paginator["paginator_href"].([]string)[0]
+					}
+					logger.Info(paginatorLink)
 					fetcherChannel <- flow{fmt.Sprintf("%s-%d", data.key, currentPageNum), data.url,
 						fetch.Request{
 							Actions:   "",
 							FormData:  "",
 							Method:    "",
 							Type:      "",
-							URL:       paginator["paginator_href"].(string),
+							URL:       paginatorLink,
 							UserToken: "",
 						},
 					}

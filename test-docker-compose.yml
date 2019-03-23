@@ -26,5 +26,4 @@ services:
       - "12345:12345"
     depends_on:
       - chrome
-    restart: always
   
