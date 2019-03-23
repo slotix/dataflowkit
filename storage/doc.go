@@ -8,7 +8,7 @@
 
 // Package storage of the Dataflow kit describes Store interface for read/ write operations with downloaded data and parsed results.
 //
-//Storage types like AWS S3, Digital Ocean Spaces, Diskv, Redis implement methods wchich satisfy Store interface.
+//Storage types like Diskv, MongoDB implement methods which satisfy Store interface.
 //
 package storage
 
