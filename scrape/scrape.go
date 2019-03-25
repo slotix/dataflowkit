@@ -156,6 +156,13 @@ func (p *Payload) InitUID() {
 func (p *Payload) fieldNames() []string {
 	names := []string{}
 	for _, field := range p.Fields {
+		if p.IsPath {
+			if len(field.Details.Fields) > 0 {
+				return field.Details.fieldNames()
+			} else {
+				continue
+			}
+		}
 		for _, attr := range field.Attrs {
 			names = append(names, fmt.Sprintf("%s_%s", field.Name, attr))
 		}

@@ -145,22 +145,32 @@ func init() {
 		Name: "persons details",
 		Request: fetch.Request{
 			Type: "chrome",
-			URL:  "http://testserver:12345/persons/3",
+			URL:  "http://testserver:12345/persons/page-0",
 		},
 		Fields: []Field{
-			{
-				Name:        "Name",
-				CSSSelector: ".display-4",
-				Attrs:       []string{"text"},
-				Filters:     []Filter{Filter{"trim", ""}},
-			},
-			{
-				Name:        "Phones",
-				CSSSelector: ".col-10 span",
-				Attrs:       []string{"text"},
-				Filters:     []Filter{Filter{"trim", ""}},
+			Field{
+				Name:        "Meghan Reyes",
+				CSSSelector: ".card:nth-child(3) a",
+				Details: Payload{
+					Fields: []Field{
+						{
+							Name:        "Name",
+							CSSSelector: ".display-4",
+							Attrs:       []string{"text"},
+							Filters:     []Filter{Filter{"trim", ""}},
+						},
+						{
+							Name:        "Phones",
+							CSSSelector: ".col-10 span",
+							Attrs:       []string{"text"},
+							Filters:     []Filter{Filter{"trim", ""}},
+						},
+					},
+				},
+				Attrs: []string{"path"},
 			},
 		},
+		IsPath: true,
 		Format: "csv",
 	}
 	XMLPayload = Payload{
