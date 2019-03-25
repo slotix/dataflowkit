@@ -102,7 +102,7 @@ Attr belong exclusively to "Next" link paginator to define HTML element attribut
 
 Format
 
-The following Output formats are available: CSV, JSON, XML
+The following Output formats are available: CSV, MS Excel, JSON, XML
 */
 //
 // Flags and configuration settings
@@ -116,7 +116,7 @@ The following Output formats are available: CSV, JSON, XML
 //
 //    STORAGE_TYPE: Storage backend for intermediary data passed to Dataflow
 //    kit Parse service.
-//    Types: Diskv, Cassandra
+//    Types: Diskv, MongoDB
 //    (defaults to "Diskv"). It is case insensitive.
 //
 //    ITEM_EXPIRE_IN: Default value for item expiration in seconds (defaults to 86400)
@@ -124,7 +124,7 @@ The following Output formats are available: CSV, JSON, XML
 //    DISKV_BASE_DIR: diskv base directory for storing parsed results (defaults to "diskv").
 //    RESULTS_DIR: Directory for storing results (defaults to "results").
 //    Find more information about Diskv storage at https://github.com/peterbourgon/diskv
-//    CASSANDRA: Cassandra host address (defaults to "127.0.0.1")
+//    MONGO: MongoDB host address (defaults to "127.0.0.1")
 //
 //Crawler settings
 //    MAX_PAGES: The maximum number of pages to scrape. The scrape will proceed
