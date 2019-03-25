@@ -8,13 +8,13 @@ import (
 	"github.com/spf13/viper"
 )
 
-//DiskvConn stores connection parameters for Diskv storage
-type DiskvConn struct {
+//diskvConn stores connection parameters for Diskv storage
+type diskvConn struct {
 	diskv *diskv.Diskv
 }
 
 //newDiskvConn creates new connection to Diskv storage initialized with Base directory and Cache Maximum Size parameters
-func newDiskvConn(baseDir string, cacheSizeMax uint64) DiskvConn {
+func newDiskvConn(baseDir string, cacheSizeMax uint64) diskvConn {
 	// Simplest transform function: put all the data files into the base dir.
 	flatTransform := func(s string) []string { return []string{} }
 	// Initialize a new diskv store, rooted at "my-data-dir", with a 1MB cache.
@@ -24,11 +24,11 @@ func newDiskvConn(baseDir string, cacheSizeMax uint64) DiskvConn {
 		CacheSizeMax: cacheSizeMax,
 	})
 
-	return DiskvConn{diskv: d}
+	return diskvConn{diskv: d}
 }
 
 // Read loads value according to the specified key from DiskV KV storage.
-func (d DiskvConn) Read(rec Record) (value []byte, err error) {
+func (d diskvConn) Read(rec Record) (value []byte, err error) {
 	value, err = d.diskv.Read(rec.Key)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (d DiskvConn) Read(rec Record) (value []byte, err error) {
 }
 
 // Write stores key/ value pair along with Expiration time to DiskV KV storage.
-func (d DiskvConn) Write(rec Record) error {
+func (d diskvConn) Write(rec Record) error {
 	err := d.diskv.Write(rec.Key, rec.Value)
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func (d DiskvConn) Write(rec Record) error {
 }
 
 // Expired returns Expired value of specified key from DiskV.
-func (d DiskvConn) Expired(rec Record) bool {
+func (d diskvConn) Expired(rec Record) bool {
 	//pwd
 	//ex, err := os.Executable()
 	//if err != nil {
@@ -81,12 +81,12 @@ func (d DiskvConn) Expired(rec Record) bool {
 }
 
 // IsExists checkes whether specified record exists
-func (d DiskvConn) IsExists(rec Record) bool {
+func (d diskvConn) IsExists(rec Record) bool {
 	return d.diskv.Has(rec.Key)
 }
 
 //Delete deletes specified key from Diskv storage.
-func (d DiskvConn) Delete(rec Record) error {
+func (d diskvConn) Delete(rec Record) error {
 	err := d.diskv.Erase(rec.Key)
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (d DiskvConn) Delete(rec Record) error {
 }
 
 //DeleteAll deletes everything from Diskv storage.
-func (d DiskvConn) DeleteAll() error {
+func (d diskvConn) DeleteAll() error {
 	err := d.diskv.EraseAll()
 	if err != nil {
 		return err
@@ -104,5 +104,5 @@ func (d DiskvConn) DeleteAll() error {
 }
 
 // Close storage connection
-func (d DiskvConn) Close() {
+func (d diskvConn) Close() {
 }
