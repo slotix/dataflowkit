@@ -3,6 +3,7 @@ package scrape
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"flag"
 	"io/ioutil"
@@ -345,10 +346,11 @@ func TestParseDetails(t *testing.T) {
 	defer fetchServer.Stop()
 
 	//JSON details output
+	ctx := context.Background()
 	detailsPayload.Format = "json"
 	task := NewTask()
 	task.storage.DeleteAll()
-	r, err := task.Parse(detailsPayload)
+	r, err := task.Parse(ctx, detailsPayload)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
 	str := make(map[string]interface{})
@@ -418,9 +420,10 @@ func TestParse(t *testing.T) {
 	defer fetchServer.Stop()
 
 	//JSON output
+	ctx := context.Background()
 	task := NewTask()
 	task.storage.DeleteAll()
-	r, err := task.Parse(personsPayload)
+	r, err := task.Parse(ctx, personsPayload)
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
@@ -442,7 +445,7 @@ func TestParse(t *testing.T) {
 	//xml
 	personsPayload.Format = "xml"
 	task = NewTask()
-	r, err = task.Parse(personsPayload)
+	r, err = task.Parse(ctx, personsPayload)
 	assert.NoError(t, err)
 	buf = new(bytes.Buffer)
 	buf.ReadFrom(r)
@@ -475,8 +478,9 @@ func TestParseErrs(t *testing.T) {
 		Format: "json",
 	}
 
+	ctx := context.Background()
 	task := NewTask()
-	_, err := task.Parse(badP)
+	_, err := task.Parse(ctx, badP)
 	assert.Error(t, err, "Bad payload: No fields to scrape")
 
 	///// ErrNoPartOrSelectorProvided
@@ -501,12 +505,12 @@ func TestParseErrs(t *testing.T) {
 	}
 
 	task = NewTask()
-	_, err = task.Parse(badP)
+	_, err = task.Parse(ctx, badP)
 	assert.Error(t, err, "Bad payload: Field 0 has no css selector")
 
 	badP.Fields[0].CSSSelector = "selector"
 	task = NewTask()
-	_, err = task.Parse(badP)
+	_, err = task.Parse(ctx, badP)
 	assert.Error(t, err, "Bad payload: Field 1 has no name")
 
 	//Bad output format
@@ -528,7 +532,7 @@ func TestParseErrs(t *testing.T) {
 	}
 	task = NewTask()
 
-	_, err = task.Parse(badOF)
+	_, err = task.Parse(ctx, badOF)
 	assert.Error(t, err, "Bad payload: Unsupported output format BadOutputFormat")
 }
 
@@ -543,9 +547,10 @@ func TestJSONEncode(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
+	ctx := context.Background()
 	task := NewTask()
 	task.storage.DeleteAll()
-	r, err := task.Parse(JSONPayload)
+	r, err := task.Parse(ctx, JSONPayload)
 
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
@@ -582,9 +587,10 @@ func TestJSONLEncode(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
+	ctx := context.Background()
 	task := NewTask()
 	task.storage.DeleteAll()
-	r, err := task.Parse(JSONPayload)
+	r, err := task.Parse(ctx, JSONPayload)
 
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
@@ -618,9 +624,10 @@ func TestCSVEncode(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
+	ctx := context.Background()
 	task := NewTask()
 	task.storage.DeleteAll()
-	r, err := task.Parse(CSVPayload)
+	r, err := task.Parse(ctx, CSVPayload)
 
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
@@ -658,9 +665,10 @@ func TestXMLEncode(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
+	ctx := context.Background()
 	task := NewTask()
 	task.storage.DeleteAll()
-	r, err := task.Parse(XMLPayload)
+	r, err := task.Parse(ctx, XMLPayload)
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r)
@@ -708,9 +716,10 @@ func TestParseSwitchFetchers(t *testing.T) {
 		},
 		Format: "json",
 	}
+	ctx := context.Background()
 	task := NewTask()
 	task.storage.DeleteAll()
-	r, err := task.Parse(p)
+	r, err := task.Parse(ctx, p)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 	task.storage.DeleteAll()
@@ -739,9 +748,10 @@ func TestGZipJSONEncode(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
+	ctx := context.Background()
 	task := NewTask()
 	task.storage.DeleteAll()
-	r, err := task.Parse(JSONPayload)
+	r, err := task.Parse(ctx, JSONPayload)
 
 	assert.NoError(t, err)
 	buf := new(bytes.Buffer)
@@ -801,9 +811,10 @@ func TestPathPaginator(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
+	ctx := context.Background()
 	task := NewTask()
 	task.storage.DeleteAll()
-	r, err := task.Parse(pathDetailsPaginator)
+	r, err := task.Parse(ctx, pathDetailsPaginator)
 	assert.NoError(t, err)
 
 	buf := new(bytes.Buffer)
@@ -836,9 +847,10 @@ func TestPathParse(t *testing.T) {
 	fetchServer := fetch.Start(fetchServerCfg)
 	defer fetchServer.Stop()
 
+	ctx := context.Background()
 	task := NewTask()
 	task.storage.DeleteAll()
-	r, err := task.Parse(deepExtractPayload)
+	r, err := task.Parse(ctx, deepExtractPayload)
 	assert.NoError(t, err)
 
 	buf := new(bytes.Buffer)
