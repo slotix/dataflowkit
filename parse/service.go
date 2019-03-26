@@ -1,6 +1,7 @@
 package parse
 
 import (
+	"context"
 	"io"
 
 	"github.com/slotix/dataflowkit/scrape"
@@ -21,7 +22,7 @@ type ServiceMiddleware func(Service) Service
 //Parse service processes fetched page following the rules from Payload.
 func (ps ParseService) Parse(p scrape.Payload) (io.ReadCloser, error) {
 	task := scrape.NewTask()
-	r, err := task.Parse(p)
+	r, err := task.Parse(context.Background(), p)
 	if err != nil {
 		return nil, err
 	}

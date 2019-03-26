@@ -206,7 +206,7 @@ func (task *Task) checkPayload(p *Payload) error {
 }
 
 // Parse specified payload.
-func (task *Task) Parse(payload Payload) (io.ReadCloser, error) {
+func (task *Task) Parse(ctx context.Context, payload Payload) (io.ReadCloser, error) {
 	task.payloads = make(chan Payload, viper.GetInt("PAYLOAD_POOL_SIZE"))
 	defer close(task.payloads)
 
@@ -216,7 +216,7 @@ func (task *Task) Parse(payload Payload) (io.ReadCloser, error) {
 		return nil, err
 	}
 	for i := 0; i < viper.GetInt("PAYLOAD_WORKERS_NUM"); i++ {
-		go task.scrapeContent(context.Background())
+		go task.scrapeContent(ctx)
 	}
 
 	payload.InitUID()
