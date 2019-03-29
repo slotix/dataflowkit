@@ -535,8 +535,13 @@ func (task *Task) divide(ctx context.Context, in <-chan flow, fields []Field) (<
 func (task *Task) parse(ctx context.Context, in <-chan flow, fields []Field, isPath bool, blockCounter *int) (<-chan storage.Record, <-chan error) {
 	result := make(chan storage.Record)
 	errc := make(chan error)
+	zeroPaginator := false
 	if blockCounter == nil {
 		blockCounter = new(int)
+	} else {
+		// if block counter not equal nil that means that parent payload has path
+		// so we have to zero page number in a key
+		zeroPaginator = true
 	}
 	go func() {
 		defer close(result)
@@ -606,6 +611,14 @@ func (task *Task) parse(ctx context.Context, in <-chan flow, fields []Field, isP
 						continue
 					}
 					task.mx.Lock()
+					if zeroPaginator {
+						keyArr := strings.Split(data.key, "-")
+						if len(keyArr) != 2 {
+							errc <- fmt.Errorf("Invalid key: %s", data.key)
+							continue
+						}
+						data.key = fmt.Sprintf("%s-%d", keyArr[0], 0)
+					}
 					recordKey := fmt.Sprintf("%s-%d", data.key, *blockCounter)
 					result <- storage.Record{
 						Key:     recordKey,
