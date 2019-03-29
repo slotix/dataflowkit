@@ -25,7 +25,7 @@ type StatusError struct {
 
 // Allows StatusError to satisfy the error interface.
 func (se StatusError) Error() string {
-	return se.Err.Error()
+	return fmt.Sprintf("Status: %d. %s", se.Code, se.Err.Error())
 }
 
 // Returns our HTTP status code.
