@@ -620,6 +620,7 @@ func (task *Task) parse(ctx context.Context, in <-chan flow, fields []Field, isP
 				recordKey := fmt.Sprintf("%s-%d", data.key, *blockCounter)
 				select {
 				case <-ctx.Done():
+					task.mx.Unlock()
 					return
 				case result <- storage.Record{
 					Key:     recordKey,
