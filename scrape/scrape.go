@@ -73,7 +73,7 @@ func (f *Field) extract(content *goquery.Selection, results *map[string]interfac
 		})
 		switch len(values) {
 		case 0:
-			return fmt.Errorf("%s", errs.ErrEmptyResults)
+			return errs.NotError{Message: "No selectors found in current block. Thats OK."}
 		case 1:
 			(*results)[f.Name+"_"+attr] = values[0]
 		default:
@@ -422,7 +422,9 @@ func (task *Task) paginate(ctx context.Context, in <-chan flow, nextPageSelector
 			paginator := make(map[string]interface{})
 			err = f.extract(doc.Selection, &paginator, task.templateRequest.URL) /* tw.scraper.Paginator.NextPage(url, doc.Selection) */
 			if err != nil {
-				errc <- errs.ParseError{data.url, err}
+				if _, ok := err.(errs.NotError); !ok {
+					errc <- errs.ParseError{data.url, err}
+				}
 				close(fetcherChannel)
 				return
 			}
@@ -558,7 +560,9 @@ func (task *Task) parse(ctx context.Context, in <-chan flow, fields []Field, isP
 				}
 				err := field.extract(block, &blockResult, task.templateRequest.URL)
 				if err != nil {
-					errc <- err
+					if _, ok := err.(errs.NotError); !ok {
+						errc <- err
+					}
 					continue
 				}
 				if len(field.Details.Fields) > 0 {

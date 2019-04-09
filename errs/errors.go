@@ -86,3 +86,11 @@ type ParseError struct {
 func (e ParseError) Error() string {
 	return fmt.Sprintf("%s : %s", e.URL, e.Err.Error())
 }
+
+type NotError struct {
+	Message string
+}
+
+func (e NotError) Error() string {
+	return e.Message
+}

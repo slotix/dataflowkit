@@ -232,7 +232,7 @@ func (r *storageResultReader) getValue() (map[string]interface{}, error) {
 	})
 
 	if err != nil {
-		logger.Sugar().Errorf(fmt.Sprintf(errs.NoKey, key))
+		//logger.Sugar().Errorf(fmt.Sprintf(errs.NoKey, key))
 		return nil, err //&errs.ErrStorageResult{Err: fmt.Sprintf(errs.NoKey, key)}
 	}
 	blockMap := make(map[string]interface{})
