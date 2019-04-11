@@ -2,6 +2,7 @@ package scrape
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -239,40 +240,19 @@ func (task *Task) Parse(ctx context.Context, payload Payload) (io.ReadCloser, er
 	if !task.isParsed {
 		return nil, errs.ParseError{URL: payload.Request.URL, Err: errors.New(errs.ErrEmptyResults)}
 	}
-	var e encoder
-	switch strings.ToLower(payload.Format) {
-	case "csv":
-		e = CSVEncoder{
-			comma:     ",",
-			partNames: payload.fieldNames(),
-		}
-	case "json":
-		e = JSONEncoder{
-			//		paginateResults: *task.Payload.PaginateResults,
-		}
-	// TODO: implemetation ndJSON payload
-	case "jsonl":
-		e = JSONEncoder{
-			JSONL: true,
-		}
-	case "xml":
-		e = XMLEncoder{}
-	case "xlsx":
-		e = XLSXEncoder{
-			partNames: payload.fieldNames(),
-		}
-	default:
-		return nil, errors.New("invalid output format specified")
-	}
-	r, err := EncodeToFile(context.Background(), &e, encodeInfo{
+
+	r, err := EncodeResults(ctx, task, encodeInfo{
 		payloadMD5: string(payload.PayloadMD5),
 		extension:  payload.Format,
 		compressor: strings.ToLower(payload.Compressor),
+		fieldNames: payload.fieldNames(),
 		// compressLevel: 0,
 	})
+
+	/* r, err := EncodeToFile(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("Failed to encode to %s", payload.Format)
-	}
+	} */
 
 	m := map[string]interface{}{
 		"Task ID":     payload.PayloadMD5,
@@ -689,6 +669,133 @@ func mergeErrors(cs ...<-chan error) <-chan error {
 		close(out)
 	}()
 	return out
+}
+
+func EncodeResults(ctx context.Context, task *Task, ei encodeInfo) (string, error) {
+	var e encoder
+	switch strings.ToLower(ei.extension) {
+	case "csv":
+		e = CSVEncoder{
+			comma:     ",",
+			partNames: ei.fieldNames,
+		}
+	case "json":
+		e = JSONEncoder{
+			//		paginateResults: *task.Payload.PaginateResults,
+		}
+	// TODO: implemetation ndJSON payload
+	case "jsonl":
+		e = JSONEncoder{
+			JSONL: true,
+		}
+	case "xml":
+		e = XMLEncoder{}
+	case "xlsx":
+		e = XLSXEncoder{
+			partNames: ei.fieldNames,
+		}
+	default:
+		return "", errors.New("invalid output format specified")
+	}
+	writer, file, err := newEncodeWriter(ctx, &e, ei)
+	defer file.Close()
+	if strings.ToLower(ei.extension) == "xlsx" {
+		xlsxEnc, _ := e.(XLSXEncoder)
+		err := xlsxEnc.encode(ctx, writer, ei.payloadMD5)
+		if err != nil {
+			return "", err
+		}
+		return file.Name(), nil
+	} else {
+
+		if err != nil {
+			return "", err
+		}
+		var errs []<-chan error
+		payloadUID := make(chan string)
+		recordFlow, errc := task.readFromStorage(ctx, payloadUID)
+		errs = append(errs, errc)
+		encodeFlow, errc := task.encodeRecord(ctx, recordFlow, e)
+		errs = append(errs, errc)
+		errc = task.writeRecord(ctx, writer, encodeFlow)
+		errs = append(errs, errc)
+		payloadUID <- ei.payloadMD5
+		waitForPipeline(errs...)
+		close(payloadUID)
+		if strings.ToLower(ei.compressor) == GZIP_COMPRESS {
+			if wr, ok := writer.(*gzip.Writer); ok {
+				wr.Close()
+			}
+		}
+		return file.Name(), nil
+	}
+	return "", nil
+}
+
+func (task *Task) readFromStorage(ctx context.Context, payloadUID <-chan string) (<-chan map[string]interface{}, <-chan error) {
+	storageRecord := make(chan map[string]interface{})
+	errc := make(chan error)
+	go func() {
+		defer close(storageRecord)
+		defer close(errc)
+		reader := newStorageReader(&task.storage, <-payloadUID)
+		for {
+			block, err := reader.Read()
+			if err != nil {
+				if err.Error() == errs.EOF {
+					return
+				} else if err.Error() == errs.NextPage {
+					//next page
+				} else {
+					logger.Error(err.Error())
+					//we have to continue 'cause we still have other records
+					continue
+				}
+			}
+			select {
+			case storageRecord <- block:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return storageRecord, errc
+}
+
+func (task *Task) encodeRecord(ctx context.Context, recordChan <-chan map[string]interface{}, e encoder) (<-chan string, <-chan error) {
+	encodedValue := make(chan string)
+	errc := make(chan error)
+	writeDelimiter := false
+	go func() {
+		defer close(encodedValue)
+		defer close(errc)
+		encodedValue <- e.begin()
+		for record := range recordChan {
+			if !writeDelimiter {
+				writeDelimiter = true
+			} else {
+				encodedValue <- e.stringDelimiter()
+			}
+			select {
+			case encodedValue <- e.encodeRecord(record):
+			case <-ctx.Done():
+				return
+			}
+		}
+		encodedValue <- e.finilize()
+	}()
+	return encodedValue, errc
+}
+
+func (task *Task) writeRecord(ctx context.Context, w io.Writer, encodedRecordChan <-chan string) <-chan error {
+	errc := make(chan error)
+	go func() {
+		defer close(errc)
+		for encodedRecord := range encodedRecordChan {
+			io.WriteString(w, encodedRecord)
+		}
+	}()
+	return errc
 }
 
 func attrOrDataValue(s *goquery.Selection) (value string) {

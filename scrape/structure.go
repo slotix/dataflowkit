@@ -99,7 +99,7 @@ type encodeInfo struct {
 	extension     string
 	compressor    string
 	compressLevel int
-	keys          []*map[int][]int
+	fieldNames    []string
 }
 
 type flow struct {
