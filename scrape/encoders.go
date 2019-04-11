@@ -1,6 +1,8 @@
 package scrape
 
 import (
+	"bufio"
+	"bytes"
 	"compress/gzip"
 	"context"
 	"encoding/json"
@@ -24,48 +26,6 @@ const (
 	GZIP_COMPRESS = "gz"
 )
 
-// EncodeToFile save parsed data to specified file.
-func EncodeToFile(ctx context.Context, e *encoder, info encodeInfo) ([]byte, error) {
-	var w io.Writer
-	resultPath := viper.GetString("RESULTS_DIR")
-	if _, err := os.Stat(resultPath); os.IsNotExist(err) {
-		os.Mkdir(resultPath, 0700)
-	}
-	timestamp := time.Now().Format("2006-01-02_15:04")
-	sFileName := getFilename(resultPath, timestamp, info)
-	fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err := fo.Close(); err != nil {
-			panic(err)
-		}
-	}()
-
-	switch info.compressor {
-	case GZIP_COMPRESS:
-		gw, _ := gzip.NewWriterLevel(fo, gzip.BestSpeed)
-		gw.Name = info.payloadMD5 + "_" + timestamp + "." + info.extension
-		gw.Comment = COMMENT_INFO
-		w = gw
-		defer func() {
-			gw.Close()
-		}()
-	default:
-		w = fo
-	}
-
-	// close fo on exit and check for its returned error
-
-	var keys *map[int][]int
-	if len(info.keys) > 0 {
-		keys = info.keys[0]
-	}
-	err = (*e).encode(ctx, w, info.payloadMD5, keys)
-	return []byte(sFileName), err
-}
-
 func getFilename(resultPath string, timestamp string, info encodeInfo) (ext string) {
 	switch info.compressor {
 	case GZIP_COMPRESS:
@@ -76,8 +36,35 @@ func getFilename(resultPath string, timestamp string, info encodeInfo) (ext stri
 	return path.Join(resultPath, info.payloadMD5+"_"+timestamp+"."+ext)
 }
 
+func newEncodeWriter(ctx context.Context, e *encoder, info encodeInfo) (io.Writer, *os.File, error) {
+	var w io.Writer
+	resultPath := viper.GetString("RESULTS_DIR")
+	if _, err := os.Stat(resultPath); os.IsNotExist(err) {
+		os.Mkdir(resultPath, 0700)
+	}
+	timestamp := time.Now().Format("2006-01-02_15:04")
+	sFileName := getFilename(resultPath, timestamp, info)
+	fo, err := os.OpenFile(sFileName, os.O_CREATE|os.O_WRONLY, 0660)
+	if err != nil {
+		return nil, nil, err
+	}
+	switch info.compressor {
+	case GZIP_COMPRESS:
+		gw, _ := gzip.NewWriterLevel(fo, gzip.BestSpeed)
+		gw.Name = info.payloadMD5 + "_" + timestamp + "." + info.extension
+		gw.Comment = COMMENT_INFO
+		w = gw
+	default:
+		w = fo
+	}
+	return w, fo, nil
+}
+
 type encoder interface {
-	encode(ctx context.Context, w io.Writer, payloadMD5 string, keys *map[int][]int) error
+	begin() string
+	stringDelimiter() string
+	encodeRecord(record map[string]interface{}) string
+	finilize() string
 }
 
 // CSVEncoder transforms parsed data to CSV format.
@@ -89,7 +76,6 @@ type CSVEncoder struct {
 // JSONEncoder transforms parsed data to JSON format.
 type JSONEncoder struct {
 	JSONL bool
-	//	paginateResults bool
 }
 
 // XMLEncoder transforms parsed data to XML format.
@@ -100,7 +86,7 @@ type XLSXEncoder struct {
 	partNames []string
 }
 
-func (e JSONEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, keys *map[int][]int) error {
+func (e JSONEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string) error {
 	storageType := viper.GetString("STORAGE_TYPE")
 	s := storage.NewStore(storageType)
 
@@ -150,6 +136,39 @@ func (e JSONEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string,
 			return &errs.Cancel{}
 		}
 	}
+}
+
+func (e JSONEncoder) begin() string {
+	begin := ""
+	if !e.JSONL {
+		begin = "["
+	}
+	return begin
+}
+
+func (e JSONEncoder) stringDelimiter() string {
+	delimiter := ","
+	if e.JSONL {
+		delimiter = "\n"
+	}
+	return delimiter
+}
+
+func (e JSONEncoder) encodeRecord(record map[string]interface{}) string {
+	buffer, err := json.Marshal(record)
+	if err != nil {
+		logger.Error(err.Error())
+		return ""
+	}
+	return string(buffer)
+}
+
+func (e JSONEncoder) finilize() string {
+	fin := ""
+	if !e.JSONL {
+		fin = "]"
+	}
+	return fin
 }
 
 type storageResultReader struct {
@@ -232,7 +251,7 @@ func (r *storageResultReader) getValue() (map[string]interface{}, error) {
 	})
 
 	if err != nil {
-		logger.Sugar().Errorf(fmt.Sprintf(errs.NoKey, key))
+		//logger.Sugar().Errorf(fmt.Sprintf(errs.NoKey, key))
 		return nil, err //&errs.ErrStorageResult{Err: fmt.Sprintf(errs.NoKey, key)}
 	}
 	blockMap := make(map[string]interface{})
@@ -241,56 +260,6 @@ func (r *storageResultReader) getValue() (map[string]interface{}, error) {
 		return nil, err
 	}
 	return blockMap, nil
-}
-
-func (e CSVEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, keys *map[int][]int) error {
-	storageType := viper.GetString("STORAGE_TYPE")
-	s := storage.NewStore(storageType)
-
-	//write csv headers
-	sString := ""
-	for _, headerName := range e.partNames {
-		sString += fmt.Sprintf("%s,", headerName)
-	}
-	sString = strings.TrimSuffix(sString, ",") + "\n"
-	_, err := io.WriteString(w, sString)
-	if err != nil {
-		return err
-	}
-
-	reader := newStorageReader(&s, payloadMD5)
-
-	for {
-		select {
-		default:
-			block, err := reader.Read()
-			if err != nil {
-				if err.Error() == errs.EOF {
-					s.Close()
-					return nil
-				} else if err.Error() == errs.NextPage {
-					//next page
-				} else {
-					logger.Error(err.Error())
-					//we have to continue 'cause we still have other records
-					continue
-				}
-			}
-			sString = ""
-			for _, fieldName := range e.partNames {
-				sString += e.formatFieldValue(&block, fieldName)
-			}
-			sString = strings.TrimSuffix(sString, ",") + "\n"
-			_, err = io.WriteString(w, sString)
-			if err != nil {
-				logger.Error(err.Error())
-			}
-		case <-ctx.Done():
-			s.Close()
-			return &errs.Cancel{}
-		}
-	}
-
 }
 
 func (e CSVEncoder) formatFieldValue(block *map[string]interface{}, fieldName string) string {
@@ -332,40 +301,30 @@ func (e CSVEncoder) formatFieldValue(block *map[string]interface{}, fieldName st
 	return fmt.Sprintf("%s,", formatedString)
 }
 
-func (e XMLEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, keys *map[int][]int) error {
-	storageType := viper.GetString("STORAGE_TYPE")
-	s := storage.NewStore(storageType)
-	//write xml headers
-	_, err := io.WriteString(w, `<?xml version="1.0" encoding="UTF-8"?><root>`)
-	if err != nil {
-		return err
+func (e CSVEncoder) begin() string {
+	begin := ""
+	for _, headerName := range e.partNames {
+		begin += fmt.Sprintf("%s,", headerName)
 	}
+	begin = strings.TrimSuffix(begin, ",") + "\n"
+	return begin
+}
 
-	reader := newStorageReader(&s, payloadMD5)
+func (e CSVEncoder) stringDelimiter() string {
+	return ""
+}
 
-	for {
-		select {
-		default:
-			block, err := reader.Read()
-			if err != nil {
-				if err.Error() == errs.EOF {
-					s.Close()
-					io.WriteString(w, "</root>")
-					return nil
-				} else if err.Error() == errs.NextPage {
-					//next page
-				} else {
-					logger.Error(err.Error())
-					//we have to continue 'cause we still have other records
-					continue
-				}
-			}
-			e.writeXML(w, &block)
-		case <-ctx.Done():
-			s.Close()
-			return &errs.Cancel{}
-		}
+func (e CSVEncoder) encodeRecord(record map[string]interface{}) string {
+	recordString := ""
+	for _, fieldName := range e.partNames {
+		recordString += e.formatFieldValue(&record, fieldName)
 	}
+	recordString = strings.TrimSuffix(recordString, ",") + "\n"
+	return recordString
+}
+
+func (e CSVEncoder) finilize() string {
+	return ""
 }
 
 func (e XMLEncoder) writeXML(w io.Writer, block *map[string]interface{}) {
@@ -403,6 +362,25 @@ func (e XMLEncoder) writeXML(w io.Writer, block *map[string]interface{}) {
 	}
 }
 
+func (e XMLEncoder) begin() string {
+	return `<?xml version="1.0" encoding="UTF-8"?><root>`
+}
+
+func (e XMLEncoder) stringDelimiter() string {
+	return ""
+}
+
+func (e XMLEncoder) encodeRecord(record map[string]interface{}) string {
+	recordString := ""
+	w := bufio.NewWriter(bytes.NewBufferString(recordString))
+	e.writeXML(w, &record)
+	return recordString
+}
+
+func (e XMLEncoder) finilize() string {
+	return "</root>"
+}
+
 func intArrayToString(a []int, delim string) string {
 	return strings.Trim(strings.Replace(fmt.Sprint(a), " ", delim, -1), "[]")
 	//return strings.Trim(strings.Join(strings.Split(fmt.Sprint(a), " "), delim), "[]")
@@ -415,7 +393,7 @@ func floatArrayToString(a []float64, delim string) string {
 	//return strings.Trim(strings.Join(strings.Fields(fmt.Sprint(a)), delim), "[]")
 }
 
-func (e XLSXEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string, keys *map[int][]int) error {
+func (e XLSXEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string) error {
 	file := xlsx.NewFile()
 	sh, err := file.AddSheet("sheet")
 	if err != nil {
@@ -458,4 +436,21 @@ func (e XLSXEncoder) encode(ctx context.Context, w io.Writer, payloadMD5 string,
 		}
 	}
 	return nil
+}
+
+func (e XLSXEncoder) begin() string {
+	return ""
+}
+
+func (e XLSXEncoder) stringDelimiter() string {
+	return ""
+}
+
+func (e XLSXEncoder) encodeRecord(record map[string]interface{}) string {
+	recordString := ""
+	return recordString
+}
+
+func (e XLSXEncoder) finilize() string {
+	return ""
 }
