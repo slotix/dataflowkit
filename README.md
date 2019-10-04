@@ -46,18 +46,14 @@ A fetched web page is passed to parse.d service.
 - Following links and detailed pages processing;
 - Managing delays between requests per domain; 
 - Following robots.txt directives; 
-- Saving intermediate data in Diskv, Mongodb or Cassandra. Storage interface is flexible enough to add more storage types easily;
-- Encode results to CSV, MS Excel, JSON, XML formats;
+- Saving intermediate data in Diskv or Mongodb. Storage interface is flexible enough to add more storage types easily;
+- Encode results to CSV, MS Excel, JSON(Lines), XML formats;
 
 - Dataflow kit is fast. It takes about 4-6 seconds to fetch and then parse 50 pages.
 - Dataflow kit is suitable to process quite large volumes of data. Our tests show the time needed to parse appr. 4 millions of pages is about 7 hours. 
 
 ## Installation
-Using [dep](https://github.com/golang/dep)
-```
-dep ensure -add github.com/slotix/dataflowkit@master
-```
-or go get
+
 ```
 go get -u github.com/slotix/dataflowkit
 ```
