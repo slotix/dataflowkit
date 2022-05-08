@@ -2,7 +2,7 @@ version: '3'
 
 services:
   chrome:
-    image: yukinying/chrome-headless-browser
+    image: yukinying/chrome-headless-browser-stable
     
     cap_add:
       - SYS_ADMIN

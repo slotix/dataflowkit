@@ -1,7 +1,8 @@
 {
     "name": "diesel.elcat",
     "request": {
-        "url": "http://diesel.elcat.kg"
+        "url": "http://diesel.elcat.kg",
+        "type": "chrome"
     },
     "fields": [
         {

@@ -1,62 +1,30 @@
 {
-    "name": "books_to_scrape",
+    "name": "books.toscrape",
     "request": {
-        "url": "http://books.toscrape.com"
+        "url": "http://books.toscrape.com/"
     },
     "fields": [
         {
-            "name": "Title",
+            "name": "title",
             "selector": "h3 a",
-            "extractor": {
-                "types": ["text","href"],
-                "params": {
-                    "includeIfEmpty": false
-                }
-            },
-            "details": {  
-                "fields":[  
-                   {  
-                      "name":"availability",
-                      "selector":".availability",
-                      "extractor":{  
-                         "types":["text"],
-                         "filters":[  
-                            "trim",
-                            "upperCase"
-                         ],                   
-                         "params":{  
-                            "includeIfEmpty":true                  
-                         }
-                      }
-                   }
+            "attrs": [
+                    "href",
+                    "text"
                 ]
-             }
         },
         {
-            "name": "Image",
+            "name": "image",
             "selector": ".thumbnail",
-            "extractor": {
-                "types": ["alt","src"]
-            }
+            "attrs": [
+                    "src",
+                    "alt"
+                ]
         },
         {
-            "name": "Price",
+            "name": "price",
             "selector": ".price_color",
-            "extractor": {
-                "types": ["text"],
-                "params": {
-                    "includeIfEmpty": false
-                }
-            }
+            "attrs": ["text"]
         }
     ],
-    "paginator": {
-        "selector": ".next a",
-        "attr": "href",
-        "maxPages": 2
-    },
-    "format": "json",
-    "paginatedResults": true,
-    "fetcherType": "base"
-
+    "format": "json"
 }

@@ -185,6 +185,7 @@ func NewTask() *Task {
 }
 
 func (task *Task) checkPayload(p *Payload) error {
+	fmt.Println(p)
 	if len(p.Fields) == 0 {
 		return errors.New("Bad payload: No fields to scrape")
 	}
